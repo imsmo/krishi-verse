@@ -1,0 +1,1 @@
+-- apps/analytics-pipeline/dbt/models/marts/mandi_pulse_pro.sql · data product · [P2]

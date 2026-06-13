@@ -1,0 +1,1 @@
+-- db/migrations/0015_audit_additions.sql · baseline migration — copy of Database_Architecture/full_platform (memberships/offers/services/carbon/etc) · [P1]

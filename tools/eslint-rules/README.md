@@ -1,0 +1,1 @@
+# eslint-rules — custom rules LIVE in packages/config/eslint/rules/ (tenant-guard, no-float-money) so every app inherits them via the shared eslint config. This folder holds rule DEVELOPMENT docs/tests only. [P1]

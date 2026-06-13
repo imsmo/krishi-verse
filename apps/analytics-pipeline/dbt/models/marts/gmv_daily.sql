@@ -1,0 +1,1 @@
+-- apps/analytics-pipeline/dbt/models/marts/gmv_daily.sql · analytics pipeline · [P2]

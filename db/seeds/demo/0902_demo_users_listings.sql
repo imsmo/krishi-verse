@@ -1,0 +1,2 @@
+-- 0902 · STAGING-ONLY demo users & listings · [P1-staging]
+-- (Populated by db/scripts/seed.js --demo against staging only; see CLAUDE.md.)

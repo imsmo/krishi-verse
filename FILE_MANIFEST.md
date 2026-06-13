@@ -1,0 +1,2640 @@
+# FILE MANIFEST — every file, its purpose, its phase
+
+Total files: 1975 (+ foundation files created earlier). P1 = build now · P2/P3 = structure ready, build later.
+
+
+## .github/pull_request_template.md  (1 files)
+
+- `.github/pull_request_template.md` — PR checklist: laws, tests, i18n, flags, migration review **[P1]**
+
+## .github/workflows  (5 files)
+
+- `.github/workflows/db-migrate.yml` — gated migration apply **[P1]**
+- `.github/workflows/deploy-prod.yml` — Tue/Fri, manual approve, canary **[P1]**
+- `.github/workflows/deploy-staging.yml` — daily 6PM IST, auto **[P1]**
+- `.github/workflows/mobile-release.yml` — EAS build + store submit **[P1]**
+- `.github/workflows/security-scan.yml` — ZAP weekly + dependency audit **[P1]**
+
+## apps/ai-services  (22 files)
+
+- `apps/ai-services/Dockerfile` — ai-services scaffold **[P2]**
+- `apps/ai-services/pyproject.toml` — ai-services scaffold **[P2]**
+- `apps/ai-services/src/common/auth.py` — service-to-service **[P2]**
+- `apps/ai-services/src/common/config.py` — ai/common **[P2]**
+- `apps/ai-services/src/common/inference_logger.py` — writes ai_inferences **[P2]**
+- `apps/ai-services/src/common/telemetry.py` — ai/common **[P2]**
+- `apps/ai-services/src/fraud_signals/graph_features.py` — ai/fraud_signals **[P2]**
+- `apps/ai-services/src/fraud_signals/router.py` — ai/fraud_signals **[P2]**
+- `apps/ai-services/src/fraud_signals/rules.py` — ai/fraud_signals **[P2]**
+- `apps/ai-services/src/main.py` — ai-services scaffold **[P2]**
+- `apps/ai-services/src/photo_grading/model.py` — per-crop CV **[P2]**
+- `apps/ai-services/src/photo_grading/preprocess.py` — ai/photo_grading **[P2]**
+- `apps/ai-services/src/photo_grading/router.py` — ai/photo_grading **[P2]**
+- `apps/ai-services/src/price_bands/features.py` — ai/price_bands **[P2]**
+- `apps/ai-services/src/price_bands/model.py` — P10/P50/P90 **[P2]**
+- `apps/ai-services/src/price_bands/router.py` — ai/price_bands **[P2]**
+- `apps/ai-services/src/voice_extraction/confidence.py` — ai/voice_extraction **[P2]**
+- `apps/ai-services/src/voice_extraction/extractor.py` — STT→LLM→structured listing **[P2]**
+- `apps/ai-services/src/voice_extraction/prompts.py` — ai/voice_extraction **[P2]**
+- `apps/ai-services/src/voice_extraction/router.py` — ai/voice_extraction **[P2]**
+- `apps/ai-services/tests/test_grading.py` — ai-services scaffold **[P2]**
+- `apps/ai-services/tests/test_voice_extraction.py` — ai-services scaffold **[P2]**
+
+## apps/api  (8 files)
+
+- `apps/api/.env.example` — api app config **[P1]**
+- `apps/api/Dockerfile` — api app config **[P1]**
+- `apps/api/jest.config.js` — api app config **[P1]**
+- `apps/api/nest-cli.json` — api app config **[P1]**
+- `apps/api/package.json` — api app config **[P1]**
+- `apps/api/test/factories/index.ts` — test data factories (tenants/users/listings...) **[P1]**
+- `apps/api/test/tenant-isolation.global.e2e.ts` — global cross-tenant attack suite (CI merge gate) **[P1]**
+- `apps/api/tsconfig.json` — api app config **[P1]**
+
+## apps/api/src  (1392 files)
+
+- `apps/api/src/app.module.ts` — API bootstrap **[P1]**
+- `apps/api/src/core/audit/audit.decorator.ts` — core/audit plumbing **[P1]**
+- `apps/api/src/core/audit/audit.module.ts` — core/audit plumbing **[P1]**
+- `apps/api/src/core/audit/audit.writer.ts` — core/audit plumbing **[P1]**
+- `apps/api/src/core/auth/auth.guard.ts` — core/auth plumbing **[P1]**
+- `apps/api/src/core/auth/auth.module.ts` — core/auth plumbing **[P1]**
+- `apps/api/src/core/auth/jwt.strategy.ts` — core/auth plumbing **[P1]**
+- `apps/api/src/core/auth/otp.service.ts` — core/auth plumbing **[P1]**
+- `apps/api/src/core/auth/refresh-token.service.ts` — core/auth plumbing **[P1]**
+- `apps/api/src/core/cache/cache-keys.ts` — ALL keys tenant-prefixed **[P1]**
+- `apps/api/src/core/cache/cache.module.ts` — core/cache plumbing **[P1]**
+- `apps/api/src/core/cache/redis.provider.ts` — core/cache plumbing **[P1]**
+- `apps/api/src/core/config/app-config.ts` — core/config plumbing **[P1]**
+- `apps/api/src/core/config/config.module.ts` — core/config plumbing **[P1]**
+- `apps/api/src/core/config/env.validation.ts` — core/config plumbing **[P1]**
+- `apps/api/src/core/database/database.module.ts` — core/database plumbing **[P1]**
+- `apps/api/src/core/database/partition-pruning.util.ts` — core/database plumbing **[P1]**
+- `apps/api/src/core/database/pg-pool.provider.ts` — core/database plumbing **[P1]**
+- `apps/api/src/core/database/rls-session.ts` — core/database plumbing **[P1]**
+- `apps/api/src/core/database/transaction.decorator.ts` — core/database plumbing **[P1]**
+- `apps/api/src/core/database/uuid.util.ts` — core/database plumbing **[P1]**
+- `apps/api/src/core/feature-flags/flags.guard.ts` — core/feature-flags plumbing **[P1]**
+- `apps/api/src/core/feature-flags/flags.module.ts` — core/feature-flags plumbing **[P1]**
+- `apps/api/src/core/feature-flags/flags.service.ts` — core/feature-flags plumbing **[P1]**
+- `apps/api/src/core/health/health.controller.ts` — core/health plumbing **[P1]**
+- `apps/api/src/core/health/readiness.indicator.ts` — core/health plumbing **[P1]**
+- `apps/api/src/core/http/cursor-pagination.ts` — core/http plumbing **[P1]**
+- `apps/api/src/core/http/exception.filter.ts` — core/http plumbing **[P1]**
+- `apps/api/src/core/http/rate-limit.guard.ts` — core/http plumbing **[P1]**
+- `apps/api/src/core/http/request-id.middleware.ts` — core/http plumbing **[P1]**
+- `apps/api/src/core/http/response.interceptor.ts` — standard envelope **[P1]**
+- `apps/api/src/core/i18n/i18n.module.ts` — core/i18n plumbing **[P1]**
+- `apps/api/src/core/i18n/language.middleware.ts` — core/i18n plumbing **[P1]**
+- `apps/api/src/core/i18n/translation.service.ts` — core/i18n plumbing **[P1]**
+- `apps/api/src/core/idempotency/idempotency.middleware.ts` — core/idempotency plumbing **[P1]**
+- `apps/api/src/core/idempotency/idempotency.store.ts` — core/idempotency plumbing **[P1]**
+- `apps/api/src/core/media/media-links.service.ts` — core/media plumbing **[P1]**
+- `apps/api/src/core/media/media.module.ts` — core/media plumbing **[P1]**
+- `apps/api/src/core/media/s3-presign.service.ts` — core/media plumbing **[P1]**
+- `apps/api/src/core/media/scan-webhook.controller.ts` — core/media plumbing **[P1]**
+- `apps/api/src/core/outbox/event-envelope.ts` — core/outbox plumbing **[P1]**
+- `apps/api/src/core/outbox/outbox.module.ts` — core/outbox plumbing **[P1]**
+- `apps/api/src/core/outbox/outbox.writer.ts` — core/outbox plumbing **[P1]**
+- `apps/api/src/core/rbac/permissions.decorator.ts` — core/rbac plumbing **[P1]**
+- `apps/api/src/core/rbac/permissions.guard.ts` — core/rbac plumbing **[P1]**
+- `apps/api/src/core/rbac/rbac.module.ts` — core/rbac plumbing **[P1]**
+- `apps/api/src/core/rbac/role-cache.service.ts` — core/rbac plumbing **[P1]**
+- `apps/api/src/core/search/index-builders/listings.index.ts` — core/search plumbing **[P1]**
+- `apps/api/src/core/search/index-builders/products.index.ts` — core/search plumbing **[P1]**
+- `apps/api/src/core/search/index-builders/workers.index.ts` — core/search plumbing **[P1]**
+- `apps/api/src/core/search/opensearch.client.ts` — core/search plumbing **[P1]**
+- `apps/api/src/core/search/search.module.ts` — core/search plumbing **[P1]**
+- `apps/api/src/core/tenancy-context/tenant-context.middleware.ts` — core/tenancy-context plumbing **[P1]**
+- `apps/api/src/core/tenancy-context/tenant-context.storage.ts` — core/tenancy-context plumbing **[P1]**
+- `apps/api/src/core/tenancy-context/tenant-resolver.ts` — core/tenancy-context plumbing **[P1]**
+- `apps/api/src/main.ts` — API bootstrap **[P1]**
+- `apps/api/src/modules/ai-governance/README.md` — ai-governance module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/ai-governance/__tests__/ai-governance.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/ai-governance/__tests__/ai-model.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/ai-governance/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/ai-governance/ai-governance.module.ts` — NestJS module wiring for ai-governance **[P1]**
+- `apps/api/src/modules/ai-governance/controllers/v1/models.controller.ts` — REST v1 endpoints: models (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/ai-governance/controllers/v1/review-queue.controller.ts` — REST v1 endpoints: review-queue (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/ai-governance/domain/ai-governance.events.ts` — domain event definitions published by ai-governance **[P1]**
+- `apps/api/src/modules/ai-governance/domain/ai-inference.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/ai-governance/domain/ai-model.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/ai-governance/domain/ai-review.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/ai-governance/domain/ai-review.state.ts` — STATE MACHINE for ai-review — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/ai-governance/dto/create-ai-inference.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/ai-governance/dto/create-ai-model.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/ai-governance/dto/create-ai-review.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/ai-governance/dto/query-ai-inference.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/ai-governance/dto/query-ai-model.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/ai-governance/dto/query-ai-review.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/ai-governance/dto/update-ai-model.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/ai-governance/events/ai-governance.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/ai-governance/jobs/drift-watch.job.ts` — queue job: drift-watch **[P1]**
+- `apps/api/src/modules/ai-governance/jobs/fairness-audit-monthly.job.ts` — queue job: fairness-audit-monthly **[P1]**
+- `apps/api/src/modules/ai-governance/policies/ai-governance.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/ai-governance/repositories/ai-inference.repository.ts` — all SQL for ai-inference (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/ai-governance/repositories/ai-model.repository.ts` — all SQL for ai-model (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/ai-governance/repositories/ai-review.repository.ts` — all SQL for ai-review (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/ai-governance/services/ai-inference.service.ts` — application service / use-cases for ai-inference **[P1]**
+- `apps/api/src/modules/ai-governance/services/ai-model.service.ts` — application service / use-cases for ai-model **[P1]**
+- `apps/api/src/modules/ai-governance/services/ai-review.service.ts` — application service / use-cases for ai-review **[P1]**
+- `apps/api/src/modules/ambassadors/README.md` — ambassadors module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/ambassadors/__tests__/ambassador-profile.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/ambassadors/__tests__/ambassadors.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/ambassadors/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/ambassadors/ambassadors.module.ts` — NestJS module wiring for ambassadors **[P1]**
+- `apps/api/src/modules/ambassadors/controllers/v1/ambassadors.controller.ts` — REST v1 endpoints: ambassadors (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/ambassadors/controllers/v1/earnings.controller.ts` — REST v1 endpoints: earnings (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/ambassadors/controllers/v1/referrals.controller.ts` — REST v1 endpoints: referrals (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/ambassadors/domain/ambassador-earning.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/ambassadors/domain/ambassador-profile.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/ambassadors/domain/ambassadors.events.ts` — domain event definitions published by ambassadors **[P1]**
+- `apps/api/src/modules/ambassadors/domain/commission-plan.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/ambassadors/domain/referral.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/ambassadors/domain/referral.state.ts` — STATE MACHINE for referral — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/ambassadors/dto/create-ambassador-earning.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/ambassadors/dto/create-ambassador-profile.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/ambassadors/dto/create-commission-plan.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/ambassadors/dto/create-referral.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/ambassadors/dto/query-ambassador-earning.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/ambassadors/dto/query-ambassador-profile.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/ambassadors/dto/query-commission-plan.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/ambassadors/dto/query-referral.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/ambassadors/dto/update-ambassador-profile.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/ambassadors/events/ambassadors.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/ambassadors/events/handlers/order-completed.handler.ts` — reacts to 'order-completed' event **[P1]**
+- `apps/api/src/modules/ambassadors/events/handlers/user-onboarded.handler.ts` — reacts to 'user-onboarded' event **[P1]**
+- `apps/api/src/modules/ambassadors/events/handlers/worker-onboarded.handler.ts` — reacts to 'worker-onboarded' event **[P1]**
+- `apps/api/src/modules/ambassadors/jobs/inactivity-watch.job.ts` — queue job: inactivity-watch **[P1]**
+- `apps/api/src/modules/ambassadors/jobs/milestone-bonuses.job.ts` — queue job: milestone-bonuses **[P1]**
+- `apps/api/src/modules/ambassadors/jobs/weekly-payout-batch.job.ts` — queue job: weekly-payout-batch **[P1]**
+- `apps/api/src/modules/ambassadors/policies/ambassadors.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/ambassadors/repositories/ambassador-earning.repository.ts` — all SQL for ambassador-earning (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/ambassadors/repositories/ambassador-profile.repository.ts` — all SQL for ambassador-profile (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/ambassadors/repositories/commission-plan.repository.ts` — all SQL for commission-plan (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/ambassadors/repositories/referral.repository.ts` — all SQL for referral (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/ambassadors/services/ambassador-earning.service.ts` — application service / use-cases for ambassador-earning **[P1]**
+- `apps/api/src/modules/ambassadors/services/ambassador-profile.service.ts` — application service / use-cases for ambassador-profile **[P1]**
+- `apps/api/src/modules/ambassadors/services/commission-plan.service.ts` — application service / use-cases for commission-plan **[P1]**
+- `apps/api/src/modules/ambassadors/services/referral.service.ts` — application service / use-cases for referral **[P1]**
+- `apps/api/src/modules/auctions/README.md` — auctions module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/auctions/__tests__/auction.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/auctions/__tests__/auctions.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/auctions/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/auctions/auctions.module.ts` — NestJS module wiring for auctions **[P1]**
+- `apps/api/src/modules/auctions/controllers/v1/auctions.controller.ts` — REST v1 endpoints: auctions (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/auctions/controllers/v1/bids.controller.ts` — REST v1 endpoints: bids (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/auctions/domain/auction-watcher.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/auctions/domain/auction.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/auctions/domain/auction.state.ts` — STATE MACHINE for auction — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/auctions/domain/auctions.events.ts` — domain event definitions published by auctions **[P1]**
+- `apps/api/src/modules/auctions/domain/bid.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/auctions/dto/create-auction-watcher.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/auctions/dto/create-auction.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/auctions/dto/create-bid.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/auctions/dto/query-auction-watcher.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/auctions/dto/query-auction.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/auctions/dto/query-bid.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/auctions/dto/update-auction.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/auctions/events/auctions.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/auctions/events/handlers/payment-succeeded.handler.ts` — reacts to 'payment-succeeded' event **[P1]**
+- `apps/api/src/modules/auctions/jobs/close-ended-auctions.job.ts` — queue job: close-ended-auctions **[P1]**
+- `apps/api/src/modules/auctions/jobs/open-scheduled-auctions.job.ts` — queue job: open-scheduled-auctions **[P1]**
+- `apps/api/src/modules/auctions/jobs/release-losing-emd.job.ts` — queue job: release-losing-emd **[P1]**
+- `apps/api/src/modules/auctions/policies/auctions.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/auctions/repositories/auction-watcher.repository.ts` — all SQL for auction-watcher (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/auctions/repositories/auction.repository.ts` — all SQL for auction (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/auctions/repositories/bid.repository.ts` — all SQL for bid (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/auctions/services/auction-watcher.service.ts` — application service / use-cases for auction-watcher **[P1]**
+- `apps/api/src/modules/auctions/services/auction.service.ts` — application service / use-cases for auction **[P1]**
+- `apps/api/src/modules/auctions/services/bid.service.ts` — application service / use-cases for bid **[P1]**
+- `apps/api/src/modules/catalogue/README.md` — catalogue module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/catalogue/__tests__/catalogue.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/catalogue/__tests__/category.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/catalogue/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/catalogue/catalogue.module.ts` — NestJS module wiring for catalogue **[P1]**
+- `apps/api/src/modules/catalogue/controllers/v1/attributes.controller.ts` — REST v1 endpoints: attributes (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/catalogue/controllers/v1/batches.controller.ts` — REST v1 endpoints: batches (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/catalogue/controllers/v1/categories.controller.ts` — REST v1 endpoints: categories (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/catalogue/controllers/v1/certificates.controller.ts` — REST v1 endpoints: certificates (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/catalogue/controllers/v1/products.controller.ts` — REST v1 endpoints: products (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/catalogue/domain/attribute-definition.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/catalogue/domain/attribute-option.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/catalogue/domain/attribute-template.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/catalogue/domain/brand.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/catalogue/domain/catalogue.events.ts` — domain event definitions published by catalogue **[P1]**
+- `apps/api/src/modules/catalogue/domain/category-attribute.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/catalogue/domain/category.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/catalogue/domain/certificate.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/catalogue/domain/certificate.state.ts` — STATE MACHINE for certificate — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/catalogue/domain/product-batch.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/catalogue/domain/product.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/catalogue/domain/regulated-rule.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/catalogue/dto/create-attribute-definition.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/catalogue/dto/create-attribute-option.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/catalogue/dto/create-attribute-template.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/catalogue/dto/create-category-attribute.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/catalogue/dto/create-category.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/catalogue/dto/create-product.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/catalogue/dto/query-attribute-definition.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/catalogue/dto/query-attribute-option.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/catalogue/dto/query-attribute-template.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/catalogue/dto/query-category-attribute.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/catalogue/dto/query-category.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/catalogue/dto/query-product.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/catalogue/dto/update-category.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/catalogue/events/catalogue.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/catalogue/jobs/batch-expiry-alerts.job.ts` — queue job: batch-expiry-alerts **[P1]**
+- `apps/api/src/modules/catalogue/jobs/certificate-expiry-alerts.job.ts` — queue job: certificate-expiry-alerts **[P1]**
+- `apps/api/src/modules/catalogue/policies/catalogue.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/catalogue/repositories/attribute-definition.repository.ts` — all SQL for attribute-definition (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/catalogue/repositories/attribute-option.repository.ts` — all SQL for attribute-option (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/catalogue/repositories/attribute-template.repository.ts` — all SQL for attribute-template (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/catalogue/repositories/brand.repository.ts` — all SQL for brand (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/catalogue/repositories/category-attribute.repository.ts` — all SQL for category-attribute (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/catalogue/repositories/category.repository.ts` — all SQL for category (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/catalogue/repositories/certificate.repository.ts` — all SQL for certificate (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/catalogue/repositories/product-batch.repository.ts` — all SQL for product-batch (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/catalogue/repositories/product.repository.ts` — all SQL for product (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/catalogue/repositories/regulated-rule.repository.ts` — all SQL for regulated-rule (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/catalogue/services/attribute-definition.service.ts` — application service / use-cases for attribute-definition **[P1]**
+- `apps/api/src/modules/catalogue/services/attribute-option.service.ts` — application service / use-cases for attribute-option **[P1]**
+- `apps/api/src/modules/catalogue/services/attribute-template.service.ts` — application service / use-cases for attribute-template **[P1]**
+- `apps/api/src/modules/catalogue/services/category-attribute.service.ts` — application service / use-cases for category-attribute **[P1]**
+- `apps/api/src/modules/catalogue/services/category.service.ts` — application service / use-cases for category **[P1]**
+- `apps/api/src/modules/cms/README.md` — cms module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/cms/__tests__/cms-page.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/cms/__tests__/cms.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/cms/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/cms/cms.module.ts` — NestJS module wiring for cms **[P1]**
+- `apps/api/src/modules/cms/controllers/v1/banners.controller.ts` — REST v1 endpoints: banners (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/cms/controllers/v1/pages.controller.ts` — REST v1 endpoints: pages (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/cms/domain/banner.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/cms/domain/cms-page.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/cms/domain/cms-page.state.ts` — STATE MACHINE for cms-page — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/cms/domain/cms.events.ts` — domain event definitions published by cms **[P1]**
+- `apps/api/src/modules/cms/dto/create-banner.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/cms/dto/create-cms-page.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/cms/dto/query-banner.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/cms/dto/query-cms-page.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/cms/dto/update-cms-page.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/cms/events/cms.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/cms/jobs/banner-schedule.job.ts` — queue job: banner-schedule **[P1]**
+- `apps/api/src/modules/cms/policies/cms.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/cms/repositories/banner.repository.ts` — all SQL for banner (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/cms/repositories/cms-page.repository.ts` — all SQL for cms-page (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/cms/services/banner.service.ts` — application service / use-cases for banner **[P1]**
+- `apps/api/src/modules/cms/services/cms-page.service.ts` — application service / use-cases for cms-page **[P1]**
+- `apps/api/src/modules/communication/README.md` — communication module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/communication/__tests__/communication.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/communication/__tests__/conversation.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/communication/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/communication/communication.module.ts` — NestJS module wiring for communication **[P1]**
+- `apps/api/src/modules/communication/controllers/v1/conversations.controller.ts` — REST v1 endpoints: conversations (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/communication/controllers/v1/messages.controller.ts` — REST v1 endpoints: messages (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/communication/controllers/v1/preferences.controller.ts` — REST v1 endpoints: preferences (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/communication/controllers/v1/templates.controller.ts` — REST v1 endpoints: templates (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/communication/domain/communication.events.ts` — domain event definitions published by communication **[P1]**
+- `apps/api/src/modules/communication/domain/conversation.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/communication/domain/masked-call.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/communication/domain/message.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/communication/domain/notification-event.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/communication/domain/notification-preference.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/communication/domain/notification-template.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/communication/dto/create-conversation.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/communication/dto/create-masked-call.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/communication/dto/create-message.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/communication/dto/create-notification-event.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/communication/dto/create-notification-preference.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/communication/dto/create-notification-template.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/communication/dto/query-conversation.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/communication/dto/query-masked-call.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/communication/dto/query-message.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/communication/dto/query-notification-event.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/communication/dto/query-notification-preference.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/communication/dto/query-notification-template.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/communication/dto/update-conversation.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/communication/events/communication.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/communication/events/handlers/all-domain-events-fanout.handler.ts` — reacts to 'all-domain-events-fanout' event **[P1]**
+- `apps/api/src/modules/communication/jobs/digest-batching.job.ts` — queue job: digest-batching **[P1]**
+- `apps/api/src/modules/communication/jobs/quiet-hours-scheduler.job.ts` — queue job: quiet-hours-scheduler **[P1]**
+- `apps/api/src/modules/communication/policies/communication.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/communication/repositories/conversation.repository.ts` — all SQL for conversation (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/communication/repositories/masked-call.repository.ts` — all SQL for masked-call (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/communication/repositories/message.repository.ts` — all SQL for message (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/communication/repositories/notification-event.repository.ts` — all SQL for notification-event (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/communication/repositories/notification-preference.repository.ts` — all SQL for notification-preference (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/communication/repositories/notification-template.repository.ts` — all SQL for notification-template (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/communication/services/conversation.service.ts` — application service / use-cases for conversation **[P1]**
+- `apps/api/src/modules/communication/services/masked-call.service.ts` — application service / use-cases for masked-call **[P1]**
+- `apps/api/src/modules/communication/services/message.service.ts` — application service / use-cases for message **[P1]**
+- `apps/api/src/modules/communication/services/notification-event.service.ts` — application service / use-cases for notification-event **[P1]**
+- `apps/api/src/modules/communication/services/notification-template.service.ts` — application service / use-cases for notification-template **[P1]**
+- `apps/api/src/modules/contract-farming/README.md` — contract-farming module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P2]**
+- `apps/api/src/modules/contract-farming/__tests__/contract-farming.e2e-spec.ts` — endpoint integration tests **[P2]**
+- `apps/api/src/modules/contract-farming/__tests__/contract-template.service.spec.ts` — unit tests for primary service **[P2]**
+- `apps/api/src/modules/contract-farming/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P2]**
+- `apps/api/src/modules/contract-farming/contract-farming.module.ts` — NestJS module wiring for contract-farming **[P2]**
+- `apps/api/src/modules/contract-farming/controllers/v1/contracts.controller.ts` — REST v1 endpoints: contracts (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/contract-farming/controllers/v1/growers.controller.ts` — REST v1 endpoints: growers (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/contract-farming/controllers/v1/milestones.controller.ts` — REST v1 endpoints: milestones (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/contract-farming/domain/contract-farming.events.ts` — domain event definitions published by contract-farming **[P2]**
+- `apps/api/src/modules/contract-farming/domain/contract-grower.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/contract-farming/domain/contract-milestone.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/contract-farming/domain/contract-template.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/contract-farming/domain/farming-contract.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/contract-farming/domain/farming-contract.state.ts` — STATE MACHINE for farming-contract — the only place its transitions are defined (Law 5) **[P2]**
+- `apps/api/src/modules/contract-farming/domain/input-advance.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/contract-farming/dto/create-contract-grower.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/contract-farming/dto/create-contract-milestone.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/contract-farming/dto/create-contract-template.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/contract-farming/dto/create-farming-contract.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/contract-farming/dto/create-input-advance.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/contract-farming/dto/query-contract-grower.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/contract-farming/dto/query-contract-milestone.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/contract-farming/dto/query-contract-template.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/contract-farming/dto/query-farming-contract.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/contract-farming/dto/query-input-advance.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/contract-farming/dto/update-contract-template.dto.ts` — update payload **[P2]**
+- `apps/api/src/modules/contract-farming/events/contract-farming.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P2]**
+- `apps/api/src/modules/contract-farming/events/handlers/order-completed.handler.ts` — reacts to 'order-completed' event **[P2]**
+- `apps/api/src/modules/contract-farming/jobs/milestone-due-reminders.job.ts` — queue job: milestone-due-reminders **[P2]**
+- `apps/api/src/modules/contract-farming/policies/contract-farming.policies.ts` — permission checks (codes from DB permissions table) **[P2]**
+- `apps/api/src/modules/contract-farming/repositories/contract-grower.repository.ts` — all SQL for contract-grower (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/contract-farming/repositories/contract-milestone.repository.ts` — all SQL for contract-milestone (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/contract-farming/repositories/contract-template.repository.ts` — all SQL for contract-template (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/contract-farming/repositories/farming-contract.repository.ts` — all SQL for farming-contract (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/contract-farming/repositories/input-advance.repository.ts` — all SQL for input-advance (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/contract-farming/services/contract-grower.service.ts` — application service / use-cases for contract-grower **[P2]**
+- `apps/api/src/modules/contract-farming/services/contract-milestone.service.ts` — application service / use-cases for contract-milestone **[P2]**
+- `apps/api/src/modules/contract-farming/services/contract-template.service.ts` — application service / use-cases for contract-template **[P2]**
+- `apps/api/src/modules/contract-farming/services/farming-contract.service.ts` — application service / use-cases for farming-contract **[P2]**
+- `apps/api/src/modules/contract-farming/services/input-advance.service.ts` — application service / use-cases for input-advance **[P2]**
+- `apps/api/src/modules/dairy/README.md` — dairy module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P2]**
+- `apps/api/src/modules/dairy/__tests__/dairy.e2e-spec.ts` — endpoint integration tests **[P2]**
+- `apps/api/src/modules/dairy/__tests__/mcc-centre.service.spec.ts` — unit tests for primary service **[P2]**
+- `apps/api/src/modules/dairy/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P2]**
+- `apps/api/src/modules/dairy/controllers/v1/collections.controller.ts` — REST v1 endpoints: collections (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/dairy/controllers/v1/coop.controller.ts` — REST v1 endpoints: coop (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/dairy/controllers/v1/d2c-subscriptions.controller.ts` — REST v1 endpoints: d2c-subscriptions (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/dairy/controllers/v1/mcc.controller.ts` — REST v1 endpoints: mcc (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/dairy/controllers/v1/milk-bills.controller.ts` — REST v1 endpoints: milk-bills (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/dairy/controllers/v1/rate-cards.controller.ts` — REST v1 endpoints: rate-cards (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/dairy/dairy.module.ts` — NestJS module wiring for dairy **[P2]**
+- `apps/api/src/modules/dairy/domain/bmc-unit.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/dairy/domain/coop-resolution.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/dairy/domain/coop-share.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/dairy/domain/coop-vote.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/dairy/domain/d2c-delivery.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/dairy/domain/d2c-plan.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/dairy/domain/d2c-subscription.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/dairy/domain/d2c-subscription.state.ts` — STATE MACHINE for d2c-subscription — the only place its transitions are defined (Law 5) **[P2]**
+- `apps/api/src/modules/dairy/domain/dairy-membership.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/dairy/domain/dairy.events.ts` — domain event definitions published by dairy **[P2]**
+- `apps/api/src/modules/dairy/domain/mcc-centre.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/dairy/domain/milk-bill.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/dairy/domain/milk-bill.state.ts` — STATE MACHINE for milk-bill — the only place its transitions are defined (Law 5) **[P2]**
+- `apps/api/src/modules/dairy/domain/milk-collection.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/dairy/domain/milk-rate-card.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/dairy/dto/create-bmc-unit.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/dairy/dto/create-dairy-membership.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/dairy/dto/create-mcc-centre.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/dairy/dto/create-milk-bill.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/dairy/dto/create-milk-collection.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/dairy/dto/create-milk-rate-card.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/dairy/dto/query-bmc-unit.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/dairy/dto/query-dairy-membership.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/dairy/dto/query-mcc-centre.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/dairy/dto/query-milk-bill.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/dairy/dto/query-milk-collection.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/dairy/dto/query-milk-rate-card.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/dairy/dto/update-mcc-centre.dto.ts` — update payload **[P2]**
+- `apps/api/src/modules/dairy/events/dairy.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P2]**
+- `apps/api/src/modules/dairy/events/handlers/payout-completed.handler.ts` — reacts to 'payout-completed' event **[P2]**
+- `apps/api/src/modules/dairy/jobs/adulteration-pattern-scan.job.ts` — queue job: adulteration-pattern-scan **[P2]**
+- `apps/api/src/modules/dairy/jobs/bmc-temperature-watch.job.ts` — queue job: bmc-temperature-watch **[P2]**
+- `apps/api/src/modules/dairy/jobs/d2c-route-plan.job.ts` — queue job: d2c-route-plan **[P2]**
+- `apps/api/src/modules/dairy/jobs/daily-payout-run.job.ts` — queue job: daily-payout-run **[P2]**
+- `apps/api/src/modules/dairy/jobs/milk-bill-cycle-close.job.ts` — queue job: milk-bill-cycle-close **[P2]**
+- `apps/api/src/modules/dairy/policies/dairy.policies.ts` — permission checks (codes from DB permissions table) **[P2]**
+- `apps/api/src/modules/dairy/repositories/bmc-unit.repository.ts` — all SQL for bmc-unit (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/dairy/repositories/coop-resolution.repository.ts` — all SQL for coop-resolution (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/dairy/repositories/coop-share.repository.ts` — all SQL for coop-share (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/dairy/repositories/coop-vote.repository.ts` — all SQL for coop-vote (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/dairy/repositories/d2c-delivery.repository.ts` — all SQL for d2c-delivery (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/dairy/repositories/d2c-plan.repository.ts` — all SQL for d2c-plan (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/dairy/repositories/d2c-subscription.repository.ts` — all SQL for d2c-subscription (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/dairy/repositories/dairy-membership.repository.ts` — all SQL for dairy-membership (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/dairy/repositories/mcc-centre.repository.ts` — all SQL for mcc-centre (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/dairy/repositories/milk-bill.repository.ts` — all SQL for milk-bill (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/dairy/repositories/milk-collection.repository.ts` — all SQL for milk-collection (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/dairy/repositories/milk-rate-card.repository.ts` — all SQL for milk-rate-card (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/dairy/services/bmc-unit.service.ts` — application service / use-cases for bmc-unit **[P2]**
+- `apps/api/src/modules/dairy/services/dairy-membership.service.ts` — application service / use-cases for dairy-membership **[P2]**
+- `apps/api/src/modules/dairy/services/mcc-centre.service.ts` — application service / use-cases for mcc-centre **[P2]**
+- `apps/api/src/modules/dairy/services/milk-collection.service.ts` — application service / use-cases for milk-collection **[P2]**
+- `apps/api/src/modules/dairy/services/milk-rate-card.service.ts` — application service / use-cases for milk-rate-card **[P2]**
+- `apps/api/src/modules/disputes/README.md` — disputes module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/disputes/__tests__/dispute.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/disputes/__tests__/disputes.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/disputes/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/disputes/controllers/v1/disputes.controller.ts` — REST v1 endpoints: disputes (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/disputes/controllers/v1/returns.controller.ts` — REST v1 endpoints: returns (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/disputes/disputes.module.ts` — NestJS module wiring for disputes **[P1]**
+- `apps/api/src/modules/disputes/domain/dispute-message.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/disputes/domain/dispute.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/disputes/domain/dispute.state.ts` — STATE MACHINE for dispute — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/disputes/domain/disputes.events.ts` — domain event definitions published by disputes **[P1]**
+- `apps/api/src/modules/disputes/domain/return.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/disputes/domain/return.state.ts` — STATE MACHINE for return — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/disputes/dto/create-dispute-message.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/disputes/dto/create-dispute.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/disputes/dto/create-return.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/disputes/dto/query-dispute-message.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/disputes/dto/query-dispute.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/disputes/dto/query-return.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/disputes/dto/update-dispute.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/disputes/events/disputes.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/disputes/events/handlers/order-delivered.handler.ts` — reacts to 'order-delivered' event **[P1]**
+- `apps/api/src/modules/disputes/jobs/seller-response-timeout.job.ts` — queue job: seller-response-timeout **[P1]**
+- `apps/api/src/modules/disputes/jobs/sla-escalation.job.ts` — queue job: sla-escalation **[P1]**
+- `apps/api/src/modules/disputes/policies/disputes.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/disputes/repositories/dispute-message.repository.ts` — all SQL for dispute-message (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/disputes/repositories/dispute.repository.ts` — all SQL for dispute (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/disputes/repositories/return.repository.ts` — all SQL for return (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/disputes/services/dispute-message.service.ts` — application service / use-cases for dispute-message **[P1]**
+- `apps/api/src/modules/disputes/services/dispute.service.ts` — application service / use-cases for dispute **[P1]**
+- `apps/api/src/modules/disputes/services/return.service.ts` — application service / use-cases for return **[P1]**
+- `apps/api/src/modules/education/README.md` — education module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/education/__tests__/education.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/education/__tests__/instructor.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/education/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/education/controllers/v1/courses.controller.ts` — REST v1 endpoints: courses (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/education/controllers/v1/enrollments.controller.ts` — REST v1 endpoints: enrollments (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/education/controllers/v1/lessons.controller.ts` — REST v1 endpoints: lessons (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/education/domain/course-lesson.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/education/domain/course.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/education/domain/course.state.ts` — STATE MACHINE for course — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/education/domain/education.events.ts` — domain event definitions published by education **[P1]**
+- `apps/api/src/modules/education/domain/enrollment.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/education/domain/instructor.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/education/domain/lesson-progress.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/education/dto/create-course-lesson.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/education/dto/create-course.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/education/dto/create-enrollment.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/education/dto/create-instructor.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/education/dto/create-lesson-progress.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/education/dto/query-course-lesson.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/education/dto/query-course.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/education/dto/query-enrollment.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/education/dto/query-instructor.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/education/dto/query-lesson-progress.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/education/dto/update-instructor.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/education/education.module.ts` — NestJS module wiring for education **[P1]**
+- `apps/api/src/modules/education/events/education.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/education/events/handlers/payment-succeeded.handler.ts` — reacts to 'payment-succeeded' event **[P1]**
+- `apps/api/src/modules/education/jobs/completion-certificates.job.ts` — queue job: completion-certificates **[P1]**
+- `apps/api/src/modules/education/jobs/instructor-royalties.job.ts` — queue job: instructor-royalties **[P1]**
+- `apps/api/src/modules/education/policies/education.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/education/repositories/course-lesson.repository.ts` — all SQL for course-lesson (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/education/repositories/course.repository.ts` — all SQL for course (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/education/repositories/enrollment.repository.ts` — all SQL for enrollment (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/education/repositories/instructor.repository.ts` — all SQL for instructor (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/education/repositories/lesson-progress.repository.ts` — all SQL for lesson-progress (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/education/services/course-lesson.service.ts` — application service / use-cases for course-lesson **[P1]**
+- `apps/api/src/modules/education/services/course.service.ts` — application service / use-cases for course **[P1]**
+- `apps/api/src/modules/education/services/enrollment.service.ts` — application service / use-cases for enrollment **[P1]**
+- `apps/api/src/modules/education/services/instructor.service.ts` — application service / use-cases for instructor **[P1]**
+- `apps/api/src/modules/education/services/lesson-progress.service.ts` — application service / use-cases for lesson-progress **[P1]**
+- `apps/api/src/modules/equipment/README.md` — equipment module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P2]**
+- `apps/api/src/modules/equipment/__tests__/equipment-asset.service.spec.ts` — unit tests for primary service **[P2]**
+- `apps/api/src/modules/equipment/__tests__/equipment.e2e-spec.ts` — endpoint integration tests **[P2]**
+- `apps/api/src/modules/equipment/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P2]**
+- `apps/api/src/modules/equipment/controllers/v1/drones.controller.ts` — REST v1 endpoints: drones (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/equipment/controllers/v1/equipment.controller.ts` — REST v1 endpoints: equipment (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/equipment/controllers/v1/rentals.controller.ts` — REST v1 endpoints: rentals (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/equipment/domain/drone-flight.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/equipment/domain/drone-pilot.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/equipment/domain/drone-registration.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/equipment/domain/equipment-asset.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/equipment/domain/equipment-booking.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/equipment/domain/equipment-booking.state.ts` — STATE MACHINE for equipment-booking — the only place its transitions are defined (Law 5) **[P2]**
+- `apps/api/src/modules/equipment/domain/equipment-rate.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/equipment/domain/equipment.events.ts` — domain event definitions published by equipment **[P2]**
+- `apps/api/src/modules/equipment/domain/maintenance-log.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/equipment/dto/create-drone-pilot.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/equipment/dto/create-drone-registration.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/equipment/dto/create-equipment-asset.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/equipment/dto/create-equipment-booking.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/equipment/dto/create-equipment-rate.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/equipment/dto/create-maintenance-log.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/equipment/dto/query-drone-pilot.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/equipment/dto/query-drone-registration.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/equipment/dto/query-equipment-asset.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/equipment/dto/query-equipment-booking.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/equipment/dto/query-equipment-rate.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/equipment/dto/query-maintenance-log.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/equipment/dto/update-equipment-asset.dto.ts` — update payload **[P2]**
+- `apps/api/src/modules/equipment/equipment.module.ts` — NestJS module wiring for equipment **[P2]**
+- `apps/api/src/modules/equipment/events/equipment.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P2]**
+- `apps/api/src/modules/equipment/events/handlers/payment-succeeded.handler.ts` — reacts to 'payment-succeeded' event **[P2]**
+- `apps/api/src/modules/equipment/jobs/booking-confirm-timeout.job.ts` — queue job: booking-confirm-timeout **[P2]**
+- `apps/api/src/modules/equipment/jobs/dgca-licence-expiry.job.ts` — queue job: dgca-licence-expiry **[P2]**
+- `apps/api/src/modules/equipment/jobs/insurance-rc-expiry-alerts.job.ts` — queue job: insurance-rc-expiry-alerts **[P2]**
+- `apps/api/src/modules/equipment/policies/equipment.policies.ts` — permission checks (codes from DB permissions table) **[P2]**
+- `apps/api/src/modules/equipment/repositories/drone-flight.repository.ts` — all SQL for drone-flight (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/equipment/repositories/drone-pilot.repository.ts` — all SQL for drone-pilot (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/equipment/repositories/drone-registration.repository.ts` — all SQL for drone-registration (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/equipment/repositories/equipment-asset.repository.ts` — all SQL for equipment-asset (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/equipment/repositories/equipment-booking.repository.ts` — all SQL for equipment-booking (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/equipment/repositories/equipment-rate.repository.ts` — all SQL for equipment-rate (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/equipment/repositories/maintenance-log.repository.ts` — all SQL for maintenance-log (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/equipment/services/drone-registration.service.ts` — application service / use-cases for drone-registration **[P2]**
+- `apps/api/src/modules/equipment/services/equipment-asset.service.ts` — application service / use-cases for equipment-asset **[P2]**
+- `apps/api/src/modules/equipment/services/equipment-booking.service.ts` — application service / use-cases for equipment-booking **[P2]**
+- `apps/api/src/modules/equipment/services/equipment-rate.service.ts` — application service / use-cases for equipment-rate **[P2]**
+- `apps/api/src/modules/equipment/services/maintenance-log.service.ts` — application service / use-cases for maintenance-log **[P2]**
+- `apps/api/src/modules/exports/README.md` — exports module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P3]**
+- `apps/api/src/modules/exports/__tests__/exporter-registration.service.spec.ts` — unit tests for primary service **[P3]**
+- `apps/api/src/modules/exports/__tests__/exports.e2e-spec.ts` — endpoint integration tests **[P3]**
+- `apps/api/src/modules/exports/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P3]**
+- `apps/api/src/modules/exports/controllers/v1/documents.controller.ts` — REST v1 endpoints: documents (validate→authorize→delegate, no logic) **[P3]**
+- `apps/api/src/modules/exports/controllers/v1/exporters.controller.ts` — REST v1 endpoints: exporters (validate→authorize→delegate, no logic) **[P3]**
+- `apps/api/src/modules/exports/controllers/v1/shipments.controller.ts` — REST v1 endpoints: shipments (validate→authorize→delegate, no logic) **[P3]**
+- `apps/api/src/modules/exports/domain/compliance-requirement.entity.ts` — domain entity (pure TS, no framework imports) **[P3]**
+- `apps/api/src/modules/exports/domain/export-document.entity.ts` — domain entity (pure TS, no framework imports) **[P3]**
+- `apps/api/src/modules/exports/domain/export-shipment.entity.ts` — domain entity (pure TS, no framework imports) **[P3]**
+- `apps/api/src/modules/exports/domain/export-shipment.state.ts` — STATE MACHINE for export-shipment — the only place its transitions are defined (Law 5) **[P3]**
+- `apps/api/src/modules/exports/domain/exporter-registration.entity.ts` — domain entity (pure TS, no framework imports) **[P3]**
+- `apps/api/src/modules/exports/domain/exports.events.ts` — domain event definitions published by exports **[P3]**
+- `apps/api/src/modules/exports/dto/create-compliance-requirement.dto.ts` — create payload (zod/class-validator) **[P3]**
+- `apps/api/src/modules/exports/dto/create-export-document.dto.ts` — create payload (zod/class-validator) **[P3]**
+- `apps/api/src/modules/exports/dto/create-export-shipment.dto.ts` — create payload (zod/class-validator) **[P3]**
+- `apps/api/src/modules/exports/dto/create-exporter-registration.dto.ts` — create payload (zod/class-validator) **[P3]**
+- `apps/api/src/modules/exports/dto/query-compliance-requirement.dto.ts` — list/filter query params (cursor pagination) **[P3]**
+- `apps/api/src/modules/exports/dto/query-export-document.dto.ts` — list/filter query params (cursor pagination) **[P3]**
+- `apps/api/src/modules/exports/dto/query-export-shipment.dto.ts` — list/filter query params (cursor pagination) **[P3]**
+- `apps/api/src/modules/exports/dto/query-exporter-registration.dto.ts` — list/filter query params (cursor pagination) **[P3]**
+- `apps/api/src/modules/exports/dto/update-exporter-registration.dto.ts` — update payload **[P3]**
+- `apps/api/src/modules/exports/events/exports.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P3]**
+- `apps/api/src/modules/exports/exports.module.ts` — NestJS module wiring for exports **[P3]**
+- `apps/api/src/modules/exports/jobs/doc-checklist-reminders.job.ts` — queue job: doc-checklist-reminders **[P3]**
+- `apps/api/src/modules/exports/jobs/rcmc-expiry.job.ts` — queue job: rcmc-expiry **[P3]**
+- `apps/api/src/modules/exports/policies/exports.policies.ts` — permission checks (codes from DB permissions table) **[P3]**
+- `apps/api/src/modules/exports/repositories/compliance-requirement.repository.ts` — all SQL for compliance-requirement (tenant-scoped; only this module queries these tables) **[P3]**
+- `apps/api/src/modules/exports/repositories/export-document.repository.ts` — all SQL for export-document (tenant-scoped; only this module queries these tables) **[P3]**
+- `apps/api/src/modules/exports/repositories/export-shipment.repository.ts` — all SQL for export-shipment (tenant-scoped; only this module queries these tables) **[P3]**
+- `apps/api/src/modules/exports/repositories/exporter-registration.repository.ts` — all SQL for exporter-registration (tenant-scoped; only this module queries these tables) **[P3]**
+- `apps/api/src/modules/exports/services/compliance-requirement.service.ts` — application service / use-cases for compliance-requirement **[P3]**
+- `apps/api/src/modules/exports/services/export-document.service.ts` — application service / use-cases for export-document **[P3]**
+- `apps/api/src/modules/exports/services/export-shipment.service.ts` — application service / use-cases for export-shipment **[P3]**
+- `apps/api/src/modules/exports/services/exporter-registration.service.ts` — application service / use-cases for exporter-registration **[P3]**
+- `apps/api/src/modules/fintech/README.md` — fintech module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P2]**
+- `apps/api/src/modules/fintech/__tests__/financial-partner.service.spec.ts` — unit tests for primary service **[P2]**
+- `apps/api/src/modules/fintech/__tests__/fintech.e2e-spec.ts` — endpoint integration tests **[P2]**
+- `apps/api/src/modules/fintech/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P2]**
+- `apps/api/src/modules/fintech/controllers/v1/claims.controller.ts` — REST v1 endpoints: claims (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/fintech/controllers/v1/credit-scores.controller.ts` — REST v1 endpoints: credit-scores (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/fintech/controllers/v1/groups.controller.ts` — REST v1 endpoints: groups (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/fintech/controllers/v1/insurance.controller.ts` — REST v1 endpoints: insurance (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/fintech/controllers/v1/loan-applications.controller.ts` — REST v1 endpoints: loan-applications (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/fintech/controllers/v1/loan-products.controller.ts` — REST v1 endpoints: loan-products (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/fintech/controllers/v1/loans.controller.ts` — REST v1 endpoints: loans (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/fintech/controllers/v1/partners.controller.ts` — REST v1 endpoints: partners (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/fintech/domain/bnpl-limit.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/fintech/domain/credit-score.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/fintech/domain/finance-group.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/fintech/domain/financial-partner.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/fintech/domain/fintech.events.ts` — domain event definitions published by fintech **[P2]**
+- `apps/api/src/modules/fintech/domain/group-ledger-entry.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/fintech/domain/insurance-claim.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/fintech/domain/insurance-claim.state.ts` — STATE MACHINE for insurance-claim — the only place its transitions are defined (Law 5) **[P2]**
+- `apps/api/src/modules/fintech/domain/insurance-policy.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/fintech/domain/insurance-policy.state.ts` — STATE MACHINE for insurance-policy — the only place its transitions are defined (Law 5) **[P2]**
+- `apps/api/src/modules/fintech/domain/insurance-product.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/fintech/domain/loan-application.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/fintech/domain/loan-application.state.ts` — STATE MACHINE for loan-application — the only place its transitions are defined (Law 5) **[P2]**
+- `apps/api/src/modules/fintech/domain/loan-product.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/fintech/domain/loan-repayment.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/fintech/domain/loan.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/fintech/domain/loan.state.ts` — STATE MACHINE for loan — the only place its transitions are defined (Law 5) **[P2]**
+- `apps/api/src/modules/fintech/dto/create-credit-score.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/fintech/dto/create-financial-partner.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/fintech/dto/create-loan-application.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/fintech/dto/create-loan-product.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/fintech/dto/create-loan-repayment.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/fintech/dto/create-loan.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/fintech/dto/query-credit-score.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/fintech/dto/query-financial-partner.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/fintech/dto/query-loan-application.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/fintech/dto/query-loan-product.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/fintech/dto/query-loan-repayment.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/fintech/dto/query-loan.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/fintech/dto/update-financial-partner.dto.ts` — update payload **[P2]**
+- `apps/api/src/modules/fintech/events/fintech.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P2]**
+- `apps/api/src/modules/fintech/events/handlers/milk-bill-paid.handler.ts` — reacts to 'milk-bill-paid' event **[P2]**
+- `apps/api/src/modules/fintech/events/handlers/order-completed.handler.ts` — reacts to 'order-completed' event **[P2]**
+- `apps/api/src/modules/fintech/events/handlers/weather-alert-issued.handler.ts` — reacts to 'weather-alert-issued' event **[P2]**
+- `apps/api/src/modules/fintech/fintech.module.ts` — NestJS module wiring for fintech **[P2]**
+- `apps/api/src/modules/fintech/jobs/default-early-warning.job.ts` — queue job: default-early-warning **[P2]**
+- `apps/api/src/modules/fintech/jobs/emi-due-reminders.job.ts` — queue job: emi-due-reminders **[P2]**
+- `apps/api/src/modules/fintech/jobs/parametric-trigger-scan.job.ts` — queue job: parametric-trigger-scan **[P2]**
+- `apps/api/src/modules/fintech/jobs/partner-sla-report.job.ts` — queue job: partner-sla-report **[P2]**
+- `apps/api/src/modules/fintech/policies/fintech.policies.ts` — permission checks (codes from DB permissions table) **[P2]**
+- `apps/api/src/modules/fintech/repositories/bnpl-limit.repository.ts` — all SQL for bnpl-limit (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/fintech/repositories/credit-score.repository.ts` — all SQL for credit-score (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/fintech/repositories/finance-group.repository.ts` — all SQL for finance-group (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/fintech/repositories/financial-partner.repository.ts` — all SQL for financial-partner (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/fintech/repositories/group-ledger-entry.repository.ts` — all SQL for group-ledger-entry (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/fintech/repositories/insurance-claim.repository.ts` — all SQL for insurance-claim (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/fintech/repositories/insurance-policy.repository.ts` — all SQL for insurance-policy (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/fintech/repositories/insurance-product.repository.ts` — all SQL for insurance-product (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/fintech/repositories/loan-application.repository.ts` — all SQL for loan-application (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/fintech/repositories/loan-product.repository.ts` — all SQL for loan-product (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/fintech/repositories/loan-repayment.repository.ts` — all SQL for loan-repayment (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/fintech/repositories/loan.repository.ts` — all SQL for loan (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/fintech/services/credit-score.service.ts` — application service / use-cases for credit-score **[P2]**
+- `apps/api/src/modules/fintech/services/financial-partner.service.ts` — application service / use-cases for financial-partner **[P2]**
+- `apps/api/src/modules/fintech/services/loan-application.service.ts` — application service / use-cases for loan-application **[P2]**
+- `apps/api/src/modules/fintech/services/loan-product.service.ts` — application service / use-cases for loan-product **[P2]**
+- `apps/api/src/modules/fintech/services/loan.service.ts` — application service / use-cases for loan **[P2]**
+- `apps/api/src/modules/identity/README.md` — identity module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/identity/__tests__/identity.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/identity/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/identity/__tests__/user.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/identity/controllers/v1/addresses.controller.ts` — REST v1 endpoints: addresses (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/identity/controllers/v1/auth.controller.ts` — REST v1 endpoints: auth (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/identity/controllers/v1/bank-accounts.controller.ts` — REST v1 endpoints: bank-accounts (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/identity/controllers/v1/consents.controller.ts` — REST v1 endpoints: consents (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/identity/controllers/v1/kyc.controller.ts` — REST v1 endpoints: kyc (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/identity/controllers/v1/roles.controller.ts` — REST v1 endpoints: roles (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/identity/controllers/v1/users.controller.ts` — REST v1 endpoints: users (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/identity/domain/address.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/identity/domain/bank-account.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/identity/domain/consent.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/identity/domain/data-subject-request.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/identity/domain/device.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/identity/domain/identity.events.ts` — domain event definitions published by identity **[P1]**
+- `apps/api/src/modules/identity/domain/kyc-document.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/identity/domain/kyc-document.state.ts` — STATE MACHINE for kyc-document — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/identity/domain/permission.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/identity/domain/risk-score.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/identity/domain/role.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/identity/domain/session.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/identity/domain/user-tenant-role.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/identity/domain/user.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/identity/dto/create-address.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/identity/dto/create-kyc-document.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/identity/dto/create-permission.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/identity/dto/create-role.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/identity/dto/create-user-tenant-role.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/identity/dto/create-user.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/identity/dto/query-address.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/identity/dto/query-kyc-document.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/identity/dto/query-permission.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/identity/dto/query-role.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/identity/dto/query-user-tenant-role.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/identity/dto/query-user.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/identity/dto/update-user.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/identity/events/handlers/dispute-resolved.handler.ts` — reacts to 'dispute-resolved' event **[P1]**
+- `apps/api/src/modules/identity/events/handlers/order-completed.handler.ts` — reacts to 'order-completed' event **[P1]**
+- `apps/api/src/modules/identity/events/identity.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/identity/identity.module.ts` — NestJS module wiring for identity **[P1]**
+- `apps/api/src/modules/identity/jobs/dpdp-erasure-cooling.job.ts` — queue job: dpdp-erasure-cooling **[P1]**
+- `apps/api/src/modules/identity/jobs/kyc-expiry-reminders.job.ts` — queue job: kyc-expiry-reminders **[P1]**
+- `apps/api/src/modules/identity/jobs/risk-score-recompute.job.ts` — queue job: risk-score-recompute **[P1]**
+- `apps/api/src/modules/identity/policies/identity.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/identity/repositories/address.repository.ts` — all SQL for address (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/identity/repositories/bank-account.repository.ts` — all SQL for bank-account (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/identity/repositories/consent.repository.ts` — all SQL for consent (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/identity/repositories/data-subject-request.repository.ts` — all SQL for data-subject-request (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/identity/repositories/device.repository.ts` — all SQL for device (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/identity/repositories/kyc-document.repository.ts` — all SQL for kyc-document (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/identity/repositories/permission.repository.ts` — all SQL for permission (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/identity/repositories/risk-score.repository.ts` — all SQL for risk-score (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/identity/repositories/role.repository.ts` — all SQL for role (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/identity/repositories/session.repository.ts` — all SQL for session (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/identity/repositories/user-tenant-role.repository.ts` — all SQL for user-tenant-role (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/identity/repositories/user.repository.ts` — all SQL for user (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/identity/services/kyc-document.service.ts` — application service / use-cases for kyc-document **[P1]**
+- `apps/api/src/modules/identity/services/permission.service.ts` — application service / use-cases for permission **[P1]**
+- `apps/api/src/modules/identity/services/role.service.ts` — application service / use-cases for role **[P1]**
+- `apps/api/src/modules/identity/services/user-tenant-role.service.ts` — application service / use-cases for user-tenant-role **[P1]**
+- `apps/api/src/modules/identity/services/user.service.ts` — application service / use-cases for user **[P1]**
+- `apps/api/src/modules/labour/README.md` — labour module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/labour/__tests__/labour.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/labour/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/labour/__tests__/worker-profile.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/labour/controllers/v1/advances.controller.ts` — REST v1 endpoints: advances (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/labour/controllers/v1/assignments.controller.ts` — REST v1 endpoints: assignments (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/labour/controllers/v1/attendance.controller.ts` — REST v1 endpoints: attendance (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/labour/controllers/v1/bookings.controller.ts` — REST v1 endpoints: bookings (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/labour/controllers/v1/crews.controller.ts` — REST v1 endpoints: crews (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/labour/controllers/v1/grievances.controller.ts` — REST v1 endpoints: grievances (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/labour/controllers/v1/sardars.controller.ts` — REST v1 endpoints: sardars (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/labour/controllers/v1/workers.controller.ts` — REST v1 endpoints: workers (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/labour/domain/attendance-record.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/labour/domain/booking-assignment.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/labour/domain/booking-assignment.state.ts` — STATE MACHINE for booking-assignment — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/labour/domain/crew.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/labour/domain/grievance.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/labour/domain/grievance.state.ts` — STATE MACHINE for grievance — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/labour/domain/labour-booking.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/labour/domain/labour-booking.state.ts` — STATE MACHINE for labour-booking — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/labour/domain/labour.events.ts` — domain event definitions published by labour **[P1]**
+- `apps/api/src/modules/labour/domain/mgnrega-job-card.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/labour/domain/migrant-engagement.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/labour/domain/minimum-wage.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/labour/domain/safety-checklist.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/labour/domain/sardar-profile.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/labour/domain/skill.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/labour/domain/worker-advance.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/labour/domain/worker-advance.state.ts` — STATE MACHINE for worker-advance — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/labour/domain/worker-availability.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/labour/domain/worker-insurance.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/labour/domain/worker-profile.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/labour/dto/create-booking-assignment.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/labour/dto/create-labour-booking.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/labour/dto/create-minimum-wage.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/labour/dto/create-skill.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/labour/dto/create-worker-availability.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/labour/dto/create-worker-profile.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/labour/dto/query-booking-assignment.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/labour/dto/query-labour-booking.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/labour/dto/query-minimum-wage.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/labour/dto/query-skill.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/labour/dto/query-worker-availability.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/labour/dto/query-worker-profile.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/labour/dto/update-worker-profile.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/labour/events/handlers/payout-completed.handler.ts` — reacts to 'payout-completed' event **[P1]**
+- `apps/api/src/modules/labour/events/labour.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/labour/jobs/advance-cycle-audit.job.ts` — queue job: advance-cycle-audit **[P1]**
+- `apps/api/src/modules/labour/jobs/booking-respond-timeout.job.ts` — queue job: booking-respond-timeout **[P1]**
+- `apps/api/src/modules/labour/jobs/minwage-sync.job.ts` — queue job: minwage-sync **[P1]**
+- `apps/api/src/modules/labour/jobs/same-day-wage-sla.job.ts` — queue job: same-day-wage-sla **[P1]**
+- `apps/api/src/modules/labour/labour.module.ts` — NestJS module wiring for labour **[P1]**
+- `apps/api/src/modules/labour/policies/labour.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/labour/repositories/attendance-record.repository.ts` — all SQL for attendance-record (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/labour/repositories/booking-assignment.repository.ts` — all SQL for booking-assignment (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/labour/repositories/crew.repository.ts` — all SQL for crew (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/labour/repositories/grievance.repository.ts` — all SQL for grievance (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/labour/repositories/labour-booking.repository.ts` — all SQL for labour-booking (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/labour/repositories/mgnrega-job-card.repository.ts` — all SQL for mgnrega-job-card (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/labour/repositories/migrant-engagement.repository.ts` — all SQL for migrant-engagement (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/labour/repositories/minimum-wage.repository.ts` — all SQL for minimum-wage (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/labour/repositories/safety-checklist.repository.ts` — all SQL for safety-checklist (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/labour/repositories/sardar-profile.repository.ts` — all SQL for sardar-profile (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/labour/repositories/skill.repository.ts` — all SQL for skill (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/labour/repositories/worker-advance.repository.ts` — all SQL for worker-advance (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/labour/repositories/worker-availability.repository.ts` — all SQL for worker-availability (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/labour/repositories/worker-insurance.repository.ts` — all SQL for worker-insurance (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/labour/repositories/worker-profile.repository.ts` — all SQL for worker-profile (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/labour/services/labour-booking.service.ts` — application service / use-cases for labour-booking **[P1]**
+- `apps/api/src/modules/labour/services/minimum-wage.service.ts` — application service / use-cases for minimum-wage **[P1]**
+- `apps/api/src/modules/labour/services/skill.service.ts` — application service / use-cases for skill **[P1]**
+- `apps/api/src/modules/labour/services/worker-availability.service.ts` — application service / use-cases for worker-availability **[P1]**
+- `apps/api/src/modules/labour/services/worker-profile.service.ts` — application service / use-cases for worker-profile **[P1]**
+- `apps/api/src/modules/land-soil-weather/README.md` — land-soil-weather module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/land-soil-weather/__tests__/land-parcel.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/land-soil-weather/__tests__/land-soil-weather.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/land-soil-weather/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/land-soil-weather/controllers/v1/crop-seasons.controller.ts` — REST v1 endpoints: crop-seasons (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/land-soil-weather/controllers/v1/parcels.controller.ts` — REST v1 endpoints: parcels (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/land-soil-weather/controllers/v1/soil-tests.controller.ts` — REST v1 endpoints: soil-tests (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/land-soil-weather/domain/crop-season.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/land-soil-weather/domain/land-parcel.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/land-soil-weather/domain/land-soil-weather.events.ts` — domain event definitions published by land-soil-weather **[P1]**
+- `apps/api/src/modules/land-soil-weather/domain/soil-test.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/land-soil-weather/domain/weather-alert.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/land-soil-weather/dto/create-crop-season.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/land-soil-weather/dto/create-land-parcel.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/land-soil-weather/dto/create-soil-test.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/land-soil-weather/dto/create-weather-alert.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/land-soil-weather/dto/query-crop-season.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/land-soil-weather/dto/query-land-parcel.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/land-soil-weather/dto/query-soil-test.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/land-soil-weather/dto/query-weather-alert.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/land-soil-weather/dto/update-land-parcel.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/land-soil-weather/events/land-soil-weather.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/land-soil-weather/jobs/advisory-push.job.ts` — queue job: advisory-push **[P1]**
+- `apps/api/src/modules/land-soil-weather/jobs/bhulekh-verify.job.ts` — queue job: bhulekh-verify **[P1]**
+- `apps/api/src/modules/land-soil-weather/jobs/weather-ingest.job.ts` — queue job: weather-ingest **[P1]**
+- `apps/api/src/modules/land-soil-weather/land-soil-weather.module.ts` — NestJS module wiring for land-soil-weather **[P1]**
+- `apps/api/src/modules/land-soil-weather/policies/land-soil-weather.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/land-soil-weather/repositories/crop-season.repository.ts` — all SQL for crop-season (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/land-soil-weather/repositories/land-parcel.repository.ts` — all SQL for land-parcel (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/land-soil-weather/repositories/soil-test.repository.ts` — all SQL for soil-test (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/land-soil-weather/repositories/weather-alert.repository.ts` — all SQL for weather-alert (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/land-soil-weather/services/crop-season.service.ts` — application service / use-cases for crop-season **[P1]**
+- `apps/api/src/modules/land-soil-weather/services/land-parcel.service.ts` — application service / use-cases for land-parcel **[P1]**
+- `apps/api/src/modules/land-soil-weather/services/soil-test.service.ts` — application service / use-cases for soil-test **[P1]**
+- `apps/api/src/modules/land-soil-weather/services/weather-alert.service.ts` — application service / use-cases for weather-alert **[P1]**
+- `apps/api/src/modules/listings/README.md` — listings module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/listings/__tests__/listing.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/listings/__tests__/listings.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/listings/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/listings/controllers/v1/boosts.controller.ts` — REST v1 endpoints: boosts (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/listings/controllers/v1/group-lots.controller.ts` — REST v1 endpoints: group-lots (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/listings/controllers/v1/listings.controller.ts` — REST v1 endpoints: listings (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/listings/domain/group-lot-pledge.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/listings/domain/group-lot.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/listings/domain/group-lot.state.ts` — STATE MACHINE for group-lot — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/listings/domain/listing-attribute.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/listings/domain/listing-boost.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/listings/domain/listing.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/listings/domain/listing.state.ts` — STATE MACHINE for listing — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/listings/domain/listings.events.ts` — domain event definitions published by listings **[P1]**
+- `apps/api/src/modules/listings/domain/price-history.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/listings/dto/create-group-lot-pledge.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/listings/dto/create-group-lot.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/listings/dto/create-listing-attribute.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/listings/dto/create-listing-boost.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/listings/dto/create-listing.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/listings/dto/create-price-history.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/listings/dto/query-group-lot-pledge.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/listings/dto/query-group-lot.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/listings/dto/query-listing-attribute.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/listings/dto/query-listing-boost.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/listings/dto/query-listing.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/listings/dto/query-price-history.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/listings/dto/update-listing.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/listings/events/handlers/auction-settled.handler.ts` — reacts to 'auction-settled' event **[P1]**
+- `apps/api/src/modules/listings/events/handlers/order-completed.handler.ts` — reacts to 'order-completed' event **[P1]**
+- `apps/api/src/modules/listings/events/listings.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/listings/jobs/boost-expiry.job.ts` — queue job: boost-expiry **[P1]**
+- `apps/api/src/modules/listings/jobs/expire-listings.job.ts` — queue job: expire-listings **[P1]**
+- `apps/api/src/modules/listings/jobs/publish-scheduled.job.ts` — queue job: publish-scheduled **[P1]**
+- `apps/api/src/modules/listings/listings.module.ts` — NestJS module wiring for listings **[P1]**
+- `apps/api/src/modules/listings/policies/listings.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/listings/repositories/group-lot-pledge.repository.ts` — all SQL for group-lot-pledge (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/listings/repositories/group-lot.repository.ts` — all SQL for group-lot (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/listings/repositories/listing-attribute.repository.ts` — all SQL for listing-attribute (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/listings/repositories/listing-boost.repository.ts` — all SQL for listing-boost (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/listings/repositories/listing.repository.ts` — all SQL for listing (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/listings/repositories/price-history.repository.ts` — all SQL for price-history (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/listings/services/group-lot-pledge.service.ts` — application service / use-cases for group-lot-pledge **[P1]**
+- `apps/api/src/modules/listings/services/group-lot.service.ts` — application service / use-cases for group-lot **[P1]**
+- `apps/api/src/modules/listings/services/listing-attribute.service.ts` — application service / use-cases for listing-attribute **[P1]**
+- `apps/api/src/modules/listings/services/listing-boost.service.ts` — application service / use-cases for listing-boost **[P1]**
+- `apps/api/src/modules/listings/services/listing.service.ts` — application service / use-cases for listing **[P1]**
+- `apps/api/src/modules/livestock/README.md` — livestock module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P2]**
+- `apps/api/src/modules/livestock/__tests__/animal-species.service.spec.ts` — unit tests for primary service **[P2]**
+- `apps/api/src/modules/livestock/__tests__/livestock.e2e-spec.ts` — endpoint integration tests **[P2]**
+- `apps/api/src/modules/livestock/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P2]**
+- `apps/api/src/modules/livestock/controllers/v1/animals.controller.ts` — REST v1 endpoints: animals (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/livestock/controllers/v1/breeding.controller.ts` — REST v1 endpoints: breeding (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/livestock/controllers/v1/outbreaks.controller.ts` — REST v1 endpoints: outbreaks (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/livestock/controllers/v1/vet-bookings.controller.ts` — REST v1 endpoints: vet-bookings (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/livestock/controllers/v1/vets.controller.ts` — REST v1 endpoints: vets (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/livestock/domain/animal-breed.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/livestock/domain/animal-health-event.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/livestock/domain/animal-species.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/livestock/domain/animal.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/livestock/domain/animal.state.ts` — STATE MACHINE for animal — the only place its transitions are defined (Law 5) **[P2]**
+- `apps/api/src/modules/livestock/domain/disease-outbreak.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/livestock/domain/insemination-record.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/livestock/domain/livestock.events.ts` — domain event definitions published by livestock **[P2]**
+- `apps/api/src/modules/livestock/domain/ownership-transfer.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/livestock/domain/prescription.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/livestock/domain/semen-catalog.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/livestock/domain/vet-booking.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/livestock/domain/vet-booking.state.ts` — STATE MACHINE for vet-booking — the only place its transitions are defined (Law 5) **[P2]**
+- `apps/api/src/modules/livestock/domain/vet-profile.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/livestock/domain/vet-service.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/livestock/dto/create-animal-breed.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/livestock/dto/create-animal-health-event.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/livestock/dto/create-animal-species.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/livestock/dto/create-animal.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/livestock/dto/create-ownership-transfer.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/livestock/dto/create-vet-profile.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/livestock/dto/query-animal-breed.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/livestock/dto/query-animal-health-event.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/livestock/dto/query-animal-species.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/livestock/dto/query-animal.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/livestock/dto/query-ownership-transfer.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/livestock/dto/query-vet-profile.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/livestock/dto/update-animal-species.dto.ts` — update payload **[P2]**
+- `apps/api/src/modules/livestock/events/handlers/order-completed.handler.ts` — reacts to 'order-completed' event **[P2]**
+- `apps/api/src/modules/livestock/events/livestock.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P2]**
+- `apps/api/src/modules/livestock/jobs/inaph-sync.job.ts` — queue job: inaph-sync **[P2]**
+- `apps/api/src/modules/livestock/jobs/outbreak-geofence-alerts.job.ts` — queue job: outbreak-geofence-alerts **[P2]**
+- `apps/api/src/modules/livestock/jobs/pd-due-bookings.job.ts` — queue job: pd-due-bookings **[P2]**
+- `apps/api/src/modules/livestock/jobs/vaccination-reminders.job.ts` — queue job: vaccination-reminders **[P2]**
+- `apps/api/src/modules/livestock/livestock.module.ts` — NestJS module wiring for livestock **[P2]**
+- `apps/api/src/modules/livestock/policies/livestock.policies.ts` — permission checks (codes from DB permissions table) **[P2]**
+- `apps/api/src/modules/livestock/repositories/animal-breed.repository.ts` — all SQL for animal-breed (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/livestock/repositories/animal-health-event.repository.ts` — all SQL for animal-health-event (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/livestock/repositories/animal-species.repository.ts` — all SQL for animal-species (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/livestock/repositories/animal.repository.ts` — all SQL for animal (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/livestock/repositories/disease-outbreak.repository.ts` — all SQL for disease-outbreak (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/livestock/repositories/insemination-record.repository.ts` — all SQL for insemination-record (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/livestock/repositories/ownership-transfer.repository.ts` — all SQL for ownership-transfer (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/livestock/repositories/prescription.repository.ts` — all SQL for prescription (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/livestock/repositories/semen-catalog.repository.ts` — all SQL for semen-catalog (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/livestock/repositories/vet-booking.repository.ts` — all SQL for vet-booking (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/livestock/repositories/vet-profile.repository.ts` — all SQL for vet-profile (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/livestock/repositories/vet-service.repository.ts` — all SQL for vet-service (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/livestock/services/animal-breed.service.ts` — application service / use-cases for animal-breed **[P2]**
+- `apps/api/src/modules/livestock/services/animal-health-event.service.ts` — application service / use-cases for animal-health-event **[P2]**
+- `apps/api/src/modules/livestock/services/animal-species.service.ts` — application service / use-cases for animal-species **[P2]**
+- `apps/api/src/modules/livestock/services/animal.service.ts` — application service / use-cases for animal **[P2]**
+- `apps/api/src/modules/livestock/services/ownership-transfer.service.ts` — application service / use-cases for ownership-transfer **[P2]**
+- `apps/api/src/modules/logistics/README.md` — logistics module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/logistics/__tests__/logistics.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/logistics/__tests__/shipment.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/logistics/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/logistics/controllers/v1/partners.controller.ts` — REST v1 endpoints: partners (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/logistics/controllers/v1/routes.controller.ts` — REST v1 endpoints: routes (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/logistics/controllers/v1/shipments.controller.ts` — REST v1 endpoints: shipments (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/logistics/controllers/v1/zones.controller.ts` — REST v1 endpoints: zones (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/logistics/domain/cold-chain-log.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/logistics/domain/delivery-route.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/logistics/domain/delivery-zone.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/logistics/domain/logistics-partner.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/logistics/domain/logistics.events.ts` — domain event definitions published by logistics **[P1]**
+- `apps/api/src/modules/logistics/domain/pickup-slot.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/logistics/domain/shipment.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/logistics/domain/shipment.state.ts` — STATE MACHINE for shipment — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/logistics/domain/vehicle.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/logistics/dto/create-delivery-route.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/logistics/dto/create-delivery-zone.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/logistics/dto/create-logistics-partner.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/logistics/dto/create-pickup-slot.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/logistics/dto/create-shipment.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/logistics/dto/create-vehicle.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/logistics/dto/query-delivery-route.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/logistics/dto/query-delivery-zone.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/logistics/dto/query-logistics-partner.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/logistics/dto/query-pickup-slot.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/logistics/dto/query-shipment.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/logistics/dto/query-vehicle.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/logistics/dto/update-shipment.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/logistics/events/handlers/order-confirmed.handler.ts` — reacts to 'order-confirmed' event **[P1]**
+- `apps/api/src/modules/logistics/events/logistics.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/logistics/jobs/cold-chain-breach-alerts.job.ts` — queue job: cold-chain-breach-alerts **[P1]**
+- `apps/api/src/modules/logistics/jobs/village-run-consolidation.job.ts` — queue job: village-run-consolidation **[P1]**
+- `apps/api/src/modules/logistics/logistics.module.ts` — NestJS module wiring for logistics **[P1]**
+- `apps/api/src/modules/logistics/policies/logistics.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/logistics/repositories/cold-chain-log.repository.ts` — all SQL for cold-chain-log (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/logistics/repositories/delivery-route.repository.ts` — all SQL for delivery-route (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/logistics/repositories/delivery-zone.repository.ts` — all SQL for delivery-zone (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/logistics/repositories/logistics-partner.repository.ts` — all SQL for logistics-partner (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/logistics/repositories/pickup-slot.repository.ts` — all SQL for pickup-slot (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/logistics/repositories/shipment.repository.ts` — all SQL for shipment (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/logistics/repositories/vehicle.repository.ts` — all SQL for vehicle (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/logistics/services/delivery-zone.service.ts` — application service / use-cases for delivery-zone **[P1]**
+- `apps/api/src/modules/logistics/services/logistics-partner.service.ts` — application service / use-cases for logistics-partner **[P1]**
+- `apps/api/src/modules/logistics/services/pickup-slot.service.ts` — application service / use-cases for pickup-slot **[P1]**
+- `apps/api/src/modules/logistics/services/shipment.service.ts` — application service / use-cases for shipment **[P1]**
+- `apps/api/src/modules/logistics/services/vehicle.service.ts` — application service / use-cases for vehicle **[P1]**
+- `apps/api/src/modules/market-intel/README.md` — market-intel module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/market-intel/__tests__/mandi.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/market-intel/__tests__/market-intel.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/market-intel/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/market-intel/controllers/v1/mandi-prices.controller.ts` — REST v1 endpoints: mandi-prices (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/market-intel/controllers/v1/predictions.controller.ts` — REST v1 endpoints: predictions (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/market-intel/controllers/v1/price-alerts.controller.ts` — REST v1 endpoints: price-alerts (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/market-intel/domain/mandi-price.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/market-intel/domain/mandi.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/market-intel/domain/market-intel.events.ts` — domain event definitions published by market-intel **[P1]**
+- `apps/api/src/modules/market-intel/domain/price-alert.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/market-intel/domain/price-prediction.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/market-intel/domain/search-synonym.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/market-intel/dto/create-mandi-price.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/market-intel/dto/create-mandi.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/market-intel/dto/create-price-alert.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/market-intel/dto/create-price-prediction.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/market-intel/dto/create-search-synonym.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/market-intel/dto/query-mandi-price.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/market-intel/dto/query-mandi.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/market-intel/dto/query-price-alert.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/market-intel/dto/query-price-prediction.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/market-intel/dto/query-search-synonym.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/market-intel/dto/update-mandi.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/market-intel/events/handlers/order-completed.handler.ts` — reacts to 'order-completed' event **[P1]**
+- `apps/api/src/modules/market-intel/events/market-intel.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/market-intel/jobs/agmarknet-ingest.job.ts` — queue job: agmarknet-ingest **[P1]**
+- `apps/api/src/modules/market-intel/jobs/enam-ingest.job.ts` — queue job: enam-ingest **[P1]**
+- `apps/api/src/modules/market-intel/jobs/price-alert-fanout.job.ts` — queue job: price-alert-fanout **[P1]**
+- `apps/api/src/modules/market-intel/jobs/synonym-publish.job.ts` — queue job: synonym-publish **[P1]**
+- `apps/api/src/modules/market-intel/market-intel.module.ts` — NestJS module wiring for market-intel **[P1]**
+- `apps/api/src/modules/market-intel/policies/market-intel.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/market-intel/repositories/mandi-price.repository.ts` — all SQL for mandi-price (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/market-intel/repositories/mandi.repository.ts` — all SQL for mandi (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/market-intel/repositories/price-alert.repository.ts` — all SQL for price-alert (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/market-intel/repositories/price-prediction.repository.ts` — all SQL for price-prediction (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/market-intel/repositories/search-synonym.repository.ts` — all SQL for search-synonym (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/market-intel/services/mandi-price.service.ts` — application service / use-cases for mandi-price **[P1]**
+- `apps/api/src/modules/market-intel/services/mandi.service.ts` — application service / use-cases for mandi **[P1]**
+- `apps/api/src/modules/market-intel/services/price-alert.service.ts` — application service / use-cases for price-alert **[P1]**
+- `apps/api/src/modules/market-intel/services/price-prediction.service.ts` — application service / use-cases for price-prediction **[P1]**
+- `apps/api/src/modules/market-intel/services/search-synonym.service.ts` — application service / use-cases for search-synonym **[P1]**
+- `apps/api/src/modules/memberships/README.md` — memberships module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P2]**
+- `apps/api/src/modules/memberships/__tests__/membership-tier.service.spec.ts` — unit tests for primary service **[P2]**
+- `apps/api/src/modules/memberships/__tests__/memberships.e2e-spec.ts` — endpoint integration tests **[P2]**
+- `apps/api/src/modules/memberships/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P2]**
+- `apps/api/src/modules/memberships/controllers/v1/membership-tiers.controller.ts` — REST v1 endpoints: membership-tiers (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/memberships/controllers/v1/memberships.controller.ts` — REST v1 endpoints: memberships (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/memberships/domain/membership-tier.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/memberships/domain/memberships.events.ts` — domain event definitions published by memberships **[P2]**
+- `apps/api/src/modules/memberships/domain/user-membership.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/memberships/domain/user-membership.state.ts` — STATE MACHINE for user-membership — the only place its transitions are defined (Law 5) **[P2]**
+- `apps/api/src/modules/memberships/dto/create-membership-tier.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/memberships/dto/create-user-membership.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/memberships/dto/query-membership-tier.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/memberships/dto/query-user-membership.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/memberships/dto/update-membership-tier.dto.ts` — update payload **[P2]**
+- `apps/api/src/modules/memberships/events/handlers/payment-succeeded.handler.ts` — reacts to 'payment-succeeded' event **[P2]**
+- `apps/api/src/modules/memberships/events/memberships.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P2]**
+- `apps/api/src/modules/memberships/jobs/membership-renewals.job.ts` — queue job: membership-renewals **[P2]**
+- `apps/api/src/modules/memberships/memberships.module.ts` — NestJS module wiring for memberships **[P2]**
+- `apps/api/src/modules/memberships/policies/memberships.policies.ts` — permission checks (codes from DB permissions table) **[P2]**
+- `apps/api/src/modules/memberships/repositories/membership-tier.repository.ts` — all SQL for membership-tier (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/memberships/repositories/user-membership.repository.ts` — all SQL for user-membership (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/memberships/services/membership-tier.service.ts` — application service / use-cases for membership-tier **[P2]**
+- `apps/api/src/modules/memberships/services/user-membership.service.ts` — application service / use-cases for user-membership **[P2]**
+- `apps/api/src/modules/offers/README.md` — offers module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/offers/__tests__/listing-offer.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/offers/__tests__/offers.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/offers/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/offers/controllers/v1/offers.controller.ts` — REST v1 endpoints: offers (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/offers/domain/listing-offer.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/offers/domain/listing-offer.state.ts` — STATE MACHINE for listing-offer — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/offers/domain/offers.events.ts` — domain event definitions published by offers **[P1]**
+- `apps/api/src/modules/offers/dto/create-listing-offer.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/offers/dto/query-listing-offer.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/offers/dto/update-listing-offer.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/offers/events/offers.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/offers/jobs/expire-offers.job.ts` — queue job: expire-offers **[P1]**
+- `apps/api/src/modules/offers/offers.module.ts` — NestJS module wiring for offers **[P1]**
+- `apps/api/src/modules/offers/policies/offers.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/offers/repositories/listing-offer.repository.ts` — all SQL for listing-offer (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/offers/services/listing-offer.service.ts` — application service / use-cases for listing-offer **[P1]**
+- `apps/api/src/modules/orders/README.md` — orders module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/orders/__tests__/order.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/orders/__tests__/orders.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/orders/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/orders/controllers/v1/carts.controller.ts` — REST v1 endpoints: carts (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/orders/controllers/v1/checkout.controller.ts` — REST v1 endpoints: checkout (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/orders/controllers/v1/orders.controller.ts` — REST v1 endpoints: orders (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/orders/domain/cart-item.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/orders/domain/cart.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/orders/domain/checkout-group.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/orders/domain/order-item.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/orders/domain/order.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/orders/domain/order.state.ts` — STATE MACHINE for order — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/orders/domain/orders.events.ts` — domain event definitions published by orders **[P1]**
+- `apps/api/src/modules/orders/dto/create-cart-item.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/orders/dto/create-cart.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/orders/dto/create-checkout-group.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/orders/dto/create-order-item.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/orders/dto/create-order.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/orders/dto/query-cart-item.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/orders/dto/query-cart.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/orders/dto/query-checkout-group.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/orders/dto/query-order-item.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/orders/dto/query-order.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/orders/dto/update-order.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/orders/events/handlers/dispute-resolved.handler.ts` — reacts to 'dispute-resolved' event **[P1]**
+- `apps/api/src/modules/orders/events/handlers/payment-succeeded.handler.ts` — reacts to 'payment-succeeded' event **[P1]**
+- `apps/api/src/modules/orders/events/handlers/shipment-delivered.handler.ts` — reacts to 'shipment-delivered' event **[P1]**
+- `apps/api/src/modules/orders/events/orders.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/orders/jobs/abandoned-carts.job.ts` — queue job: abandoned-carts **[P1]**
+- `apps/api/src/modules/orders/jobs/auto-complete-quality-window.job.ts` — queue job: auto-complete-quality-window **[P1]**
+- `apps/api/src/modules/orders/jobs/seller-confirm-timeout.job.ts` — queue job: seller-confirm-timeout **[P1]**
+- `apps/api/src/modules/orders/orders.module.ts` — NestJS module wiring for orders **[P1]**
+- `apps/api/src/modules/orders/policies/orders.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/orders/repositories/cart-item.repository.ts` — all SQL for cart-item (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/orders/repositories/cart.repository.ts` — all SQL for cart (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/orders/repositories/checkout-group.repository.ts` — all SQL for checkout-group (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/orders/repositories/order-item.repository.ts` — all SQL for order-item (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/orders/repositories/order.repository.ts` — all SQL for order (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/orders/services/cart-item.service.ts` — application service / use-cases for cart-item **[P1]**
+- `apps/api/src/modules/orders/services/cart.service.ts` — application service / use-cases for cart **[P1]**
+- `apps/api/src/modules/orders/services/checkout-group.service.ts` — application service / use-cases for checkout-group **[P1]**
+- `apps/api/src/modules/orders/services/order-item.service.ts` — application service / use-cases for order-item **[P1]**
+- `apps/api/src/modules/orders/services/order.service.ts` — application service / use-cases for order **[P1]**
+- `apps/api/src/modules/payments/README.md` — payments module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/payments/__tests__/payment.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/payments/__tests__/payments.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/payments/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/payments/controllers/v1/commission-rules.controller.ts` — REST v1 endpoints: commission-rules (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/payments/controllers/v1/invoices.controller.ts` — REST v1 endpoints: invoices (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/payments/controllers/v1/payments.controller.ts` — REST v1 endpoints: payments (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/payments/controllers/v1/payouts.controller.ts` — REST v1 endpoints: payouts (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/payments/domain/charge-definition.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/payments/domain/commission-rule.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/payments/domain/payment.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/payments/domain/payment.state.ts` — STATE MACHINE for payment — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/payments/domain/payments.events.ts` — domain event definitions published by payments **[P1]**
+- `apps/api/src/modules/payments/domain/payout-batch.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/payments/domain/payout.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/payments/domain/payout.state.ts` — STATE MACHINE for payout — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/payments/domain/settlement-statement.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/payments/domain/tax-rule.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/payments/domain/trade-invoice.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/payments/dto/create-commission-rule.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/payments/dto/create-payment.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/payments/dto/create-payout-batch.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/payments/dto/create-payout.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/payments/dto/create-settlement-statement.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/payments/dto/create-trade-invoice.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/payments/dto/query-commission-rule.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/payments/dto/query-payment.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/payments/dto/query-payout-batch.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/payments/dto/query-payout.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/payments/dto/query-settlement-statement.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/payments/dto/query-trade-invoice.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/payments/dto/update-payment.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/payments/events/handlers/booking-clocked-out.handler.ts` — reacts to 'booking-clocked-out' event **[P1]**
+- `apps/api/src/modules/payments/events/handlers/order-completed.handler.ts` — reacts to 'order-completed' event **[P1]**
+- `apps/api/src/modules/payments/events/handlers/razorpay-webhook.handler.ts` — reacts to 'razorpay-webhook' event **[P1]**
+- `apps/api/src/modules/payments/events/payments.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/payments/jobs/daily-gateway-recon.job.ts` — queue job: daily-gateway-recon **[P1]**
+- `apps/api/src/modules/payments/jobs/payout-queue-monitor.job.ts` — queue job: payout-queue-monitor **[P1]**
+- `apps/api/src/modules/payments/jobs/settlement-statements.job.ts` — queue job: settlement-statements **[P1]**
+- `apps/api/src/modules/payments/jobs/wage-priority-lane.job.ts` — queue job: wage-priority-lane **[P1]**
+- `apps/api/src/modules/payments/payments.module.ts` — NestJS module wiring for payments **[P1]**
+- `apps/api/src/modules/payments/policies/payments.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/payments/repositories/charge-definition.repository.ts` — all SQL for charge-definition (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/payments/repositories/commission-rule.repository.ts` — all SQL for commission-rule (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/payments/repositories/payment.repository.ts` — all SQL for payment (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/payments/repositories/payout-batch.repository.ts` — all SQL for payout-batch (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/payments/repositories/payout.repository.ts` — all SQL for payout (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/payments/repositories/settlement-statement.repository.ts` — all SQL for settlement-statement (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/payments/repositories/tax-rule.repository.ts` — all SQL for tax-rule (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/payments/repositories/trade-invoice.repository.ts` — all SQL for trade-invoice (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/payments/services/payment.service.ts` — application service / use-cases for payment **[P1]**
+- `apps/api/src/modules/payments/services/payout-batch.service.ts` — application service / use-cases for payout-batch **[P1]**
+- `apps/api/src/modules/payments/services/payout.service.ts` — application service / use-cases for payout **[P1]**
+- `apps/api/src/modules/payments/services/settlement-statement.service.ts` — application service / use-cases for settlement-statement **[P1]**
+- `apps/api/src/modules/payments/services/trade-invoice.service.ts` — application service / use-cases for trade-invoice **[P1]**
+- `apps/api/src/modules/promotions/README.md` — promotions module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P2]**
+- `apps/api/src/modules/promotions/__tests__/promotion.service.spec.ts` — unit tests for primary service **[P2]**
+- `apps/api/src/modules/promotions/__tests__/promotions.e2e-spec.ts` — endpoint integration tests **[P2]**
+- `apps/api/src/modules/promotions/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P2]**
+- `apps/api/src/modules/promotions/controllers/v1/coupons.controller.ts` — REST v1 endpoints: coupons (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/promotions/controllers/v1/promotions.controller.ts` — REST v1 endpoints: promotions (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/promotions/domain/coupon-redemption.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/promotions/domain/coupon.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/promotions/domain/promotion.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/promotions/domain/promotion.state.ts` — STATE MACHINE for promotion — the only place its transitions are defined (Law 5) **[P2]**
+- `apps/api/src/modules/promotions/domain/promotions.events.ts` — domain event definitions published by promotions **[P2]**
+- `apps/api/src/modules/promotions/dto/create-coupon-redemption.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/promotions/dto/create-coupon.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/promotions/dto/create-promotion.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/promotions/dto/query-coupon-redemption.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/promotions/dto/query-coupon.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/promotions/dto/query-promotion.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/promotions/dto/update-promotion.dto.ts` — update payload **[P2]**
+- `apps/api/src/modules/promotions/events/handlers/order-created.handler.ts` — reacts to 'order-created' event **[P2]**
+- `apps/api/src/modules/promotions/events/promotions.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P2]**
+- `apps/api/src/modules/promotions/jobs/festival-campaign-scheduler.job.ts` — queue job: festival-campaign-scheduler **[P2]**
+- `apps/api/src/modules/promotions/jobs/promo-budget-watch.job.ts` — queue job: promo-budget-watch **[P2]**
+- `apps/api/src/modules/promotions/policies/promotions.policies.ts` — permission checks (codes from DB permissions table) **[P2]**
+- `apps/api/src/modules/promotions/promotions.module.ts` — NestJS module wiring for promotions **[P2]**
+- `apps/api/src/modules/promotions/repositories/coupon-redemption.repository.ts` — all SQL for coupon-redemption (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/promotions/repositories/coupon.repository.ts` — all SQL for coupon (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/promotions/repositories/promotion.repository.ts` — all SQL for promotion (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/promotions/services/coupon-redemption.service.ts` — application service / use-cases for coupon-redemption **[P2]**
+- `apps/api/src/modules/promotions/services/coupon.service.ts` — application service / use-cases for coupon **[P2]**
+- `apps/api/src/modules/promotions/services/promotion.service.ts` — application service / use-cases for promotion **[P2]**
+- `apps/api/src/modules/requirements/README.md` — requirements module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/requirements/__tests__/requirement.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/requirements/__tests__/requirements.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/requirements/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/requirements/controllers/v1/requirements.controller.ts` — REST v1 endpoints: requirements (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/requirements/controllers/v1/responses.controller.ts` — REST v1 endpoints: responses (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/requirements/domain/requirement-response.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/requirements/domain/requirement.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/requirements/domain/requirement.state.ts` — STATE MACHINE for requirement — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/requirements/domain/requirements.events.ts` — domain event definitions published by requirements **[P1]**
+- `apps/api/src/modules/requirements/dto/create-requirement-response.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/requirements/dto/create-requirement.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/requirements/dto/query-requirement-response.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/requirements/dto/query-requirement.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/requirements/dto/update-requirement.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/requirements/events/handlers/listing-published.handler.ts` — reacts to 'listing-published' event **[P1]**
+- `apps/api/src/modules/requirements/events/requirements.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/requirements/jobs/expire-requirements.job.ts` — queue job: expire-requirements **[P1]**
+- `apps/api/src/modules/requirements/jobs/match-notifications.job.ts` — queue job: match-notifications **[P1]**
+- `apps/api/src/modules/requirements/policies/requirements.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/requirements/repositories/requirement-response.repository.ts` — all SQL for requirement-response (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/requirements/repositories/requirement.repository.ts` — all SQL for requirement (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/requirements/requirements.module.ts` — NestJS module wiring for requirements **[P1]**
+- `apps/api/src/modules/requirements/services/requirement-response.service.ts` — application service / use-cases for requirement-response **[P1]**
+- `apps/api/src/modules/requirements/services/requirement.service.ts` — application service / use-cases for requirement **[P1]**
+- `apps/api/src/modules/reviews/README.md` — reviews module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/reviews/__tests__/review.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/reviews/__tests__/reviews.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/reviews/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/reviews/controllers/v1/reviews.controller.ts` — REST v1 endpoints: reviews (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/reviews/domain/review.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/reviews/domain/reviews.events.ts` — domain event definitions published by reviews **[P1]**
+- `apps/api/src/modules/reviews/dto/create-review.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/reviews/dto/query-review.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/reviews/dto/update-review.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/reviews/events/handlers/booking-completed.handler.ts` — reacts to 'booking-completed' event **[P1]**
+- `apps/api/src/modules/reviews/events/handlers/order-completed.handler.ts` — reacts to 'order-completed' event **[P1]**
+- `apps/api/src/modules/reviews/events/reviews.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/reviews/jobs/review-prompts.job.ts` — queue job: review-prompts **[P1]**
+- `apps/api/src/modules/reviews/policies/reviews.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/reviews/repositories/review.repository.ts` — all SQL for review (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/reviews/reviews.module.ts` — NestJS module wiring for reviews **[P1]**
+- `apps/api/src/modules/reviews/services/review.service.ts` — application service / use-cases for review **[P1]**
+- `apps/api/src/modules/schemes/README.md` — schemes module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P2]**
+- `apps/api/src/modules/schemes/__tests__/scheme-authority.service.spec.ts` — unit tests for primary service **[P2]**
+- `apps/api/src/modules/schemes/__tests__/schemes.e2e-spec.ts` — endpoint integration tests **[P2]**
+- `apps/api/src/modules/schemes/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P2]**
+- `apps/api/src/modules/schemes/controllers/v1/applications.controller.ts` — REST v1 endpoints: applications (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/schemes/controllers/v1/eligibility.controller.ts` — REST v1 endpoints: eligibility (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/schemes/controllers/v1/schemes.controller.ts` — REST v1 endpoints: schemes (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/schemes/domain/dbt-transfer.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/schemes/domain/scheme-application.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/schemes/domain/scheme-application.state.ts` — STATE MACHINE for scheme-application — the only place its transitions are defined (Law 5) **[P2]**
+- `apps/api/src/modules/schemes/domain/scheme-authority.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/schemes/domain/scheme.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/schemes/domain/schemes.events.ts` — domain event definitions published by schemes **[P2]**
+- `apps/api/src/modules/schemes/dto/create-dbt-transfer.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/schemes/dto/create-scheme-application.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/schemes/dto/create-scheme-authority.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/schemes/dto/create-scheme.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/schemes/dto/query-dbt-transfer.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/schemes/dto/query-scheme-application.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/schemes/dto/query-scheme-authority.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/schemes/dto/query-scheme.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/schemes/dto/update-scheme-authority.dto.ts` — update payload **[P2]**
+- `apps/api/src/modules/schemes/events/schemes.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P2]**
+- `apps/api/src/modules/schemes/jobs/pfms-sync.job.ts` — queue job: pfms-sync **[P2]**
+- `apps/api/src/modules/schemes/jobs/scheme-rule-refresh.job.ts` — queue job: scheme-rule-refresh **[P2]**
+- `apps/api/src/modules/schemes/jobs/stuck-application-escalation.job.ts` — queue job: stuck-application-escalation **[P2]**
+- `apps/api/src/modules/schemes/jobs/window-open-alerts.job.ts` — queue job: window-open-alerts **[P2]**
+- `apps/api/src/modules/schemes/policies/schemes.policies.ts` — permission checks (codes from DB permissions table) **[P2]**
+- `apps/api/src/modules/schemes/repositories/dbt-transfer.repository.ts` — all SQL for dbt-transfer (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/schemes/repositories/scheme-application.repository.ts` — all SQL for scheme-application (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/schemes/repositories/scheme-authority.repository.ts` — all SQL for scheme-authority (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/schemes/repositories/scheme.repository.ts` — all SQL for scheme (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/schemes/schemes.module.ts` — NestJS module wiring for schemes **[P2]**
+- `apps/api/src/modules/schemes/services/dbt-transfer.service.ts` — application service / use-cases for dbt-transfer **[P2]**
+- `apps/api/src/modules/schemes/services/scheme-application.service.ts` — application service / use-cases for scheme-application **[P2]**
+- `apps/api/src/modules/schemes/services/scheme-authority.service.ts` — application service / use-cases for scheme-authority **[P2]**
+- `apps/api/src/modules/schemes/services/scheme.service.ts` — application service / use-cases for scheme **[P2]**
+- `apps/api/src/modules/services-marketplace/README.md` — services-marketplace module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P2]**
+- `apps/api/src/modules/services-marketplace/__tests__/service-offering.service.spec.ts` — unit tests for primary service **[P2]**
+- `apps/api/src/modules/services-marketplace/__tests__/services-marketplace.e2e-spec.ts` — endpoint integration tests **[P2]**
+- `apps/api/src/modules/services-marketplace/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P2]**
+- `apps/api/src/modules/services-marketplace/controllers/v1/bookings.controller.ts` — REST v1 endpoints: bookings (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/services-marketplace/controllers/v1/offerings.controller.ts` — REST v1 endpoints: offerings (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/services-marketplace/domain/service-booking.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/services-marketplace/domain/service-booking.state.ts` — STATE MACHINE for service-booking — the only place its transitions are defined (Law 5) **[P2]**
+- `apps/api/src/modules/services-marketplace/domain/service-offering.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/services-marketplace/domain/services-marketplace.events.ts` — domain event definitions published by services-marketplace **[P2]**
+- `apps/api/src/modules/services-marketplace/dto/create-service-booking.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/services-marketplace/dto/create-service-offering.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/services-marketplace/dto/query-service-booking.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/services-marketplace/dto/query-service-offering.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/services-marketplace/dto/update-service-offering.dto.ts` — update payload **[P2]**
+- `apps/api/src/modules/services-marketplace/events/handlers/payment-succeeded.handler.ts` — reacts to 'payment-succeeded' event **[P2]**
+- `apps/api/src/modules/services-marketplace/events/services-marketplace.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P2]**
+- `apps/api/src/modules/services-marketplace/jobs/booking-reminders.job.ts` — queue job: booking-reminders **[P2]**
+- `apps/api/src/modules/services-marketplace/policies/services-marketplace.policies.ts` — permission checks (codes from DB permissions table) **[P2]**
+- `apps/api/src/modules/services-marketplace/repositories/service-booking.repository.ts` — all SQL for service-booking (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/services-marketplace/repositories/service-offering.repository.ts` — all SQL for service-offering (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/services-marketplace/services-marketplace.module.ts` — NestJS module wiring for services-marketplace **[P2]**
+- `apps/api/src/modules/services-marketplace/services/service-booking.service.ts` — application service / use-cases for service-booking **[P2]**
+- `apps/api/src/modules/services-marketplace/services/service-offering.service.ts` — application service / use-cases for service-offering **[P2]**
+- `apps/api/src/modules/support/README.md` — support module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/support/__tests__/support-ticket.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/support/__tests__/support.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/support/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/support/controllers/v1/tickets.controller.ts` — REST v1 endpoints: tickets (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/support/domain/support-ticket.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/support/domain/support-ticket.state.ts` — STATE MACHINE for support-ticket — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/support/domain/support.events.ts` — domain event definitions published by support **[P1]**
+- `apps/api/src/modules/support/dto/create-support-ticket.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/support/dto/query-support-ticket.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/support/dto/update-support-ticket.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/support/events/handlers/dispute-escalated.handler.ts` — reacts to 'dispute-escalated' event **[P1]**
+- `apps/api/src/modules/support/events/support.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/support/jobs/csat-survey.job.ts` — queue job: csat-survey **[P1]**
+- `apps/api/src/modules/support/jobs/sla-breach-escalation.job.ts` — queue job: sla-breach-escalation **[P1]**
+- `apps/api/src/modules/support/policies/support.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/support/repositories/support-ticket.repository.ts` — all SQL for support-ticket (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/support/services/support-ticket.service.ts` — application service / use-cases for support-ticket **[P1]**
+- `apps/api/src/modules/support/support.module.ts` — NestJS module wiring for support **[P1]**
+- `apps/api/src/modules/tenancy/README.md` — tenancy module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P1]**
+- `apps/api/src/modules/tenancy/__tests__/tenancy.e2e-spec.ts` — endpoint integration tests **[P1]**
+- `apps/api/src/modules/tenancy/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P1]**
+- `apps/api/src/modules/tenancy/__tests__/tenant.service.spec.ts` — unit tests for primary service **[P1]**
+- `apps/api/src/modules/tenancy/controllers/v1/plans.controller.ts` — REST v1 endpoints: plans (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/tenancy/controllers/v1/subscriptions.controller.ts` — REST v1 endpoints: subscriptions (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/tenancy/controllers/v1/tenant-settings.controller.ts` — REST v1 endpoints: tenant-settings (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/tenancy/controllers/v1/tenants.controller.ts` — REST v1 endpoints: tenants (validate→authorize→delegate, no logic) **[P1]**
+- `apps/api/src/modules/tenancy/domain/plan.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/tenancy/domain/saas-invoice.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/tenancy/domain/subscription.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/tenancy/domain/subscription.state.ts` — STATE MACHINE for subscription — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/tenancy/domain/tenancy.events.ts` — domain event definitions published by tenancy **[P1]**
+- `apps/api/src/modules/tenancy/domain/tenant-domain.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/tenancy/domain/tenant-feature.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/tenancy/domain/tenant-settings.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/tenancy/domain/tenant.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/tenancy/domain/tenant.state.ts` — STATE MACHINE for tenant — the only place its transitions are defined (Law 5) **[P1]**
+- `apps/api/src/modules/tenancy/domain/usage-counter.entity.ts` — domain entity (pure TS, no framework imports) **[P1]**
+- `apps/api/src/modules/tenancy/dto/create-plan.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/tenancy/dto/create-saas-invoice.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/tenancy/dto/create-subscription.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/tenancy/dto/create-tenant-domain.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/tenancy/dto/create-tenant-settings.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/tenancy/dto/create-tenant.dto.ts` — create payload (zod/class-validator) **[P1]**
+- `apps/api/src/modules/tenancy/dto/query-plan.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/tenancy/dto/query-saas-invoice.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/tenancy/dto/query-subscription.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/tenancy/dto/query-tenant-domain.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/tenancy/dto/query-tenant-settings.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/tenancy/dto/query-tenant.dto.ts` — list/filter query params (cursor pagination) **[P1]**
+- `apps/api/src/modules/tenancy/dto/update-tenant.dto.ts` — update payload **[P1]**
+- `apps/api/src/modules/tenancy/events/handlers/payment-succeeded.handler.ts` — reacts to 'payment-succeeded' event **[P1]**
+- `apps/api/src/modules/tenancy/events/tenancy.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P1]**
+- `apps/api/src/modules/tenancy/jobs/grace-period.job.ts` — queue job: grace-period **[P1]**
+- `apps/api/src/modules/tenancy/jobs/renewal-invoices.job.ts` — queue job: renewal-invoices **[P1]**
+- `apps/api/src/modules/tenancy/jobs/trial-expiry.job.ts` — queue job: trial-expiry **[P1]**
+- `apps/api/src/modules/tenancy/jobs/usage-limit-alerts.job.ts` — queue job: usage-limit-alerts **[P1]**
+- `apps/api/src/modules/tenancy/policies/tenancy.policies.ts` — permission checks (codes from DB permissions table) **[P1]**
+- `apps/api/src/modules/tenancy/repositories/plan.repository.ts` — all SQL for plan (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/tenancy/repositories/saas-invoice.repository.ts` — all SQL for saas-invoice (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/tenancy/repositories/subscription.repository.ts` — all SQL for subscription (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/tenancy/repositories/tenant-domain.repository.ts` — all SQL for tenant-domain (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/tenancy/repositories/tenant-feature.repository.ts` — all SQL for tenant-feature (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/tenancy/repositories/tenant-settings.repository.ts` — all SQL for tenant-settings (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/tenancy/repositories/tenant.repository.ts` — all SQL for tenant (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/tenancy/repositories/usage-counter.repository.ts` — all SQL for usage-counter (tenant-scoped; only this module queries these tables) **[P1]**
+- `apps/api/src/modules/tenancy/services/plan.service.ts` — application service / use-cases for plan **[P1]**
+- `apps/api/src/modules/tenancy/services/saas-invoice.service.ts` — application service / use-cases for saas-invoice **[P1]**
+- `apps/api/src/modules/tenancy/services/subscription.service.ts` — application service / use-cases for subscription **[P1]**
+- `apps/api/src/modules/tenancy/services/tenant-domain.service.ts` — application service / use-cases for tenant-domain **[P1]**
+- `apps/api/src/modules/tenancy/services/tenant.service.ts` — application service / use-cases for tenant **[P1]**
+- `apps/api/src/modules/tenancy/tenancy.module.ts` — NestJS module wiring for tenancy **[P1]**
+- `apps/api/src/modules/traceability/README.md` — traceability module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P2]**
+- `apps/api/src/modules/traceability/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P2]**
+- `apps/api/src/modules/traceability/__tests__/trace-lot.service.spec.ts` — unit tests for primary service **[P2]**
+- `apps/api/src/modules/traceability/__tests__/traceability.e2e-spec.ts` — endpoint integration tests **[P2]**
+- `apps/api/src/modules/traceability/controllers/v1/public-scan.controller.ts` — REST v1 endpoints: public-scan (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/traceability/controllers/v1/trace-lots.controller.ts` — REST v1 endpoints: trace-lots (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/traceability/domain/trace-event.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/traceability/domain/trace-lot.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/traceability/domain/traceability.events.ts` — domain event definitions published by traceability **[P2]**
+- `apps/api/src/modules/traceability/dto/create-trace-event.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/traceability/dto/create-trace-lot.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/traceability/dto/query-trace-event.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/traceability/dto/query-trace-lot.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/traceability/dto/update-trace-lot.dto.ts` — update payload **[P2]**
+- `apps/api/src/modules/traceability/events/handlers/order-events-fanout.handler.ts` — reacts to 'order-events-fanout' event **[P2]**
+- `apps/api/src/modules/traceability/events/handlers/shipment-events-fanout.handler.ts` — reacts to 'shipment-events-fanout' event **[P2]**
+- `apps/api/src/modules/traceability/events/traceability.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P2]**
+- `apps/api/src/modules/traceability/jobs/anchor-hashes.job.ts` — queue job: anchor-hashes **[P2]**
+- `apps/api/src/modules/traceability/policies/traceability.policies.ts` — permission checks (codes from DB permissions table) **[P2]**
+- `apps/api/src/modules/traceability/repositories/trace-event.repository.ts` — all SQL for trace-event (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/traceability/repositories/trace-lot.repository.ts` — all SQL for trace-lot (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/traceability/services/trace-event.service.ts` — application service / use-cases for trace-event **[P2]**
+- `apps/api/src/modules/traceability/services/trace-lot.service.ts` — application service / use-cases for trace-lot **[P2]**
+- `apps/api/src/modules/traceability/traceability.module.ts` — NestJS module wiring for traceability **[P2]**
+- `apps/api/src/modules/warehousing/README.md` — warehousing module — follows the listings blueprint; PRD mapping in docs/architecture/module-map.md **[P2]**
+- `apps/api/src/modules/warehousing/__tests__/tenant-isolation.spec.ts` — MANDATORY: cross-tenant access must fail (CI gate) **[P2]**
+- `apps/api/src/modules/warehousing/__tests__/warehouse.service.spec.ts` — unit tests for primary service **[P2]**
+- `apps/api/src/modules/warehousing/__tests__/warehousing.e2e-spec.ts` — endpoint integration tests **[P2]**
+- `apps/api/src/modules/warehousing/controllers/v1/nwr.controller.ts` — REST v1 endpoints: nwr (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/warehousing/controllers/v1/storage-bookings.controller.ts` — REST v1 endpoints: storage-bookings (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/warehousing/controllers/v1/warehouses.controller.ts` — REST v1 endpoints: warehouses (validate→authorize→delegate, no logic) **[P2]**
+- `apps/api/src/modules/warehousing/domain/assay-report.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/warehousing/domain/nwr-receipt.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/warehousing/domain/nwr-receipt.state.ts` — STATE MACHINE for nwr-receipt — the only place its transitions are defined (Law 5) **[P2]**
+- `apps/api/src/modules/warehousing/domain/storage-booking.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/warehousing/domain/storage-booking.state.ts` — STATE MACHINE for storage-booking — the only place its transitions are defined (Law 5) **[P2]**
+- `apps/api/src/modules/warehousing/domain/warehouse.entity.ts` — domain entity (pure TS, no framework imports) **[P2]**
+- `apps/api/src/modules/warehousing/domain/warehousing.events.ts` — domain event definitions published by warehousing **[P2]**
+- `apps/api/src/modules/warehousing/dto/create-assay-report.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/warehousing/dto/create-nwr-receipt.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/warehousing/dto/create-storage-booking.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/warehousing/dto/create-warehouse.dto.ts` — create payload (zod/class-validator) **[P2]**
+- `apps/api/src/modules/warehousing/dto/query-assay-report.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/warehousing/dto/query-nwr-receipt.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/warehousing/dto/query-storage-booking.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/warehousing/dto/query-warehouse.dto.ts` — list/filter query params (cursor pagination) **[P2]**
+- `apps/api/src/modules/warehousing/dto/update-warehouse.dto.ts` — update payload **[P2]**
+- `apps/api/src/modules/warehousing/events/handlers/loan-disbursed.handler.ts` — reacts to 'loan-disbursed' event **[P2]**
+- `apps/api/src/modules/warehousing/events/warehousing.publisher.ts` — writes outbox events in the SAME db txn (Law 4) **[P2]**
+- `apps/api/src/modules/warehousing/jobs/nwr-mark-to-market.job.ts` — queue job: nwr-mark-to-market **[P2]**
+- `apps/api/src/modules/warehousing/jobs/reassay-due.job.ts` — queue job: reassay-due **[P2]**
+- `apps/api/src/modules/warehousing/policies/warehousing.policies.ts` — permission checks (codes from DB permissions table) **[P2]**
+- `apps/api/src/modules/warehousing/repositories/assay-report.repository.ts` — all SQL for assay-report (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/warehousing/repositories/nwr-receipt.repository.ts` — all SQL for nwr-receipt (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/warehousing/repositories/storage-booking.repository.ts` — all SQL for storage-booking (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/warehousing/repositories/warehouse.repository.ts` — all SQL for warehouse (tenant-scoped; only this module queries these tables) **[P2]**
+- `apps/api/src/modules/warehousing/services/assay-report.service.ts` — application service / use-cases for assay-report **[P2]**
+- `apps/api/src/modules/warehousing/services/nwr-receipt.service.ts` — application service / use-cases for nwr-receipt **[P2]**
+- `apps/api/src/modules/warehousing/services/storage-booking.service.ts` — application service / use-cases for storage-booking **[P2]**
+- `apps/api/src/modules/warehousing/services/warehouse.service.ts` — application service / use-cases for warehouse **[P2]**
+- `apps/api/src/modules/warehousing/warehousing.module.ts` — NestJS module wiring for warehousing **[P2]**
+- `apps/api/src/router.v1.ts` — API bootstrap **[P1]**
+- `apps/api/src/shared/constants/limits.ts` — shared util **[P1]**
+- `apps/api/src/shared/errors/app-error.ts` — shared util **[P1]**
+- `apps/api/src/shared/errors/error-codes.ts` — shared util **[P1]**
+- `apps/api/src/shared/pagination/cursor.ts` — shared util **[P1]**
+- `apps/api/src/shared/types/common.ts` — shared util **[P1]**
+- `apps/api/src/shared/utils/dates.ts` — shared util **[P1]**
+- `apps/api/src/shared/utils/money.ts` — minor units math ONLY **[P1]**
+- `apps/api/src/shared/utils/phone.ts` — shared util **[P1]**
+
+## apps/mobile  (197 files)
+
+- `apps/mobile/.env.example` — mobile config **[P1]**
+- `apps/mobile/app.json` — mobile config **[P1]**
+- `apps/mobile/eas.json` — build profiles, <30MB budget **[P1]**
+- `apps/mobile/package.json` — mobile config **[P1]**
+- `apps/mobile/src/app/_layout.tsx` — expo-router root **[P1]**
+- `apps/mobile/src/core/analytics/events.ts` — to ClickHouse via collector **[P1]**
+- `apps/mobile/src/core/api/client.ts` — typed, tenant header, retry **[P1]**
+- `apps/mobile/src/core/api/interceptors.ts` — mobile core/api **[P1]**
+- `apps/mobile/src/core/api/offline-queue.ts` — mutations queued when offline **[P1]**
+- `apps/mobile/src/core/auth/auth.store.ts` — mobile core/auth **[P1]**
+- `apps/mobile/src/core/auth/otp.flow.ts` — mobile core/auth **[P1]**
+- `apps/mobile/src/core/auth/role-switcher.ts` — PRD multi-role **[P1]**
+- `apps/mobile/src/core/i18n/i18n.ts` — mobile core/i18n **[P1]**
+- `apps/mobile/src/core/i18n/numerals.ts` — lakh/crore, Indic digits **[P1]**
+- `apps/mobile/src/core/i18n/useTranslation.ts` — mobile core/i18n **[P1]**
+- `apps/mobile/src/core/location/geofence.ts` — 100m attendance check **[P1]**
+- `apps/mobile/src/core/location/gps.ts` — mobile core/location **[P1]**
+- `apps/mobile/src/core/offline/cache-policies.ts` — mobile core/offline **[P1]**
+- `apps/mobile/src/core/offline/sqlite.db.ts` — mobile core/offline **[P1]**
+- `apps/mobile/src/core/offline/sync.engine.ts` — server-wins conflict **[P1]**
+- `apps/mobile/src/core/push/fcm.ts` — mobile core/push **[P1]**
+- `apps/mobile/src/core/push/notification-router.ts` — mobile core/push **[P1]**
+- `apps/mobile/src/core/voice/stt.client.ts` — AI4Bharat/Google **[P1]**
+- `apps/mobile/src/core/voice/tts.ts` — mobile core/voice **[P1]**
+- `apps/mobile/src/core/voice/voice-listing.flow.ts` — mobile core/voice **[P1]**
+- `apps/mobile/src/features/ambassador/api.ts` — ambassador API hooks (react-query) **[P1]**
+- `apps/mobile/src/features/ambassador/components/index.ts` — feature components **[P1]**
+- `apps/mobile/src/features/ambassador/screens/AmbassadorHomeScreen.tsx` — design screen 86 **[P1]**
+- `apps/mobile/src/features/ambassador/screens/AmbassadorProfileScreen.tsx` — design screen 95 **[P1]**
+- `apps/mobile/src/features/ambassador/screens/CommissionsScreen.tsx` — design screen 92 **[P1]**
+- `apps/mobile/src/features/ambassador/screens/FaqDetailScreen.tsx` — design screen 167 **[P1]**
+- `apps/mobile/src/features/ambassador/screens/GoalSettingScreen.tsx` — design screen 170 **[P1]**
+- `apps/mobile/src/features/ambassador/screens/LeaderboardScreen.tsx` — design screen 93 **[P1]**
+- `apps/mobile/src/features/ambassador/screens/OnboardFarmerFlow.tsx` — design screen 88-90 **[P1]**
+- `apps/mobile/src/features/ambassador/screens/TrainingVideoScreen.tsx` — design screen 165 **[P1]**
+- `apps/mobile/src/features/ambassador/screens/WithdrawScreen.tsx` — design screen 168 **[P1]**
+- `apps/mobile/src/features/ambassador/store.ts` — ambassador local state (zustand) **[P1]**
+- `apps/mobile/src/features/auctions/api.ts` — auctions API hooks (react-query) **[P1]**
+- `apps/mobile/src/features/auctions/components/index.ts` — feature components **[P1]**
+- `apps/mobile/src/features/auctions/screens/AuctionDetailScreen.tsx` — design screen 16 **[P1]**
+- `apps/mobile/src/features/auctions/screens/AuctionEndedScreen.tsx` — design screen 66 **[P1]**
+- `apps/mobile/src/features/auctions/screens/CreateAuctionScreen.tsx` — design screen 64 **[P1]**
+- `apps/mobile/src/features/auctions/screens/MyBidsScreen.tsx` — design screen 18 **[P1]**
+- `apps/mobile/src/features/auctions/screens/OutbidAlertSheet.tsx` — design screen 193 **[P1]**
+- `apps/mobile/src/features/auctions/screens/PlaceBidSheet.tsx` — design screen 17 **[P1]**
+- `apps/mobile/src/features/auctions/store.ts` — auctions local state (zustand) **[P1]**
+- `apps/mobile/src/features/buyer-browse/api.ts` — buyer-browse API hooks (react-query) **[P1]**
+- `apps/mobile/src/features/buyer-browse/components/index.ts` — feature components **[P1]**
+- `apps/mobile/src/features/buyer-browse/screens/BuyerChatScreen.tsx` — design screen 98 **[P1]**
+- `apps/mobile/src/features/buyer-browse/screens/BuyerHomeScreen.tsx` — design screen 13 **[P1]**
+- `apps/mobile/src/features/buyer-browse/screens/ListingDetailScreen.tsx` — design screen 14 **[P1]**
+- `apps/mobile/src/features/buyer-browse/screens/SavedListingsScreen.tsx` — design screen 126 **[P1]**
+- `apps/mobile/src/features/buyer-browse/screens/SavedSearchesScreen.tsx` — design screen 128 **[P1]**
+- `apps/mobile/src/features/buyer-browse/screens/VoiceSearchScreen.tsx` — design screen 184 **[P1]**
+- `apps/mobile/src/features/buyer-browse/store.ts` — buyer-browse local state (zustand) **[P1]**
+- `apps/mobile/src/features/buyer-checkout/api.ts` — buyer-checkout API hooks (react-query) **[P1]**
+- `apps/mobile/src/features/buyer-checkout/components/index.ts` — feature components **[P1]**
+- `apps/mobile/src/features/buyer-checkout/screens/BuyerKycScreen.tsx` — design screen 133 **[P1]**
+- `apps/mobile/src/features/buyer-checkout/screens/BuyerProfileScreen.tsx` — design screen 132 **[P1]**
+- `apps/mobile/src/features/buyer-checkout/screens/CheckoutScreen.tsx` — design screen 15 **[P1]**
+- `apps/mobile/src/features/buyer-checkout/screens/MakeOfferSheet.tsx` — design screen 99 **[P1]**
+- `apps/mobile/src/features/buyer-checkout/store.ts` — buyer-checkout local state (zustand) **[P1]**
+- `apps/mobile/src/features/dairy/api.ts` — dairy API hooks (react-query) **[P2]**
+- `apps/mobile/src/features/dairy/components/index.ts` — feature components **[P2]**
+- `apps/mobile/src/features/dairy/screens/D2cSubscriptionScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/dairy/screens/MccSlipScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/dairy/screens/MilkBillScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/dairy/screens/MilkDiaryScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/dairy/store.ts` — dairy local state (zustand) **[P2]**
+- `apps/mobile/src/features/education/api.ts` — education API hooks (react-query) **[P1]**
+- `apps/mobile/src/features/education/components/index.ts` — feature components **[P1]**
+- `apps/mobile/src/features/education/screens/CertificateScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/education/screens/CoursesScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/education/screens/LessonPlayerScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/education/store.ts` — education local state (zustand) **[P1]**
+- `apps/mobile/src/features/farmer-home/api.ts` — farmer-home API hooks (react-query) **[P1]**
+- `apps/mobile/src/features/farmer-home/components/index.ts` — feature components **[P1]**
+- `apps/mobile/src/features/farmer-home/screens/AiChatScreen.tsx` — design screen 125 **[P1]**
+- `apps/mobile/src/features/farmer-home/screens/CropHubScreen.tsx` — design screen 104 **[P1]**
+- `apps/mobile/src/features/farmer-home/screens/FarmerHomeScreen.tsx` — design screen 09 **[P1]**
+- `apps/mobile/src/features/farmer-home/screens/MandiAlertsScreen.tsx` — design screen 110 **[P1]**
+- `apps/mobile/src/features/farmer-home/screens/MandiDetailScreen.tsx` — design screen 53 **[P1]**
+- `apps/mobile/src/features/farmer-home/screens/MandiPricesScreen.tsx` — design screen 52 **[P1]**
+- `apps/mobile/src/features/farmer-home/screens/TipDetailScreen.tsx` — design screen 101 **[P1]**
+- `apps/mobile/src/features/farmer-home/screens/TipsLibraryScreen.tsx` — design screen 55 **[P1]**
+- `apps/mobile/src/features/farmer-home/store.ts` — farmer-home local state (zustand) **[P1]**
+- `apps/mobile/src/features/fintech/api.ts` — fintech API hooks (react-query) **[P2]**
+- `apps/mobile/src/features/fintech/components/index.ts` — feature components **[P2]**
+- `apps/mobile/src/features/fintech/screens/CreditScoreScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/fintech/screens/InsuranceScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/fintech/screens/LoanApplicationScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/fintech/screens/LoanProductsScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/fintech/store.ts` — fintech local state (zustand) **[P2]**
+- `apps/mobile/src/features/labour-farmer/api.ts` — labour-farmer API hooks (react-query) **[P1]**
+- `apps/mobile/src/features/labour-farmer/components/index.ts` — feature components **[P1]**
+- `apps/mobile/src/features/labour-farmer/screens/BookStepConfirm.tsx` — design screen 63 **[P1]**
+- `apps/mobile/src/features/labour-farmer/screens/BookStepDatetime.tsx` — design screen 45 **[P1]**
+- `apps/mobile/src/features/labour-farmer/screens/BookStepLocation.tsx` — design screen 62 **[P1]**
+- `apps/mobile/src/features/labour-farmer/screens/BookWorkerScreen.tsx` — design screen 26 **[P1]**
+- `apps/mobile/src/features/labour-farmer/screens/BookingConfirmScreen.tsx` — design screen 27 **[P1]**
+- `apps/mobile/src/features/labour-farmer/screens/BookingDetailScreen.tsx` — design screen 51 **[P1]**
+- `apps/mobile/src/features/labour-farmer/screens/FilterWorkersSheet.tsx` — design screen 43 **[P1]**
+- `apps/mobile/src/features/labour-farmer/store.ts` — labour-farmer local state (zustand) **[P1]**
+- `apps/mobile/src/features/labour-worker/api.ts` — labour-worker API hooks (react-query) **[P1]**
+- `apps/mobile/src/features/labour-worker/components/index.ts` — feature components **[P1]**
+- `apps/mobile/src/features/labour-worker/screens/ActiveJobScreen.tsx` — design screen 33 **[P1]**
+- `apps/mobile/src/features/labour-worker/screens/AddSkillScreen.tsx` — design screen 137 **[P1]**
+- `apps/mobile/src/features/labour-worker/screens/BrowseJobsScreen.tsx` — design screen 30 **[P1]**
+- `apps/mobile/src/features/labour-worker/screens/DeclineJobSheet.tsx` — design screen 142 **[P1]**
+- `apps/mobile/src/features/labour-worker/screens/JobOfferScreen.tsx` — design screen 141 **[P1]**
+- `apps/mobile/src/features/labour-worker/screens/MyJobsScreen.tsx` — design screen 32 **[P1]**
+- `apps/mobile/src/features/labour-worker/screens/WorkerClaimScreen.tsx` — design screen 146 **[P1]**
+- `apps/mobile/src/features/labour-worker/screens/WorkerDisputeScreen.tsx` — design screen 143 **[P1]**
+- `apps/mobile/src/features/labour-worker/screens/WorkerEarningsScreen.tsx` — design screen 35 **[P1]**
+- `apps/mobile/src/features/labour-worker/screens/WorkerInsuranceScreen.tsx` — design screen 39 **[P1]**
+- `apps/mobile/src/features/labour-worker/screens/WorkerProfileScreen.tsx` — design screen 25 **[P1]**
+- `apps/mobile/src/features/labour-worker/screens/WorkerWithdrawScreen.tsx` — design screen 41 **[P1]**
+- `apps/mobile/src/features/labour-worker/store.ts` — labour-worker local state (zustand) **[P1]**
+- `apps/mobile/src/features/listings-create/api.ts` — listings-create API hooks (react-query) **[P1]**
+- `apps/mobile/src/features/listings-create/components/index.ts` — feature components **[P1]**
+- `apps/mobile/src/features/listings-create/screens/CreateListingScreen.tsx` — design screen 10 **[P1]**
+- `apps/mobile/src/features/listings-create/screens/ListingPreviewScreen.tsx` — design screen 11 **[P1]**
+- `apps/mobile/src/features/listings-create/screens/PhotoCaptureSheet.tsx` — screen **[P1]**
+- `apps/mobile/src/features/listings-create/screens/VoiceListingSheet.tsx` — screen **[P1]**
+- `apps/mobile/src/features/listings-create/store.ts` — listings-create local state (zustand) **[P1]**
+- `apps/mobile/src/features/listings-manage/api.ts` — listings-manage API hooks (react-query) **[P1]**
+- `apps/mobile/src/features/listings-manage/components/index.ts` — feature components **[P1]**
+- `apps/mobile/src/features/listings-manage/screens/EditListingScreen.tsx` — design screen 113 **[P1]**
+- `apps/mobile/src/features/listings-manage/screens/ListingAnalyticsScreen.tsx` — design screen 115 **[P1]**
+- `apps/mobile/src/features/listings-manage/screens/MyListingsScreen.tsx` — design screen 12 **[P1]**
+- `apps/mobile/src/features/listings-manage/screens/RepostListingScreen.tsx` — design screen 116 **[P1]**
+- `apps/mobile/src/features/listings-manage/store.ts` — listings-manage local state (zustand) **[P1]**
+- `apps/mobile/src/features/livestock/api.ts` — livestock API hooks (react-query) **[P2]**
+- `apps/mobile/src/features/livestock/components/index.ts` — feature components **[P2]**
+- `apps/mobile/src/features/livestock/screens/AnimalDetailScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/livestock/screens/AnimalListScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/livestock/screens/HealthRecordScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/livestock/screens/VetBookingScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/livestock/store.ts` — livestock local state (zustand) **[P2]**
+- `apps/mobile/src/features/notifications/api.ts` — notifications API hooks (react-query) **[P1]**
+- `apps/mobile/src/features/notifications/components/index.ts` — feature components **[P1]**
+- `apps/mobile/src/features/notifications/screens/InboxAllScreen.tsx` — design screen 191 **[P1]**
+- `apps/mobile/src/features/notifications/screens/NotificationsScreen.tsx` — design screen 28 **[P1]**
+- `apps/mobile/src/features/notifications/store.ts` — notifications local state (zustand) **[P1]**
+- `apps/mobile/src/features/onboarding/api.ts` — onboarding API hooks (react-query) **[P1]**
+- `apps/mobile/src/features/onboarding/components/index.ts` — feature components **[P1]**
+- `apps/mobile/src/features/onboarding/screens/LanguageScreen.tsx` — design screen 02 **[P1]**
+- `apps/mobile/src/features/onboarding/screens/OtpScreen.tsx` — design screen 03 **[P1]**
+- `apps/mobile/src/features/onboarding/screens/ProfileSetupScreen.tsx` — design screen 05 **[P1]**
+- `apps/mobile/src/features/onboarding/screens/RoleScreen.tsx` — design screen 04 **[P1]**
+- `apps/mobile/src/features/onboarding/screens/WelcomeScreen.tsx` — design screen 01 **[P1]**
+- `apps/mobile/src/features/onboarding/store.ts` — onboarding local state (zustand) **[P1]**
+- `apps/mobile/src/features/orders/api.ts` — orders API hooks (react-query) **[P1]**
+- `apps/mobile/src/features/orders/components/index.ts` — feature components **[P1]**
+- `apps/mobile/src/features/orders/screens/FarmerOrdersScreen.tsx` — design screen 56 **[P1]**
+- `apps/mobile/src/features/orders/screens/MyOrdersScreen.tsx` — design screen 22 **[P1]**
+- `apps/mobile/src/features/orders/screens/OrderDetailScreen.tsx` — design screen 23 **[P1]**
+- `apps/mobile/src/features/orders/screens/OrderReviewScreen.tsx` — design screen 24 **[P1]**
+- `apps/mobile/src/features/orders/screens/TransactionDetailScreen.tsx` — design screen 71 **[P1]**
+- `apps/mobile/src/features/orders/store.ts` — orders local state (zustand) **[P1]**
+- `apps/mobile/src/features/profile/api.ts` — profile API hooks (react-query) **[P1]**
+- `apps/mobile/src/features/profile/components/index.ts` — feature components **[P1]**
+- `apps/mobile/src/features/profile/screens/AboutScreen.tsx` — design screen 196 **[P1]**
+- `apps/mobile/src/features/profile/screens/DataDownloadScreen.tsx` — design screen 179 **[P1]**
+- `apps/mobile/src/features/profile/screens/MyProfileScreen.tsx` — design screen 61 **[P1]**
+- `apps/mobile/src/features/profile/screens/PrivacySettingsScreen.tsx` — design screen 178 **[P1]**
+- `apps/mobile/src/features/profile/store.ts` — profile local state (zustand) **[P1]**
+- `apps/mobile/src/features/schemes/api.ts` — schemes API hooks (react-query) **[P2]**
+- `apps/mobile/src/features/schemes/components/index.ts` — feature components **[P2]**
+- `apps/mobile/src/features/schemes/screens/SchemeApplyScreen.tsx` — design screen 106 **[P2]**
+- `apps/mobile/src/features/schemes/screens/SchemeStatusScreen.tsx` — design screen 107 **[P2]**
+- `apps/mobile/src/features/schemes/screens/SchemesScreen.tsx` — design screen 60 **[P2]**
+- `apps/mobile/src/features/schemes/store.ts` — schemes local state (zustand) **[P2]**
+- `apps/mobile/src/features/settings/api.ts` — settings API hooks (react-query) **[P1]**
+- `apps/mobile/src/features/settings/components/index.ts` — feature components **[P1]**
+- `apps/mobile/src/features/settings/screens/AppUpdateScreen.tsx` — design screen 190 **[P1]**
+- `apps/mobile/src/features/settings/screens/LanguageSwitchSheet.tsx` — screen **[P1]**
+- `apps/mobile/src/features/settings/screens/SettingsScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/settings/store.ts` — settings local state (zustand) **[P1]**
+- `apps/mobile/src/features/support/api.ts` — support API hooks (react-query) **[P1]**
+- `apps/mobile/src/features/support/components/index.ts` — feature components **[P1]**
+- `apps/mobile/src/features/support/screens/FeedbackSheet.tsx` — design screen 195 **[P1]**
+- `apps/mobile/src/features/support/screens/HelpScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/support/screens/TicketScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/support/store.ts` — support local state (zustand) **[P1]**
+- `apps/mobile/src/features/wallet/api.ts` — wallet API hooks (react-query) **[P1]**
+- `apps/mobile/src/features/wallet/components/index.ts` — feature components **[P1]**
+- `apps/mobile/src/features/wallet/screens/AddMoneyScreen.tsx` — design screen 20 **[P1]**
+- `apps/mobile/src/features/wallet/screens/AutopayScreen.tsx` — design screen 181 **[P1]**
+- `apps/mobile/src/features/wallet/screens/BankAccountsScreen.tsx` — design screen 121 **[P1]**
+- `apps/mobile/src/features/wallet/screens/FarmerEarningsScreen.tsx` — design screen 58 **[P1]**
+- `apps/mobile/src/features/wallet/screens/HistoryScreen.tsx` — design screen 21 **[P1]**
+- `apps/mobile/src/features/wallet/screens/SpendingInsightsScreen.tsx` — design screen 182 **[P1]**
+- `apps/mobile/src/features/wallet/screens/WalletHomeScreen.tsx` — design screen 19 **[P1]**
+- `apps/mobile/src/features/wallet/store.ts` — wallet local state (zustand) **[P1]**
+- `apps/mobile/src/navigation/role-tabs.tsx` — per-role bottom nav **[P1]**
+- `apps/mobile/tsconfig.json` — mobile config **[P1]**
+
+## apps/outbox-relay  (8 files)
+
+- `apps/outbox-relay/Dockerfile` — outbox relay **[P1]**
+- `apps/outbox-relay/package.json` — outbox relay **[P1]**
+- `apps/outbox-relay/src/main.ts` — outbox relay **[P1]**
+- `apps/outbox-relay/src/poller.ts` — FOR UPDATE SKIP LOCKED batches **[P1]**
+- `apps/outbox-relay/src/publishers/opensearch.publisher.ts` — outbox relay **[P1]**
+- `apps/outbox-relay/src/publishers/sqs.publisher.ts` — outbox relay **[P1]**
+- `apps/outbox-relay/src/publishers/webhook.publisher.ts` — HMAC-signed tenant webhooks **[P1]**
+- `apps/outbox-relay/tsconfig.json` — outbox relay **[P1]**
+
+## apps/wallet-service  (25 files)
+
+- `apps/wallet-service/.env.example` — wallet service — only writer of money **[P1]**
+- `apps/wallet-service/Dockerfile` — wallet service — only writer of money **[P1]**
+- `apps/wallet-service/package.json` — wallet service — only writer of money **[P1]**
+- `apps/wallet-service/src/accounts/accounts.service.ts` — wallet service — only writer of money **[P1]**
+- `apps/wallet-service/src/accounts/balance.service.ts` — wallet service — only writer of money **[P1]**
+- `apps/wallet-service/src/accounts/hot-account-striping.ts` — shard_no routing **[P1]**
+- `apps/wallet-service/src/grpc/wallet.grpc-controller.ts` — wallet service — only writer of money **[P1]**
+- `apps/wallet-service/src/grpc/wallet.proto` — wallet service — only writer of money **[P1]**
+- `apps/wallet-service/src/ledger/hash-chain.ts` — wallet service — only writer of money **[P1]**
+- `apps/wallet-service/src/ledger/ledger.repository.ts` — wallet service — only writer of money **[P1]**
+- `apps/wallet-service/src/ledger/post-transaction.service.ts` — entries MUST sum to 0 **[P1]**
+- `apps/wallet-service/src/ledger/txn-types.registry.ts` — wallet service — only writer of money **[P1]**
+- `apps/wallet-service/src/main.ts` — wallet service — only writer of money **[P1]**
+- `apps/wallet-service/src/payments/razorpay.client.ts` — wallet service — only writer of money **[P1]**
+- `apps/wallet-service/src/payments/webhook.controller.ts` — signature verify + idempotent **[P1]**
+- `apps/wallet-service/src/payouts/failure-reversal.service.ts` — wallet service — only writer of money **[P1]**
+- `apps/wallet-service/src/payouts/payout-queue.service.ts` — wage priority lane **[P1]**
+- `apps/wallet-service/src/payouts/razorpayx.client.ts` — wallet service — only writer of money **[P1]**
+- `apps/wallet-service/src/reconciliation/daily-gateway.job.ts` — wallet service — only writer of money **[P1]**
+- `apps/wallet-service/src/reconciliation/hourly-internal.job.ts` — wallet service — only writer of money **[P1]**
+- `apps/wallet-service/src/reconciliation/zero-sum-check.job.ts` — wallet service — only writer of money **[P1]**
+- `apps/wallet-service/src/test/ledger-invariants.spec.ts` — CI merge gate **[P1]**
+- `apps/wallet-service/src/test/striping.spec.ts` — wallet service — only writer of money **[P1]**
+- `apps/wallet-service/src/wallet.module.ts` — wallet service — only writer of money **[P1]**
+- `apps/wallet-service/tsconfig.json` — wallet service — only writer of money **[P1]**
+
+## apps/web-admin  (26 files)
+
+- `apps/web-admin/.env.example` — web-admin config **[P1]**
+- `apps/web-admin/Dockerfile` — web-admin config **[P1]**
+- `apps/web-admin/next.config.js` — web-admin config **[P1]**
+- `apps/web-admin/package.json` — web-admin config **[P1]**
+- `apps/web-admin/src/app/ai-models/page.tsx` — route: /ai-models **[P1]**
+- `apps/web-admin/src/app/ai-review-queue/page.tsx` — route: /ai-review-queue **[P1]**
+- `apps/web-admin/src/app/announcements/page.tsx` — route: /announcements **[P1]**
+- `apps/web-admin/src/app/audit-log/page.tsx` — route: /audit-log **[P1]**
+- `apps/web-admin/src/app/dashboard/page.tsx` — route: /dashboard **[P1]**
+- `apps/web-admin/src/app/feature-flags/page.tsx` — route: /feature-flags **[P1]**
+- `apps/web-admin/src/app/global-catalogue/page.tsx` — route: /global-catalogue **[P1]**
+- `apps/web-admin/src/app/global-categories/page.tsx` — route: /global-categories **[P1]**
+- `apps/web-admin/src/app/layout.tsx` — root layout (tokens, i18n provider, auth) **[P1]**
+- `apps/web-admin/src/app/min-wages/page.tsx` — route: /min-wages **[P1]**
+- `apps/web-admin/src/app/moderation/page.tsx` — route: /moderation **[P1]**
+- `apps/web-admin/src/app/plans/page.tsx` — route: /plans **[P1]**
+- `apps/web-admin/src/app/platform-reports/page.tsx` — route: /platform-reports **[P1]**
+- `apps/web-admin/src/app/providers/page.tsx` — route: /providers **[P1]**
+- `apps/web-admin/src/app/schemes-registry/page.tsx` — route: /schemes-registry **[P1]**
+- `apps/web-admin/src/app/support-tickets/page.tsx` — route: /support-tickets **[P1]**
+- `apps/web-admin/src/app/tenants/[id]/page.tsx` — route: /tenants/[id] **[P1]**
+- `apps/web-admin/src/app/tenants/page.tsx` — route: /tenants **[P1]**
+- `apps/web-admin/src/components/data-table.tsx` — standard table: server pagination + filters + export **[P1]**
+- `apps/web-admin/src/lib/api-client.ts` — typed client from packages/sdk-js **[P1]**
+- `apps/web-admin/src/lib/auth.ts` — session handling **[P1]**
+- `apps/web-admin/tsconfig.json` — web-admin config **[P1]**
+
+## apps/web-storefront  (19 files)
+
+- `apps/web-storefront/.env.example` — web-storefront config **[P1]**
+- `apps/web-storefront/Dockerfile` — web-storefront config **[P1]**
+- `apps/web-storefront/next.config.js` — web-storefront config **[P1]**
+- `apps/web-storefront/package.json` — web-storefront config **[P1]**
+- `apps/web-storefront/src/app/[tenantSlug]/listings/[id]/page.tsx` — route: /[tenantSlug]/listings/[id] **[P1]**
+- `apps/web-storefront/src/app/[tenantSlug]/page.tsx` — route: /[tenantSlug] **[P1]**
+- `apps/web-storefront/src/app/about/page.tsx` — route: /about **[P1]**
+- `apps/web-storefront/src/app/blog/page.tsx` — route: /blog **[P1]**
+- `apps/web-storefront/src/app/help/page.tsx` — route: /help **[P1]**
+- `apps/web-storefront/src/app/layout.tsx` — root layout (tokens, i18n provider, auth) **[P1]**
+- `apps/web-storefront/src/app/page.tsx` — route: / **[P1]**
+- `apps/web-storefront/src/app/press/page.tsx` — route: /press **[P1]**
+- `apps/web-storefront/src/app/pricing/page.tsx` — route: /pricing **[P1]**
+- `apps/web-storefront/src/app/tenants-signup/page.tsx` — route: /tenants-signup **[P1]**
+- `apps/web-storefront/src/app/trace/[qrToken] (public farm-to-fork scan)/page.tsx` — route: /trace/[qrToken] **[P1]**
+- `apps/web-storefront/src/components/data-table.tsx` — standard table: server pagination + filters + export **[P1]**
+- `apps/web-storefront/src/lib/api-client.ts` — typed client from packages/sdk-js **[P1]**
+- `apps/web-storefront/src/lib/auth.ts` — session handling **[P1]**
+- `apps/web-storefront/tsconfig.json` — web-storefront config **[P1]**
+
+## apps/web-tenant  (35 files)
+
+- `apps/web-tenant/.env.example` — web-tenant config **[P1]**
+- `apps/web-tenant/Dockerfile` — web-tenant config **[P1]**
+- `apps/web-tenant/next.config.js` — web-tenant config **[P1]**
+- `apps/web-tenant/package.json` — web-tenant config **[P1]**
+- `apps/web-tenant/src/app/ambassadors/page.tsx` — route: /ambassadors **[P1]**
+- `apps/web-tenant/src/app/auctions/page.tsx` — route: /auctions **[P1]**
+- `apps/web-tenant/src/app/commission-rules/page.tsx` — route: /commission-rules **[P1]**
+- `apps/web-tenant/src/app/dashboard/page.tsx` — route: /dashboard **[P1]**
+- `apps/web-tenant/src/app/disputes/page.tsx` — route: /disputes **[P1]**
+- `apps/web-tenant/src/app/kyc-queue/page.tsx` — route: /kyc-queue **[P1]**
+- `apps/web-tenant/src/app/labour/bookings/page.tsx` — route: /labour/bookings **[P1]**
+- `apps/web-tenant/src/app/labour/workers/page.tsx` — route: /labour/workers **[P1]**
+- `apps/web-tenant/src/app/layout.tsx` — root layout (tokens, i18n provider, auth) **[P1]**
+- `apps/web-tenant/src/app/listings/moderation/page.tsx` — route: /listings/moderation **[P1]**
+- `apps/web-tenant/src/app/listings/page.tsx` — route: /listings **[P1]**
+- `apps/web-tenant/src/app/notifications/page.tsx` — route: /notifications **[P1]**
+- `apps/web-tenant/src/app/orders/[id]/page.tsx` — route: /orders/[id] **[P1]**
+- `apps/web-tenant/src/app/orders/page.tsx` — route: /orders **[P1]**
+- `apps/web-tenant/src/app/payouts/page.tsx` — route: /payouts **[P1]**
+- `apps/web-tenant/src/app/reports/[reportId]/page.tsx` — route: /reports/[reportId] **[P1]**
+- `apps/web-tenant/src/app/reports/page.tsx` — route: /reports **[P1]**
+- `apps/web-tenant/src/app/settings/billing/page.tsx` — route: /settings/billing **[P1]**
+- `apps/web-tenant/src/app/settings/branding/page.tsx` — route: /settings/branding **[P1]**
+- `apps/web-tenant/src/app/settings/commissions/page.tsx` — route: /settings/commissions **[P1]**
+- `apps/web-tenant/src/app/settings/delivery-zones/page.tsx` — route: /settings/delivery-zones **[P1]**
+- `apps/web-tenant/src/app/settings/integrations/page.tsx` — route: /settings/integrations **[P1]**
+- `apps/web-tenant/src/app/settings/languages/page.tsx` — route: /settings/languages **[P1]**
+- `apps/web-tenant/src/app/settings/team/page.tsx` — route: /settings/team **[P1]**
+- `apps/web-tenant/src/app/users/[id]/page.tsx` — route: /users/[id] **[P1]**
+- `apps/web-tenant/src/app/users/page.tsx` — route: /users **[P1]**
+- `apps/web-tenant/src/app/wallet/page.tsx` — route: /wallet **[P1]**
+- `apps/web-tenant/src/components/data-table.tsx` — standard table: server pagination + filters + export **[P1]**
+- `apps/web-tenant/src/lib/api-client.ts` — typed client from packages/sdk-js **[P1]**
+- `apps/web-tenant/src/lib/auth.ts` — session handling **[P1]**
+- `apps/web-tenant/tsconfig.json` — web-tenant config **[P1]**
+
+## apps/worker  (28 files)
+
+- `apps/worker/Dockerfile` — worker config **[P1]**
+- `apps/worker/package.json` — worker config **[P1]**
+- `apps/worker/src/jobs/kyc/expiry-scanner.cron.ts` — kyc job **[P1]**
+- `apps/worker/src/jobs/kyc/karza-verify.processor.ts` — kyc job **[P1]**
+- `apps/worker/src/jobs/mandi-ingest/agmarknet.scraper.ts` — mandi-ingest job **[P1]**
+- `apps/worker/src/jobs/mandi-ingest/enam.client.ts` — mandi-ingest job **[P1]**
+- `apps/worker/src/jobs/mandi-ingest/normaliser.ts` — tur=arhar via search_synonyms **[P1]**
+- `apps/worker/src/jobs/notifications/digest-batcher.ts` — notifications job **[P1]**
+- `apps/worker/src/jobs/notifications/dispatch.processor.ts` — notifications job **[P1]**
+- `apps/worker/src/jobs/notifications/push.sender.ts` — notifications job **[P1]**
+- `apps/worker/src/jobs/notifications/sms-budget-guard.ts` — daily cap — cost-bomb defence **[P1]**
+- `apps/worker/src/jobs/notifications/whatsapp.sender.ts` — notifications job **[P1]**
+- `apps/worker/src/jobs/partitions/archive-partitions.cron.ts` — to S3 per retention policy **[P1]**
+- `apps/worker/src/jobs/partitions/ensure-partitions.cron.ts` — monthly, 3 ahead **[P1]**
+- `apps/worker/src/jobs/reconciliation/recon-alert.processor.ts` — reconciliation job **[P1]**
+- `apps/worker/src/jobs/retention/idempotency-purge.cron.ts` — retention job **[P1]**
+- `apps/worker/src/jobs/retention/retention-enforcer.cron.ts` — data_retention_policies **[P1]**
+- `apps/worker/src/jobs/scheme-sync/pfms-status.poller.ts` — scheme-sync job **[P2]**
+- `apps/worker/src/jobs/scheme-sync/rule-version.watcher.ts` — scheme-sync job **[P2]**
+- `apps/worker/src/jobs/settlements/order-settlement.processor.ts` — settlements job **[P1]**
+- `apps/worker/src/jobs/settlements/statement-generator.ts` — settlements job **[P1]**
+- `apps/worker/src/jobs/sms-budget/daily-cost-report.cron.ts` — sms-budget job **[P1]**
+- `apps/worker/src/jobs/weather-ingest/alert-fanout.processor.ts` — weather-ingest job **[P1]**
+- `apps/worker/src/jobs/weather-ingest/imd.client.ts` — weather-ingest job **[P1]**
+- `apps/worker/src/main.ts` — worker bootstrap/queues **[P1]**
+- `apps/worker/src/queues/dlq.handler.ts` — worker bootstrap/queues **[P1]**
+- `apps/worker/src/queues/queue.registry.ts` — worker bootstrap/queues **[P1]**
+- `apps/worker/tsconfig.json` — worker config **[P1]**
+
+## db/migrations  (15 files)
+
+- `db/migrations/0001_foundation.sql` — baseline migration — copy of Database_Architecture/full_platform (languages/translations/geo/currency/units/media/lookups) **[P1]**
+- `db/migrations/0002_tenancy_billing.sql` — baseline migration — copy of Database_Architecture/full_platform (plans/tenants/subscriptions) **[P1]**
+- `db/migrations/0003_identity_access.sql` — baseline migration — copy of Database_Architecture/full_platform (users/RBAC/KYC/consent) **[P1]**
+- `db/migrations/0004_catalogue_dynamic.sql` — baseline migration — copy of Database_Architecture/full_platform (categories/attributes/products) **[P1]**
+- `db/migrations/0005_commerce.sql` — baseline migration — copy of Database_Architecture/full_platform (listings/auctions/orders/disputes) **[P1]**
+- `db/migrations/0006_money.sql` — baseline migration — copy of Database_Architecture/full_platform (rules/wallet/ledger/payments) **[P1]**
+- `db/migrations/0007_logistics.sql` — baseline migration — copy of Database_Architecture/full_platform (shipments/routes/cold-chain) **[P1]**
+- `db/migrations/0008_labour.sql` — baseline migration — copy of Database_Architecture/full_platform (full labour stack) **[P1]**
+- `db/migrations/0009_livestock_dairy.sql` — baseline migration — copy of Database_Architecture/full_platform (pashupalan+dairy) **[P1]**
+- `db/migrations/0010_agri_infra_services.sql` — baseline migration — copy of Database_Architecture/full_platform (equipment/warehouse/contracts/export/land) **[P1]**
+- `db/migrations/0011_fintech_schemes.sql` — baseline migration — copy of Database_Architecture/full_platform (loans/insurance/schemes/DBT) **[P1]**
+- `db/migrations/0012_engagement.sql` — baseline migration — copy of Database_Architecture/full_platform (education/chat/notifications/CMS) **[P1]**
+- `db/migrations/0013_growth_intelligence.sql` — baseline migration — copy of Database_Architecture/full_platform (ambassadors/mandi/AI/trace) **[P1]**
+- `db/migrations/0014_platform_ops_security.sql` — baseline migration — copy of Database_Architecture/full_platform (outbox/audit/RLS/partitions) **[P1]**
+- `db/migrations/0015_audit_additions.sql` — baseline migration — copy of Database_Architecture/full_platform (memberships/offers/services/carbon/etc) **[P1]**
+
+## db/scripts  (6 files)
+
+- `db/scripts/archive-partitions.js` — S3 parquet per retention policy **[P1]**
+- `db/scripts/ensure-partitions.js` — calls DB proc **[P1]**
+- `db/scripts/explain-top-queries.js` — weekly slow-query review **[P1]**
+- `db/scripts/migrate.js` — numbered runner, never edits applied **[P1]**
+- `db/scripts/seed.js` —  **[P1]**
+- `db/scripts/verify-rls-coverage.js` — v_tables_without_rls must be empty **[P1]**
+
+## db/seeds  (23 files)
+
+- `db/seeds/catalogue/0101_category_tree.sql` — 5-level **[P1]**
+- `db/seeds/catalogue/0102_attributes_options.sql` — seed **[P1]**
+- `db/seeds/catalogue/0103_launch_crops_30.sql` — seed **[P1]**
+- `db/seeds/catalogue/0104_attribute_templates.sql` — seed **[P1]**
+- `db/seeds/catalogue/0105_search_synonyms.sql` — tur/arhar... **[P1]**
+- `db/seeds/core/0001_languages.sql` — seed **[P1]**
+- `db/seeds/core/0002_countries_regions_gj_mh.sql` — seed **[P1]**
+- `db/seeds/core/0003_currencies_units.sql` — seed **[P1]**
+- `db/seeds/core/0004_roles_permissions.sql` — 24 roles × PRD §10 matrix **[P1]**
+- `db/seeds/core/0005_lookup_vocabularies.sql` — seed **[P1]**
+- `db/seeds/core/0006_consent_purposes.sql` — seed **[P1]**
+- `db/seeds/core/0007_notification_events_templates.sql` — PRD §14.2 **[P1]**
+- `db/seeds/core/0008_setting_definitions.sql` — seed **[P1]**
+- `db/seeds/demo/0901_demo_tenants.sql` — staging ONLY **[P1-staging]**
+- `db/seeds/demo/0902_demo_users_listings.sql` — seed **[P1-staging]**
+- `db/seeds/rules/0201_plans_limits_features.sql` — seed **[P1]**
+- `db/seeds/rules/0202_commission_rules.sql` — Revenue Playbook **[P1]**
+- `db/seeds/rules/0203_tax_rules_gst_tds.sql` — seed **[P1]**
+- `db/seeds/rules/0204_charge_definitions.sql` — seed **[P1]**
+- `db/seeds/rules/0205_membership_tiers.sql` — seed **[P1]**
+- `db/seeds/rules/0206_minimum_wages_gj_mh.sql` — seed **[P1]**
+- `db/seeds/rules/0207_ambassador_commission_plans.sql` — seed **[P1]**
+- `db/seeds/rules/0208_schemes_starter_set.sql` — seed **[P1]**
+
+## docs/adr  (7 files)
+
+- `docs/adr/0002-tenant-isolation-strategy.md` — ADR: tenant isolation strategy **[P1]**
+- `docs/adr/0003-money-ledger-design.md` — ADR: money ledger design **[P1]**
+- `docs/adr/0004-outbox-over-dualwrite.md` — ADR: outbox over dualwrite **[P1]**
+- `docs/adr/0005-one-mobile-app-role-switching.md` — ADR: one mobile app role switching **[P1]**
+- `docs/adr/0006-dynamic-master-data-vs-state-enums.md` — ADR: dynamic master data vs state enums **[P1]**
+- `docs/adr/0007-partitioning-and-shard-path.md` — ADR: partitioning and shard path **[P1]**
+- `docs/adr/0008-cell-per-country.md` — ADR: cell per country **[P1]**
+
+## docs/api  (1 files)
+
+- `docs/api/conventions.md` — documentation **[P1]**
+
+## docs/architecture  (3 files)
+
+- `docs/architecture/event-catalog.md` — documentation **[P1]**
+- `docs/architecture/scaling-ladder.md` — documentation **[P1]**
+- `docs/architecture/system-overview.md` — documentation **[P1]**
+
+## docs/onboarding  (2 files)
+
+- `docs/onboarding/dev-setup.md` — documentation **[P1]**
+- `docs/onboarding/first-week.md` — documentation **[P1]**
+
+## docs/runbooks  (1 files)
+
+- `docs/runbooks/index.md` — documentation **[P1]**
+
+## infra/docker  (3 files)
+
+- `infra/docker/ai-services.Dockerfile` — container builds **[P1]**
+- `infra/docker/api.Dockerfile` — container builds **[P1]**
+- `infra/docker/node-base.Dockerfile` — container builds **[P1]**
+
+## infra/helm  (35 files)
+
+- `infra/helm/api/Chart.yaml` — helm: api **[P1]**
+- `infra/helm/api/templates/deployment.yaml` — helm: api **[P1]**
+- `infra/helm/api/templates/hpa.yaml` — helm: api **[P1]**
+- `infra/helm/api/templates/pdb.yaml` — helm: api **[P1]**
+- `infra/helm/api/templates/rollout.yaml` — Argo canary 1→10→50→100% **[P1]**
+- `infra/helm/api/templates/service.yaml` — helm: api **[P1]**
+- `infra/helm/api/values.yaml` — helm: api **[P1]**
+- `infra/helm/outbox-relay/Chart.yaml` — helm: outbox-relay **[P1]**
+- `infra/helm/outbox-relay/templates/deployment.yaml` — helm: outbox-relay **[P1]**
+- `infra/helm/outbox-relay/templates/hpa.yaml` — helm: outbox-relay **[P1]**
+- `infra/helm/outbox-relay/templates/pdb.yaml` — helm: outbox-relay **[P1]**
+- `infra/helm/outbox-relay/templates/rollout.yaml` — Argo canary 1→10→50→100% **[P1]**
+- `infra/helm/outbox-relay/templates/service.yaml` — helm: outbox-relay **[P1]**
+- `infra/helm/outbox-relay/values.yaml` — helm: outbox-relay **[P1]**
+- `infra/helm/wallet-service/Chart.yaml` — helm: wallet-service **[P1]**
+- `infra/helm/wallet-service/templates/deployment.yaml` — helm: wallet-service **[P1]**
+- `infra/helm/wallet-service/templates/hpa.yaml` — helm: wallet-service **[P1]**
+- `infra/helm/wallet-service/templates/pdb.yaml` — helm: wallet-service **[P1]**
+- `infra/helm/wallet-service/templates/rollout.yaml` — Argo canary 1→10→50→100% **[P1]**
+- `infra/helm/wallet-service/templates/service.yaml` — helm: wallet-service **[P1]**
+- `infra/helm/wallet-service/values.yaml` — helm: wallet-service **[P1]**
+- `infra/helm/web/Chart.yaml` — helm: web **[P1]**
+- `infra/helm/web/templates/deployment.yaml` — helm: web **[P1]**
+- `infra/helm/web/templates/hpa.yaml` — helm: web **[P1]**
+- `infra/helm/web/templates/pdb.yaml` — helm: web **[P1]**
+- `infra/helm/web/templates/rollout.yaml` — Argo canary 1→10→50→100% **[P1]**
+- `infra/helm/web/templates/service.yaml` — helm: web **[P1]**
+- `infra/helm/web/values.yaml` — helm: web **[P1]**
+- `infra/helm/worker/Chart.yaml` — helm: worker **[P1]**
+- `infra/helm/worker/templates/deployment.yaml` — helm: worker **[P1]**
+- `infra/helm/worker/templates/hpa.yaml` — helm: worker **[P1]**
+- `infra/helm/worker/templates/pdb.yaml` — helm: worker **[P1]**
+- `infra/helm/worker/templates/rollout.yaml` — Argo canary 1→10→50→100% **[P1]**
+- `infra/helm/worker/templates/service.yaml` — helm: worker **[P1]**
+- `infra/helm/worker/values.yaml` — helm: worker **[P1]**
+
+## infra/terraform  (40 files)
+
+- `infra/terraform/envs/dev/backend.tf` — dev environment composition **[P1]**
+- `infra/terraform/envs/dev/main.tf` — dev environment composition **[P1]**
+- `infra/terraform/envs/dev/terraform.tfvars` — dev environment composition **[P1]**
+- `infra/terraform/envs/dev/variables.tf` — dev environment composition **[P1]**
+- `infra/terraform/envs/prod/backend.tf` — prod environment composition **[P1]**
+- `infra/terraform/envs/prod/dr.tf` — Hyderabad DR: cross-region snapshots, warm standby **[P1]**
+- `infra/terraform/envs/prod/main.tf` — prod environment composition **[P1]**
+- `infra/terraform/envs/prod/terraform.tfvars` — prod environment composition **[P1]**
+- `infra/terraform/envs/prod/variables.tf` — prod environment composition **[P1]**
+- `infra/terraform/envs/staging/backend.tf` — staging environment composition **[P1]**
+- `infra/terraform/envs/staging/main.tf` — staging environment composition **[P1]**
+- `infra/terraform/envs/staging/terraform.tfvars` — staging environment composition **[P1]**
+- `infra/terraform/envs/staging/variables.tf` — staging environment composition **[P1]**
+- `infra/terraform/modules/aurora/main.tf` — terraform module: aurora **[P1]**
+- `infra/terraform/modules/aurora/outputs.tf` — terraform module: aurora **[P1]**
+- `infra/terraform/modules/aurora/variables.tf` — terraform module: aurora **[P1]**
+- `infra/terraform/modules/eks/main.tf` — terraform module: eks **[P1]**
+- `infra/terraform/modules/eks/outputs.tf` — terraform module: eks **[P1]**
+- `infra/terraform/modules/eks/variables.tf` — terraform module: eks **[P1]**
+- `infra/terraform/modules/observability/main.tf` — terraform module: observability **[P1]**
+- `infra/terraform/modules/observability/outputs.tf` — terraform module: observability **[P1]**
+- `infra/terraform/modules/observability/variables.tf` — terraform module: observability **[P1]**
+- `infra/terraform/modules/opensearch/main.tf` — terraform module: opensearch **[P1]**
+- `infra/terraform/modules/opensearch/outputs.tf` — terraform module: opensearch **[P1]**
+- `infra/terraform/modules/opensearch/variables.tf` — terraform module: opensearch **[P1]**
+- `infra/terraform/modules/redis/main.tf` — terraform module: redis **[P1]**
+- `infra/terraform/modules/redis/outputs.tf` — terraform module: redis **[P1]**
+- `infra/terraform/modules/redis/variables.tf` — terraform module: redis **[P1]**
+- `infra/terraform/modules/s3-cdn/main.tf` — terraform module: s3-cdn **[P1]**
+- `infra/terraform/modules/s3-cdn/outputs.tf` — terraform module: s3-cdn **[P1]**
+- `infra/terraform/modules/s3-cdn/variables.tf` — terraform module: s3-cdn **[P1]**
+- `infra/terraform/modules/secrets/main.tf` — terraform module: secrets **[P1]**
+- `infra/terraform/modules/secrets/outputs.tf` — terraform module: secrets **[P1]**
+- `infra/terraform/modules/secrets/variables.tf` — terraform module: secrets **[P1]**
+- `infra/terraform/modules/vpc/main.tf` — terraform module: vpc **[P1]**
+- `infra/terraform/modules/vpc/outputs.tf` — terraform module: vpc **[P1]**
+- `infra/terraform/modules/vpc/variables.tf` — terraform module: vpc **[P1]**
+- `infra/terraform/modules/waf/main.tf` — terraform module: waf **[P1]**
+- `infra/terraform/modules/waf/outputs.tf` — terraform module: waf **[P1]**
+- `infra/terraform/modules/waf/variables.tf` — terraform module: waf **[P1]**
+
+## ops/dashboards  (6 files)
+
+- `ops/dashboards/api-golden-signals.json` — dashboard-as-code (Datadog/Grafana) **[P1]**
+- `ops/dashboards/business-kpis.json` — dashboard-as-code (Datadog/Grafana) **[P1]**
+- `ops/dashboards/db-health.json` — dashboard-as-code (Datadog/Grafana) **[P1]**
+- `ops/dashboards/queue-depths.json` — dashboard-as-code (Datadog/Grafana) **[P1]**
+- `ops/dashboards/sms-spend.json` — dashboard-as-code (Datadog/Grafana) **[P1]**
+- `ops/dashboards/wallet-invariants.json` — dashboard-as-code (Datadog/Grafana) **[P1]**
+
+## ops/load-tests  (4 files)
+
+- `ops/load-tests/k6-auction-burst.js` — last-second bid storm **[P1]**
+- `ops/load-tests/k6-mcc-morning-peak.js` — dairy 5AM **[P1]**
+- `ops/load-tests/k6-order-flow.js` — 500 concurrent, p95<500ms gate **[P1]**
+- `ops/load-tests/k6-payout-batch.js` —  **[P1]**
+
+## ops/runbooks  (10 files)
+
+- `ops/runbooks/incident-sev0.md` — runbook **[P1]**
+- `ops/runbooks/launch-day.md` — Field Ops hour-by-hour **[P1]**
+- `ops/runbooks/oncall-rotation.md` — runbook **[P1]**
+- `ops/runbooks/partition-job-failed.md` — runbook **[P1]**
+- `ops/runbooks/payment-mismatch.md` — pause txns, call farmers FIRST **[P1]**
+- `ops/runbooks/production-down.md` — runbook **[P1]**
+- `ops/runbooks/restore-drill.md` — monthly, actually restore **[P1]**
+- `ops/runbooks/sms-cost-spike.md` — runbook **[P1]**
+- `ops/runbooks/tenant-leak-suspected.md` — runbook **[P1]**
+- `ops/runbooks/wallet-recon-mismatch.md` — runbook **[P1]**
+
+## packages/config  (6 files)
+
+- `packages/config/eslint/index.js` — packages/config **[P1]**
+- `packages/config/eslint/rules/no-float-money.js` — Law 2 **[P1]**
+- `packages/config/eslint/rules/tenant-guard.js` — forbids un-scoped queries — Law 1 **[P1]**
+- `packages/config/package.json` — packages/config **[P1]**
+- `packages/config/prettier/index.js` — packages/config **[P1]**
+- `packages/config/tsconfig/base.json` — packages/config **[P1]**
+
+## packages/contracts  (11 files)
+
+- `packages/contracts/package.json` — packages/contracts **[P1]**
+- `packages/contracts/src/dto/auctions.dto.ts` — packages/contracts **[P1]**
+- `packages/contracts/src/dto/index.ts` — packages/contracts **[P1]**
+- `packages/contracts/src/dto/labour.dto.ts` — packages/contracts **[P1]**
+- `packages/contracts/src/dto/listings.dto.ts` — packages/contracts **[P1]**
+- `packages/contracts/src/dto/orders.dto.ts` — packages/contracts **[P1]**
+- `packages/contracts/src/dto/payments.dto.ts` — packages/contracts **[P1]**
+- `packages/contracts/src/enums/statuses.ts` — mirrors DB enums **[P1]**
+- `packages/contracts/src/events/index.ts` — event names+schemas — outbox contract **[P1]**
+- `packages/contracts/src/openapi/generate.ts` — packages/contracts **[P1]**
+- `packages/contracts/tsconfig.json` — packages/contracts **[P1]**
+
+## packages/i18n  (4 files)
+
+- `packages/i18n/package.json` — packages/i18n **[P1]**
+- `packages/i18n/src/format.ts` — dates, lakh/crore **[P1]**
+- `packages/i18n/src/languages.ts` — packages/i18n **[P1]**
+- `packages/i18n/src/loader.ts` — DB-backed ui_messages **[P1]**
+
+## packages/sdk-js  (2 files)
+
+- `packages/sdk-js/package.json` — packages/sdk-js **[P1]**
+- `packages/sdk-js/src/index.ts` — generated from OpenAPI — tenant developer SDK **[P1]**
+
+## packages/testing  (4 files)
+
+- `packages/testing/package.json` — packages/testing **[P1]**
+- `packages/testing/src/factories.ts` — packages/testing **[P1]**
+- `packages/testing/src/ledger-helpers.ts` — zero-sum assertions **[P1]**
+- `packages/testing/src/tenant-helpers.ts` — two-tenant isolation harness **[P1]**
+
+## packages/tokens  (6 files)
+
+- `packages/tokens/package.json` — packages/tokens **[P1]**
+- `packages/tokens/src/colors.ts` — packages/tokens **[P1]**
+- `packages/tokens/src/index.ts` — packages/tokens **[P1]**
+- `packages/tokens/src/spacing.ts` — packages/tokens **[P1]**
+- `packages/tokens/src/typography.ts` — packages/tokens **[P1]**
+- `packages/tokens/sync-from-design-system.js` — imports designer_pack/tokens **[P1]**
+
+## packages/ui  (8 files)
+
+- `packages/ui/package.json` — packages/ui **[P1]**
+- `packages/ui/src/components/AiBadge.tsx` — purple AI transparency chip **[P1]**
+- `packages/ui/src/components/Button.tsx` — packages/ui **[P1]**
+- `packages/ui/src/components/DataTable.tsx` — packages/ui **[P1]**
+- `packages/ui/src/components/Input.tsx` — packages/ui **[P1]**
+- `packages/ui/src/components/MoneyText.tsx` — minor→display, Indic format **[P1]**
+- `packages/ui/src/components/StatusPill.tsx` — packages/ui **[P1]**
+- `packages/ui/src/index.ts` — packages/ui **[P1]**
+
+## packages/ui-native  (8 files)
+
+- `packages/ui-native/package.json` — packages/ui-native **[P1]**
+- `packages/ui-native/src/components/Button.tsx` — packages/ui-native **[P1]**
+- `packages/ui-native/src/components/EmptyState.tsx` — packages/ui-native **[P1]**
+- `packages/ui-native/src/components/MoneyText.tsx` — packages/ui-native **[P1]**
+- `packages/ui-native/src/components/OtpInput.tsx` — packages/ui-native **[P1]**
+- `packages/ui-native/src/components/SkeletonCard.tsx` — packages/ui-native **[P1]**
+- `packages/ui-native/src/components/VoiceButton.tsx` — pulsing mic **[P1]**
+- `packages/ui-native/src/index.ts` — packages/ui-native **[P1]**
+
+## tools/codegen  (2 files)
+
+- `tools/codegen/generate-module.ts` — scaffolds a module from blueprint **[P1]**
+- `tools/codegen/generate-sdk.ts` — OpenAPI→packages/sdk-js **[P1]**
+
+## tools/scripts  (2 files)
+
+- `tools/scripts/check-module-boundaries.ts` — no cross-module repository imports **[P1]**
+- `tools/scripts/screen-coverage.ts` — design catalog vs mobile screens diff **[P1]**
+
+# COVERAGE-REVIEW ADDITIONS (337 files)
+
+## apps/admin-api  (111 files)
+- `apps/admin-api/.env.example` — admin-api bootstrap/config (own JWT issuer, own secrets kv/<env>/admin) **[P1]**
+- `apps/admin-api/Dockerfile` — admin-api bootstrap/config (own JWT issuer, own secrets kv/<env>/admin) **[P1]**
+- `apps/admin-api/README.md` — GOD MODE backend — platform-owner plane. Separate app on purpose: own pods, own WAF rules, IP-allowlisted, hardware-key 2FA, NO tenant traffic shares this process. Connects as kv_admin (RLS-bypass capable, every query audited). **[P1]**
+- `apps/admin-api/package.json` — admin-api bootstrap/config (own JWT issuer, own secrets kv/<env>/admin) **[P1]**
+- `apps/admin-api/src/admin.module.ts` — admin-api bootstrap/config (own JWT issuer, own secrets kv/<env>/admin) **[P1]**
+- `apps/admin-api/src/core/audit/admin-audit.interceptor.ts` — EVERY request logged with old/new values **[P1]**
+- `apps/admin-api/src/core/auth/admin-jwt.strategy.ts` — separate issuer/secret from tenant API **[P1]**
+- `apps/admin-api/src/core/auth/hardware-key.guard.ts` — WebAuthn/FIDO2 mandatory for super_admin **[P1]**
+- `apps/admin-api/src/core/auth/ip-allowlist.middleware.ts` — admin core **[P1]**
+- `apps/admin-api/src/core/auth/step-up-reauth.guard.ts` — re-auth for destructive ops **[P1]**
+- `apps/admin-api/src/core/rbac/owner-roles.ts` — super_admin, platform_finance, platform_support, platform_compliance **[P1]**
+- `apps/admin-api/src/main.ts` — admin-api bootstrap/config (own JWT issuer, own secrets kv/<env>/admin) **[P1]**
+- `apps/admin-api/src/modules/ai-models-ops/__tests__/ai-models-ops.spec.ts` — tests incl. authz denial cases **[P1]**
+- `apps/admin-api/src/modules/ai-models-ops/ai-models-ops.controller.ts` — endpoints for ai-models-ops (all hardware-key gated) **[P1]**
+- `apps/admin-api/src/modules/ai-models-ops/ai-models-ops.module.ts` — god-mode module: ai-models-ops **[P1]**
+- `apps/admin-api/src/modules/ai-models-ops/services/fairness-audit-reports.service.ts` — ai-models-ops action **[P1]**
+- `apps/admin-api/src/modules/ai-models-ops/services/model-registry.service.ts` — shadow→canary→prod promotion **[P1]**
+- `apps/admin-api/src/modules/ai-models-ops/services/threshold-tuning.service.ts` — ai-models-ops action **[P1]**
+- `apps/admin-api/src/modules/announcements/__tests__/announcements.spec.ts` — tests incl. authz denial cases **[P1]**
+- `apps/admin-api/src/modules/announcements/announcements.controller.ts` — endpoints for announcements (all hardware-key gated) **[P1]**
+- `apps/admin-api/src/modules/announcements/announcements.module.ts` — god-mode module: announcements **[P1]**
+- `apps/admin-api/src/modules/announcements/services/announcement-crud.service.ts` — maintenance banners to tenant panels **[P1]**
+- `apps/admin-api/src/modules/billing-ops/__tests__/billing-ops.spec.ts` — tests incl. authz denial cases **[P1]**
+- `apps/admin-api/src/modules/billing-ops/billing-ops.controller.ts` — endpoints for billing-ops (all hardware-key gated) **[P1]**
+- `apps/admin-api/src/modules/billing-ops/billing-ops.module.ts` — god-mode module: billing-ops **[P1]**
+- `apps/admin-api/src/modules/billing-ops/services/dunning.service.ts` — payment failure follow-up **[P1]**
+- `apps/admin-api/src/modules/billing-ops/services/manual-adjustment.service.ts` — reason+audit **[P1]**
+- `apps/admin-api/src/modules/billing-ops/services/revenue-dashboard.service.ts` — MRR/ARR/NRR **[P1]**
+- `apps/admin-api/src/modules/billing-ops/services/saas-invoices-admin.service.ts` — billing-ops action **[P1]**
+- `apps/admin-api/src/modules/cells-ops/__tests__/cells-ops.spec.ts` — tests incl. authz denial cases **[P3]**
+- `apps/admin-api/src/modules/cells-ops/cells-ops.controller.ts` — endpoints for cells-ops (all hardware-key gated) **[P3]**
+- `apps/admin-api/src/modules/cells-ops/cells-ops.module.ts` — god-mode module: cells-ops **[P3]**
+- `apps/admin-api/src/modules/cells-ops/services/cell-registry.service.ts` — countries/regions **[P3]**
+- `apps/admin-api/src/modules/cells-ops/services/data-residency-rules.service.ts` — cells-ops action **[P3]**
+- `apps/admin-api/src/modules/cells-ops/services/tenant-cell-assignment.service.ts` — cells-ops action **[P3]**
+- `apps/admin-api/src/modules/compliance-ops/__tests__/compliance-ops.spec.ts` — tests incl. authz denial cases **[P1]**
+- `apps/admin-api/src/modules/compliance-ops/compliance-ops.controller.ts` — endpoints for compliance-ops (all hardware-key gated) **[P1]**
+- `apps/admin-api/src/modules/compliance-ops/compliance-ops.module.ts` — god-mode module: compliance-ops **[P1]**
+- `apps/admin-api/src/modules/compliance-ops/services/audit-log-explorer.service.ts` — compliance-ops action **[P1]**
+- `apps/admin-api/src/modules/compliance-ops/services/breach-response-console.service.ts` — compliance-ops action **[P1]**
+- `apps/admin-api/src/modules/compliance-ops/services/data-subject-requests-queue.service.ts` — DPDP **[P1]**
+- `apps/admin-api/src/modules/compliance-ops/services/retention-policy-admin.service.ts` — compliance-ops action **[P1]**
+- `apps/admin-api/src/modules/compliance-ops/services/tenant-export-approvals.service.ts` — compliance-ops action **[P1]**
+- `apps/admin-api/src/modules/flags-ops/__tests__/flags-ops.spec.ts` — tests incl. authz denial cases **[P1]**
+- `apps/admin-api/src/modules/flags-ops/flags-ops.controller.ts` — endpoints for flags-ops (all hardware-key gated) **[P1]**
+- `apps/admin-api/src/modules/flags-ops/flags-ops.module.ts` — god-mode module: flags-ops **[P1]**
+- `apps/admin-api/src/modules/flags-ops/services/global-flags.service.ts` — flags-ops action **[P1]**
+- `apps/admin-api/src/modules/flags-ops/services/kill-switch.service.ts` — any feature, seconds **[P1]**
+- `apps/admin-api/src/modules/flags-ops/services/percent-rollout.service.ts` — flags-ops action **[P1]**
+- `apps/admin-api/src/modules/global-catalogue-ops/__tests__/global-catalogue-ops.spec.ts` — tests incl. authz denial cases **[P1]**
+- `apps/admin-api/src/modules/global-catalogue-ops/global-catalogue-ops.controller.ts` — endpoints for global-catalogue-ops (all hardware-key gated) **[P1]**
+- `apps/admin-api/src/modules/global-catalogue-ops/global-catalogue-ops.module.ts` — god-mode module: global-catalogue-ops **[P1]**
+- `apps/admin-api/src/modules/global-catalogue-ops/services/attributes-admin.service.ts` — global-catalogue-ops action **[P1]**
+- `apps/admin-api/src/modules/global-catalogue-ops/services/categories-admin.service.ts` — global-catalogue-ops action **[P1]**
+- `apps/admin-api/src/modules/global-catalogue-ops/services/products-admin.service.ts` — global-catalogue-ops action **[P1]**
+- `apps/admin-api/src/modules/global-catalogue-ops/services/regulated-rules-admin.service.ts` — state bans **[P1]**
+- `apps/admin-api/src/modules/global-catalogue-ops/services/synonyms-admin.service.ts` — global-catalogue-ops action **[P1]**
+- `apps/admin-api/src/modules/impersonation/__tests__/impersonation.spec.ts` — tests incl. authz denial cases **[P1]**
+- `apps/admin-api/src/modules/impersonation/impersonation.controller.ts` — endpoints for impersonation (all hardware-key gated) **[P1]**
+- `apps/admin-api/src/modules/impersonation/impersonation.module.ts` — god-mode module: impersonation **[P1]**
+- `apps/admin-api/src/modules/impersonation/services/end-impersonation.service.ts` — impersonation action **[P1]**
+- `apps/admin-api/src/modules/impersonation/services/impersonation-history.service.ts` — impersonation action **[P1]**
+- `apps/admin-api/src/modules/impersonation/services/start-impersonation.service.ts` — time-bound token, banner flag, audit **[P1]**
+- `apps/admin-api/src/modules/plans-ops/__tests__/plans-ops.spec.ts` — tests incl. authz denial cases **[P1]**
+- `apps/admin-api/src/modules/plans-ops/plans-ops.controller.ts` — endpoints for plans-ops (all hardware-key gated) **[P1]**
+- `apps/admin-api/src/modules/plans-ops/plans-ops.module.ts` — god-mode module: plans-ops **[P1]**
+- `apps/admin-api/src/modules/plans-ops/services/custom-pricing.service.ts` — anchor deals **[P1]**
+- `apps/admin-api/src/modules/plans-ops/services/plan-assignment.service.ts` — plans-ops action **[P1]**
+- `apps/admin-api/src/modules/plans-ops/services/plan-crud.service.ts` — new version, never edit live **[P1]**
+- `apps/admin-api/src/modules/platform-reports/__tests__/platform-reports.spec.ts` — tests incl. authz denial cases **[P1]**
+- `apps/admin-api/src/modules/platform-reports/platform-reports.controller.ts` — endpoints for platform-reports (all hardware-key gated) **[P1]**
+- `apps/admin-api/src/modules/platform-reports/platform-reports.module.ts` — god-mode module: platform-reports **[P1]**
+- `apps/admin-api/src/modules/platform-reports/services/cohort-reports.service.ts` — platform-reports action **[P1]**
+- `apps/admin-api/src/modules/platform-reports/services/cross-tenant-analytics.service.ts` — anonymised **[P1]**
+- `apps/admin-api/src/modules/platform-reports/services/gmv-rollups.service.ts` — platform-reports action **[P1]**
+- `apps/admin-api/src/modules/platform-reports/services/regulator-exports.service.ts` — platform-reports action **[P1]**
+- `apps/admin-api/src/modules/providers-ops/__tests__/providers-ops.spec.ts` — tests incl. authz denial cases **[P2]**
+- `apps/admin-api/src/modules/providers-ops/providers-ops.controller.ts` — endpoints for providers-ops (all hardware-key gated) **[P2]**
+- `apps/admin-api/src/modules/providers-ops/providers-ops.module.ts` — god-mode module: providers-ops **[P2]**
+- `apps/admin-api/src/modules/providers-ops/services/financial-partners-admin.service.ts` — providers-ops action **[P2]**
+- `apps/admin-api/src/modules/providers-ops/services/integration-providers-admin.service.ts` — providers-ops action **[P2]**
+- `apps/admin-api/src/modules/providers-ops/services/provider-sla-monitor.service.ts` — providers-ops action **[P2]**
+- `apps/admin-api/src/modules/recon-monitor/__tests__/recon-monitor.spec.ts` — tests incl. authz denial cases **[P1]**
+- `apps/admin-api/src/modules/recon-monitor/recon-monitor.controller.ts` — endpoints for recon-monitor (all hardware-key gated) **[P1]**
+- `apps/admin-api/src/modules/recon-monitor/recon-monitor.module.ts` — god-mode module: recon-monitor **[P1]**
+- `apps/admin-api/src/modules/recon-monitor/services/ledger-freeze-controls.service.ts` — recon-monitor action **[P1]**
+- `apps/admin-api/src/modules/recon-monitor/services/mismatch-investigations.service.ts` — recon-monitor action **[P1]**
+- `apps/admin-api/src/modules/recon-monitor/services/wallet-recon-dashboard.service.ts` — recon-monitor action **[P1]**
+- `apps/admin-api/src/modules/schemes-registry-ops/__tests__/schemes-registry-ops.spec.ts` — tests incl. authz denial cases **[P2]**
+- `apps/admin-api/src/modules/schemes-registry-ops/schemes-registry-ops.controller.ts` — endpoints for schemes-registry-ops (all hardware-key gated) **[P2]**
+- `apps/admin-api/src/modules/schemes-registry-ops/schemes-registry-ops.module.ts` — god-mode module: schemes-registry-ops **[P2]**
+- `apps/admin-api/src/modules/schemes-registry-ops/services/eligibility-rules-editor.service.ts` — schemes-registry-ops action **[P2]**
+- `apps/admin-api/src/modules/schemes-registry-ops/services/scheme-crud.service.ts` — versioned **[P2]**
+- `apps/admin-api/src/modules/schemes-registry-ops/services/window-calendar.service.ts` — schemes-registry-ops action **[P2]**
+- `apps/admin-api/src/modules/support-oversight/__tests__/support-oversight.spec.ts` — tests incl. authz denial cases **[P1]**
+- `apps/admin-api/src/modules/support-oversight/services/sla-breach-monitor.service.ts` — support-oversight action **[P1]**
+- `apps/admin-api/src/modules/support-oversight/services/tenant-health-alerts.service.ts` — support-oversight action **[P1]**
+- `apps/admin-api/src/modules/support-oversight/services/ticket-escalations.service.ts` — support-oversight action **[P1]**
+- `apps/admin-api/src/modules/support-oversight/support-oversight.controller.ts` — endpoints for support-oversight (all hardware-key gated) **[P1]**
+- `apps/admin-api/src/modules/support-oversight/support-oversight.module.ts` — god-mode module: support-oversight **[P1]**
+- `apps/admin-api/src/modules/tenant-ops/__tests__/impersonation-audit.spec.ts` — impersonation MUST create audit rows + expire (CI gate) **[P1]**
+- `apps/admin-api/src/modules/tenant-ops/__tests__/tenant-ops.spec.ts` — tests incl. authz denial cases **[P1]**
+- `apps/admin-api/src/modules/tenant-ops/services/approve-tenant.service.ts` — tenant-ops action **[P1]**
+- `apps/admin-api/src/modules/tenant-ops/services/archive-tenant.service.ts` — tenant-ops action **[P1]**
+- `apps/admin-api/src/modules/tenant-ops/services/override-limits.service.ts` — tenant-ops action **[P1]**
+- `apps/admin-api/src/modules/tenant-ops/services/suspend-tenant.service.ts` — reason mandatory, grace rules **[P1]**
+- `apps/admin-api/src/modules/tenant-ops/services/tenant-scorecard.service.ts` — GMV, churn-risk, support burden **[P1]**
+- `apps/admin-api/src/modules/tenant-ops/services/tenant-search.service.ts` — tenant-ops action **[P1]**
+- `apps/admin-api/src/modules/tenant-ops/tenant-ops.controller.ts` — endpoints for tenant-ops (all hardware-key gated) **[P1]**
+- `apps/admin-api/src/modules/tenant-ops/tenant-ops.module.ts` — god-mode module: tenant-ops **[P1]**
+- `apps/admin-api/tsconfig.json` — admin-api bootstrap/config (own JWT issuer, own secrets kv/<env>/admin) **[P1]**
+
+## apps/ai-services  (4 files)
+- `apps/ai-services/feature-store/README.md` — ML training pipelines (Phase 2) **[P2]**
+- `apps/ai-services/training/photo_grading/labelling_spec.md` — ML training pipelines (Phase 2) **[P2]**
+- `apps/ai-services/training/price_bands/backtest.py` — ML training pipelines (Phase 2) **[P2]**
+- `apps/ai-services/training/voice_extraction/dataset_builder.py` — ML training pipelines (Phase 2) **[P2]**
+
+## apps/analytics-pipeline  (14 files)
+- `apps/analytics-pipeline/Dockerfile` — analytics pipeline **[P2]**
+- `apps/analytics-pipeline/README.md` — Event pipeline: outbox/app events → ClickHouse. Powers Mandi Pulse history, tenant reports at scale, and the SELLABLE data products (PRD §49) — never touches OLTP for analytics. **[P2]**
+- `apps/analytics-pipeline/clickhouse/ddl/001_events.sql` — analytics pipeline **[P2]**
+- `apps/analytics-pipeline/clickhouse/ddl/002_orders_flat.sql` — analytics pipeline **[P2]**
+- `apps/analytics-pipeline/clickhouse/ddl/003_mandi_prices_history.sql` — analytics pipeline **[P2]**
+- `apps/analytics-pipeline/clickhouse/ddl/004_tenant_daily_rollups.sql` — analytics pipeline **[P2]**
+- `apps/analytics-pipeline/dbt/dbt_project.yml` — analytics pipeline **[P2]**
+- `apps/analytics-pipeline/dbt/models/marts/farmer_cohorts.sql` — analytics pipeline **[P2]**
+- `apps/analytics-pipeline/dbt/models/marts/gmv_daily.sql` — analytics pipeline **[P2]**
+- `apps/analytics-pipeline/dbt/models/marts/mandi_pulse_pro.sql` — data product **[P2]**
+- `apps/analytics-pipeline/exports/mandi-pulse-pro.exporter.ts` — anonymised, consented — revenue stream 5 **[P2]**
+- `apps/analytics-pipeline/package.json` — analytics pipeline **[P2]**
+- `apps/analytics-pipeline/src/consumers/app-analytics.consumer.ts` — analytics pipeline **[P2]**
+- `apps/analytics-pipeline/src/consumers/domain-events.consumer.ts` — analytics pipeline **[P2]**
+
+## apps/api  (3 files)
+- `apps/api/src/core/quota/limit-alerts.ts` — 80% warnings **[P1]**
+- `apps/api/src/core/quota/quota.guard.ts` — plan-limit enforcement on writes **[P1]**
+- `apps/api/src/core/quota/usage-meter.service.ts` — UPSERT usage_counters **[P1]**
+
+## apps/ivr-ussd-gateway  (16 files)
+- `apps/ivr-ussd-gateway/.env.example` — ivr/ussd gateway **[P2]**
+- `apps/ivr-ussd-gateway/Dockerfile` — ivr/ussd gateway **[P2]**
+- `apps/ivr-ussd-gateway/README.md` — Voice/USSD channel server: feature-phone farmers browse prices, place intents, check orders by phone call (Exotel/Asterisk) or *123# (telco USSD). **[P2]**
+- `apps/ivr-ussd-gateway/package.json` — ivr/ussd gateway **[P2]**
+- `apps/ivr-ussd-gateway/src/ivr/call-router.ts` — ivr/ussd gateway **[P2]**
+- `apps/ivr-ussd-gateway/src/ivr/exotel.adapter.ts` — ivr/ussd gateway **[P2]**
+- `apps/ivr-ussd-gateway/src/ivr/flows/order-status.flow.ts` — ivr/ussd gateway **[P2]**
+- `apps/ivr-ussd-gateway/src/ivr/flows/price-check.flow.ts` — ivr/ussd gateway **[P2]**
+- `apps/ivr-ussd-gateway/src/ivr/flows/sell-intent.flow.ts` — agent callback **[P2]**
+- `apps/ivr-ussd-gateway/src/ivr/menus/en.menu.ts` — ivr/ussd gateway **[P2]**
+- `apps/ivr-ussd-gateway/src/ivr/menus/gu.menu.ts` — ivr/ussd gateway **[P2]**
+- `apps/ivr-ussd-gateway/src/ivr/menus/hi.menu.ts` — ivr/ussd gateway **[P2]**
+- `apps/ivr-ussd-gateway/src/main.ts` — ivr/ussd gateway **[P2]**
+- `apps/ivr-ussd-gateway/src/ussd/session-store.ts` — redis **[P2]**
+- `apps/ivr-ussd-gateway/src/ussd/ussd-router.ts` — ivr/ussd gateway **[P2]**
+- `apps/ivr-ussd-gateway/tsconfig.json` — ivr/ussd gateway **[P2]**
+
+## apps/mobile  (49 files)
+- `apps/mobile/src/core/i18n/locales/en.json` — offline fallback strings (en) — DB ui_messages is source of truth **[P1]**
+- `apps/mobile/src/core/i18n/locales/gu.json` — offline fallback strings (gu) — DB ui_messages is source of truth **[P1]**
+- `apps/mobile/src/core/i18n/locales/hi.json` — offline fallback strings (hi) — DB ui_messages is source of truth **[P1]**
+- `apps/mobile/src/features/ambassador/screens/AepsWithdrawScreen.tsx` — micro-ATM, Phase 2 **[P2]**
+- `apps/mobile/src/features/ambassador/screens/AssistedConsentScreen.tsx` — voice+OTP consent capture **[P1]**
+- `apps/mobile/src/features/ambassador/screens/KioskModeScreen.tsx` — assisted onboarding lock mode **[P1]**
+- `apps/mobile/src/features/delivery-partner/api.ts` — delivery-partner api hooks **[P1]**
+- `apps/mobile/src/features/delivery-partner/screens/DeliveryPodScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/delivery-partner/screens/EarningsScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/delivery-partner/screens/PickupOtpScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/delivery-partner/screens/RouteMapScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/delivery-partner/screens/TasksTodayScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/delivery-partner/store.ts` — delivery-partner state **[P1]**
+- `apps/mobile/src/features/fpo-coordinator/api.ts` — fpo-coordinator api hooks **[P1]**
+- `apps/mobile/src/features/fpo-coordinator/screens/CreateGroupLotScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/fpo-coordinator/screens/GroupLotsScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/fpo-coordinator/screens/GroupSettlementScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/fpo-coordinator/screens/MemberPledgesScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/fpo-coordinator/screens/MembersScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/fpo-coordinator/store.ts` — fpo-coordinator state **[P1]**
+- `apps/mobile/src/features/mcc-operator/api.ts` — mcc-operator api hooks **[P2]**
+- `apps/mobile/src/features/mcc-operator/screens/BmcStatusScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/mcc-operator/screens/CollectionSlipScreen.tsx` — weigh+fat/SNF, <8 taps **[P2]**
+- `apps/mobile/src/features/mcc-operator/screens/MemberLookupScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/mcc-operator/screens/ShiftCloseScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/mcc-operator/store.ts` — mcc-operator state **[P2]**
+- `apps/mobile/src/features/store-owner/api.ts` — store-owner api hooks **[P2]**
+- `apps/mobile/src/features/store-owner/screens/BatchesExpiryScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/store-owner/screens/LicenceRenewalScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/store-owner/screens/StoreInventoryScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/store-owner/screens/StoreOrdersScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/store-owner/store.ts` — store-owner state **[P2]**
+- `apps/mobile/src/features/tenant-admin-lite/api.ts` — tenant-admin-lite api hooks **[P1]**
+- `apps/mobile/src/features/tenant-admin-lite/screens/ApprovalsQueueScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/tenant-admin-lite/screens/TenantDashboardScreen.tsx` — design 08 **[P1]**
+- `apps/mobile/src/features/tenant-admin-lite/screens/TodayOrdersScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/tenant-admin-lite/store.ts` — tenant-admin-lite state **[P1]**
+- `apps/mobile/src/features/vet/api.ts` — vet api hooks **[P2]**
+- `apps/mobile/src/features/vet/screens/BookingDetailScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/vet/screens/EarningsScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/vet/screens/PrescriptionWriterScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/vet/screens/VetBookingsCalendarScreen.tsx` — screen **[P2]**
+- `apps/mobile/src/features/vet/store.ts` — vet state **[P2]**
+- `apps/mobile/src/features/vyapari-home/api.ts` — vyapari-home api hooks **[P1]**
+- `apps/mobile/src/features/vyapari-home/screens/MarketDashboardScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/vyapari-home/screens/RequirementsInboxScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/vyapari-home/screens/SupplierShortlistScreen.tsx` — screen **[P1]**
+- `apps/mobile/src/features/vyapari-home/screens/VyapariHomeScreen.tsx` — lots ending, my bids, watchlist **[P1]**
+- `apps/mobile/src/features/vyapari-home/store.ts` — vyapari-home state **[P1]**
+
+## apps/web-admin  (6 files)
+- `apps/web-admin/src/app/billing/page.tsx` — MRR/ARR, dunning, invoices **[P1]**
+- `apps/web-admin/src/app/cells/page.tsx` — country cells & data residency **[P3]**
+- `apps/web-admin/src/app/compliance/dsr-queue/page.tsx` — DPDP data-subject requests **[P1]**
+- `apps/web-admin/src/app/impersonate/[tenantId]/page.tsx` — impersonation console with countdown banner **[P1]**
+- `apps/web-admin/src/app/providers/sla/page.tsx` — partner SLA scoreboard **[P2]**
+- `apps/web-admin/src/app/recon-monitor/page.tsx` — wallet reconciliation live status **[P1]**
+
+## apps/web-partner  (19 files)
+- `apps/web-partner/.env.example` — partner portal scaffold **[P2]**
+- `apps/web-partner/Dockerfile` — partner portal scaffold **[P2]**
+- `apps/web-partner/README.md` — Partner portal: banks/NBFCs process loan applications, insurers process policies & claims. Partner-scoped auth (financial_partners), never tenant data beyond consented applications. **[P2]**
+- `apps/web-partner/next.config.js` — partner portal scaffold **[P2]**
+- `apps/web-partner/package.json` — partner portal scaffold **[P2]**
+- `apps/web-partner/src/app/api-credentials/page.tsx` — partner API keys/webhooks **[P2]**
+- `apps/web-partner/src/app/claims-queue/[id]/page.tsx` — claim detail + evidence **[P2]**
+- `apps/web-partner/src/app/claims-queue/page.tsx` — insurance claims to survey/decide **[P2]**
+- `apps/web-partner/src/app/dashboard/page.tsx` — partner KPIs: pipeline, TATs, book **[P2]**
+- `apps/web-partner/src/app/disbursals/page.tsx` — approved → disbursal tracking **[P2]**
+- `apps/web-partner/src/app/layout.tsx` — partner portal scaffold **[P2]**
+- `apps/web-partner/src/app/loan-queue/[id]/page.tsx` — application detail + docs + score (consented) **[P2]**
+- `apps/web-partner/src/app/loan-queue/page.tsx` — applications to decide **[P2]**
+- `apps/web-partner/src/app/policies/page.tsx` — policy book **[P2]**
+- `apps/web-partner/src/app/portfolio/page.tsx` — active loans, overdue, collections view **[P2]**
+- `apps/web-partner/src/app/settings/page.tsx` — team & users **[P2]**
+- `apps/web-partner/src/app/sla-report/page.tsx` — own SLA performance **[P2]**
+- `apps/web-partner/src/lib/partner-auth.ts` — partner portal scaffold **[P2]**
+- `apps/web-partner/tsconfig.json` — partner portal scaffold **[P2]**
+
+## apps/web-tenant  (8 files)
+- `apps/web-tenant/src/app/ai-review-queue/page.tsx` — tenant AI Ops officer queue (low-confidence grades, fraud flags) **[P1]**
+- `apps/web-tenant/src/app/auditor/page.tsx` — read-only ledger/settlement/GST exports (auditor role) **[P1]**
+- `apps/web-tenant/src/app/dairy/mcc/page.tsx` — MCC management (Phase 2) **[P2]**
+- `apps/web-tenant/src/app/group-lots/page.tsx` — FPO group lots admin **[P1]**
+- `apps/web-tenant/src/app/schemes/applications/page.tsx` — scheme application processing (gov/tenant) **[P2]**
+- `apps/web-tenant/src/app/settings/staff-permissions/page.tsx` — per-staff permission overrides **[P1]**
+- `apps/web-tenant/src/app/settings/webhooks/page.tsx` — tenant webhook endpoints + replay **[P1]**
+- `apps/web-tenant/src/app/support-inbox/page.tsx` — support agent console (tickets, SLA timers) **[P1]**
+
+## apps/whatsapp-bot  (14 files)
+- `apps/whatsapp-bot/.env.example` — whatsapp bot **[P2]**
+- `apps/whatsapp-bot/Dockerfile` — whatsapp bot **[P2]**
+- `apps/whatsapp-bot/README.md` — WhatsApp Commerce: catalogue browse, repeat orders, status, OTP — conversational flows over Gupshup BSP. Phase 1 = template notifications only (worker handles); this app = Phase 2 conversations. **[P2]**
+- `apps/whatsapp-bot/package.json` — whatsapp bot **[P2]**
+- `apps/whatsapp-bot/src/flows/browse-catalogue.flow.ts` — whatsapp bot **[P2]**
+- `apps/whatsapp-bot/src/flows/language-select.flow.ts` — whatsapp bot **[P2]**
+- `apps/whatsapp-bot/src/flows/order-status.flow.ts` — whatsapp bot **[P2]**
+- `apps/whatsapp-bot/src/flows/place-order.flow.ts` — whatsapp bot **[P2]**
+- `apps/whatsapp-bot/src/flows/repeat-order.flow.ts` — whatsapp bot **[P2]**
+- `apps/whatsapp-bot/src/main.ts` — whatsapp bot **[P2]**
+- `apps/whatsapp-bot/src/session.store.ts` — whatsapp bot **[P2]**
+- `apps/whatsapp-bot/src/templates/sync-templates.job.ts` — whatsapp bot **[P2]**
+- `apps/whatsapp-bot/src/webhook.controller.ts` — inbound messages **[P2]**
+- `apps/whatsapp-bot/tsconfig.json` — whatsapp bot **[P2]**
+
+## db/dba  (13 files)
+- `db/dba/bloat-check.sql` — table/index bloat estimator **[P1]**
+- `db/dba/capacity-forecast.md` — quarterly: size/TPS trend vs A9 cost ladder **[P1]**
+- `db/dba/connection-audit.sql` — who is connected as what role (kv_app must never hold ledger writes) **[P1]**
+- `db/dba/failover-runbook.md` — Aurora failover + app verification steps **[P1]**
+- `db/dba/index-review.sql` — unused/duplicate/missing index report (run weekly) **[P1]**
+- `db/dba/locks-monitor.sql` — blocking locks live view **[P1]**
+- `db/dba/partition-health.sql` — verify next-3-months partitions exist (alerts) **[P1]**
+- `db/dba/pg-upgrade-runbook.md` — major version upgrade procedure (blue/green) **[P1]**
+- `db/dba/rds-proxy-config.md` — pool sizing per service; pinning pitfalls **[P1]**
+- `db/dba/replication-lag.sql` — replica lag check (alert >10s) **[P1]**
+- `db/dba/rls-verify.sql` — v_tables_without_rls must return zero rows **[P1]**
+- `db/dba/slow-queries-weekly.sql` — pg_stat_statements top-20 by total time **[P1]**
+- `db/dba/vacuum-analyze-policy.md` — autovacuum tuning per hot table; manual schedule for partitions **[P1]**
+
+## docs/api  (1 files)
+- `docs/api/versioning.md` — URI major versions, 12-month deprecation, sunset headers **[P1]**
+
+## docs/architecture  (3 files)
+- `docs/architecture/role-surface-matrix.md` — ALL 24 roles → app/surface/routes (coverage proof) **[P1]**
+- `docs/architecture/role-surface-matrix.md` — coverage proof **[P1]**
+- `docs/architecture/service-extraction-plan.md` — order of module→service extraction with triggers **[P1]**
+
+## docs/legal  (4 files)
+- `docs/legal/partner-dpa-template.md` — data processing addendum for partners **[P1]**
+- `docs/legal/privacy-policy-template.md` — DPDP-compliant privacy source **[P1]**
+- `docs/legal/tenant-msa-template.md` — tenant master service agreement source **[P1]**
+- `docs/legal/terms-of-service-template.md` — versioned ToS source **[P1]**
+
+## infra/gateway  (3 files)
+- `infra/gateway/alb-routing.tf` — per-app routing, admin-api separate listener **[P1]**
+- `infra/gateway/api-throttling.tf` — per-plan quotas at edge **[P1]**
+- `infra/gateway/waf-rules.tf` — rate rules, geo rules, admin IP allowlist **[P1]**
+
+## infra/helm  (25 files)
+- `infra/helm/admin-api/Chart.yaml` — helm: admin-api **[P1]**
+- `infra/helm/admin-api/templates/deployment.yaml` — helm: admin-api **[P1]**
+- `infra/helm/admin-api/templates/hpa.yaml` — helm: admin-api **[P1]**
+- `infra/helm/admin-api/templates/service.yaml` — helm: admin-api **[P1]**
+- `infra/helm/admin-api/values.yaml` — helm: admin-api **[P1]**
+- `infra/helm/analytics-pipeline/Chart.yaml` — helm: analytics-pipeline **[P2]**
+- `infra/helm/analytics-pipeline/templates/deployment.yaml` — helm: analytics-pipeline **[P2]**
+- `infra/helm/analytics-pipeline/templates/hpa.yaml` — helm: analytics-pipeline **[P2]**
+- `infra/helm/analytics-pipeline/templates/service.yaml` — helm: analytics-pipeline **[P2]**
+- `infra/helm/analytics-pipeline/values.yaml` — helm: analytics-pipeline **[P2]**
+- `infra/helm/ivr-ussd-gateway/Chart.yaml` — helm: ivr-ussd-gateway **[P2]**
+- `infra/helm/ivr-ussd-gateway/templates/deployment.yaml` — helm: ivr-ussd-gateway **[P2]**
+- `infra/helm/ivr-ussd-gateway/templates/hpa.yaml` — helm: ivr-ussd-gateway **[P2]**
+- `infra/helm/ivr-ussd-gateway/templates/service.yaml` — helm: ivr-ussd-gateway **[P2]**
+- `infra/helm/ivr-ussd-gateway/values.yaml` — helm: ivr-ussd-gateway **[P2]**
+- `infra/helm/web-partner/Chart.yaml` — helm: web-partner **[P2]**
+- `infra/helm/web-partner/templates/deployment.yaml` — helm: web-partner **[P2]**
+- `infra/helm/web-partner/templates/hpa.yaml` — helm: web-partner **[P2]**
+- `infra/helm/web-partner/templates/service.yaml` — helm: web-partner **[P2]**
+- `infra/helm/web-partner/values.yaml` — helm: web-partner **[P2]**
+- `infra/helm/whatsapp-bot/Chart.yaml` — helm: whatsapp-bot **[P2]**
+- `infra/helm/whatsapp-bot/templates/deployment.yaml` — helm: whatsapp-bot **[P2]**
+- `infra/helm/whatsapp-bot/templates/hpa.yaml` — helm: whatsapp-bot **[P2]**
+- `infra/helm/whatsapp-bot/templates/service.yaml` — helm: whatsapp-bot **[P2]**
+- `infra/helm/whatsapp-bot/values.yaml` — helm: whatsapp-bot **[P2]**
+
+## infra/scripts  (3 files)
+- `infra/scripts/backup-verify.sh` — restore + recon check **[P1]**
+- `infra/scripts/cost-report.sh` — monthly AWS cost vs ladder **[P1]**
+- `infra/scripts/dr-failover.sh` — region failover drill **[P1]**
+
+## ops/alerts  (6 files)
+- `ops/alerts/api-alerts.yml` — alert rules as code **[P1]**
+- `ops/alerts/business-alerts.yml` — alert rules as code **[P1]**
+- `ops/alerts/db-alerts.yml` — alert rules as code **[P1]**
+- `ops/alerts/queue-alerts.yml` — alert rules as code **[P1]**
+- `ops/alerts/sms-budget-alerts.yml` — alert rules as code **[P1]**
+- `ops/alerts/wallet-alerts.yml` — alert rules as code **[P1]**
+
+## ops/statuspage.md  (1 files)
+- `ops/statuspage.md` — status.krishi-verse.com config + update SOP (15-min Sev0 rule) **[P1]**
+
+## packages/contracts  (12 files)
+- `packages/contracts/src/events/auctions.events.ts` — versioned event schemas for auctions (outbox contract) **[P1]**
+- `packages/contracts/src/events/dairy.events.ts` — versioned event schemas for dairy (outbox contract) **[P1]**
+- `packages/contracts/src/events/fintech.events.ts` — versioned event schemas for fintech (outbox contract) **[P1]**
+- `packages/contracts/src/events/identity.events.ts` — versioned event schemas for identity (outbox contract) **[P1]**
+- `packages/contracts/src/events/labour.events.ts` — versioned event schemas for labour (outbox contract) **[P1]**
+- `packages/contracts/src/events/listings.events.ts` — versioned event schemas for listings (outbox contract) **[P1]**
+- `packages/contracts/src/events/livestock.events.ts` — versioned event schemas for livestock (outbox contract) **[P1]**
+- `packages/contracts/src/events/logistics.events.ts` — versioned event schemas for logistics (outbox contract) **[P1]**
+- `packages/contracts/src/events/orders.events.ts` — versioned event schemas for orders (outbox contract) **[P1]**
+- `packages/contracts/src/events/payments.events.ts` — versioned event schemas for payments (outbox contract) **[P1]**
+- `packages/contracts/src/events/schemes.events.ts` — versioned event schemas for schemes (outbox contract) **[P1]**
+- `packages/contracts/src/events/tenancy.events.ts` — versioned event schemas for tenancy (outbox contract) **[P1]**
+
+## qa/accessibility-checklist.md  (1 files)
+- `qa/accessibility-checklist.md` — WCAG 2.2 AA gates per release **[P1]**
+
+## qa/chaos  (1 files)
+- `qa/chaos/drills.md` — quarterly: kill writer, kill redis, flood queue, partition missing **[P1]**
+
+## qa/device-matrix.md  (1 files)
+- `qa/device-matrix.md` — Redmi 9A 2GB, Realme C-series, Samsung A03 + iOS floor **[P1]**
+
+## qa/release-checklist.md  (1 files)
+- `qa/release-checklist.md` — pre-prod sign-offs incl. tenant-isolation + ledger gates **[P1]**
+
+## qa/test-strategy.md  (1 files)
+- `qa/test-strategy.md` — pyramid: unit 80%/domain 95%, integration per endpoint, e2e top-100 journeys **[P1]**
+
+## qa/uat  (6 files)
+- `qa/uat/ambassador-journey.md` — kiosk onboard→commission→withdraw **[P1]**
+- `qa/uat/buyer-journey.md` — browse→offer→checkout→dispute script **[P1]**
+- `qa/uat/farmer-journey.md` — signup→voice list→sell→payout script **[P1]**
+- `qa/uat/god-mode-journey.md` — tenant approve→impersonate(audited)→suspend→export **[P1]**
+- `qa/uat/tenant-admin-journey.md` — approve→moderate→settle→report **[P1]**
+- `qa/uat/worker-journey.md` — onboard→booking→geofence attendance→same-day wage **[P1]**
+
+## qa/vernacular-test-plan.md  (1 files)
+- `qa/vernacular-test-plan.md` — every screen ×3 languages; voice ×accents; Indic rendering **[P1]**
+
+## security/access-review-quarterly.md  (1 files)
+- `security/access-review-quarterly.md` — IAM + DB roles + admin users review checklist **[P1]**
+
+## security/admin-access-policy.md  (1 files)
+- `security/admin-access-policy.md` — god mode: hardware keys, IP allowlist, JIT elevation, no standing prod access **[P1]**
+
+## security/bug-bounty-policy.md  (1 files)
+- `security/bug-bounty-policy.md` — scope, rewards, safe harbour (launch Phase 2) **[P1]**
+
+## security/data-classification.md  (1 files)
+- `security/data-classification.md` — public/internal/confidential/restricted/sensitive-personal per table **[P1]**
+
+## security/dpdp-dpia-template.md  (1 files)
+- `security/dpdp-dpia-template.md` — Data Protection Impact Assessment template **[P1]**
+
+## security/incident-response-plan.md  (1 files)
+- `security/incident-response-plan.md` — links ops/runbooks; DPDP 72h breach notification flow **[P1]**
+
+## security/key-management.md  (1 files)
+- `security/key-management.md` — KMS keys, rotation, who can decrypt what **[P1]**
+
+## security/pentest-scope.md  (1 files)
+- `security/pentest-scope.md` — annual scope: tenant boundary, god mode, money paths, mobile **[P1]**
+
+## security/security.txt  (1 files)
+- `security/security.txt` — disclosure contact (RFC 9116) **[P1]**
+
+## security/threat-model.md  (1 files)
+- `security/threat-model.md` — STRIDE per surface: api, admin-api (god mode), mobile, partner portal, webhooks **[P1]**
+
+
+# SCALABILITY ADDITIONS — billion-ops gaps closed (91 files)
+
+## apps/api/src
+- `apps/api/src/core/backpressure/README.md` — backpressure **[P1]**
+- `apps/api/src/core/backpressure/concurrency-limiter.ts` — per-endpoint max in-flight **[P1]**
+- `apps/api/src/core/backpressure/load-shedder.ts` — shed low-priority traffic when overloaded; protect checkout/wallet **[P1]**
+- `apps/api/src/core/backpressure/priority-classifier.ts` — critical: pay/wallet/auth · normal: browse · sheddable: analytics/recommend **[P1]**
+- `apps/api/src/core/backpressure/queue-depth-guard.ts` — reject when worker queues back up **[P1]**
+- `apps/api/src/core/bulk/README.md` — bulk ops **[P1]**
+- `apps/api/src/core/bulk/bulk-job.controller.ts` — start/track async bulk jobs **[P1]**
+- `apps/api/src/core/bulk/bulk-job.service.ts` — chunked, resumable, idempotent per row **[P1]**
+- `apps/api/src/core/bulk/bulk-result.store.ts` — per-row success/fail, downloadable **[P1]**
+- `apps/api/src/core/bulk/csv-import.processor.ts` — farmer/buyer/listing CSV — PRD §7.1 bulk import **[P1]**
+- `apps/api/src/core/cells/README.md` — cells **[P3]**
+- `apps/api/src/core/cells/cell-registry.ts` — cells **[P3]**
+- `apps/api/src/core/cells/cell-resolver.ts` — country/tenant → cell; data residency **[P3]**
+- `apps/api/src/core/database/read-only.decorator.ts` — marks a query as replica-safe (tolerates ~1s lag) **[P1]**
+- `apps/api/src/core/database/read-replica.provider.ts` — routes @ReadOnly queries to Aurora replicas (reads scale separately from writes) **[P1]**
+- `apps/api/src/core/resilience/README.md` — resilience **[P1]**
+- `apps/api/src/core/resilience/bulkhead.ts` — isolate pools per dependency — one slow dep can't drown all threads **[P1]**
+- `apps/api/src/core/resilience/circuit-breaker.ts` — per external dep: razorpay, msg91, opensearch, wallet-grpc **[P1]**
+- `apps/api/src/core/resilience/fallback.registry.ts` — graceful degradation: search→DB, AI→rules **[P1]**
+- `apps/api/src/core/resilience/retry.ts` — exponential backoff + jitter, idempotent-only **[P1]**
+- `apps/api/src/core/resilience/timeout.interceptor.ts` — every outbound call has a deadline **[P1]**
+- `apps/api/src/core/sharding/README.md` — sharding **[P3]**
+- `apps/api/src/core/sharding/cross-shard-query.guard.ts` — forbids accidental cross-shard joins **[P3]**
+- `apps/api/src/core/sharding/directory-db.client.ts` — global users/crops/tenants directory shard **[P3]**
+- `apps/api/src/core/sharding/shard-map.ts` — tenant→shard registry, cached **[P3]**
+- `apps/api/src/core/sharding/shard-pool.manager.ts` — pool per shard via RDS proxy **[P3]**
+- `apps/api/src/core/sharding/shard-router.ts` — tenant_id → shard connection; consistent hashing **[P3]**
+- `apps/api/src/modules/auctions/read-models/auction-live.read-model.ts` — current high bid from Redis, not primary **[P1]**
+- `apps/api/src/modules/labour/read-models/worker-search.read-model.ts` — geo+skill, OpenSearch **[P1]**
+- `apps/api/src/modules/listings/read-models/listing-search.read-model.ts` — projection consumed from outbox → fast browse **[P1]**
+- `apps/api/src/modules/listings/read-models/mandi-band.read-model.ts` — read model **[P1]**
+- `apps/api/src/modules/market-intel/read-models/mandi-pulse.read-model.ts` — ClickHouse-backed **[P1]**
+- `apps/api/src/modules/orders/read-models/order-timeline.read-model.ts` — read model **[P1]**
+- `apps/api/src/modules/orders/read-models/tenant-order-stats.read-model.ts` — off replica **[P1]**
+- `apps/api/src/modules/payments/read-models/wallet-balance.read-model.ts` — cached, never blocks primary **[P1]**
+
+## apps/outbox-relay/src
+- `apps/outbox-relay/src/publishers/kafka.publisher.ts` — publish outbox → Kafka topics (Phase 2 swap-in alongside SQS) **[P2]**
+
+## apps/realtime-gateway/.env.example
+- `apps/realtime-gateway/.env.example` — realtime gateway **[P1]**
+
+## apps/realtime-gateway/Dockerfile
+- `apps/realtime-gateway/Dockerfile` — realtime gateway **[P1]**
+
+## apps/realtime-gateway/README.md
+- `apps/realtime-gateway/README.md` — WebSocket fan-out gateway. Stateless pods behind a sticky LB; state lives in Redis Pub/Sub (and Redis Streams for replay). Carries live auction bids, order-status pushes, MCC live dashboards. Scales to millions of concurrent sockets by adding pods — no socket state on the pod. Auth = same JWT; tenant-scoped channels. **[P1]**
+
+## apps/realtime-gateway/package.json
+- `apps/realtime-gateway/package.json` — realtime gateway **[P1]**
+
+## apps/realtime-gateway/src
+- `apps/realtime-gateway/src/auth/socket-auth.guard.ts` — JWT + tenant channel scoping **[P1]**
+- `apps/realtime-gateway/src/backpressure/slow-consumer.eviction.ts` — drop laggards, protect the pod **[P1]**
+- `apps/realtime-gateway/src/channels/auction.channel.ts` — bid updates, outbid, ending-soon **[P1]**
+- `apps/realtime-gateway/src/channels/mcc.channel.ts` — live collection dashboard **[P1]**
+- `apps/realtime-gateway/src/channels/order.channel.ts` — status timeline **[P1]**
+- `apps/realtime-gateway/src/channels/presence.ts` — spectator counts **[P1]**
+- `apps/realtime-gateway/src/main.ts` — realtime gateway **[P1]**
+- `apps/realtime-gateway/src/metrics/socket-metrics.ts` — conns, msg/s per pod **[P1]**
+- `apps/realtime-gateway/src/pubsub/redis-pubsub.adapter.ts` — cross-pod fan-out **[P1]**
+- `apps/realtime-gateway/src/pubsub/redis-streams.replay.ts` — missed-message catch-up **[P1]**
+- `apps/realtime-gateway/src/ws-server.ts` — uWebSockets/socket.io-cluster **[P1]**
+
+## apps/realtime-gateway/tsconfig.json
+- `apps/realtime-gateway/tsconfig.json` — realtime gateway **[P1]**
+
+## apps/stream-processor/Dockerfile
+- `apps/stream-processor/Dockerfile` — stream processor **[P2]**
+
+## apps/stream-processor/README.md
+- `apps/stream-processor/README.md` — Kafka (MSK) stream processors for high-volume async: notification fan-out, search indexing, analytics ETL, fraud signals, mandi ingestion. outbox-relay publishes to Kafka; these consume. Partitioned by tenant_id for ordered, parallel processing. Phase 2 (SQS is fine until ~10k msg/s). **[P2]**
+
+## apps/stream-processor/package.json
+- `apps/stream-processor/package.json` — stream processor **[P2]**
+
+## apps/stream-processor/src
+- `apps/stream-processor/src/consumers/analytics-etl.consumer.ts` — stream processor **[P2]**
+- `apps/stream-processor/src/consumers/fraud-signal.consumer.ts` — stream processor **[P2]**
+- `apps/stream-processor/src/consumers/notification-fanout.consumer.ts` — stream processor **[P2]**
+- `apps/stream-processor/src/consumers/projection-builder.consumer.ts` — CQRS read-models **[P2]**
+- `apps/stream-processor/src/consumers/search-indexer.consumer.ts` — stream processor **[P2]**
+- `apps/stream-processor/src/dlq/dead-letter.handler.ts` — stream processor **[P2]**
+- `apps/stream-processor/src/main.ts` — stream processor **[P2]**
+- `apps/stream-processor/src/topics.ts` — topic+partition strategy, tenant_id key **[P2]**
+
+## apps/stream-processor/tsconfig.json
+- `apps/stream-processor/tsconfig.json` — stream processor **[P2]**
+
+## docs/architecture/billion-ops-readiness.md
+- `docs/architecture/billion-ops-readiness.md` — the master scale audit + checklist — see report **[P1]**
+
+## docs/architecture/cqrs-read-models.md
+- `docs/architecture/cqrs-read-models.md` — when to add a read-model, how projections stay consistent via outbox, lag budgets **[P1]**
+
+## docs/architecture/scaling-ladder.md
+- `docs/architecture/scaling-ladder.md` — scaling triggers→actions **[P1]**
+
+## infra/helm/realtime-gateway
+- `infra/helm/realtime-gateway/Chart.yaml` — helm: realtime-gateway **[P1]**
+- `infra/helm/realtime-gateway/templates/deployment.yaml` — helm: realtime-gateway **[P1]**
+- `infra/helm/realtime-gateway/templates/hpa.yaml` — helm: realtime-gateway **[P1]**
+- `infra/helm/realtime-gateway/templates/pdb.yaml` — helm: realtime-gateway **[P1]**
+- `infra/helm/realtime-gateway/templates/service.yaml` — helm: realtime-gateway **[P1]**
+- `infra/helm/realtime-gateway/templates/sticky-svc.yaml` — session-affinity LB for websockets **[P1]**
+- `infra/helm/realtime-gateway/values.yaml` — helm: realtime-gateway **[P1]**
+
+## infra/helm/stream-processor
+- `infra/helm/stream-processor/Chart.yaml` — helm: stream-processor **[P2]**
+- `infra/helm/stream-processor/templates/deployment.yaml` — helm: stream-processor **[P2]**
+- `infra/helm/stream-processor/templates/hpa.yaml` — helm: stream-processor **[P2]**
+- `infra/helm/stream-processor/templates/pdb.yaml` — helm: stream-processor **[P2]**
+- `infra/helm/stream-processor/templates/service.yaml` — helm: stream-processor **[P2]**
+- `infra/helm/stream-processor/values.yaml` — helm: stream-processor **[P2]**
+
+## infra/terraform/modules
+- `infra/terraform/modules/cdn/cache-policies.tf` — TTLs: media immutable, catalogue 1h, mandi prices 5m, never cache wallet/order **[P1]**
+- `infra/terraform/modules/cdn/main.tf` — CloudFront/Cloudflare: media + storefront edge cache, image resizing, signed URLs, India edge PoPs, cache rules per path **[P1]**
+- `infra/terraform/modules/cdn/outputs.tf` — CloudFront/Cloudflare: media + storefront edge cache, image resizing, signed URLs, India edge PoPs, cache rules per path **[P1]**
+- `infra/terraform/modules/cdn/variables.tf` — CloudFront/Cloudflare: media + storefront edge cache, image resizing, signed URLs, India edge PoPs, cache rules per path **[P1]**
+- `infra/terraform/modules/msk/main.tf` — managed Kafka (Amazon MSK): partitions, retention, tiered storage **[P2]**
+- `infra/terraform/modules/msk/outputs.tf` — managed Kafka (Amazon MSK): partitions, retention, tiered storage **[P2]**
+- `infra/terraform/modules/msk/variables.tf` — managed Kafka (Amazon MSK): partitions, retention, tiered storage **[P2]**
+
+## ops/capacity-plan.md
+- `ops/capacity-plan.md` — capacity model: pods/replicas/shards/cells per traffic tier, mapped to the A9 cost ladder; autoscaling targets; pre-provision schedule for known spikes (PMFBY window, harvest, festivals) **[P1]**
+
+## ops/load-tests/k6-billion-scale-model.js
+- `ops/load-tests/k6-billion-scale-model.js` — modelled peak: 5M DAU, 100k txn/min harvest peak, 500k concurrent flash-sale, 1M live-auction sockets — ramp profiles + SLO assertions (p95<500ms, error<0.1%) **[P1]**
+
+## ops/load-tests/k6-realtime-sockets.js
+- `ops/load-tests/k6-realtime-sockets.js` — 1M concurrent WebSocket connections across realtime-gateway pods, bid-storm fan-out **[P1]**
+
+## ops/load-tests/soak-72h.js
+- `ops/load-tests/soak-72h.js` — 72-hour soak: memory leaks, connection leaks, partition growth **[P1]**

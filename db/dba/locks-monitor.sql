@@ -1,0 +1,1 @@
+-- db/dba/locks-monitor.sql · blocking locks live view · [P1]

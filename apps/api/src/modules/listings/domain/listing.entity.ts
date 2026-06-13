@@ -1,0 +1,144 @@
+// modules/listings/domain/listing.entity.ts
+// Pure domain aggregate root. No framework, no SQL, no I/O. All business
+// invariants live here; 95%+ unit coverage. Money is bigint minor units (Law 2).
+import { Money } from '../../../shared/utils/money';
+import { ListingStatus, assertTransition, isPurchasable } from './listing.state';
+import {
+  InsufficientStockError, InvalidPriceError, ListingNotEditableError,
+} from './listing.errors';
+
+export interface ListingProps {
+  id: string;
+  tenantId: string;
+  sellerUserId: string;
+  productId: string;
+  categoryId: string;
+  title: string;
+  description?: string | null;
+  quantityTotal: number;
+  quantityAvailable: number;
+  minOrderQty: number;
+  unitCode: string;
+  priceMinor: bigint;
+  currencyCode: string;
+  organicClaim: 'none' | 'natural' | 'certified';
+  status: ListingStatus;
+  saleType: 'direct' | 'auction' | 'both' | 'preorder' | 'service' | 'group_lot';
+  pincode?: string | null;
+  regionId?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  visibility: 'tenant' | 'cross_tenant' | 'public';
+  aiExtracted: boolean;
+  publishAt?: Date | null;
+  publishedAt?: Date | null;
+  expiresAt?: Date | null;
+  version: number;
+}
+
+/** Domain events raised by the aggregate, drained by the service into the outbox. */
+export type ListingDomainEvent =
+  | { type: 'listing.created'; listingId: string }
+  | { type: 'listing.published'; listingId: string; priceMinor: string }
+  | { type: 'listing.price_changed'; listingId: string; oldPriceMinor: string; newPriceMinor: string }
+  | { type: 'listing.stock_changed'; listingId: string; available: number }
+  | { type: 'listing.sold_out'; listingId: string }
+  | { type: 'listing.status_changed'; listingId: string; from: ListingStatus; to: ListingStatus };
+
+const EDITABLE_STATUSES: ReadonlySet<ListingStatus> = new Set(['draft', 'pending_approval', 'published', 'paused']);
+
+export class Listing {
+  private readonly events: ListingDomainEvent[] = [];
+
+  private constructor(private props: ListingProps) {}
+
+  /** Factory enforces creation invariants. */
+  static create(input: Omit<ListingProps, 'status' | 'version' | 'quantityAvailable'> & { quantityAvailable?: number }): Listing {
+    if (input.priceMinor <= 0n) throw new InvalidPriceError('Price must be greater than zero');
+    if (input.quantityTotal <= 0) throw new InvalidPriceError('Quantity must be greater than zero');
+    if (input.minOrderQty < 0 || input.minOrderQty > input.quantityTotal)
+      throw new InvalidPriceError('Minimum order quantity is out of range');
+    const l = new Listing({
+      ...input,
+      quantityAvailable: input.quantityAvailable ?? input.quantityTotal,
+      status: 'draft',
+      version: 1,
+    });
+    l.events.push({ type: 'listing.created', listingId: l.props.id });
+    return l;
+  }
+
+  /** Rehydrate from persistence (no invariants re-run; trusted source). */
+  static rehydrate(props: ListingProps): Listing { return new Listing(props); }
+
+  // ---- getters (immutable view) ----
+  get id() { return this.props.id; }
+  get tenantId() { return this.props.tenantId; }
+  get sellerUserId() { return this.props.sellerUserId; }
+  get status() { return this.props.status; }
+  get version() { return this.props.version; }
+  get price(): Money { return Money.of(this.props.priceMinor, this.props.currencyCode); }
+  get quantityAvailable() { return this.props.quantityAvailable; }
+  get isPurchasable() { return isPurchasable(this.props.status); }
+  toProps(): Readonly<ListingProps> { return Object.freeze({ ...this.props }); }
+  pullEvents(): ListingDomainEvent[] { const e = [...this.events]; this.events.length = 0; return e; }
+
+  // ---- behaviour ----
+  private transition(to: ListingStatus): void {
+    const from = this.props.status;
+    assertTransition(from, to);
+    this.props.status = to;
+    this.events.push({ type: 'listing.status_changed', listingId: this.props.id, from, to });
+  }
+
+  submitForApproval(): void { this.transition('pending_approval'); }
+
+  publish(now: Date = new Date()): void {
+    this.transition('published');
+    this.props.publishedAt = now;
+    this.events.push({ type: 'listing.published', listingId: this.props.id, priceMinor: this.props.priceMinor.toString() });
+  }
+
+  pause(): void { this.transition('paused'); }
+  reject(): void { this.transition('rejected'); }
+  hide(): void { this.transition('hidden'); }
+  archive(): void { this.transition('archived'); }
+  expire(): void { this.transition('expired'); }
+
+  changePrice(newPriceMinor: bigint): void {
+    if (!EDITABLE_STATUSES.has(this.props.status))
+      throw new ListingNotEditableError(this.props.id, this.props.status);
+    if (newPriceMinor <= 0n) throw new InvalidPriceError('Price must be greater than zero');
+    if (newPriceMinor === this.props.priceMinor) return; // no-op, no event
+    const old = this.props.priceMinor;
+    this.props.priceMinor = newPriceMinor;
+    this.events.push({
+      type: 'listing.price_changed', listingId: this.props.id,
+      oldPriceMinor: old.toString(), newPriceMinor: newPriceMinor.toString(),
+    });
+  }
+
+  /** Reserve stock when an order/auction wins. Auto-sold-out at zero. */
+  reduceStock(qty: number): void {
+    if (qty <= 0) throw new InvalidPriceError('Quantity must be positive');
+    if (qty > this.props.quantityAvailable)
+      throw new InsufficientStockError(qty, this.props.quantityAvailable);
+    this.props.quantityAvailable -= qty;
+    this.events.push({ type: 'listing.stock_changed', listingId: this.props.id, available: this.props.quantityAvailable });
+    if (this.props.quantityAvailable === 0) {
+      this.props.status = 'sold_out';
+      this.events.push({ type: 'listing.sold_out', listingId: this.props.id });
+    }
+  }
+
+  /** Return stock on cancellation/refund; re-publishes a sold-out listing. */
+  restock(qty: number): void {
+    if (qty <= 0) throw new InvalidPriceError('Quantity must be positive');
+    this.props.quantityAvailable = Math.min(this.props.quantityTotal, this.props.quantityAvailable + qty);
+    if (this.props.status === 'sold_out' && this.props.quantityAvailable > 0) {
+      this.props.status = 'published';
+      this.events.push({ type: 'listing.status_changed', listingId: this.props.id, from: 'sold_out', to: 'published' });
+    }
+    this.events.push({ type: 'listing.stock_changed', listingId: this.props.id, available: this.props.quantityAvailable });
+  }
+}

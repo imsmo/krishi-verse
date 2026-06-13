@@ -1,0 +1,1 @@
+-- db/dba/connection-audit.sql · who is connected as what role (kv_app must never hold ledger writes) · [P1]

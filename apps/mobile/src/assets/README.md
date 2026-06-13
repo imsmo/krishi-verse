@@ -1,0 +1,1 @@
+# assets — fonts (Noto Sans Devanagari/Gujarati per packages/tokens), illustrations (empty states, from design system), lottie (celebrations). Keep total contribution to APK under budget (<30MB). [P1]

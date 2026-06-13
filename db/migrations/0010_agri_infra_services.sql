@@ -1,0 +1,1 @@
+-- db/migrations/0010_agri_infra_services.sql · baseline migration — copy of Database_Architecture/full_platform (equipment/warehouse/contracts/export/land) · [P1]

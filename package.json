@@ -1,0 +1,14 @@
+{
+  "name": "krishi-verse",
+  "private": true,
+  "packageManager": "pnpm@9",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "migrate": "node db/scripts/migrate.js",
+    "seed": "node db/scripts/seed.js"
+  },
+  "devDependencies": { "turbo": "^2" }
+}

@@ -1,0 +1,1 @@
+-- db/dba/rls-verify.sql · v_tables_without_rls must return zero rows · [P1]

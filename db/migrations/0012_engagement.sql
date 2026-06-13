@@ -1,0 +1,1 @@
+-- db/migrations/0012_engagement.sql · baseline migration — copy of Database_Architecture/full_platform (education/chat/notifications/CMS) · [P1]

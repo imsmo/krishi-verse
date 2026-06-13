@@ -1,0 +1,1 @@
+-- db/dba/slow-queries-weekly.sql · pg_stat_statements top-20 by total time · [P1]

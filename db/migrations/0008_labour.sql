@@ -1,0 +1,1 @@
+-- db/migrations/0008_labour.sql · baseline migration — copy of Database_Architecture/full_platform (full labour stack) · [P1]

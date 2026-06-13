@@ -1,0 +1,1 @@
+-- apps/analytics-pipeline/clickhouse/ddl/004_tenant_daily_rollups.sql · analytics pipeline · [P2]

@@ -1,0 +1,1 @@
+-- db/migrations/0006_money.sql · baseline migration — copy of Database_Architecture/full_platform (rules/wallet/ledger/payments) · [P1]

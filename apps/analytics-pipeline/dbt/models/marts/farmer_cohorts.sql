@@ -1,0 +1,1 @@
+-- apps/analytics-pipeline/dbt/models/marts/farmer_cohorts.sql · analytics pipeline · [P2]

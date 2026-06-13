@@ -1,0 +1,1 @@
+{ "_doc": "packages/i18n/tsconfig.json - extends packages/config/tsconfig/base.json - [P1]", "extends": "../config/tsconfig/base.json" }

@@ -1,0 +1,1 @@
+-- db/migrations/0011_fintech_schemes.sql · baseline migration — copy of Database_Architecture/full_platform (loans/insurance/schemes/DBT) · [P1]

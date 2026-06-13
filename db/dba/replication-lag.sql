@@ -1,0 +1,1 @@
+-- db/dba/replication-lag.sql · replica lag check (alert >10s) · [P1]

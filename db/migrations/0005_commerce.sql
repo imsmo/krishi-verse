@@ -1,0 +1,1 @@
+-- db/migrations/0005_commerce.sql · baseline migration — copy of Database_Architecture/full_platform (listings/auctions/orders/disputes) · [P1]

@@ -1,0 +1,1 @@
+-- db/migrations/0004_catalogue_dynamic.sql · baseline migration — copy of Database_Architecture/full_platform (categories/attributes/products) · [P1]

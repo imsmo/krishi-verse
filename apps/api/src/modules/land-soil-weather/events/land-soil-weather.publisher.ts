@@ -1,0 +1,3 @@
+// apps/api/src/modules/land-soil-weather/events/land-soil-weather.publisher.ts · writes outbox events in the SAME db txn (Law 4) · [P1]
+// TODO: implement per CLAUDE.md laws + module README
+export {};

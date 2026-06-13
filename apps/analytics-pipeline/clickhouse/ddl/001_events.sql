@@ -1,0 +1,1 @@
+-- apps/analytics-pipeline/clickhouse/ddl/001_events.sql · analytics pipeline · [P2]

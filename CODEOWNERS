@@ -1,0 +1,8 @@
+# Money paths require senior/founder review — no exceptions
+/apps/wallet-service/   @cto @founder
+/db/migrations/         @cto
+/apps/api/src/modules/payments/  @cto
+/infra/                 @cto
+/apps/admin-api/        @founder @cto
+/apps/wallet-service/src/ledger/  @founder @cto
+/security/              @cto

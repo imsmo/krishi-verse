@@ -1,0 +1,1 @@
+-- db/migrations/0001_foundation.sql · baseline migration — copy of Database_Architecture/full_platform (languages/translations/geo/currency/units/media/lookups) · [P1]

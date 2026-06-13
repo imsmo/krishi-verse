@@ -1,0 +1,2 @@
+// apps/wallet-service/src/grpc/wallet.proto · wallet service — only writer of money · [P1]
+syntax = "proto3";

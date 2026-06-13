@@ -1,0 +1,1 @@
+-- apps/analytics-pipeline/clickhouse/ddl/002_orders_flat.sql · analytics pipeline · [P2]

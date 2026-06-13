@@ -1,0 +1,1 @@
+-- apps/analytics-pipeline/clickhouse/ddl/003_mandi_prices_history.sql · analytics pipeline · [P2]

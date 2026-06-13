@@ -1,0 +1,1 @@
+-- db/migrations/0002_tenancy_billing.sql · baseline migration — copy of Database_Architecture/full_platform (plans/tenants/subscriptions) · [P1]
