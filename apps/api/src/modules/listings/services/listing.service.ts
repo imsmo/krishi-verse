@@ -1,12 +1,13 @@
 // modules/listings/services/listing.service.ts
 // Application service for the listings aggregate. This is where the platform's
 // non-negotiables come together for EVERY write:
-//   • one ACID transaction on the tenant's shard (UnitOfWork)
+//   • one ACID transaction on the tenant's shard (UnitOfWork) with RLS set
 //   • domain events drained from the aggregate → outbox IN THE SAME TX (Law 4)
 //   • idempotency on create (Law 3) · plan-quota enforcement · optimistic locking
+//   • ENFORCED ownership/authorization (seller owns the listing, or admin moderates)
 //   • structured metrics/timing on every use-case (observability)
 // It never touches money tables directly — that is wallet-service's job (Law 2).
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { QUOTA_SERVICE, QuotaService } from '../../../core/quota/quota.service';
@@ -14,21 +15,25 @@ import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempoten
 import { CACHE_SERVICE, CacheService } from '../../../core/cache/cache.service';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { uuidv7 } from '../../../core/database/uuid.util';
+import { ForbiddenError } from '../../../shared/errors/app-error';
 import { Listing, ListingDomainEvent } from '../domain/listing.entity';
+import { ListingConcurrencyError } from '../domain/listing.errors';
 import { PriceHistory } from '../domain/price-history.entity';
 import { ListingAttribute, AttrValue } from '../domain/listing-attribute.entity';
 import { ListingRepository } from '../repositories/listing.repository';
 import { PriceHistoryRepository } from '../repositories/price-history.repository';
 import { ListingAttributeRepository } from '../repositories/listing-attribute.repository';
+import { ListingMediaRepository } from '../repositories/listing-media.repository';
 import { CreateListingDto } from '../dto/create-listing.dto';
-import { ListingEventType } from '../domain/listings.events';
 
 const QUOTA_METRIC = 'max_listings_month';
 const cacheKey = (t: string, id: string) => `t:${t}:listing:${id}`;
 
+/** The acting principal for a mutation: the seller, or an admin who may moderate. */
+export interface ListingActor { userId: string; canModerate: boolean; }
+
 @Injectable()
 export class ListingService {
-  private readonly log = new Logger(ListingService.name);
   constructor(
     @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork,
     @Inject(OUTBOX_WRITER) private readonly outbox: OutboxWriter,
@@ -39,6 +44,7 @@ export class ListingService {
     private readonly repo: ListingRepository,
     private readonly priceHistory: PriceHistoryRepository,
     private readonly attrs: ListingAttributeRepository,
+    private readonly media: ListingMediaRepository,
   ) {}
 
   /** Drain aggregate events into the outbox within the same transaction. */
@@ -74,6 +80,7 @@ export class ListingService {
         await this.uow.run(tenantId, async (tx) => {
           await this.repo.insert(tx, listing);
           if (attrEntities.length) await this.attrs.upsertMany(tx, attrEntities);
+          if (dto.mediaIds?.length) await this.media.attach(tx, tenantId, id, dto.mediaIds);
           await this.quota.increment(tx, tenantId, QUOTA_METRIC, 1);
           await this.flushEvents(tx, tenantId, id, listing.pullEvents());
         }, { userId: sellerUserId });
@@ -83,40 +90,40 @@ export class ListingService {
       }));
   }
 
-  /** PUBLISH — guarded transition; emits the searchable event (→ OpenSearch index). */
-  async publish(tenantId: string, userId: string, id: string): Promise<void> {
+  /** PUBLISH — ownership-enforced, guarded transition; emits the searchable event. */
+  async publish(tenantId: string, actor: ListingActor, id: string): Promise<void> {
     await timed(this.metrics, 'listing.publish', { tenant: tenantId }, async () => {
       await this.uow.run(tenantId, async (tx) => {
         const listing = await this.repo.getForUpdate(tx, tenantId, id);
-        this.assertOwnerOrThrow(listing, userId);
+        this.assertCanMutate(listing, actor);
         listing.publish();
         await this.repo.update(tx, listing);
         await this.flushEvents(tx, tenantId, id, listing.pullEvents());
-      }, { userId });
+      }, { userId: actor.userId });
       await this.cache.del(cacheKey(tenantId, id));
     });
   }
 
-  /** CHANGE PRICE — optimistic-locked, writes price history, emits event for buyer alerts. */
-  async changePrice(tenantId: string, userId: string, id: string, newPriceMinor: bigint, expectedVersion: number): Promise<void> {
+  /** CHANGE PRICE — ownership + optimistic-locked, writes price history, emits event. */
+  async changePrice(tenantId: string, actor: ListingActor, id: string, newPriceMinor: bigint, expectedVersion: number): Promise<void> {
     await timed(this.metrics, 'listing.change_price', { tenant: tenantId }, async () => {
       await this.uow.run(tenantId, async (tx) => {
         const listing = await this.repo.getForUpdate(tx, tenantId, id);
-        this.assertOwnerOrThrow(listing, userId);
+        this.assertCanMutate(listing, actor);
         this.assertVersion(listing, expectedVersion);
         const old = listing.price.minor;
         listing.changePrice(newPriceMinor);
         await this.repo.update(tx, listing);
         if (old !== newPriceMinor) {
-          await this.priceHistory.append(tx, PriceHistory.record({ id: uuidv7(), tenantId, listingId: id, oldPriceMinor: old, newPriceMinor, changedBy: userId }));
+          await this.priceHistory.append(tx, PriceHistory.record({ id: uuidv7(), tenantId, listingId: id, oldPriceMinor: old, newPriceMinor, changedBy: actor.userId }));
         }
         await this.flushEvents(tx, tenantId, id, listing.pullEvents());
-      }, { userId });
+      }, { userId: actor.userId });
       await this.cache.del(cacheKey(tenantId, id));
     });
   }
 
-  /** Reduce stock when an order/auction wins (called by event handlers, idempotent upstream). */
+  /** Reduce stock when an order/auction wins (system-initiated via event handlers). */
   async reduceStock(tenantId: string, id: string, qty: number): Promise<void> {
     await this.uow.run(tenantId, async (tx) => {
       const listing = await this.repo.getForUpdate(tx, tenantId, id);
@@ -145,18 +152,16 @@ export class ListingService {
     });
   }
 
-  private assertOwnerOrThrow(listing: Listing, userId: string) {
-    // Tenant admins bypass via permission; sellers may only touch their own.
-    if (listing.sellerUserId !== userId) {
-      // permission check happens at controller; this is defense in depth
-      this.log.warn(`ownership check: user ${userId} on listing ${listing.id} owned by ${listing.sellerUserId}`);
+  /** Authorization: the seller owns it, OR the caller may moderate (admin). Else 403. */
+  private assertCanMutate(listing: Listing, actor: ListingActor): void {
+    if (actor.canModerate) return;
+    if (listing.sellerUserId !== actor.userId) {
+      throw new ForbiddenError('You can only modify your own listings',
+        { listingId: listing.id });
     }
   }
-  private assertVersion(listing: Listing, expected: number) {
-    if (listing.version !== expected) {
-      const { ListingConcurrencyError } = require('../domain/listing.errors');
-      throw new ListingConcurrencyError(listing.id);
-    }
+  private assertVersion(listing: Listing, expected: number): void {
+    if (listing.version !== expected) throw new ListingConcurrencyError(listing.id);
   }
 }
 

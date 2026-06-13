@@ -28,6 +28,7 @@ import { ListingAttributeRepository } from './repositories/listing-attribute.rep
 import { ListingBoostRepository } from './repositories/listing-boost.repository';
 import { GroupLotRepository } from './repositories/group-lot.repository';
 import { GroupLotPledgeRepository } from './repositories/group-lot-pledge.repository';
+import { ListingMediaRepository } from './repositories/listing-media.repository';
 
 // Event handlers (consume domain/integration events)
 import { OrderCompletedHandler } from './events/handlers/order-completed.handler';
@@ -44,7 +45,7 @@ import { PublishScheduledJob } from './jobs/publish-scheduled.job';
     ListingService, ListingBoostService, ListingAttributeService, GroupLotService, GroupLotPledgeService,
     ListingSearchReadModel, MandiBandReadModel,
     ListingRepository, PriceHistoryRepository, ListingAttributeRepository,
-    ListingBoostRepository, GroupLotRepository, GroupLotPledgeRepository,
+    ListingBoostRepository, GroupLotRepository, GroupLotPledgeRepository, ListingMediaRepository,
     OrderCompletedHandler, AuctionSettledHandler,
     ExpireListingsJob, BoostExpiryJob, PublishScheduledJob,
   ],

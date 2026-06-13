@@ -1,59 +1,87 @@
 // modules/listings/__tests__/listing.service.spec.ts
-// Unit tests for the application service orchestration: idempotency wrapping, quota
-// enforcement, single-transaction persistence, and outbox-in-tx event flushing.
-// All infra is mocked — this proves the WIRING, not the DB.
+// Unit tests for the application service orchestration: idempotency wrapping,
+// quota enforcement, single-transaction persistence, outbox-in-tx event flushing,
+// and ENFORCED ownership/authorization. All infra is mocked — proves the WIRING.
 import { ListingService } from '../services/listing.service';
+import { ForbiddenError } from '../../../shared/errors/app-error';
 
 function makeTx() {
   return { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }), tenantId: 't1', userId: 'u1' };
 }
 
+const dto: any = {
+  productId: '11111111-1111-1111-1111-111111111111', categoryId: '22222222-2222-2222-2222-222222222222',
+  title: 'Organic Wheat', quantityTotal: 50, minOrderQty: 1, unitCode: 'quintal',
+  priceMinor: '1440000', currencyCode: 'INR', organicClaim: 'certified', saleType: 'direct',
+  visibility: 'public', attributes: [], mediaIds: ['33333333-3333-3333-3333-333333333333'],
+};
+
+function build() {
+  const tx = makeTx();
+  const uow: any = { run: jest.fn((_t: string, fn: any) => fn(tx)) };
+  const outbox: any = { write: jest.fn().mockResolvedValue(undefined) };
+  const quota: any = { assertWithinLimit: jest.fn().mockResolvedValue(undefined), increment: jest.fn().mockResolvedValue(undefined) };
+  const idem: any = { remember: jest.fn((_k: string, _u: string, _o: string, fn: any) => fn()) };
+  const cache: any = { del: jest.fn(), wrap: jest.fn(), get: jest.fn(), set: jest.fn() };
+  const metrics: any = { inc: jest.fn(), observe: jest.fn() };
+  const repo: any = { insert: jest.fn().mockResolvedValue(undefined), update: jest.fn().mockResolvedValue(undefined),
+    getForUpdate: jest.fn() };
+  const priceHist: any = { append: jest.fn() };
+  const attrs: any = { upsertMany: jest.fn().mockResolvedValue(undefined) };
+  const media: any = { attach: jest.fn().mockResolvedValue(undefined) };
+  const svc = new ListingService(uow, outbox, quota, idem, cache, metrics, repo, priceHist, attrs, media);
+  return { svc, uow, outbox, quota, idem, cache, metrics, repo, priceHist, attrs, media, tx };
+}
+
 describe('ListingService.create', () => {
-  let uow: any, outbox: any, quota: any, idem: any, cache: any, metrics: any, repo: any, priceHist: any, attrs: any;
-  let svc: ListingService;
-  const dto: any = {
-    productId: '11111111-1111-1111-1111-111111111111', categoryId: '22222222-2222-2222-2222-222222222222',
-    title: 'Organic Wheat', quantityTotal: 50, minOrderQty: 1, unitCode: 'quintal',
-    priceMinor: '1440000', currencyCode: 'INR', organicClaim: 'certified', saleType: 'direct',
-    visibility: 'public', attributes: [],
-  };
-
-  beforeEach(() => {
-    const tx = makeTx();
-    uow = { run: jest.fn((_t: string, fn: any) => fn(tx)) };
-    outbox = { write: jest.fn().mockResolvedValue(undefined) };
-    quota = { assertWithinLimit: jest.fn().mockResolvedValue(undefined), increment: jest.fn().mockResolvedValue(undefined) };
-    // idempotency: pass-through (first call executes the work)
-    idem = { remember: jest.fn((_k: string, _u: string, _o: string, fn: any) => fn()) };
-    cache = { del: jest.fn(), wrap: jest.fn(), get: jest.fn(), set: jest.fn() };
-    metrics = { inc: jest.fn(), observe: jest.fn(), timing: jest.fn() };
-    repo = { insert: jest.fn().mockResolvedValue(undefined) };
-    priceHist = { append: jest.fn() };
-    attrs = { upsertMany: jest.fn().mockResolvedValue(undefined) };
-    svc = new ListingService(uow, outbox, quota, idem, cache, metrics, repo, priceHist, attrs);
-  });
-
   it('enforces quota before creating', async () => {
+    const { svc, quota } = build();
     await svc.create('t1', 'u1', 'idem-1', dto);
     expect(quota.assertWithinLimit).toHaveBeenCalledWith('t1', 'max_listings_month');
   });
 
-  it('persists the listing and flushes the created event to the outbox in the same tx', async () => {
+  it('persists the listing, attaches media, and flushes created event to outbox in the same tx', async () => {
+    const { svc, repo, quota, outbox, media } = build();
     await svc.create('t1', 'u1', 'idem-1', dto);
     expect(repo.insert).toHaveBeenCalledTimes(1);
     expect(quota.increment).toHaveBeenCalledTimes(1);
+    expect(media.attach).toHaveBeenCalledWith(expect.anything(), 't1', expect.any(String), dto.mediaIds);
     const eventTypes = outbox.write.mock.calls.map((c: any[]) => c[1].eventType);
     expect(eventTypes).toContain('listing.created');
   });
 
   it('wraps the whole use-case in idempotency.remember', async () => {
+    const { svc, idem } = build();
     await svc.create('t1', 'u1', 'idem-key-xyz', dto);
     expect(idem.remember).toHaveBeenCalledWith('idem-key-xyz', 'u1', 'listings.create', expect.any(Function));
   });
 
   it('returns a generated id', async () => {
+    const { svc } = build();
     const { id } = await svc.create('t1', 'u1', 'idem-1', dto);
     expect(typeof id).toBe('string');
     expect(id.length).toBeGreaterThan(0);
+  });
+});
+
+describe('ListingService authorization (security regression guard)', () => {
+  const otherOwnersListing = {
+    sellerUserId: 'owner-A', id: 'L9', version: 1,
+    publish: jest.fn(), changePrice: jest.fn(),
+    pullEvents: () => [], price: { minor: 100n },
+  };
+
+  it('publish() by a non-owner WITHOUT moderate permission throws ForbiddenError', async () => {
+    const { svc, repo } = build();
+    repo.getForUpdate.mockResolvedValue(otherOwnersListing);
+    await expect(svc.publish('t1', { userId: 'intruder-B', canModerate: false }, 'L9'))
+      .rejects.toBeInstanceOf(ForbiddenError);
+    expect(otherOwnersListing.publish).not.toHaveBeenCalled();
+  });
+
+  it('publish() by an admin WITH moderate permission is allowed', async () => {
+    const { svc, repo } = build();
+    repo.getForUpdate.mockResolvedValue({ ...otherOwnersListing, publish: jest.fn(), pullEvents: () => [] });
+    await expect(svc.publish('t1', { userId: 'admin-Z', canModerate: true }, 'L9')).resolves.toBeUndefined();
   });
 });

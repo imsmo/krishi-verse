@@ -1,0 +1,43 @@
+# .github/workflows/api-ci.yml
+# Listings-slice CI: typecheck → unit tests → integration tests (real Postgres).
+# The integration job connects the APP as the least-privilege kv_app role (subject
+# to RLS); schema/role/seed are loaded via the postgres superuser (DATABASE_ADMIN_URL).
+name: api-ci
+on:
+  pull_request: { paths: ["apps/api/**", ".github/workflows/api-ci.yml"] }
+  push: { branches: [main], paths: ["apps/api/**"] }
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: apps/api } }
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: krishi_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      NODE_ENV: test
+      JWT_ACCESS_SECRET: ci-secret-ci-secret-ci-secret
+      DATABASE_ADMIN_URL: postgres://postgres:postgres@localhost:5432/krishi_test
+      DATABASE_URL: postgres://kv_app:kv_app_pw@localhost:5432/krishi_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - name: Install
+        run: npm install --no-audit --no-fund
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit tests (tenant-isolation + ledger-style invariants)
+        run: npm run test:unit
+      - name: Production build
+        run: npm run build
+      - name: Integration tests (real Postgres + RLS)
+        run: npm run test:integration

@@ -1,8 +1,11 @@
 // modules/listings/listings.policies.ts
-// Permission constants + ownership guard logic for the listings surface. Permissions
-// are stored in the DB (dynamic RBAC, Law 9) — these are the string keys the seed
-// pack grants to roles. The guard resolves the caller's effective permission set
-// (role grants + per-user overrides) from RequestContext.
+// Permission constants + ownership guard logic for the listings surface.
+// Permissions are stored in the DB (dynamic RBAC, Law 9) — these are the string
+// keys the seed pack grants to roles. The guard resolves the caller's effective
+// permission set (role grants + per-user overrides) from RequestContext.
+import { RequestContext } from '../../core/tenancy-context/request-context';
+import { ForbiddenError } from '../../shared/errors/app-error';
+
 export const ListingPermissions = {
   Create: 'listing.create',
   Update: 'listing.update',
@@ -14,17 +17,19 @@ export const ListingPermissions = {
 } as const;
 export type ListingPermission = typeof ListingPermissions[keyof typeof ListingPermissions];
 
-import { RequestContext } from '../../core/tenancy-context/request-context';
-
-/** True if the caller holds the permission OR owns the resource. */
-export function canMutateListing(ctx: RequestContext, listingSellerUserId: string, perm: ListingPermission): boolean {
-  if (ctx.permissions.has(ListingPermissions.Moderate)) return true; // admins override
-  if (ctx.permissions.has(perm) && ctx.userId === listingSellerUserId) return true;
-  return false;
+/** True if the caller may moderate (admin override of ownership). */
+export function canModerate(ctx: RequestContext): boolean {
+  return ctx.permissions.has(ListingPermissions.Moderate) || ctx.permissions.has('*');
 }
+
+/** True if the caller holds the permission OR owns the resource (admins override). */
+export function canMutateListing(ctx: RequestContext, listingSellerUserId: string, perm: ListingPermission): boolean {
+  if (canModerate(ctx)) return true;
+  return ctx.permissions.has(perm) && ctx.userId === listingSellerUserId;
+}
+
 export function requirePermission(ctx: RequestContext, perm: ListingPermission): void {
-  if (!ctx.permissions.has(perm) && !ctx.permissions.has(ListingPermissions.Moderate)) {
-    const { ForbiddenError } = require('../../shared/errors/app-error');
-    throw new ForbiddenError(`Missing permission: ${perm}`);
+  if (!ctx.permissions.has(perm) && !canModerate(ctx)) {
+    throw new ForbiddenError(`Missing permission: ${perm}`, { required: [perm] });
   }
 }

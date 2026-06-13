@@ -1,3 +1,2 @@
-// apps/api/src/core/rbac/permissions.decorator.ts · core/rbac plumbing · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// core/rbac/permissions.decorator.ts · re-export of the RBAC decorator.
+export { RequirePermissions, PERMISSIONS_KEY } from '../auth/permissions.guard';

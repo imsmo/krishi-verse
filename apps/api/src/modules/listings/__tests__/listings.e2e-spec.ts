@@ -4,7 +4,7 @@
 // real HTTP contract end to end. Marked describe.skip until the CI test-DB harness
 // is wired (tracked in docs/build/03_BUILD_STATE.md); the scenarios below are the
 // acceptance criteria the harness must satisfy.
-import * as request from 'supertest';
+import request from 'supertest';
 
 describe.skip('listings e2e (requires test-DB harness)', () => {
   let app: any; // INestApplication
