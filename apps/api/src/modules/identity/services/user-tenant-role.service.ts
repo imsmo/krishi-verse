@@ -1,3 +1,103 @@
-// apps/api/src/modules/identity/services/user-tenant-role.service.ts · application service / use-cases for user-tenant-role · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/identity/services/user-tenant-role.service.ts · RBAC assignment lifecycle.
+// Every mutation: validates the role, enforces age/approval gates, writes the change +
+// an audit row in ONE transaction, emits an outbox event, and INVALIDATES the role
+// cache so the user's next token reflects the new grants.
+import { Inject, Injectable } from '@nestjs/common';
+import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
+import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
+import { AuditWriter } from '../../../core/audit/audit.writer';
+import { RoleCacheService } from '../../../core/rbac/role-cache.service';
+import { uuidv7 } from '../../../core/database/uuid.util';
+import { RoleNotFoundError, RoleAlreadyAssignedError, UserNotFoundError } from '../domain/identity.errors';
+import { UserTenantRole } from '../domain/user-tenant-role.entity';
+import { UserTenantRoleRepository } from '../repositories/user-tenant-role.repository';
+import { RoleRepository } from '../repositories/role.repository';
+import { UserRepository } from '../repositories/user.repository';
+import { AssignRoleDto, StaffOverrideDto } from '../dto/create-user-tenant-role.dto';
+
+const ADULT_ROLES = new Set(['worker', 'sardar', 'vet', 'banker', 'insurance_agent', 'gov_officer', 'farmer', 'vyapari', 'equipment_owner']);
+
+@Injectable()
+export class UserTenantRoleService {
+  constructor(
+    @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork,
+    @Inject(OUTBOX_WRITER) private readonly outbox: OutboxWriter,
+    private readonly audit: AuditWriter,
+    private readonly roleCache: RoleCacheService,
+    private readonly utr: UserTenantRoleRepository,
+    private readonly roles: RoleRepository,
+    private readonly users: UserRepository,
+  ) {}
+
+  async assign(tenantId: string, actorUserId: string, dto: AssignRoleDto, ip: string | null) {
+    const role = await this.roles.findByCode(tenantId, dto.roleCode);
+    if (!role) throw new RoleNotFoundError(dto.roleCode);
+    const id = await this.uow.run(tenantId, async (tx) => {
+      const existing = await this.utr.findExisting(tenantId, dto.userId, role.id);
+      if (existing) throw new RoleAlreadyAssignedError();
+      if (ADULT_ROLES.has(role.code)) {
+        const u = await this.users.getForUpdate(tx, dto.userId);
+        if (!u) throw new UserNotFoundError(dto.userId);
+        u.assertMinAge(18);
+      }
+      const utr = UserTenantRole.assign({ id: uuidv7(), userId: dto.userId, tenantId, roleId: role.id, roleCode: role.code, requiresApproval: role.requiresApproval, roleData: dto.roleData });
+      await this.utr.insert(tx, utr);
+      await this.flush(tx, utr.id, utr.pullEvents(), tenantId);
+      await this.audit.write(tx, { tenantId, actorUserId, action: 'role.assigned', entityType: 'user_tenant_role', entityId: utr.id, newValue: { userId: dto.userId, roleCode: role.code, active: utr.isActive }, ip });
+      return utr.id;
+    }, { userId: actorUserId });
+    await this.roleCache.invalidate(dto.userId, tenantId);
+    return { id };
+  }
+
+  async approve(tenantId: string, approverUserId: string, utrId: string, ip: string | null) {
+    let userId = '';
+    await this.uow.run(tenantId, async (tx) => {
+      const utr = await this.utr.getForUpdate(tx, tenantId, utrId);
+      if (!utr) throw new RoleNotFoundError(utrId);
+      userId = utr.toProps().userId;
+      utr.approve(approverUserId);
+      await this.utr.update(tx, utr);
+      await this.flush(tx, utr.id, utr.pullEvents(), tenantId);
+      await this.audit.write(tx, { tenantId, actorUserId: approverUserId, action: 'role.approved', entityType: 'user_tenant_role', entityId: utr.id, ip });
+    }, { userId: approverUserId });
+    await this.roleCache.invalidate(userId, tenantId);
+    return { ok: true };
+  }
+
+  async revoke(tenantId: string, actorUserId: string, utrId: string, reason: string | null, ip: string | null) {
+    let userId = '';
+    await this.uow.run(tenantId, async (tx) => {
+      const utr = await this.utr.getForUpdate(tx, tenantId, utrId);
+      if (!utr) throw new RoleNotFoundError(utrId);
+      userId = utr.toProps().userId;
+      utr.revoke(actorUserId);
+      await this.utr.update(tx, utr);
+      await this.flush(tx, utr.id, utr.pullEvents(), tenantId);
+      await this.audit.write(tx, { tenantId, actorUserId, action: 'role.revoked', entityType: 'user_tenant_role', entityId: utr.id, reason, ip });
+    }, { userId: actorUserId });
+    await this.roleCache.invalidate(userId, tenantId);
+    return { ok: true };
+  }
+
+  async setStaffOverride(tenantId: string, actorUserId: string, dto: StaffOverrideDto, ip: string | null) {
+    let userId = '';
+    await this.uow.run(tenantId, async (tx) => {
+      const utr = await this.utr.getForUpdate(tx, tenantId, dto.userTenantRoleId);
+      if (!utr) throw new RoleNotFoundError(dto.userTenantRoleId);
+      userId = utr.toProps().userId;
+      await this.roles.upsertStaffOverride(tx, dto.userTenantRoleId, dto.permissionCode, dto.isGranted);
+      await this.audit.write(tx, { tenantId, actorUserId, action: 'role.override_set', entityType: 'user_tenant_role', entityId: dto.userTenantRoleId, newValue: { permission: dto.permissionCode, granted: dto.isGranted }, ip });
+    }, { userId: actorUserId });
+    await this.roleCache.invalidate(userId, tenantId);
+    return { ok: true };
+  }
+
+  list(tenantId: string, opts: { userId?: string; roleCode?: string; pendingOnly: boolean }) {
+    return this.utr.list(tenantId, opts);
+  }
+
+  private async flush(tx: TxContext, id: string, events: { type: string; payload: Record<string, unknown> }[], tenantId: string) {
+    for (const e of events) await this.outbox.write(tx, { tenantId, aggregateType: 'user_tenant_role', aggregateId: id, eventType: e.type, payload: { v: 1, ...e.payload } });
+  }
+}

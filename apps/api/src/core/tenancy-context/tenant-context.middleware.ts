@@ -25,6 +25,7 @@ export class TenantContextMiddleware implements NestMiddleware {
     const ctx: RequestContext = {
       tenantId,
       userId: principal?.userId ?? '',
+      sessionId: principal?.sessionId ?? '',
       requestId: req.requestId ?? '',
       lang,
       roles: principal?.roles ?? [],

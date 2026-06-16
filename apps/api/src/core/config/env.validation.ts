@@ -18,6 +18,16 @@ export const EnvSchema = z.object({
   // --- auth (required) ---
   JWT_ACCESS_SECRET: z.string().min(16),
   JWT_ISSUER: z.string().default('krishi-verse'),
+  JWT_AUDIENCE: z.string().default('krishi-verse-api'),
+  JWT_REFRESH_SECRET: z.string().min(16).default('dev-refresh-secret-change-me-32x'),
+  JWT_ACCESS_TTL_SEC: z.coerce.number().int().positive().default(900),        // 15 min
+  JWT_REFRESH_TTL_SEC: z.coerce.number().int().positive().default(2592000),   // 30 days
+  AUTH_HASH_PEPPER: z.string().min(16).default('dev-pepper-change-me-min-32-chars!'),
+  OTP_TTL_SEC: z.coerce.number().int().positive().default(300),               // 5 min
+  OTP_LENGTH: z.coerce.number().int().min(4).max(8).default(6),
+  OTP_MAX_VERIFY_ATTEMPTS: z.coerce.number().int().positive().default(5),
+  OTP_REQUEST_MAX_PER_HOUR: z.coerce.number().int().positive().default(5),
+  OTP_RESEND_COOLDOWN_SEC: z.coerce.number().int().nonnegative().default(30),
 
   // --- optional infra / integrations (empty-safe defaults) ---
   REDIS_URL: z.string().optional(),                     // absent ⇒ in-memory cache

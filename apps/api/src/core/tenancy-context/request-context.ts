@@ -8,6 +8,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 export interface RequestContext {
   tenantId: string;
   userId: string;            // '' on anonymous read paths; populated after AuthGuard
+  sessionId: string;         // '' when anonymous; the access token's session id (sid)
   requestId: string;
   lang: string;              // resolved locale, e.g. 'hi-IN'
   roles: string[];           // role codes granted to the caller in this tenant

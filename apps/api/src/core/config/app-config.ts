@@ -26,7 +26,25 @@ export class AppConfig {
   }
   get redis()  { return { url: this.env.REDIS_URL ?? null }; }
   get search() { return { url: this.env.OPENSEARCH_URL ?? null }; }
-  get jwt()    { return { accessSecret: this.env.JWT_ACCESS_SECRET, issuer: this.env.JWT_ISSUER }; }
+  get jwt()    { return { accessSecret: this.env.JWT_ACCESS_SECRET, issuer: this.env.JWT_ISSUER, audience: this.env.JWT_AUDIENCE }; }
+  get auth() {
+    return {
+      accessSecret: this.env.JWT_ACCESS_SECRET,
+      refreshSecret: this.env.JWT_REFRESH_SECRET,
+      issuer: this.env.JWT_ISSUER,
+      audience: this.env.JWT_AUDIENCE,
+      accessTtlSec: this.env.JWT_ACCESS_TTL_SEC,
+      refreshTtlSec: this.env.JWT_REFRESH_TTL_SEC,
+      hashPepper: this.env.AUTH_HASH_PEPPER,
+      otp: {
+        ttlSec: this.env.OTP_TTL_SEC,
+        length: this.env.OTP_LENGTH,
+        maxVerifyAttempts: this.env.OTP_MAX_VERIFY_ATTEMPTS,
+        requestMaxPerHour: this.env.OTP_REQUEST_MAX_PER_HOUR,
+        resendCooldownSec: this.env.OTP_RESEND_COOLDOWN_SEC,
+      },
+    };
+  }
   get wallet() { return { grpcUrl: this.env.WALLET_GRPC_URL }; }
   get razorpay(){ return { keyId: this.env.RAZORPAY_KEY_ID, webhookSecret: this.env.RAZORPAY_WEBHOOK_SECRET }; }
   get smsBudgetPaise() { return this.env.SMS_DAILY_BUDGET_PAISE; }

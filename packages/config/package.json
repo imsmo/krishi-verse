@@ -1,1 +1,13 @@
-{ "_doc": "packages/config/package.json · packages/config · [P1]" }
+{
+  "name": "@krishi-verse/config",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared build/lint/test presets for all workspaces (tsconfig base, eslint, jest).",
+  "files": ["tsconfig.base.json", "eslint-preset.mjs", "jest-preset.js"],
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./eslint": "./eslint-preset.mjs",
+    "./jest": "./jest-preset.js"
+  },
+  "scripts": { "lint": "echo 'config: presets only'", "typecheck": "echo 'config: no ts'" }
+}

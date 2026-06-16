@@ -1,3 +1,3 @@
-// apps/api/src/modules/identity/dto/create-permission.dto.ts · create payload (zod/class-validator) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+import { z } from 'zod';
+export const CreatePermissionSchema = z.object({ code: z.string().min(2).max(80), defaultName: z.string().min(2).max(150), moduleCode: z.string().max(10).optional() }).strict();
+export type CreatePermissionDto = z.infer<typeof CreatePermissionSchema>;

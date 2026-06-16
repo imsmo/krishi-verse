@@ -1,3 +1,7 @@
-// apps/api/src/core/auth/jwt.strategy.ts · core/auth plumbing · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// core/auth/jwt.strategy.ts
+// We verify access tokens in the tenant-context middleware (via TenantResolver →
+// TokenService) rather than a per-route Passport strategy — one verification path,
+// and the ambient RequestContext is available to every layer. This file is kept as
+// the canonical import point for token verification.
+export { TokenService, TOKEN_SERVICE } from './token.service';
+export type { AccessTokenClaims } from './token.service';

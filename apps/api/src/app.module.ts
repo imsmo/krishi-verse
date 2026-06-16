@@ -8,9 +8,10 @@ import { CoreModule } from './core/core.module';
 import { RequestIdMiddleware } from './core/http/request-id.middleware';
 import { TenantContextMiddleware } from './core/tenancy-context/tenant-context.middleware';
 import { ListingsModule } from './modules/listings/listings.module';
+import { IdentityModule } from './modules/identity/identity.module';
 
 @Module({
-  imports: [CoreModule, ListingsModule],
+  imports: [CoreModule, IdentityModule, ListingsModule],
 })
 export class AppModule implements NestModule {
   // request-id THEN tenant-context (Law 1) on every route.

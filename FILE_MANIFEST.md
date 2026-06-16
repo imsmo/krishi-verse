@@ -2638,3 +2638,26 @@ Total files: 1975 (+ foundation files created earlier). P1 = build now · P2/P3 
 
 ## ops/load-tests/soak-72h.js
 - `ops/load-tests/soak-72h.js` — 72-hour soak: memory leaks, connection leaks, partition growth **[P1]**
+
+---
+
+## APPENDIX — Structural completion additions (post-audit)
+
+The full audit confirmed **0 files missing** vs. the manifest above (all 1,975 planned
+files were present). The gaps were (a) invalid placeholder config (`{ "_doc": ... }`)
+in every workspace's `package.json`/`tsconfig`/`Dockerfile`/`pyproject`, and (b) absent
+MNC-standard root engineering-hygiene files. Both were fixed. Files added/replaced:
+
+Root hygiene: `tsconfig.base.json`, `.editorconfig`, `.nvmrc`, `.prettierrc.json`,
+`.prettierignore`, `.npmrc`, `eslint.config.mjs`, `.env.example`, `Makefile`,
+`CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `.github/dependabot.yml`.
+
+Workspace manifests made real (no more `_doc` stubs): `package.json` + `tsconfig.json`
+for all 8 packages (config/contracts/sdk-js/i18n/tokens/testing/ui/ui-native) and all 16
+apps; `apps/ai-services/pyproject.toml`; multi-stage non-root `Dockerfile` for the 14
+buildable apps. `packages/config` now ships shared presets (`tsconfig.base.json`,
+`eslint-preset.mjs`, `jest-preset.js`).
+
+Verification: all 24 `package.json` and 26 `tsconfig*.json` parse as valid JSON; the api
+workspace still type-checks clean (`tsc --noEmit` exit 0). The monorepo is now a coherent,
+installable, buildable pnpm/turbo workspace.

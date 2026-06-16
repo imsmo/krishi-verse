@@ -1,3 +1,18 @@
-// apps/api/src/modules/identity/dto/create-address.dto.ts · create payload (zod/class-validator) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+import { z } from 'zod';
+export const CreateAddressSchema = z.object({
+  labelId: z.string().uuid().optional(),
+  line1: z.string().trim().min(3).max(250),
+  line2: z.string().max(250).optional(),
+  village: z.string().max(150).optional(),
+  regionId: z.string().uuid().optional(),
+  pincode: z.string().regex(/^\d{4,10}$/).optional(),
+  countryCode: z.string().length(2).default('IN'),
+  lat: z.number().min(-90).max(90).optional(),
+  lng: z.number().min(-180).max(180).optional(),
+  contactName: z.string().max(150).optional(),
+  contactPhone: z.string().max(20).optional(),
+  isDefault: z.boolean().default(false),
+}).strict();
+export type CreateAddressDto = z.infer<typeof CreateAddressSchema>;
+export const UpdateAddressSchema = CreateAddressSchema.partial().strict();
+export type UpdateAddressDto = z.infer<typeof UpdateAddressSchema>;

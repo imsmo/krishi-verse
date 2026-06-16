@@ -1,1 +1,6 @@
-{ "_doc": "apps/wallet-service/tsconfig.json · wallet service — only writer of money · [P1]" }
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts"]
+}

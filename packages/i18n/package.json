@@ -1,1 +1,24 @@
-{ "_doc": "packages/i18n/package.json · packages/i18n · [P1]" }
+{
+  "name": "@krishi-verse/i18n",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Internationalisation runtime + locale resources (12 launch languages).",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "jest --passWithNoTests",
+    "lint": "eslint \"src/**/*.ts\"",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "@types/jest": "^29.5.13"
+  }
+}

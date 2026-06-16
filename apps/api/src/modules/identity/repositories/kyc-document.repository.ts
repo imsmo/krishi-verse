@@ -1,3 +1,39 @@
-// apps/api/src/modules/identity/repositories/kyc-document.repository.ts · all SQL for kyc-document (tenant-scoped; only this module queries these tables) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/identity/repositories/kyc-document.repository.ts · KYC docs (tenant-scoped ⇒ RLS).
+import { Inject, Injectable } from '@nestjs/common';
+import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
+import { TxContext } from '../../../core/database/unit-of-work';
+import { KycDocument } from '../domain/kyc-document.entity';
+import { KycStatus } from '../domain/kyc-document.state';
+
+const COLS = `id, tenant_id, user_id, role_id, doc_type_id, media_id, doc_no_masked, issued_by, valid_from, valid_until, status, verify_method, reviewed_by, reviewed_at, reject_reason`;
+interface Row { id: string; tenant_id: string | null; user_id: string; role_id: string | null; doc_type_id: string; media_id: string; doc_no_masked: string | null; issued_by: string | null; valid_from: string | null; valid_until: string | null; status: string; verify_method: string | null; reviewed_by: string | null; reviewed_at: Date | null; reject_reason: string | null; }
+const toDomain = (r: Row): KycDocument => KycDocument.rehydrate({ id: r.id, tenantId: r.tenant_id, userId: r.user_id, roleId: r.role_id, docTypeId: r.doc_type_id, mediaId: r.media_id, docNoMasked: r.doc_no_masked, issuedBy: r.issued_by, validFrom: r.valid_from, validUntil: r.valid_until, status: r.status as KycStatus, verifyMethod: r.verify_method, reviewedBy: r.reviewed_by, reviewedAt: r.reviewed_at, rejectReason: r.reject_reason });
+
+@Injectable()
+export class KycDocumentRepository {
+  constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
+  async insert(tx: TxContext, d: KycDocument): Promise<void> {
+    const p = d.toProps();
+    await tx.query(
+      `INSERT INTO kyc_documents (id, tenant_id, user_id, role_id, doc_type_id, media_id, doc_no_masked, issued_by, valid_from, valid_until, status, verify_method)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+      [p.id, p.tenantId, p.userId, p.roleId, p.docTypeId, p.mediaId, p.docNoMasked, p.issuedBy, p.validFrom, p.validUntil, p.status, p.verifyMethod]);
+  }
+  async update(tx: TxContext, d: KycDocument): Promise<void> {
+    const p = d.toProps();
+    await tx.query(
+      `UPDATE kyc_documents SET status=$3, reviewed_by=$4, reviewed_at=$5, reject_reason=$6, updated_at=now()
+       WHERE id=$1 AND tenant_id IS NOT DISTINCT FROM $2 AND deleted_at IS NULL`,
+      [p.id, p.tenantId, p.status, p.reviewedBy, p.reviewedAt, p.rejectReason]);
+  }
+  async getForUpdate(tx: TxContext, tenantId: string, id: string): Promise<KycDocument | null> {
+    const r = await tx.query<Row>(`SELECT ${COLS} FROM kyc_documents WHERE id=$1 AND tenant_id IS NOT DISTINCT FROM $2 AND deleted_at IS NULL FOR UPDATE`, [id, tenantId]);
+    return r.rows[0] ? toDomain(r.rows[0]) : null;
+  }
+  async listByUser(tenantId: string, userId: string, status?: string): Promise<KycDocument[]> {
+    const r = await this.replica.forTenant(tenantId).query<Row>(
+      `SELECT ${COLS} FROM kyc_documents WHERE user_id=$1 AND ($2::text IS NULL OR status=$2) AND deleted_at IS NULL ORDER BY created_at DESC`,
+      [userId, status ?? null]);
+    return r.rows.map(toDomain);
+  }
+}

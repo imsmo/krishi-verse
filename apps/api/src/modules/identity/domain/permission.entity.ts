@@ -1,3 +1,3 @@
-// apps/api/src/modules/identity/domain/permission.entity.ts · domain entity (pure TS, no framework imports) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/identity/domain/permission.entity.ts · read model for an atomic permission.
+export interface PermissionProps { code: string; defaultName: string; moduleCode: string | null; }
+export class Permission { constructor(readonly props: PermissionProps) {} get code() { return this.props.code; } }

@@ -1,1 +1,10 @@
-{ "_doc": "packages/sdk-js/tsconfig.json - extends packages/config/tsconfig/base.json - [P1]", "extends": "../config/tsconfig/base.json" }
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "composite": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules", "dist"]
+}

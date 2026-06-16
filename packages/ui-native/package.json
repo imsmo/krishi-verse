@@ -1,1 +1,18 @@
-{ "_doc": "packages/ui-native/package.json · packages/ui-native · [P1]" }
+{
+  "name": "@krishi-verse/ui-native",
+  "version": "0.1.0",
+  "private": true,
+  "description": "React Native component library (mobile) built on the design tokens.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": { "react": "^18.3.1", "react-native": "^0.74.5" },
+  "dependencies": { "@krishi-verse/tokens": "workspace:*" },
+  "devDependencies": { "typescript": "^5.5.4", "@types/react": "^18.3.5" }
+}

@@ -1,3 +1,3 @@
-// apps/api/src/modules/identity/dto/query-user-tenant-role.dto.ts · list/filter query params (cursor pagination) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+import { z } from 'zod';
+export const QueryUserTenantRoleSchema = z.object({ userId: z.string().uuid().optional(), roleCode: z.string().max(50).optional(), pendingOnly: z.coerce.boolean().default(false) }).strict();
+export type QueryUserTenantRoleDto = z.infer<typeof QueryUserTenantRoleSchema>;

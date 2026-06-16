@@ -1,1 +1,6 @@
-{ "_doc": "apps/ivr-ussd-gateway/tsconfig.json · ivr/ussd gateway · [P2]" }
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts"]
+}

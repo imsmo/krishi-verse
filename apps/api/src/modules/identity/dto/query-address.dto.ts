@@ -1,3 +1,3 @@
-// apps/api/src/modules/identity/dto/query-address.dto.ts · list/filter query params (cursor pagination) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+import { z } from 'zod';
+export const QueryAddressSchema = z.object({ limit: z.coerce.number().int().min(1).max(100).default(50) }).strict();
+export type QueryAddressDto = z.infer<typeof QueryAddressSchema>;

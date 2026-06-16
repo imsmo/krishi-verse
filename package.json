@@ -2,13 +2,29 @@
   "name": "krishi-verse",
   "private": true,
   "packageManager": "pnpm@9",
+  "engines": { "node": ">=20" },
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
     "test": "turbo test",
     "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
     "migrate": "node db/scripts/migrate.js",
-    "seed": "node db/scripts/seed.js"
+    "migrate:status": "node db/scripts/migrate.js --status",
+    "migrate:plan": "node db/scripts/migrate.js --plan",
+    "seed": "node db/scripts/seed.js",
+    "seed:demo": "node db/scripts/seed.js --demo",
+    "db:reset": "node db/scripts/migrate.js && node db/scripts/seed.js",
+    "db:test": "node --test db/scripts/__tests__/*.test.js",
+    "db:partitions": "node db/scripts/ensure-partitions.js",
+    "db:archive": "node db/scripts/archive-partitions.js",
+    "db:verify-rls": "node db/scripts/verify-rls-coverage.js",
+    "db:slow": "node db/scripts/explain-top-queries.js"
   },
-  "devDependencies": { "turbo": "^2" }
+  "dependencies": {
+    "pg": "^8.12.0"
+  },
+  "devDependencies": {
+    "turbo": "^2"
+  }
 }

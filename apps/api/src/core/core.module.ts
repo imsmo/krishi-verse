@@ -11,6 +11,13 @@ import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
 import { CacheModule } from './cache/cache.module';
 import { SearchModule } from './search/search.module';
+import { AuditModule } from './audit/audit.module';
+
+import { TokenService, TOKEN_SERVICE } from './auth/token.service';
+import { OtpService, OTP_SERVICE, SMS_SENDER, SmsSender } from './auth/otp.service';
+import { RefreshTokenService } from './auth/refresh-token.service';
+import { NoopSmsSender } from './auth/sms.noop';
+import { RoleCacheService, ROLE_CACHE_SERVICE } from './rbac/role-cache.service';
 
 import { OUTBOX_WRITER } from './outbox/outbox.writer';
 import { PgOutboxWriter } from './outbox/outbox.writer.pg';
@@ -34,7 +41,7 @@ import { MetricsController } from './observability/metrics.controller';
 
 @Global()
 @Module({
-  imports: [ConfigModule, DatabaseModule, CacheModule, SearchModule],
+  imports: [ConfigModule, DatabaseModule, CacheModule, SearchModule, AuditModule],
   controllers: [HealthController, MetricsController],
   providers: [
     { provide: OUTBOX_WRITER, useClass: PgOutboxWriter },
@@ -44,6 +51,12 @@ import { MetricsController } from './observability/metrics.controller';
     { provide: METRICS, useExisting: PromMetrics },
     AuthGuard, PermissionsGuard,
     TenantResolver, TenantContextMiddleware, RequestIdMiddleware,
+    // auth + RBAC platform services (used by the identity module's auth flow)
+    TokenService, { provide: TOKEN_SERVICE, useExisting: TokenService },
+    OtpService, { provide: OTP_SERVICE, useExisting: OtpService },
+    RefreshTokenService,
+    RoleCacheService, { provide: ROLE_CACHE_SERVICE, useExisting: RoleCacheService },
+    { provide: SMS_SENDER, useClass: NoopSmsSender },
     // global error envelope + success envelope
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
@@ -51,7 +64,9 @@ import { MetricsController } from './observability/metrics.controller';
   exports: [
     OUTBOX_WRITER, QUOTA_SERVICE, IDEMPOTENCY_SERVICE, METRICS, PromMetrics,
     AuthGuard, PermissionsGuard, TenantResolver, TenantContextMiddleware, RequestIdMiddleware,
-    ConfigModule, DatabaseModule, CacheModule, SearchModule,
+    TokenService, TOKEN_SERVICE, OtpService, OTP_SERVICE, RefreshTokenService,
+    RoleCacheService, ROLE_CACHE_SERVICE, SMS_SENDER,
+    ConfigModule, DatabaseModule, CacheModule, SearchModule, AuditModule,
   ],
 })
 export class CoreModule {}

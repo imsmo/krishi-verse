@@ -1,3 +1,3 @@
-// apps/api/src/modules/identity/dto/query-permission.dto.ts · list/filter query params (cursor pagination) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+import { z } from 'zod';
+export const QueryPermissionSchema = z.object({ moduleCode: z.string().max(10).optional() }).strict();
+export type QueryPermissionDto = z.infer<typeof QueryPermissionSchema>;

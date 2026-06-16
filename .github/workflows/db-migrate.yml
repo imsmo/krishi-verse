@@ -1,1 +1,51 @@
-# .github/workflows/db-migrate.yml · gated migration apply · [P1]
+# .github/workflows/db-migrate.yml
+# Continuous proof that the schema BUILDS: applies every migration to a throwaway
+# Postgres, verifies idempotency (re-run = no-op), then loads core/rules/catalogue
+# seeds. Runs on any change under db/ or the source schema. This is the gate that
+# catches a broken migration before it ever reaches staging/production.
+name: db-migrate
+on:
+  pull_request: { paths: ["db/**", "Database_Architecture/**", ".github/workflows/db-migrate.yml"] }
+  push: { branches: [main], paths: ["db/**"] }
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres, POSTGRES_DB: krishi_ci }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 3s --health-retries 10
+    env:
+      MIGRATION_DATABASE_URL: postgres://postgres:postgres@localhost:5432/krishi_ci
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - run: npm install pg@^8.12.0 --no-audit --no-fund
+      - name: Ops scripts unit tests (pure helpers)
+        run: node --test db/scripts/__tests__/*.test.js
+      - name: Plan (offline ordering + checksums)
+        run: node db/scripts/migrate.js --plan
+      - name: Apply all migrations
+        run: node db/scripts/migrate.js
+      - name: Idempotency — re-run must be a no-op
+        run: node db/scripts/migrate.js
+      - name: Status
+        run: node db/scripts/migrate.js --status
+      - name: Ensure future partitions (and assert >= 2 months runway)
+        run: node db/scripts/ensure-partitions.js --months 3 --min-runway 2 --strict --json
+      - name: RLS coverage gate (tenant isolation must be complete)
+        run: node db/scripts/verify-rls-coverage.js --json
+      - name: Archive dry-run (no destructive action)
+        run: node db/scripts/archive-partitions.js --json
+      - name: Load core/rules/catalogue seeds
+        run: node db/scripts/seed.js
+      - name: Sanity — expect ~250 tables created
+        run: |
+          psql "$MIGRATION_DATABASE_URL" -tAc \
+          "SELECT count(*) FROM information_schema.tables WHERE table_schema='public';"

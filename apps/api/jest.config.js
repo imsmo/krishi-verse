@@ -12,6 +12,7 @@ module.exports = {
       rootDir: 'src',
       testMatch: [
         '<rootDir>/modules/listings/__tests__/**/*.spec.ts',
+        '<rootDir>/modules/identity/__tests__/**/*.spec.ts',
         '<rootDir>/core/**/__tests__/**/*.spec.ts',
         '<rootDir>/shared/**/__tests__/**/*.spec.ts',
       ],
@@ -22,7 +23,7 @@ module.exports = {
       preset: 'ts-jest',
       testEnvironment: 'node',
       rootDir: 'src',
-      testMatch: ['<rootDir>/modules/listings/__tests__/**/*.integration.spec.ts'],
+      testMatch: ['<rootDir>/modules/listings/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/identity/__tests__/**/*.integration.spec.ts'],
     },
   ],
 };

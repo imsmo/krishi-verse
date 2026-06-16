@@ -1,1 +1,24 @@
-{ "_doc": "packages/contracts/package.json · packages/contracts · [P1]" }
+{
+  "name": "@krishi-verse/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Versioned DTOs, event schemas, and OpenAPI contracts shared across services.",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "jest --passWithNoTests",
+    "lint": "eslint \"src/**/*.ts\"",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": { "zod": "^3.23.8" },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "@types/jest": "^29.5.13"
+  }
+}

@@ -1,1 +1,6 @@
-# apps/realtime-gateway/tsconfig.json · realtime gateway · [P1]
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts"]
+}

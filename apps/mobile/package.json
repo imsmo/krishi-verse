@@ -1,1 +1,28 @@
-{ "_doc": "apps/mobile/package.json · mobile config · [P1]" }
+{
+  "name": "@krishi-verse/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Farmer/Buyer/Worker/Ambassador role-switching app — offline-first, vernacular, low-end devices.",
+  "main": "src/index.tsx",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "test": "jest --passWithNoTests"
+  },
+  "dependencies": {
+    "expo": "~51.0.0",
+    "react": "^18.3.1",
+    "react-native": "^0.74.5",
+    "@krishi-verse/ui-native": "workspace:*",
+    "@krishi-verse/sdk-js": "workspace:*",
+    "@krishi-verse/i18n": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "@types/react": "^18.3.5",
+    "jest": "^29.7.0"
+  }
+}

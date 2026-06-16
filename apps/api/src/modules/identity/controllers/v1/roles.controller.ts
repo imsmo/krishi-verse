@@ -1,3 +1,72 @@
-// apps/api/src/modules/identity/controllers/v1/roles.controller.ts · REST v1 endpoints: roles (validate→authorize→delegate, no logic) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/identity/controllers/v1/roles.controller.ts · RBAC: catalogue + assignments + overrides.
+import { Controller, Delete, Get, Headers, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
+import type { Request } from 'express';
+import { AuthGuard } from '../../../../core/auth/auth.guard';
+import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
+import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
+import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
+import { RequestContext } from '../../../../core/tenancy-context/request-context';
+import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../../core/idempotency/idempotency.service';
+import { BadRequestError } from '../../../../shared/errors/app-error';
+import { RoleService } from '../../services/role.service';
+import { PermissionService } from '../../services/permission.service';
+import { UserTenantRoleService } from '../../services/user-tenant-role.service';
+import { QueryRoleSchema, QueryRoleDto } from '../../dto/query-role.dto';
+import { QueryUserTenantRoleSchema, QueryUserTenantRoleDto } from '../../dto/query-user-tenant-role.dto';
+import { AssignRoleSchema, AssignRoleDto, StaffOverrideSchema, StaffOverrideDto } from '../../dto/create-user-tenant-role.dto';
+import { IdentityPermissions } from '../../policies/identity.policies';
+
+const ipOf = (req: Request) => (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
+
+@Controller({ path: 'rbac', version: '1' })
+@UseGuards(AuthGuard, PermissionsGuard)
+export class RolesController {
+  constructor(
+    private readonly roles: RoleService,
+    private readonly perms: PermissionService,
+    private readonly utr: UserTenantRoleService,
+    @Inject(IDEMPOTENCY_SERVICE) private readonly idem: IdempotencyService,
+  ) {}
+
+  @Get('roles')
+  listRoles(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryRoleSchema) q: QueryRoleDto) {
+    return this.roles.list(ctx.tenantId, q).then((data) => ({ data }));
+  }
+  @Get('permissions')
+  listPerms(@CurrentContext() ctx: RequestContext, @Query('moduleCode') moduleCode?: string) {
+    return this.perms.list(ctx.tenantId, moduleCode).then((data) => ({ data }));
+  }
+
+  @Get('assignments')
+  @RequirePermissions(IdentityPermissions.Report)
+  listAssignments(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryUserTenantRoleSchema) q: QueryUserTenantRoleDto) {
+    return this.utr.list(ctx.tenantId, { userId: q.userId, roleCode: q.roleCode, pendingOnly: q.pendingOnly }).then((data) => ({ data }));
+  }
+
+  @Post('assignments')
+  @RequirePermissions(IdentityPermissions.Approve)
+  async assign(@CurrentContext() ctx: RequestContext, @Req() req: Request, @Headers('idempotency-key') key: string, @ZodBody(AssignRoleSchema) dto: AssignRoleDto) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    const data = await this.idem.remember(key, ctx.userId, 'identity.role.assign', () => this.utr.assign(ctx.tenantId, ctx.userId, dto, ipOf(req)));
+    return { data };
+  }
+
+  @Post('assignments/:id/approve')
+  @RequirePermissions(IdentityPermissions.Approve)
+  approve(@CurrentContext() ctx: RequestContext, @Req() req: Request, @Param('id') id: string) {
+    return this.utr.approve(ctx.tenantId, ctx.userId, id, ipOf(req)).then((data) => ({ data }));
+  }
+
+  @Delete('assignments/:id')
+  @RequirePermissions(IdentityPermissions.Approve)
+  revoke(@CurrentContext() ctx: RequestContext, @Req() req: Request, @Param('id') id: string) {
+    return this.utr.revoke(ctx.tenantId, ctx.userId, id, null, ipOf(req)).then((data) => ({ data }));
+  }
+
+  @Post('overrides')
+  @RequirePermissions(IdentityPermissions.Approve)
+  override(@CurrentContext() ctx: RequestContext, @Req() req: Request, @ZodBody(StaffOverrideSchema) dto: StaffOverrideDto) {
+    return this.utr.setStaffOverride(ctx.tenantId, ctx.userId, dto, ipOf(req)).then((data) => ({ data }));
+  }
+}
