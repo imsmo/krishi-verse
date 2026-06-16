@@ -73,7 +73,10 @@ export class RoleCacheService {
       await client.query('COMMIT');
 
       const permissions = permRes.rows.map((r) => r.code);
-      if (roles.includes('super_admin')) permissions.push('*');
+      // NOTE: god-mode ('*') is intentionally NOT granted here. Platform/owner power
+      // lives ONLY in apps/admin-api (separate auth realm, FIDO2 — CLAUDE.md Law 11).
+      // The tenant API never resolves a wildcard, so a mis-assigned platform role
+      // cannot become god-mode through this path.
       return { roles, permissions };
     } catch (e) {
       await client.query('ROLLBACK').catch(() => {});

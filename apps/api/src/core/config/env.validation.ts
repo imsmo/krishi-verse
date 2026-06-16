@@ -28,6 +28,10 @@ export const EnvSchema = z.object({
   OTP_MAX_VERIFY_ATTEMPTS: z.coerce.number().int().positive().default(5),
   OTP_REQUEST_MAX_PER_HOUR: z.coerce.number().int().positive().default(5),
   OTP_RESEND_COOLDOWN_SEC: z.coerce.number().int().nonnegative().default(30),
+  OTP_VERIFY_MAX_PER_HOUR: z.coerce.number().int().positive().default(30),
+  // Whether /auth/otp may return the code in its response. MUST be false in prod
+  // (AppConfig fails boot if true in production). Defaults to true only under test.
+  AUTH_EXPOSE_OTP: z.enum(['true', 'false']).optional(),
 
   // --- optional infra / integrations (empty-safe defaults) ---
   REDIS_URL: z.string().optional(),                     // absent ⇒ in-memory cache

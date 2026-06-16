@@ -7,6 +7,7 @@ export const CacheKeys = {
   otpRequestCount: (phone: string) => `auth:otp:reqcount:${phone}`,
   otpResendCooldown: (phone: string) => `auth:otp:cooldown:${phone}`,
   otpLock: (phone: string) => `auth:otp:lock:${phone}`,
+  otpVerifyCount: (phone: string) => `auth:otp:verifycount:${phone}`,
   // effective RBAC permissions for a user within a tenant (resolved from DB)
   effectivePerms: (tenantId: string, userId: string) => `rbac:perms:${tenantId}:${userId}`,
   // single listing detail cache (used by listings module)

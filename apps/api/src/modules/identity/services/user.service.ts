@@ -8,6 +8,7 @@ import { UserNotFoundError } from '../domain/identity.errors';
 import { User } from '../domain/user.entity';
 import { UserStatus } from '../domain/user.state';
 import { UserRepository } from '../repositories/user.repository';
+import { UserTenantRoleRepository } from '../repositories/user-tenant-role.repository';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { normalizePhoneE164 } from '../../../shared/utils/phone';
@@ -20,12 +21,23 @@ export class UserService {
     @Inject(OUTBOX_WRITER) private readonly outbox: OutboxWriter,
     private readonly audit: AuditWriter,
     private readonly users: UserRepository,
+    private readonly utr: UserTenantRoleRepository,
   ) {}
 
   async getById(tenantId: string, id: string) {
     const u = await this.users.findById(tenantId, id);
     if (!u) throw new UserNotFoundError(id);
     return u.toPublic();
+  }
+
+  /** Admin read of another user — SCOPED to the caller's tenant. A non-member returns
+   *  404 (not 403) so an admin cannot enumerate users from other tenants. Self is always allowed. */
+  async getByIdInTenant(tenantId: string, requesterId: string, targetId: string) {
+    if (targetId !== requesterId) {
+      const member = await this.utr.isMember(tenantId, targetId);
+      if (!member) throw new UserNotFoundError(targetId);
+    }
+    return this.getById(tenantId, targetId);
   }
 
   async updateProfile(tenantId: string, userId: string, dto: UpdateUserDto) {

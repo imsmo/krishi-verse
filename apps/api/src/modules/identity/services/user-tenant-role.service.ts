@@ -9,6 +9,7 @@ import { AuditWriter } from '../../../core/audit/audit.writer';
 import { RoleCacheService } from '../../../core/rbac/role-cache.service';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { RoleNotFoundError, RoleAlreadyAssignedError, UserNotFoundError } from '../domain/identity.errors';
+import { ForbiddenError } from '../../../shared/errors/app-error';
 import { UserTenantRole } from '../domain/user-tenant-role.entity';
 import { UserTenantRoleRepository } from '../repositories/user-tenant-role.repository';
 import { RoleRepository } from '../repositories/role.repository';
@@ -32,7 +33,13 @@ export class UserTenantRoleService {
   async assign(tenantId: string, actorUserId: string, dto: AssignRoleDto, ip: string | null) {
     const role = await this.roles.findByCode(tenantId, dto.roleCode);
     if (!role) throw new RoleNotFoundError(dto.roleCode);
-    const id = await this.uow.run(tenantId, async (tx) => {
+    // SECURITY (Law 11): platform/owner roles (super_admin, platform_*) are NEVER
+    // assignable through the tenant API — that would be privilege escalation to god-mode.
+    // They are granted only in apps/admin-api (separate, hardened auth realm).
+    if (role.isPlatform) throw new ForbiddenError('Platform roles cannot be assigned via the tenant API', { role: role.code });
+    let id: string;
+    try {
+    id = await this.uow.run(tenantId, async (tx) => {
       const existing = await this.utr.findExisting(tenantId, dto.userId, role.id);
       if (existing) throw new RoleAlreadyAssignedError();
       if (ADULT_ROLES.has(role.code)) {
@@ -46,6 +53,10 @@ export class UserTenantRoleService {
       await this.audit.write(tx, { tenantId, actorUserId, action: 'role.assigned', entityType: 'user_tenant_role', entityId: utr.id, newValue: { userId: dto.userId, roleCode: role.code, active: utr.isActive }, ip });
       return utr.id;
     }, { userId: actorUserId });
+    } catch (e: any) {
+      if (e?.code === '23505') throw new RoleAlreadyAssignedError(); // unique(user,tenant,role) race
+      throw e;
+    }
     await this.roleCache.invalidate(dto.userId, tenantId);
     return { id };
   }
@@ -80,7 +91,14 @@ export class UserTenantRoleService {
     return { ok: true };
   }
 
-  async setStaffOverride(tenantId: string, actorUserId: string, dto: StaffOverrideDto, ip: string | null) {
+  async setStaffOverride(tenantId: string, actorUserId: string, actorPerms: ReadonlySet<string>, dto: StaffOverrideDto, ip: string | null) {
+    // SECURITY: a grant can never (a) hand out platform/money/god permissions, nor
+    // (b) exceed what the granter themselves holds. Revokes (is_granted=false) are always allowed.
+    const UNGRANTABLE = new Set(['*', 'plan.manage', 'tenant.manage', 'user.impersonate', 'wallet.adjust', 'payout.approve', 'flag.toggle']);
+    if (dto.isGranted) {
+      if (UNGRANTABLE.has(dto.permissionCode)) throw new ForbiddenError('This permission cannot be granted via a staff override', { permission: dto.permissionCode });
+      if (!actorPerms.has(dto.permissionCode) && !actorPerms.has('*')) throw new ForbiddenError('You cannot grant a permission you do not hold', { permission: dto.permissionCode });
+    }
     let userId = '';
     await this.uow.run(tenantId, async (tx) => {
       const utr = await this.utr.getForUpdate(tx, tenantId, dto.userTenantRoleId);

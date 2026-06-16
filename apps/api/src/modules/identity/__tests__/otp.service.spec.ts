@@ -34,6 +34,13 @@ describe('OtpService', () => {
     await svc.issue(phone); await svc.issue(phone);
     await expect(svc.issue(phone)).rejects.toBeInstanceOf(TooManyRequestsError);
   });
+  it('throttles verify attempts per hour (anti brute-force / DB-write amplification)', async () => {
+    const svc = new OtpService(new InMemoryCacheService(), cfg({ OTP_VERIFY_MAX_PER_HOUR: '3' }));
+    await svc.issue(phone);
+    await svc.verify(phone, '000000'); await svc.verify(phone, '000000'); await svc.verify(phone, '000000');
+    await expect(svc.verify(phone, '000000')).rejects.toBeInstanceOf(TooManyRequestsError);
+  });
+
   it('enforces resend cooldown', async () => {
     const svc = new OtpService(new InMemoryCacheService(), cfg({ OTP_RESEND_COOLDOWN_SEC: '60' }));
     await svc.issue(phone);

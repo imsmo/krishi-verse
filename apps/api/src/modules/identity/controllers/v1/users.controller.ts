@@ -13,9 +13,6 @@ import { UserService } from '../../services/user.service';
 import { UpdateUserSchema, UpdateUserDto } from '../../dto/update-user.dto';
 import { CreateUserSchema, CreateUserDto } from '../../dto/create-user.dto';
 import { IdentityPermissions } from '../../policies/identity.policies';
-import { z } from 'zod';
-
-const ChangeStatusSchema = z.object({ status: z.enum(['active', 'suspended', 'restricted', 'soft_deleted']), reason: z.string().max(500).optional() }).strict();
 const ipOf = (req: Request) => (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
 
 @Controller({ path: 'users', version: '1' })
@@ -36,7 +33,10 @@ export class UsersController {
 
   @Get(':id')
   @RequirePermissions(IdentityPermissions.Report)
-  get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.users.getById(ctx.tenantId, id).then((data) => ({ data })); }
+  get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    // tenant-scoped: an admin can only read users who are members of THEIR tenant
+    return this.users.getByIdInTenant(ctx.tenantId, ctx.userId, id).then((data) => ({ data }));
+  }
 
   @Post()
   @RequirePermissions(IdentityPermissions.Approve)
@@ -46,9 +46,4 @@ export class UsersController {
     return { data };
   }
 
-  @Post(':id/status')
-  @RequirePermissions(IdentityPermissions.Approve)
-  async changeStatus(@CurrentContext() ctx: RequestContext, @Req() req: Request, @Param('id') id: string, @ZodBody(ChangeStatusSchema) dto: z.infer<typeof ChangeStatusSchema>) {
-    return { data: await this.users.changeStatus(ctx.tenantId, ctx.userId, id, dto.status, dto.reason ?? null, ipOf(req)) };
-  }
 }

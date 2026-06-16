@@ -9,7 +9,23 @@ import { validateEnv, Env } from './env.validation';
 @Injectable()
 export class AppConfig {
   private readonly env: Env;
-  constructor(raw: Record<string, unknown> = process.env) { this.env = validateEnv(raw); }
+  constructor(raw: Record<string, unknown> = process.env) {
+    this.env = validateEnv(raw);
+    this.assertProductionSecurity(); // fail-closed: a weak prod secret crashes boot, never ships
+  }
+
+  /** In production, refuse to start with dev/weak secrets or OTP exposure enabled. */
+  private assertProductionSecurity(): void {
+    if (this.env.NODE_ENV !== 'production') return;
+    const weak = (v: string) => !v || v.length < 32 || /change-?me|dev-|test|secret-secret|placeholder/i.test(v);
+    const problems: string[] = [];
+    if (weak(this.env.JWT_ACCESS_SECRET)) problems.push('JWT_ACCESS_SECRET (set a unique random >=32 chars)');
+    if (weak(this.env.JWT_REFRESH_SECRET)) problems.push('JWT_REFRESH_SECRET (set a unique random >=32 chars)');
+    if (weak(this.env.AUTH_HASH_PEPPER)) problems.push('AUTH_HASH_PEPPER (set a unique random >=32 chars)');
+    if (this.env.JWT_ACCESS_SECRET === this.env.JWT_REFRESH_SECRET) problems.push('JWT access and refresh secrets must differ');
+    if (this.env.AUTH_EXPOSE_OTP === 'true') problems.push('AUTH_EXPOSE_OTP must be false in production');
+    if (problems.length) throw new Error(`FATAL: insecure production config -> ${problems.join('; ')}`);
+  }
 
   get nodeEnv()    { return this.env.NODE_ENV; }
   get port()       { return this.env.PORT; }
@@ -42,7 +58,9 @@ export class AppConfig {
         maxVerifyAttempts: this.env.OTP_MAX_VERIFY_ATTEMPTS,
         requestMaxPerHour: this.env.OTP_REQUEST_MAX_PER_HOUR,
         resendCooldownSec: this.env.OTP_RESEND_COOLDOWN_SEC,
+        verifyMaxPerHour: this.env.OTP_VERIFY_MAX_PER_HOUR,
       },
+      exposeOtp: this.env.AUTH_EXPOSE_OTP !== undefined ? this.env.AUTH_EXPOSE_OTP === 'true' : this.env.NODE_ENV === 'test',
     };
   }
   get wallet() { return { grpcUrl: this.env.WALLET_GRPC_URL }; }

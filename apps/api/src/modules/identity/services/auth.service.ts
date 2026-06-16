@@ -57,7 +57,7 @@ export class AuthService {
       await this.sms.send(phone, `Krishi-Verse code: ${code} (valid ${Math.round(ttlSec / 60)} min). Do not share.`);
       this.metrics.inc('auth.otp_requested');
       // dev affordance ONLY outside production, so integration tests/local can complete login.
-      return { sent: true, resendInSec: this.config.auth.otp.resendCooldownSec, ...(this.config.isProd ? {} : { devCode: code }) };
+      return { sent: true, resendInSec: this.config.auth.otp.resendCooldownSec, ...(this.config.auth.exposeOtp ? { devCode: code } : {}) };
     });
   }
 

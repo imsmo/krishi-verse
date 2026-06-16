@@ -67,6 +67,6 @@ export class RolesController {
   @Post('overrides')
   @RequirePermissions(IdentityPermissions.Approve)
   override(@CurrentContext() ctx: RequestContext, @Req() req: Request, @ZodBody(StaffOverrideSchema) dto: StaffOverrideDto) {
-    return this.utr.setStaffOverride(ctx.tenantId, ctx.userId, dto, ipOf(req)).then((data) => ({ data }));
+    return this.utr.setStaffOverride(ctx.tenantId, ctx.userId, ctx.permissions, dto, ipOf(req)).then((data) => ({ data }));
   }
 }

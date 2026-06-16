@@ -19,17 +19,20 @@ export class PgIdempotencyService extends IdempotencyService {
 
   async remember<T>(key: string, userId: string | undefined, endpoint: string, fn: () => Promise<T>): Promise<T> {
     const pool = this.pools.writer(0);
+    // SECURITY: scope the dedup key by caller + endpoint so one user can NEVER replay
+    // another user's idempotency key (which would otherwise return their cached response).
+    const scoped = `${userId ?? 'anon'}::${endpoint}::${key}`;
     const claim = await pool.query(
       `INSERT INTO idempotency_keys (key, user_id, endpoint)
        VALUES ($1, $2, $3)
        ON CONFLICT (key) DO NOTHING
        RETURNING key`,
-      [key, userId ?? null, endpoint],
+      [scoped, userId ?? null, endpoint],
     );
 
     if (claim.rowCount === 0) {
       const prior = await pool.query(
-        `SELECT response_status, response_body FROM idempotency_keys WHERE key = $1`, [key]);
+        `SELECT response_status, response_body FROM idempotency_keys WHERE key = $1`, [scoped]);
       if (prior.rowCount && prior.rows[0].response_status != null) {
         return prior.rows[0].response_body as T;            // replay the stored result
       }
@@ -41,12 +44,12 @@ export class PgIdempotencyService extends IdempotencyService {
       const result = await fn();
       await pool.query(
         `UPDATE idempotency_keys SET response_status = 200, response_body = $2::jsonb WHERE key = $1`,
-        [key, JSON.stringify(result ?? null)],
+        [scoped, JSON.stringify(result ?? null)],
       );
       return result;
     } catch (err) {
       // release the claim so a real retry can proceed (do not cache failures)
-      await pool.query(`DELETE FROM idempotency_keys WHERE key = $1 AND response_status IS NULL`, [key])
+      await pool.query(`DELETE FROM idempotency_keys WHERE key = $1 AND response_status IS NULL`, [scoped])
         .catch(() => undefined);
       throw err;
     }

@@ -53,6 +53,12 @@ export class UserTenantRoleRepository {
       [tenantId, opts.userId ?? null, opts.roleCode ?? null, opts.pendingOnly]);
     return r.rows;
   }
+  async isMember(tenantId: string, userId: string): Promise<boolean> {
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT 1 FROM user_tenant_roles WHERE tenant_id=$1 AND user_id=$2 AND is_active AND deleted_at IS NULL LIMIT 1`,
+      [tenantId, userId]);
+    return r.rowCount! > 0;
+  }
   async setKycStatus(tx: TxContext, tenantId: string, userId: string, roleId: string | null, status: KycStatus): Promise<void> {
     await tx.query(
       `UPDATE user_tenant_roles SET kyc_status=$4, updated_at=now()

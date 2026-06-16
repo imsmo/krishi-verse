@@ -52,6 +52,12 @@ export class OtpService {
   /** Verify; true on success (OTP consumed). Enforces attempt cap + lockout. */
   async verify(phone: string, code: string): Promise<boolean> {
     const { otp } = this.config.auth;
+    // Global per-phone verify throttle: bounds brute force across OTP re-issues AND
+    // prevents an attacker hammering /auth/verify (each call would otherwise write a
+    // login_event). Throws 429 before any work when exceeded.
+    const vc = (await this.cache.get<number>(CacheKeys.otpVerifyCount(phone))) ?? 0;
+    if (vc >= otp.verifyMaxPerHour) throw new TooManyRequestsError('Too many verification attempts; try again later');
+    await this.cache.set(CacheKeys.otpVerifyCount(phone), vc + 1, 3600);
     if (await this.cache.get<number>(CacheKeys.otpLock(phone))) return false; // locked
 
     const rec = await this.cache.get<OtpRecord>(CacheKeys.otp(phone));
