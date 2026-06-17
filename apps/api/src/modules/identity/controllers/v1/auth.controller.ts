@@ -6,6 +6,7 @@ import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard } from '../../../../core/auth/permissions.guard';
 import { Public } from '../../../../core/auth/public.decorator';
+import { RateLimit } from '../../../../core/http/rate-limit.guard';
 import { ZodBody } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
@@ -19,17 +20,17 @@ const ipOf = (req: Request) => (req.headers['x-forwarded-for'] as string)?.split
 export class AuthController {
   constructor(private readonly auth: AuthService, private readonly sessions: SessionService) {}
 
-  @Public() @Post('otp')
+  @Public() @RateLimit({ limit: 5, windowSec: 60, by: 'ip' }) @Post('otp')
   requestOtp(@ZodBody(RequestOtpSchema) dto: RequestOtpDto) {
     return this.auth.requestOtp(dto.phone, dto.channel).then((data) => ({ data }));
   }
 
-  @Public() @Post('verify')
+  @Public() @RateLimit({ limit: 10, windowSec: 60, by: 'ip' }) @Post('verify')
   async verify(@Req() req: Request, @ZodBody(VerifyOtpSchema) dto: VerifyOtpDto) {
     return { data: await this.auth.verifyOtp(dto, ipOf(req)) };
   }
 
-  @Public() @Post('refresh')
+  @Public() @RateLimit({ limit: 30, windowSec: 60, by: 'ip' }) @Post('refresh')
   async refresh(@Req() req: Request, @ZodBody(RefreshSchema) dto: RefreshDto) {
     return { data: await this.auth.refreshSession(dto, ipOf(req)) };
   }

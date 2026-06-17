@@ -1,3 +1,30 @@
-// apps/api/src/modules/catalogue/catalogue.module.ts · NestJS module wiring for catalogue · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/catalogue/catalogue.module.ts
+// Tenant-facing catalogue: browse global categories/attributes/products + manage the
+// tenant's OWN categories (enable/disable), private products, and store batches. GLOBAL
+// taxonomy WRITES (categories/attributes/platform products/brands/templates) live in
+// apps/admin-api (Law 11) and are intentionally not exposed here.
+import { Module } from '@nestjs/common';
+import { CategoriesController } from './controllers/v1/categories.controller';
+import { AttributesController } from './controllers/v1/attributes.controller';
+import { ProductsController } from './controllers/v1/products.controller';
+import { BatchesController } from './controllers/v1/batches.controller';
+import { CategoryService } from './services/category.service';
+import { AttributeDefinitionService } from './services/attribute-definition.service';
+import { ProductService } from './services/product.service';
+import { ProductBatchService } from './services/product-batch.service';
+import { ProductSearchReadModel } from './read-models/product-search.read-model';
+import { CategoryRepository } from './repositories/category.repository';
+import { AttributeDefinitionRepository } from './repositories/attribute-definition.repository';
+import { ProductRepository } from './repositories/product.repository';
+import { ProductBatchRepository } from './repositories/product-batch.repository';
+
+@Module({
+  controllers: [CategoriesController, AttributesController, ProductsController, BatchesController],
+  providers: [
+    CategoryService, AttributeDefinitionService, ProductService, ProductBatchService, ProductSearchReadModel,
+    CategoryRepository, AttributeDefinitionRepository, ProductRepository, ProductBatchRepository,
+  ],
+  // public surface for other modules (Law 11): services only, never repositories
+  exports: [CategoryService, AttributeDefinitionService, ProductService, ProductSearchReadModel],
+})
+export class CatalogueModule {}

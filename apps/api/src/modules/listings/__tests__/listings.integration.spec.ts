@@ -36,6 +36,7 @@ import { ListingAttributeRepository } from '../repositories/listing-attribute.re
 import { ListingMediaRepository } from '../repositories/listing-media.repository';
 import { ListingSearchReadModel } from '../read-models/listing-search.read-model';
 import { ListingService } from '../services/listing.service';
+import { AuditWriter } from '../../../core/audit/audit.writer';
 import { QuotaExceededError } from '../../../shared/errors/app-error';
 
 const APP_URL = process.env.DATABASE_URL;
@@ -89,7 +90,7 @@ run('listings slice (integration, real Postgres + RLS)', () => {
     const metrics = new PromMetrics();
     const repo = new ListingRepository(replica as any);
     svc = new ListingService(uow, outbox, quota, idem, cache, metrics, repo,
-      new PriceHistoryRepository(), new ListingAttributeRepository(), new ListingMediaRepository());
+      new PriceHistoryRepository(), new ListingAttributeRepository(), new ListingMediaRepository(), new AuditWriter(pools));
     readModel = new ListingSearchReadModel(replica as any, metrics);
 
     inspect = new Pool({ connectionString: APP_URL });

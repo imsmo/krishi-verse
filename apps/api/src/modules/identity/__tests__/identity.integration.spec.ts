@@ -28,6 +28,7 @@ import { TokenService } from '../../../core/auth/token.service';
 import { OtpService, SmsSender } from '../../../core/auth/otp.service';
 import { RefreshTokenService } from '../../../core/auth/refresh-token.service';
 import { RoleCacheService } from '../../../core/rbac/role-cache.service';
+import { TranslationService } from '../../../core/i18n/translation.service';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 
 import { UserRepository } from '../repositories/user.repository';
@@ -79,7 +80,7 @@ run('identity slice (integration, real Postgres + RLS)', () => {
     const roleCache = new RoleCacheService(pools, shards, cache);
     const audit = new AuditWriter(pools);
 
-    auth = new AuthService(uow, outbox, metrics, otp, new CaptureSms(config), tokens, refresh, roleCache, config,
+    auth = new AuthService(uow, outbox, metrics, otp, new CaptureSms(config), tokens, refresh, roleCache, new TranslationService(), config,
       new UserRepository(replica as any), new SessionRepository(replica as any), new DeviceRepository(),
       new LoginEventRepository());
     rbac = new UserTenantRoleService(uow, outbox, audit, roleCache, new UserTenantRoleRepository(replica as any),

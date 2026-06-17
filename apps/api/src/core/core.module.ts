@@ -5,13 +5,16 @@
 // never on `pg`, Redis, etc. Swapping an implementation (e.g. OpenSearch search,
 // Kafka outbox) is a one-line change here — no module rewrites.
 import { Global, Module } from '@nestjs/common';
-import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
 import { CacheModule } from './cache/cache.module';
 import { SearchModule } from './search/search.module';
 import { AuditModule } from './audit/audit.module';
+import { FeatureFlagsModule } from './feature-flags/flags.module';
+import { I18nModule } from './i18n/i18n.module';
+import { RateLimitGuard } from './http/rate-limit.guard';
 
 import { TokenService, TOKEN_SERVICE } from './auth/token.service';
 import { OtpService, OTP_SERVICE, SMS_SENDER, SmsSender } from './auth/otp.service';
@@ -41,7 +44,7 @@ import { MetricsController } from './observability/metrics.controller';
 
 @Global()
 @Module({
-  imports: [ConfigModule, DatabaseModule, CacheModule, SearchModule, AuditModule],
+  imports: [ConfigModule, DatabaseModule, CacheModule, SearchModule, AuditModule, FeatureFlagsModule, I18nModule],
   controllers: [HealthController, MetricsController],
   providers: [
     { provide: OUTBOX_WRITER, useClass: PgOutboxWriter },
@@ -60,13 +63,14 @@ import { MetricsController } from './observability/metrics.controller';
     // global error envelope + success envelope
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
+    { provide: APP_GUARD, useClass: RateLimitGuard },  // global edge rate limit (per-route @RateLimit overrides)
   ],
   exports: [
     OUTBOX_WRITER, QUOTA_SERVICE, IDEMPOTENCY_SERVICE, METRICS, PromMetrics,
     AuthGuard, PermissionsGuard, TenantResolver, TenantContextMiddleware, RequestIdMiddleware,
     TokenService, TOKEN_SERVICE, OtpService, OTP_SERVICE, RefreshTokenService,
     RoleCacheService, ROLE_CACHE_SERVICE, SMS_SENDER,
-    ConfigModule, DatabaseModule, CacheModule, SearchModule, AuditModule,
+    ConfigModule, DatabaseModule, CacheModule, SearchModule, AuditModule, FeatureFlagsModule, I18nModule,
   ],
 })
 export class CoreModule {}

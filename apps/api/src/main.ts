@@ -11,10 +11,12 @@ import { AppConfig } from './core/config/app-config';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bufferLogs: false });
+  const config = app.get(AppConfig);
+  // Trust exactly the configured number of proxy/LB hops so req.ip reflects the REAL
+  // client (not the load balancer) — required for correct, non-spoofable rate limiting.
+  app.getHttpAdapter().getInstance().set('trust proxy', config.trustProxyHops);
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
   app.enableShutdownHooks();
-
-  const config = app.get(AppConfig);
   await app.listen(config.port);
   new Logger('Bootstrap').log(`Krishi-Verse API listening on :${config.port} (${config.nodeEnv})`);
 }

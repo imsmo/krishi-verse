@@ -2,6 +2,7 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../core/auth/permissions.guard';
+import { FeatureFlag, FeatureFlagGuard } from '../../../core/feature-flags/flags.guard';
 import { ZodBody } from '../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../core/tenancy-context/request-context';
@@ -12,7 +13,8 @@ import { PledgeDto, PledgeSchema } from '../dto/create-group-lot-pledge.dto';
 import { ListingPermissions } from '../listings.policies';
 
 @Controller({ path: 'group-lots', version: '1' })
-@UseGuards(AuthGuard, PermissionsGuard)
+@UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
+@FeatureFlag('group_lots')
 export class GroupLotsController {
   constructor(private readonly lots: GroupLotService, private readonly pledges: GroupLotPledgeService) {}
 

@@ -4,6 +4,7 @@ import { Inject } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
+import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
 import { ZodBody } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
@@ -16,7 +17,8 @@ import { IdentityPermissions } from '../../policies/identity.policies';
 const ipOf = (req: Request) => (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
 
 @Controller({ path: 'kyc', version: '1' })
-@UseGuards(AuthGuard, PermissionsGuard)
+@UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
+@FeatureFlag('kyc')
 export class KycController {
   constructor(private readonly kyc: KycDocumentService, @Inject(IDEMPOTENCY_SERVICE) private readonly idem: IdempotencyService) {}
 

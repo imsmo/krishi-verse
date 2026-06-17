@@ -31,6 +31,7 @@ export class AppConfig {
   get port()       { return this.env.PORT; }
   get isProd()     { return this.env.NODE_ENV === 'production'; }
   get shardCount() { return this.env.SHARD_COUNT; }
+  get trustProxyHops() { return this.env.TRUST_PROXY_HOPS; }
 
   get db() {
     return {

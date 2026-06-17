@@ -17,7 +17,8 @@ import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { ForbiddenError } from '../../../shared/errors/app-error';
 import { Listing, ListingDomainEvent } from '../domain/listing.entity';
-import { ListingConcurrencyError } from '../domain/listing.errors';
+import { ListingConcurrencyError, ListingNotFoundError } from '../domain/listing.errors';
+import { AuditWriter } from '../../../core/audit/audit.writer';
 import { PriceHistory } from '../domain/price-history.entity';
 import { ListingAttribute, AttrValue } from '../domain/listing-attribute.entity';
 import { ListingRepository } from '../repositories/listing.repository';
@@ -45,6 +46,7 @@ export class ListingService {
     private readonly priceHistory: PriceHistoryRepository,
     private readonly attrs: ListingAttributeRepository,
     private readonly media: ListingMediaRepository,
+    private readonly audit: AuditWriter,
   ) {}
 
   /** Drain aggregate events into the outbox within the same transaction. */
@@ -99,6 +101,7 @@ export class ListingService {
         listing.publish();
         await this.repo.update(tx, listing);
         await this.flushEvents(tx, tenantId, id, listing.pullEvents());
+        await this.auditOverride(tx, tenantId, actor, listing, 'listing.published');
       }, { userId: actor.userId });
       await this.cache.del(cacheKey(tenantId, id));
     });
@@ -112,12 +115,12 @@ export class ListingService {
         this.assertCanMutate(listing, actor);
         this.assertVersion(listing, expectedVersion);
         const old = listing.price.minor;
+        if (old === newPriceMinor) return;            // no-op: don't bump version / write history
         listing.changePrice(newPriceMinor);
         await this.repo.update(tx, listing);
-        if (old !== newPriceMinor) {
-          await this.priceHistory.append(tx, PriceHistory.record({ id: uuidv7(), tenantId, listingId: id, oldPriceMinor: old, newPriceMinor, changedBy: actor.userId }));
-        }
+        await this.priceHistory.append(tx, PriceHistory.record({ id: uuidv7(), tenantId, listingId: id, oldPriceMinor: old, newPriceMinor, changedBy: actor.userId }));
         await this.flushEvents(tx, tenantId, id, listing.pullEvents());
+        await this.auditOverride(tx, tenantId, actor, listing, 'listing.price_changed');
       }, { userId: actor.userId });
       await this.cache.del(cacheKey(tenantId, id));
     });
@@ -144,12 +147,34 @@ export class ListingService {
     await this.cache.del(cacheKey(tenantId, id));
   }
 
-  /** READ — single listing, cache-aside off a replica (browse detail page). */
+  /** READ — single listing, cache-aside off a replica. INTERNAL (no visibility gate). */
   async getById(tenantId: string, id: string) {
     return this.cache.wrap(cacheKey(tenantId, id), 300, async () => {
       const l = await this.repo.findById(tenantId, id);
       return l ? l.toProps() : null;
     });
+  }
+
+  /**
+   * PUBLIC detail read. SECURITY: a non-owner may only see a PUBLISHED + publicly-visible
+   * listing. Drafts/hidden/paused/rejected are 404 to non-owners (not 403) so a competitor
+   * cannot scrape unpublished inventory/pricing by guessing ids (UUIDv7 is time-ordered).
+   * The owner and moderators may view their own/any listing.
+   */
+  async getPublicById(tenantId: string, id: string, viewer: ListingActor) {
+    const l = await this.getById(tenantId, id);
+    if (!l) throw new ListingNotFoundError(id);
+    const publiclyVisible = l.status === 'published' && (l.visibility === 'public' || l.visibility === 'cross_tenant');
+    const isOwnerOrAdmin = viewer.canModerate || l.sellerUserId === viewer.userId;
+    if (!publiclyVisible && !isOwnerOrAdmin) throw new ListingNotFoundError(id);
+    return l;
+  }
+
+  /** Audit when a moderator (admin) acts on a listing they don't own — governance trail. */
+  private async auditOverride(tx: TxContext, tenantId: string, actor: ListingActor, listing: Listing, action: string): Promise<void> {
+    if (actor.canModerate && listing.sellerUserId !== actor.userId) {
+      await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action, entityType: 'listing', entityId: listing.id, reason: 'moderator override', newValue: { seller: listing.sellerUserId } });
+    }
   }
 
   /** Authorization: the seller owns it, OR the caller may moderate (admin). Else 403. */

@@ -16,6 +16,8 @@ import { OTP_SERVICE, OtpService, SMS_SENDER, SmsSender } from '../../../core/au
 import { TokenService } from '../../../core/auth/token.service';
 import { RefreshTokenService } from '../../../core/auth/refresh-token.service';
 import { RoleCacheService } from '../../../core/rbac/role-cache.service';
+import { TranslationService } from '../../../core/i18n/translation.service';
+import { tryGetRequestContext } from '../../../core/tenancy-context/request-context';
 import { AppConfig } from '../../../core/config/app-config';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { normalizePhoneE164 } from '../../../shared/utils/phone';
@@ -41,6 +43,7 @@ export class AuthService {
     private readonly tokens: TokenService,
     private readonly refresh: RefreshTokenService,
     private readonly roleCache: RoleCacheService,
+    private readonly i18n: TranslationService,
     private readonly config: AppConfig,
     private readonly users: UserRepository,
     private readonly sessions: SessionRepository,
@@ -54,7 +57,9 @@ export class AuthService {
     if (!phone) throw new InvalidPhoneError();
     return timed(this.metrics, 'auth.request_otp', {}, async () => {
       const { code, ttlSec } = await this.otp.issue(phone); // throttled inside
-      await this.sms.send(phone, `Krishi-Verse code: ${code} (valid ${Math.round(ttlSec / 60)} min). Do not share.`);
+      const lang = tryGetRequestContext()?.lang ?? 'en';
+      const message = this.i18n.t('sms.otp', lang, { code, minutes: Math.round(ttlSec / 60) });
+      await this.sms.send(phone, message);
       this.metrics.inc('auth.otp_requested');
       // dev affordance ONLY outside production, so integration tests/local can complete login.
       return { sent: true, resendInSec: this.config.auth.otp.resendCooldownSec, ...(this.config.auth.exposeOtp ? { devCode: code } : {}) };

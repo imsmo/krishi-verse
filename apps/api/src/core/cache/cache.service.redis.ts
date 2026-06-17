@@ -20,6 +20,11 @@ export class RedisCacheService extends CacheService {
     await this.client.set(key, JSON.stringify(val), 'EX', ttlSeconds);
   }
   async del(key: string): Promise<void> { await this.client.del(key); }
+  async incr(key: string, ttlSeconds: number): Promise<number> {
+    const n = await this.client.incr(key);
+    if (n === 1) await this.client.expire(key, ttlSeconds); // set TTL only on the first hit of the window
+    return n;
+  }
   async wrap<T>(key: string, ttlSeconds: number, load: () => Promise<T>): Promise<T> {
     const hit = await this.get<T>(key);
     if (hit !== null) return hit;

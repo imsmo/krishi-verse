@@ -8,6 +8,7 @@ import { z } from 'zod';
 export const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
   PORT: z.coerce.number().default(3000),
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(1), // # of trusted proxies/LB hops in front of the API
 
   // --- data stores (required) ---
   DATABASE_URL: z.string().min(1),

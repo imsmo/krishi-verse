@@ -22,7 +22,7 @@ const SEEDS_DIR = path.join(__dirname, '..', 'seeds');
 const ORDER = [
   'core/0001_languages.sql','core/0002_countries_regions_gj_mh.sql','core/0003_currencies_units.sql',
   'core/0004_roles_permissions.sql','core/0005_lookup_vocabularies.sql','core/0006_consent_purposes.sql',
-  'core/0007_notification_events_templates.sql','core/0008_setting_definitions.sql',
+  'core/0007_notification_events_templates.sql','core/0008_setting_definitions.sql','core/0009_feature_flags.sql',
   'rules/0201_plans_limits_features.sql','rules/0202_commission_rules.sql','rules/0203_tax_rules_gst_tds.sql',
   'rules/0204_charge_definitions.sql','rules/0205_membership_tiers.sql','rules/0206_minimum_wages_gj_mh.sql',
   'rules/0207_ambassador_commission_plans.sql','rules/0208_schemes_starter_set.sql',

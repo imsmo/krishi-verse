@@ -2,6 +2,7 @@
 import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../core/auth/permissions.guard';
+import { FeatureFlag, FeatureFlagGuard } from '../../../core/feature-flags/flags.guard';
 import { ZodBody } from '../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../core/tenancy-context/request-context';
@@ -10,7 +11,8 @@ import { CreateBoostDto, CreateBoostSchema } from '../dto/create-listing-boost.d
 import { ListingPermissions } from '../listings.policies';
 
 @Controller({ path: 'listings/:id/boosts', version: '1' })
-@UseGuards(AuthGuard, PermissionsGuard)
+@UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
+@FeatureFlag('listing_boost')
 export class BoostsController {
   constructor(private readonly service: ListingBoostService) {}
   @Post()

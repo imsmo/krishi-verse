@@ -1,3 +1,11 @@
-// apps/api/src/modules/catalogue/dto/query-category.dto.ts · list/filter query params (cursor pagination) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+import { z } from 'zod';
+export const QueryCategorySchema = z.object({
+  parentId: z.string().uuid().optional(),
+  rootCode: z.string().max(80).optional(),
+  activeOnly: z.coerce.boolean().default(true),
+  enabledForTenant: z.coerce.boolean().default(false), // only categories this tenant has switched on
+}).strict();
+export type QueryCategoryDto = z.infer<typeof QueryCategorySchema>;
+
+export const ToggleTenantCategorySchema = z.object({ categoryId: z.string().uuid(), isEnabled: z.boolean() }).strict();
+export type ToggleTenantCategoryDto = z.infer<typeof ToggleTenantCategorySchema>;

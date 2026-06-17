@@ -1,3 +1,3 @@
-// apps/api/src/modules/catalogue/dto/query-attribute-definition.dto.ts · list/filter query params (cursor pagination) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+import { z } from 'zod';
+export const QueryAttributesForCategorySchema = z.object({ categoryId: z.string().uuid(), filtersOnly: z.coerce.boolean().default(false) }).strict();
+export type QueryAttributesForCategoryDto = z.infer<typeof QueryAttributesForCategorySchema>;

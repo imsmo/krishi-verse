@@ -35,7 +35,8 @@ export class ListingsController {
 
   @Public() @Get(':id')
   async getOne(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
-    const l = await this.service.getById(ctx.tenantId, id);
+    // visibility-gated: non-owners only see published+public listings (no draft scraping)
+    const l = await this.service.getPublicById(ctx.tenantId, id, { userId: ctx.userId, canModerate: canModerate(ctx) });
     return { data: l };
   }
 

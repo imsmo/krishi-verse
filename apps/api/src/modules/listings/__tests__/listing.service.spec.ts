@@ -22,16 +22,22 @@ function build() {
   const outbox: any = { write: jest.fn().mockResolvedValue(undefined) };
   const quota: any = { assertWithinLimit: jest.fn().mockResolvedValue(undefined), increment: jest.fn().mockResolvedValue(undefined) };
   const idem: any = { remember: jest.fn((_k: string, _u: string, _o: string, fn: any) => fn()) };
-  const cache: any = { del: jest.fn(), wrap: jest.fn(), get: jest.fn(), set: jest.fn() };
+  const cache: any = { del: jest.fn(), wrap: jest.fn((_k: string, _t: number, load: any) => load()), get: jest.fn(), set: jest.fn() };
   const metrics: any = { inc: jest.fn(), observe: jest.fn() };
   const repo: any = { insert: jest.fn().mockResolvedValue(undefined), update: jest.fn().mockResolvedValue(undefined),
-    getForUpdate: jest.fn() };
+    getForUpdate: jest.fn(), findById: jest.fn() };
   const priceHist: any = { append: jest.fn() };
   const attrs: any = { upsertMany: jest.fn().mockResolvedValue(undefined) };
   const media: any = { attach: jest.fn().mockResolvedValue(undefined) };
-  const svc = new ListingService(uow, outbox, quota, idem, cache, metrics, repo, priceHist, attrs, media);
-  return { svc, uow, outbox, quota, idem, cache, metrics, repo, priceHist, attrs, media, tx };
+  const audit: any = { write: jest.fn().mockResolvedValue(undefined) };
+  const svc = new ListingService(uow, outbox, quota, idem, cache, metrics, repo, priceHist, attrs, media, audit);
+  return { svc, uow, outbox, quota, idem, cache, metrics, repo, priceHist, attrs, media, audit, tx };
 }
+
+// A fake persisted listing for read-path tests (getById → repo.findById → toProps()).
+const fakeListing = (over: Record<string, unknown> = {}) => ({
+  toProps: () => ({ id: 'L1', status: 'draft', visibility: 'tenant', sellerUserId: 'owner-A', ...over }),
+});
 
 describe('ListingService.create', () => {
   it('enforces quota before creating', async () => {
@@ -79,9 +85,33 @@ describe('ListingService authorization (security regression guard)', () => {
     expect(otherOwnersListing.publish).not.toHaveBeenCalled();
   });
 
-  it('publish() by an admin WITH moderate permission is allowed', async () => {
-    const { svc, repo } = build();
+  it('publish() by an admin WITH moderate permission is allowed and is audited (override)', async () => {
+    const { svc, repo, audit } = build();
     repo.getForUpdate.mockResolvedValue({ ...otherOwnersListing, publish: jest.fn(), pullEvents: () => [] });
     await expect(svc.publish('t1', { userId: 'admin-Z', canModerate: true }, 'L9')).resolves.toBeUndefined();
+    expect(audit.write).toHaveBeenCalled(); // moderator acting on another's listing leaves a trail
+  });
+});
+
+describe('ListingService.getPublicById (data-exposure regression guard)', () => {
+  it('hides a DRAFT listing from an anonymous viewer (404, not the data)', async () => {
+    const { svc, repo } = build();
+    repo.findById.mockResolvedValue(fakeListing({ status: 'draft', visibility: 'public' }));
+    await expect(svc.getPublicById('t1', 'L1', { userId: '', canModerate: false })).rejects.toBeTruthy();
+  });
+  it('hides a PUBLISHED-but-tenant-only listing from an anonymous viewer', async () => {
+    const { svc, repo } = build();
+    repo.findById.mockResolvedValue(fakeListing({ status: 'published', visibility: 'tenant' }));
+    await expect(svc.getPublicById('t1', 'L1', { userId: '', canModerate: false })).rejects.toBeTruthy();
+  });
+  it('shows a PUBLISHED + public listing to anyone', async () => {
+    const { svc, repo } = build();
+    repo.findById.mockResolvedValue(fakeListing({ status: 'published', visibility: 'public' }));
+    await expect(svc.getPublicById('t1', 'L1', { userId: '', canModerate: false })).resolves.toBeTruthy();
+  });
+  it('lets the OWNER preview their own draft', async () => {
+    const { svc, repo } = build();
+    repo.findById.mockResolvedValue(fakeListing({ status: 'draft', visibility: 'tenant', sellerUserId: 'owner-A' }));
+    await expect(svc.getPublicById('t1', 'L1', { userId: 'owner-A', canModerate: false })).resolves.toBeTruthy();
   });
 });
