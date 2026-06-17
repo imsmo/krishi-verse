@@ -44,8 +44,9 @@ overrides) · `/v1/kyc/*` · `/v1/addresses/*` · `/v1/bank-accounts/*` · `/v1/
 Unit: user invariants + status/KYC state machines, OTP security (rate-limit/lockout/single-use),
 token mint/verify + refresh hashing, value-object validation, tenant-isolation SQL contract.
 Integration (`identity.integration.spec.ts`, real Postgres + RLS): OTP login → token → assign
-role → next token carries the perm → refresh rotation → cross-tenant RLS. Slice SQL in
-`apps/api/test/sql/identity_slice.sql`.
+role → next token carries the perm → refresh rotation → cross-tenant RLS. The integration DB is
+built from the REAL `db/migrations` + `db/seeds` (via `test/integration-global-setup.js`); the
+spec inserts only its two test tenants.
 
 ## Core hardening delivered alongside this module
 `core/rbac/role-cache.service`, `core/auth/{token,otp,refresh-token}.service`, `core/audit/*`.

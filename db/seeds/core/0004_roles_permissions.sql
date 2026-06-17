@@ -61,5 +61,6 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code='super_admin'   AND p.code IN ('plan.manage','tenant.manage','user.impersonate','flag.toggle'))
    OR (r.code='gov_officer'   AND p.code IN ('scheme.process','report.view'))
    OR (r.code='tenant_admin'  AND p.code IN ('product.manage','catalogue.configure'))
-   OR (r.code IN ('farmer','pharma_store','organic_store','vyapari') AND p.code IN ('product.manage'))
+   OR (r.code IN ('farmer','pharma_store','organic_store','vyapari') AND p.code IN ('product.manage','order.manage'))
+   OR (r.code='customer' AND p.code IN ('order.create'))
 ON CONFLICT DO NOTHING;

@@ -1,7 +1,9 @@
 # .github/workflows/api-ci.yml
-# Listings-slice CI: typecheck → unit tests → integration tests (real Postgres).
-# The integration job connects the APP as the least-privilege kv_app role (subject
-# to RLS); schema/role/seed are loaded via the postgres superuser (DATABASE_ADMIN_URL).
+# API CI: typecheck → unit tests → build → integration tests (real Postgres).
+# The integration job connects the APP as the least-privilege kv_app role (subject to RLS).
+# The test DB is built from the REAL db/migrations + db/seeds by the Jest globalSetup
+# (test/integration-global-setup.js) using the postgres superuser (DATABASE_ADMIN_URL) —
+# there is no hand-maintained schema slice, so tests can never drift from production migrations.
 name: api-ci
 on:
   pull_request: { paths: ["apps/api/**", ".github/workflows/api-ci.yml"] }

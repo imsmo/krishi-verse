@@ -10,11 +10,12 @@
 //      never the client;
 //   4. refresh rotates the refresh token (old hash no longer present);
 //   5. ROW-LEVEL SECURITY: tenant B cannot see tenant A's role assignment.
-// Requires DATABASE_URL (kv_app role). DATABASE_ADMIN_URL (superuser) loads the slice.
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+// Requires DATABASE_URL (kv_app role). The schema + seeds are built ONCE from the REAL
+// db/migrations + db/seeds by test/integration-global-setup.js; this spec only inserts the two
+// test tenants it needs (roles/permissions come from the real seeds).
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
+import { makeTenant } from '../../../../test/helpers/fixtures';
 
 import { AppConfig } from '../../../core/config/app-config';
 import { PgPoolProvider } from '../../../core/database/pg-pool.provider';
@@ -42,7 +43,6 @@ import { UserTenantRoleService } from '../services/user-tenant-role.service';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
-const SQL = join(__dirname, '../../../../test/sql/identity_slice.sql');
 const run = APP_URL ? describe : describe.skip;
 
 class CaptureSms extends SmsSender { last: { phone: string; msg: string } | null = null; async send(phone: string, msg: string) { this.last = { phone, msg }; } }
@@ -60,10 +60,9 @@ run('identity slice (integration, real Postgres + RLS)', () => {
   const phone = '+9198' + Math.floor(10000000 + Math.random() * 89999999);
 
   beforeAll(async () => {
-    if (ADMIN_URL) {
-      const a = new Pool({ connectionString: ADMIN_URL });
-      await a.query(readFileSync(SQL, 'utf8'));
-      await a.query(`INSERT INTO tenants (id,name) VALUES ($1,'A'),($2,'B') ON CONFLICT DO NOTHING`, [tenantA, tenantB]);
+    {
+      const a = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
+      await makeTenant(a, tenantA, 'A'); await makeTenant(a, tenantB, 'B');
       await a.end();
     }
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
@@ -80,7 +79,7 @@ run('identity slice (integration, real Postgres + RLS)', () => {
     const roleCache = new RoleCacheService(pools, shards, cache);
     const audit = new AuditWriter(pools);
 
-    auth = new AuthService(uow, outbox, metrics, otp, new CaptureSms(config), tokens, refresh, roleCache, new TranslationService(), config,
+    auth = new AuthService(uow, outbox, metrics, otp, new CaptureSms(), tokens, refresh, roleCache, new TranslationService(), config,
       new UserRepository(replica as any), new SessionRepository(replica as any), new DeviceRepository(),
       new LoginEventRepository());
     rbac = new UserTenantRoleService(uow, outbox, audit, roleCache, new UserTenantRoleRepository(replica as any),

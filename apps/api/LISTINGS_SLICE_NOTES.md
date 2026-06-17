@@ -53,10 +53,8 @@ npm run build          # emits dist/
 
 # full end-to-end with real Postgres + RLS
 docker compose -f docker-compose.dev.yml up -d
-# load the self-contained slice schema + least-privilege app role + seed:
-psql "$DATABASE_ADMIN_URL" -f test/sql/00_listings_slice.sql
-psql "$DATABASE_ADMIN_URL" -f test/sql/01_app_role.sql
-psql "$DATABASE_ADMIN_URL" -f test/sql/02_seed_min.sql
+# No manual schema loading: test/integration-global-setup.js builds the DB from the REAL
+# db/migrations + db/seeds (and gives kv_app LOGIN via test/sql/01_app_role.sql) on test start.
 DATABASE_URL=postgres://kv_app:kv_app_pw@localhost:5432/krishi_dev \
 DATABASE_ADMIN_URL=postgres://postgres:postgres@localhost:5432/krishi_dev \
   npm run test:integration

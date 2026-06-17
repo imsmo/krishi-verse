@@ -1,0 +1,63 @@
+// apps/api/test/integration-global-setup.js
+// Jest globalSetup for the `integration` project. Builds the test database ONCE, from the
+// SAME SQL production uses — the real db/migrations/*.sql, the least-privilege app role, and the
+// real db/seeds/*.sql (core + rules + catalogue, the non-demo set). No hand-maintained schema
+// "slice" — so the integration tests can never drift from the migrations the product ships with.
+//
+// Runs only when DATABASE_ADMIN_URL (a DDL-capable superuser/owner) is set; the integration
+// specs themselves connect as the least-privilege kv_app role (DATABASE_URL) so RLS is exercised.
+// Without DATABASE_ADMIN_URL this is a no-op and every integration spec skips (describe.skip),
+// keeping the fast unit suite runnable anywhere.
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const { Pool } = require('pg');
+
+const ROOT = path.join(__dirname, '..', '..', '..');        // repo root (krishi-verse)
+const MIGRATIONS_DIR = path.join(ROOT, 'db', 'migrations');
+const SEEDS_DIR = path.join(ROOT, 'db', 'seeds');
+const APP_ROLE_SQL = path.join(__dirname, 'sql', '01_app_role.sql');
+
+module.exports = async function integrationGlobalSetup() {
+  const adminUrl = process.env.DATABASE_ADMIN_URL;
+  if (!adminUrl) {
+    // No admin DB → integration specs skip themselves. Nothing to build.
+    return;
+  }
+
+  const admin = new Pool({ connectionString: adminUrl });
+  const t0 = Date.now();
+  try {
+    // 1) Reset to a clean schema so the run is deterministic and repeatable.
+    await admin.query(`DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;
+      GRANT ALL ON SCHEMA public TO public; GRANT ALL ON SCHEMA public TO CURRENT_USER;`);
+
+    // 2) Apply the REAL migrations in ascending order (no params → simple-query, multi-statement OK).
+    const migrations = fs.readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith('.sql')).sort();
+    for (const f of migrations) {
+      try { await admin.query(fs.readFileSync(path.join(MIGRATIONS_DIR, f), 'utf8')); }
+      catch (e) { throw new Error(`migration ${f} failed: ${e.message}`); }
+    }
+
+    // 3) Give kv_app LOGIN (its table privileges come from the migrations themselves, so the
+    //    test role mirrors production exactly — see test/sql/01_app_role.sql).
+    await admin.query(fs.readFileSync(APP_ROLE_SQL, 'utf8'));
+
+    // 4) Apply the REAL seeds in the same order the seed runner uses (core → rules → catalogue).
+    const { ORDER } = require(path.join(ROOT, 'db', 'scripts', 'seed.js'));
+    for (const rel of ORDER) {
+      const full = path.join(SEEDS_DIR, rel);
+      if (!fs.existsSync(full)) continue;
+      try { await admin.query(fs.readFileSync(full, 'utf8')); }
+      catch (e) { throw new Error(`seed ${rel} failed: ${e.message}`); }
+    }
+
+    // (No extra grants — kv_app's privileges come from the migrations so the test role matches
+    //  production. Seeds create no tables, and 0014's default privileges cover later migrations.)
+    // eslint-disable-next-line no-console
+    console.log(`[integration] built test DB from ${migrations.length} migrations + ${ORDER.length} seeds in ${Date.now() - t0}ms`);
+  } finally {
+    await admin.end();
+  }
+};

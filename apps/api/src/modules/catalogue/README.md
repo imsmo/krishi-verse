@@ -39,7 +39,9 @@ The dynamic catalogue: the category taxonomy, typed attributes, and the product 
 Unit: product invariants + lifecycle, attribute typed validation, batch consume/recall/expiry,
 tenant-isolation SQL contract. Integration (`catalogue.integration.spec.ts`, real Postgres + RLS):
 create tenant product → outbox + search visibility, platform-master visibility, idempotency,
-batch recall + audit, cross-tenant RLS denial. Slice SQL: `apps/api/test/sql/catalogue_slice.sql`.
+batch recall + audit, cross-tenant RLS denial. The integration DB is built from the REAL
+`db/migrations` + `db/seeds` (via `test/integration-global-setup.js`); the spec inserts only its
+own fixtures (`test/helpers/fixtures.ts`).
 
 ## Deferred (flagged, not faked) — Phase 2 / admin-api
 Global taxonomy CRUD (admin-api), certificates (organic/GI — overlaps KYC, organic phase),

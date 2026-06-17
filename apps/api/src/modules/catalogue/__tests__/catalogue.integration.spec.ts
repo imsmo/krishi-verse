@@ -9,10 +9,9 @@
 //   5. ROW-LEVEL SECURITY: tenant B cannot see tenant A's private product, but CAN see the
 //      platform-master product.
 // Requires DATABASE_URL (kv_app). DATABASE_ADMIN_URL (superuser) loads the slice.
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
+import { makeTenant } from '../../../../test/helpers/fixtures';
 
 import { AppConfig } from '../../../core/config/app-config';
 import { PgPoolProvider } from '../../../core/database/pg-pool.provider';
@@ -36,14 +35,14 @@ import { ProductSearchReadModel } from '../read-models/product-search.read-model
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
-const SQL = join(__dirname, '../../../../test/sql/catalogue_slice.sql');
 const run = APP_URL ? describe : describe.skip;
 const CROPS = '00000000-0000-0000-0000-0000000000c1';
 const PLATFORM_PRODUCT = '00000000-0000-0000-0000-0000000000d1';
 
 run('catalogue slice (integration, real Postgres + RLS)', () => {
   let pools: PgPoolProvider;
-  let inspect: Pool;
+  let admin: Pool;          // superuser: fixtures + assertion reads (bypasses RLS)
+  let inspect: Pool;        // kv_app: the RLS isolation proof only
   let products: ProductService;
   let batches: ProductBatchService;
   let search: ProductSearchReadModel;
@@ -53,12 +52,16 @@ run('catalogue slice (integration, real Postgres + RLS)', () => {
   const user = randomUUID();
 
   beforeAll(async () => {
-    if (ADMIN_URL) {
-      const a = new Pool({ connectionString: ADMIN_URL });
-      await a.query(readFileSync(SQL, 'utf8'));
-      await a.query(`INSERT INTO tenants (id,name) VALUES ($1,'A'),($2,'B') ON CONFLICT DO NOTHING`, [tenantA, tenantB]);
-      await a.end();
-    }
+    admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
+    await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
+    // a tenant-shared 'crops' category (fixed id the tests reference) + a PLATFORM-master product
+    // (tenant_id NULL → visible to every tenant). Categories/units already come from the real seeds.
+    await admin.query(`INSERT INTO categories (id, code, default_name, path, depth, is_active)
+      VALUES ($1,'itest_crops','Crops','itest_crops',1,true) ON CONFLICT (id) DO NOTHING`, [CROPS]);
+    await admin.query(`INSERT INTO units (code, default_name, unit_class, is_active) VALUES ('quintal','Quintal','mass',true) ON CONFLICT (code) DO NOTHING`);
+    await admin.query(`INSERT INTO products (id, category_id, default_name, default_unit, tenant_id, is_active, search_tsv)
+      VALUES ($1,$2,'Wheat (platform master)','quintal',NULL,true, to_tsvector('simple','Wheat')) ON CONFLICT (id) DO NOTHING`, [PLATFORM_PRODUCT, CROPS]);
+
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
     pools = new PgPoolProvider(config);
     const shards = new ShardRouter(config);
@@ -82,16 +85,16 @@ run('catalogue slice (integration, real Postgres + RLS)', () => {
     isSuperuser = (await inspect.query(`SELECT rolsuper FROM pg_roles WHERE rolname=current_user`)).rows[0]?.rolsuper === true;
   }, 30000);
 
-  afterAll(async () => { await pools?.onModuleDestroy(); await inspect?.end(); });
+  afterAll(async () => { await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end(); });
 
   let createdId = '';
 
   it('creates a tenant-private product → persisted + outbox event; visible via getById & search', async () => {
     const { id } = await products.create(tenantA, user, `idem-${randomUUID()}`, { categoryId: CROPS, defaultName: 'Cumin (Tenant A)', defaultUnit: 'quintal', isPerishable: false } as any);
     createdId = id;
-    const row = await inspect.query(`SELECT tenant_id FROM products WHERE id=$1`, [id]);
+    const row = await admin.query(`SELECT tenant_id FROM products WHERE id=$1`, [id]);
     expect(row.rows[0].tenant_id).toBe(tenantA);
-    const ev = await inspect.query(`SELECT 1 FROM outbox_events WHERE aggregate_id=$1 AND event_type='catalogue.product_created'`, [id]);
+    const ev = await admin.query(`SELECT 1 FROM outbox_events WHERE aggregate_id=$1 AND event_type='catalogue.product_created'`, [id]);
     expect(ev.rowCount).toBe(1);
 
     const got = await products.getById(tenantA, id);
@@ -113,9 +116,9 @@ run('catalogue slice (integration, real Postgres + RLS)', () => {
   it('creates and recalls a store batch (audit row written)', async () => {
     const { id } = await batches.create(tenantA, user, `idem-${randomUUID()}`, { productId: createdId, batchNo: 'B-1', qtyReceived: 50, unitCode: 'quintal', currencyCode: 'INR' } as any);
     await batches.recall(tenantA, user, id, 'contamination', '127.0.0.1');
-    const r = await inspect.query(`SELECT is_recalled FROM product_batches WHERE id=$1`, [id]);
+    const r = await admin.query(`SELECT is_recalled FROM product_batches WHERE id=$1`, [id]);
     expect(r.rows[0].is_recalled).toBe(true);
-    const a = await inspect.query(`SELECT 1 FROM audit_log WHERE entity_id=$1 AND action='catalogue.batch_recalled'`, [id]);
+    const a = await admin.query(`SELECT 1 FROM audit_log WHERE entity_id=$1 AND action='catalogue.batch_recalled'`, [id]);
     expect(a.rowCount).toBe(1);
   });
 
