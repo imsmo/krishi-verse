@@ -35,6 +35,8 @@ import { PriceHistoryRepository } from '../../listings/repositories/price-histor
 import { ListingAttributeRepository } from '../../listings/repositories/listing-attribute.repository';
 import { ListingMediaRepository } from '../../listings/repositories/listing-media.repository';
 import { ListingService } from '../../listings/services/listing.service';
+import { ChargePricingService } from '../../payments/services/charge-pricing.service';
+import { ChargeDefinitionRepository } from '../../payments/repositories/charge-definition.repository';
 
 import { CartRepository } from '../repositories/cart.repository';
 import { OrderRepository } from '../repositories/order.repository';
@@ -95,7 +97,8 @@ run('orders slice (integration, real Postgres + RLS)', () => {
     const orderRepo = new OrderRepository(replica as any);
 
     carts = new CartService(uow, metrics, listings, cartRepo);
-    checkout = new CheckoutService(uow, outbox, quota, idem, metrics, flags, listings, cartRepo, orderRepo);
+    checkout = new CheckoutService(uow, outbox, quota, idem, metrics, flags, listings, cartRepo, orderRepo,
+      new ChargePricingService(new ChargeDefinitionRepository(replica as any)));
     orders = new OrderService(uow, outbox, metrics, audit, orderRepo);
 
     inspect = new Pool({ connectionString: APP_URL });

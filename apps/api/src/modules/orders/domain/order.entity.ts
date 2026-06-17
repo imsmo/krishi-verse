@@ -29,20 +29,22 @@ export class Order {
   static place(input: {
     id: string; tenantId: string; orderNo: string; checkoutGroupId: string | null; buyerUserId: string;
     sellerUserId: string; source: string; currencyCode: string; items: OrderItem[];
-    deliveryFeeMinor?: bigint; discountMinor?: bigint; deliveryMethodId: string | null; deliveryAddressId: string | null;
+    deliveryFeeMinor?: bigint; platformFeeMinor?: bigint; discountMinor?: bigint; deliveryMethodId: string | null; deliveryAddressId: string | null;
     requiresPayment: boolean; now?: Date;
   }): Order {
     const now = input.now ?? new Date();
     const subtotal = input.items.reduce((s, it) => s + it.props.lineTotalMinor, 0n);
     const delivery = input.deliveryFeeMinor ?? 0n;
+    const platformFee = input.platformFeeMinor ?? 0n;   // BUYER-side platform fee (charged at checkout)
     const discount = input.discountMinor ?? 0n;
-    // tax/commission/platform_fee/tds are computed at settlement (payments module) — 0 at placement.
-    const total = subtotal + delivery - discount;
+    // tax/commission/tds are settlement-time (0 here). The buyer platform fee + delivery are charged
+    // NOW and added to what the buyer pays; settlement routes them to the platform (not the seller).
+    const total = subtotal + delivery + platformFee - discount;
     const o = new Order({
       id: input.id, tenantId: input.tenantId, orderNo: input.orderNo, checkoutGroupId: input.checkoutGroupId,
       buyerUserId: input.buyerUserId, sellerUserId: input.sellerUserId, source: input.source, currencyCode: input.currencyCode,
       subtotalMinor: subtotal, deliveryFeeMinor: delivery, discountMinor: discount, taxMinor: 0n,
-      commissionMinor: 0n, platformFeeMinor: 0n, tdsMinor: 0n, totalMinor: total < 0n ? 0n : total,
+      commissionMinor: 0n, platformFeeMinor: platformFee, tdsMinor: 0n, totalMinor: total < 0n ? 0n : total,
       status: input.requiresPayment ? 'payment_pending' : 'created',
       deliveryMethodId: input.deliveryMethodId, deliveryAddressId: input.deliveryAddressId,
       acceptanceDeadline: new Date(now.getTime() + ACCEPTANCE_WINDOW_MS), qualityWindowEnds: null,
@@ -80,7 +82,12 @@ export class Order {
     this.to('delivered', OrderEventType.Delivered, {}, by);
     this.props.qualityWindowEnds = new Date(now.getTime() + QUALITY_WINDOW_MS);
   }
-  complete(now: Date = new Date()): void { this.to('completed', OrderEventType.Completed, {}); this.props.completedAt = now; }
+  complete(now: Date = new Date()): void {
+    // carry seller + amount so the payments module can settle escrow→seller without reading orders'
+    // tables (cross-module data travels in the event, not via a foreign repository).
+    this.to('completed', OrderEventType.Completed, { buyerUserId: this.props.buyerUserId, sellerUserId: this.props.sellerUserId, totalMinor: this.props.totalMinor.toString(), deliveryFeeMinor: this.props.deliveryFeeMinor.toString(), platformFeeMinor: this.props.platformFeeMinor.toString(), currencyCode: this.props.currencyCode, source: this.props.source });
+    this.props.completedAt = now;
+  }
   dispute(by: string, note?: string): void { this.to('disputed', OrderEventType.Disputed, { note }, by); }
 
   cancel(by: string, reasonId: string | null, isBuyer: boolean): void {

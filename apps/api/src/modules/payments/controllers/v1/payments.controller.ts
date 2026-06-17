@@ -1,3 +1,46 @@
-// apps/api/src/modules/payments/controllers/v1/payments.controller.ts · REST v1 endpoints: payments (validate→authorize→delegate, no logic) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/payments/controllers/v1/payments.controller.ts · authed payment endpoints
+// (validate → authorize → delegate). Creating an intent needs only authentication (a user pays
+// for themselves); refunds require the wallet.adjust permission. Gated by the online_payments flag.
+import { Controller, Get, Headers, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import type { Request } from 'express';
+import { AuthGuard } from '../../../../core/auth/auth.guard';
+import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
+import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
+import { ZodBody } from '../../../../core/http/zod.pipe';
+import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
+import { RequestContext } from '../../../../core/tenancy-context/request-context';
+import { BadRequestError } from '../../../../shared/errors/app-error';
+import { PaymentService } from '../../services/payment.service';
+import { CreatePaymentIntentSchema, CreatePaymentIntentDto, RefundPaymentSchema, RefundPaymentDto } from '../../dto/create-payment.dto';
+import { PaymentPermissions, canModeratePayment } from '../../policies/payments.policies';
+
+const ipOf = (req: Request) => req.ip || null;
+const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
+
+@Controller({ path: 'payments', version: '1' })
+@UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
+@FeatureFlag('online_payments')
+export class PaymentsController {
+  constructor(private readonly payments: PaymentService) {}
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canModerate: canModeratePayment(ctx) }; }
+
+  @Post()
+  create(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(CreatePaymentIntentSchema) dto: CreatePaymentIntentDto) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.payments.createIntent(ctx.tenantId, ctx.userId, key, dto).then((data) => ({ data }));
+  }
+
+  @Get()
+  list(@CurrentContext() ctx: RequestContext, @Query('cursor') cursor?: string, @Query('limit') limit?: string) {
+    const lim = Math.min(Math.max(Number(limit) || 20, 1), 100);
+    return this.payments.list(ctx.tenantId, ctx.userId, { cursor: decodeCursor(cursor), limit: lim }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
+  }
+
+  @Get(':id')
+  get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.payments.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
+
+  @Post(':id/refund') @RequirePermissions(PaymentPermissions.Refund)
+  refund(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(RefundPaymentSchema) dto: RefundPaymentDto) {
+    return this.payments.refund(ctx.tenantId, this.actor(ctx), id, dto, ipOf(r)).then((data) => ({ data }));
+  }
+}

@@ -1,2 +1,40 @@
-// apps/wallet-service/src/grpc/wallet.proto · wallet service — only writer of money · [P1]
+// apps/wallet-service/src/grpc/wallet.proto
+// The wallet service is the ONLY writer of money (Law 2). This proto is the contract every
+// caller uses. At shard_count=1 the contract is implemented IN-PROCESS by
+// apps/api/src/core/wallet/wallet.client.inprocess.ts (the active path). When wallet is
+// extracted to its own process, this same service is served over gRPC — callers are unchanged.
 syntax = "proto3";
+package krishiverse.wallet.v1;
+
+// A signed leg: amount_minor > 0 = credit, < 0 = debit. Legs of one txn MUST sum to zero.
+message Leg {
+  string owner_kind    = 1;  // 'user' | 'tenant' | 'platform'
+  string owner_id      = 2;  // user id / tenant id; empty for platform
+  string account_code  = 3;  // main|hold|commission|escrow|fees|gateway|payouts|gst_payable|...
+  string currency_code = 4;  // 'INR'
+  sint64 amount_minor  = 5;  // signed minor units
+}
+
+message PostTransactionRequest {
+  string tenant_id       = 1;  // may be empty for pure-platform moves
+  string txn_type        = 2;  // lookup 'ledger_txn_type' code
+  string idempotency_key = 3;  // REQUIRED — replay returns the same txn (Law 3)
+  repeated Leg legs      = 4;
+  string reference_type  = 5;
+  string reference_id    = 6;
+  string initiated_by    = 7;
+  string description     = 8;
+}
+message PostTransactionResponse {
+  string txn_id          = 1;
+  bool   already_applied = 2;  // true ⇒ idempotent replay, no new entries
+}
+
+message BalanceRequest  { string owner_kind = 1; string owner_id = 2; string account_code = 3; string currency_code = 4; }
+message BalanceResponse { sint64 balance_minor = 1; }
+
+service Wallet {
+  // Post a balanced double-entry transaction atomically. Idempotent on idempotency_key.
+  rpc PostTransaction (PostTransactionRequest) returns (PostTransactionResponse);
+  rpc GetBalance      (BalanceRequest)         returns (BalanceResponse);
+}

@@ -1,3 +1,29 @@
-// apps/api/src/modules/payments/domain/payment.state.ts · STATE MACHINE for payment — the only place its transitions are defined (Law 5) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/payments/domain/payment.state.ts · the payment_status state machine (Law 5). The ONLY
+// place transitions live. Mirrors the payment_status enum in db/migrations/0006_money.sql.
+import { DomainError } from '../../../shared/errors/app-error';
+
+export const PAYMENT_STATUSES = [
+  'initiated', 'pending', 'authorized', 'success', 'failed', 'expired',
+  'refund_initiated', 'refunded', 'partially_refunded',
+] as const;
+export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
+
+const TRANSITIONS: Readonly<Record<PaymentStatus, readonly PaymentStatus[]>> = Object.freeze({
+  initiated:          ['pending', 'authorized', 'success', 'failed', 'expired'],
+  pending:            ['authorized', 'success', 'failed', 'expired'],
+  authorized:         ['success', 'failed'],
+  success:            ['refund_initiated', 'partially_refunded', 'refunded'],
+  refund_initiated:   ['refunded', 'partially_refunded', 'failed'],
+  partially_refunded: ['refund_initiated', 'partially_refunded', 'refunded'],
+  refunded:           [],
+  failed:             [],
+  expired:            [],
+});
+
+export class IllegalPaymentTransitionError extends DomainError {
+  constructor(from: string, to: string) { super('PAYMENT_ILLEGAL_TRANSITION', `Cannot move payment ${from}→${to}`, 409, { from, to }); }
+}
+export function canTransition(from: PaymentStatus, to: PaymentStatus): boolean { return TRANSITIONS[from]?.includes(to) ?? false; }
+export function assertTransition(from: PaymentStatus, to: PaymentStatus): void { if (!canTransition(from, to)) throw new IllegalPaymentTransitionError(from, to); }
+export function isTerminal(s: PaymentStatus): boolean { return s === 'refunded' || s === 'failed' || s === 'expired'; }
+export function isSettled(s: PaymentStatus): boolean { return s === 'success' || s === 'partially_refunded' || s === 'refunded'; }

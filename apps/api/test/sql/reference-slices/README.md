@@ -15,9 +15,15 @@ Why keep them:
 - a fast local sandbox (`psql -f <slice>.sql`) when you want to poke at one module's tables
   without standing up the whole 250-table platform.
 
+Available slices: `00_listings_slice.sql`, `catalogue_slice.sql`, `identity_slice.sql`,
+`orders_slice.sql`, `payments_slice.sql` (payments + wallet/ledger), and `02_seed_min.sql`.
+
 Caveats if you ever use them:
 - they are a hand-maintained subset — they can fall behind the real migrations;
 - they drop foreign keys and simplify columns, so they are NOT a substitute for the migrations;
-- `02_seed_min.sql` is the matching minimal plan/quota seed the old listings slice relied on.
+- `02_seed_min.sql` is the matching minimal plan/quota seed the old listings slice relied on;
+- `payments_slice.sql` tenant-scopes `payments` for the demo, but in production the
+  `wallet_accounts`/`ledger_*` tables are EXCLUDED from the automatic tenant RLS and run under a
+  stricter `kv_wallet` regime — only the wallet service writes them.
 
 The authoritative schema is always `db/migrations/`; the authoritative seed data is `db/seeds/`.

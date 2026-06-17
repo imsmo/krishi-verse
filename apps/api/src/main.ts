@@ -10,7 +10,9 @@ import { AppModule } from './app.module';
 import { AppConfig } from './core/config/app-config';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { bufferLogs: false });
+  // rawBody:true preserves the exact request bytes (req.rawBody) so payment-gateway webhook
+  // HMAC signatures can be verified over the original payload (re-serializing would break them).
+  const app = await NestFactory.create(AppModule, { bufferLogs: false, rawBody: true });
   const config = app.get(AppConfig);
   // Trust exactly the configured number of proxy/LB hops so req.ip reflects the REAL
   // client (not the load balancer) — required for correct, non-spoofable rate limiting.

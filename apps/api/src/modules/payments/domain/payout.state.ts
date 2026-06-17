@@ -1,3 +1,22 @@
-// apps/api/src/modules/payments/domain/payout.state.ts · STATE MACHINE for payout — the only place its transitions are defined (Law 5) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/payments/domain/payout.state.ts · the payout_status state machine (Law 5).
+// Mirrors the payout_status enum in db/migrations/0006_money.sql.
+import { DomainError } from '../../../shared/errors/app-error';
+
+export const PAYOUT_STATUSES = ['queued', 'processing', 'success', 'failed', 'reversed', 'cancelled'] as const;
+export type PayoutStatus = (typeof PAYOUT_STATUSES)[number];
+
+const TRANSITIONS: Readonly<Record<PayoutStatus, readonly PayoutStatus[]>> = Object.freeze({
+  queued:     ['processing', 'cancelled'],
+  processing: ['success', 'failed'],
+  failed:     ['queued', 'reversed'],     // retry or give the money back
+  success:    ['reversed'],               // clawback (rare)
+  reversed:   [],
+  cancelled:  [],
+});
+
+export class IllegalPayoutTransitionError extends DomainError {
+  constructor(from: string, to: string) { super('PAYOUT_ILLEGAL_TRANSITION', `Cannot move payout ${from}→${to}`, 409, { from, to }); }
+}
+export function canTransition(from: PayoutStatus, to: PayoutStatus): boolean { return TRANSITIONS[from]?.includes(to) ?? false; }
+export function assertTransition(from: PayoutStatus, to: PayoutStatus): void { if (!canTransition(from, to)) throw new IllegalPayoutTransitionError(from, to); }
+export function isTerminal(s: PayoutStatus): boolean { return s === 'reversed' || s === 'cancelled'; }

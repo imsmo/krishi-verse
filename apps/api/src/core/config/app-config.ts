@@ -64,6 +64,19 @@ export class AppConfig {
       exposeOtp: this.env.AUTH_EXPOSE_OTP !== undefined ? this.env.AUTH_EXPOSE_OTP === 'true' : this.env.NODE_ENV === 'test',
     };
   }
+  get media() {
+    return {
+      region: this.env.AWS_REGION,
+      bucket: this.env.S3_MEDIA_BUCKET,
+      accessKeyId: this.env.S3_ACCESS_KEY_ID,
+      secretAccessKey: this.env.S3_SECRET_ACCESS_KEY,
+      endpoint: this.env.S3_ENDPOINT ?? null,
+      forcePathStyle: this.env.S3_FORCE_PATH_STYLE === 'true',
+      presignExpirySec: this.env.S3_PRESIGN_EXPIRY_SEC,
+      scanSecret: this.env.MEDIA_SCAN_SECRET,
+      maxUploadBytes: this.env.MEDIA_MAX_UPLOAD_BYTES,
+    };
+  }
   get wallet() { return { grpcUrl: this.env.WALLET_GRPC_URL }; }
   get razorpay(){ return { keyId: this.env.RAZORPAY_KEY_ID, webhookSecret: this.env.RAZORPAY_WEBHOOK_SECRET }; }
   get smsBudgetPaise() { return this.env.SMS_DAILY_BUDGET_PAISE; }

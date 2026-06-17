@@ -1,3 +1,22 @@
-// apps/api/src/modules/payments/controllers/v1/invoices.controller.ts · REST v1 endpoints: invoices (validate→authorize→delegate, no logic) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/payments/controllers/v1/invoices.controller.ts · buyer-facing GST trade invoices.
+// Read-only: the invoice for an order, visible to that order's buyer/seller or a finance moderator
+// (404 to anyone else — no IDOR / cross-tenant enumeration). Generation is automatic at order
+// completion (TradeInvoiceHandler), not via a public endpoint.
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '../../../../core/auth/auth.guard';
+import { PermissionsGuard } from '../../../../core/auth/permissions.guard';
+import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
+import { RequestContext } from '../../../../core/tenancy-context/request-context';
+import { TradeInvoiceService } from '../../services/trade-invoice.service';
+import { canModeratePayment } from '../../policies/payments.policies';
+
+@Controller({ path: 'invoices', version: '1' })
+@UseGuards(AuthGuard, PermissionsGuard)
+export class InvoicesController {
+  constructor(private readonly invoices: TradeInvoiceService) {}
+
+  @Get('order/:orderId')
+  byOrder(@CurrentContext() ctx: RequestContext, @Param('orderId') orderId: string) {
+    return this.invoices.getByOrder(ctx.tenantId, { userId: ctx.userId, canModerate: canModeratePayment(ctx) }, orderId).then((data) => ({ data }));
+  }
+}

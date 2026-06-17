@@ -13,6 +13,7 @@ import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { FlagsService } from '../../../core/feature-flags/flags.service';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { ListingService } from '../../listings/services/listing.service';
+import { ChargePricingService } from '../../payments/services/charge-pricing.service';
 import { CartRepository } from '../repositories/cart.repository';
 import { OrderRepository } from '../repositories/order.repository';
 import { Order } from '../domain/order.entity';
@@ -36,12 +37,14 @@ export class CheckoutService {
     private readonly listings: ListingService,
     private readonly carts: CartRepository,
     private readonly orders: OrderRepository,
+    private readonly charges: ChargePricingService,
   ) {}
 
   async checkout(tenantId: string, buyerUserId: string, idemKey: string, dto: CheckoutDto) {
     return this.idem.remember(idemKey, buyerUserId, 'orders.checkout', () =>
       timed(this.metrics, 'orders.checkout', { tenant: tenantId }, async () => {
         const requiresPayment = await this.flags.isEnabled('online_payments', { tenantId, userId: buyerUserId });
+        const applyCharges = await this.flags.isEnabled('buyer_charges', { tenantId, userId: buyerUserId });
 
         return this.uow.run(tenantId, async (tx) => {
           const cartId = await this.carts.activeIdForUpdate(tx, tenantId, buyerUserId);
@@ -73,9 +76,14 @@ export class CheckoutService {
           const created: Array<{ id: string; orderNo: string; totalMinor: string; status: string }> = [];
           for (const [sellerUserId, g] of bySeller) {
             await this.quota.assertWithinLimit(tenantId, QUOTA);
+            // buyer-side charges (delivery slab + platform fee) on this seller's subtotal — flagged
+            const subtotal = g.items.reduce((a, it) => a + it.props.lineTotalMinor, 0n);
+            const { deliveryFeeMinor, platformFeeMinor } = applyCharges
+              ? await this.charges.checkoutCharges(tx, tenantId, subtotal)
+              : { deliveryFeeMinor: 0n, platformFeeMinor: 0n };
             const order = Order.place({ id: g.orderId, tenantId, orderNo: orderNo(g.orderId), checkoutGroupId, buyerUserId,
-              sellerUserId, source: 'direct', currencyCode: 'INR', items: g.items, deliveryMethodId: dto.deliveryMethodId ?? null,
-              deliveryAddressId: dto.deliveryAddressId ?? null, requiresPayment, now: g.createdAt });
+              sellerUserId, source: 'direct', currencyCode: 'INR', items: g.items, deliveryFeeMinor, platformFeeMinor,
+              deliveryMethodId: dto.deliveryMethodId ?? null, deliveryAddressId: dto.deliveryAddressId ?? null, requiresPayment, now: g.createdAt });
             await this.orders.insertGraph(tx, order, g.items);
             await this.quota.increment(tx, tenantId, QUOTA, 1);
             await this.flush(tx, tenantId, g.orderId, order.pullEvents());

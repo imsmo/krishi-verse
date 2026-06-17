@@ -9,11 +9,13 @@ import { RequestIdMiddleware } from './core/http/request-id.middleware';
 import { TenantContextMiddleware } from './core/tenancy-context/tenant-context.middleware';
 import { ListingsModule } from './modules/listings/listings.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { PaymentsModule } from './modules/payments/payments.module';
+import { MediaModule } from './core/media/media.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { CatalogueModule } from './modules/catalogue/catalogue.module';
 
 @Module({
-  imports: [CoreModule, IdentityModule, CatalogueModule, ListingsModule, OrdersModule],
+  imports: [CoreModule, IdentityModule, CatalogueModule, ListingsModule, OrdersModule, PaymentsModule, MediaModule],
 })
 export class AppModule implements NestModule {
   // request-id THEN tenant-context (Law 1) on every route.
