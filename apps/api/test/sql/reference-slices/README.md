@@ -16,7 +16,8 @@ Why keep them:
   without standing up the whole 250-table platform.
 
 Available slices: `00_listings_slice.sql`, `catalogue_slice.sql`, `identity_slice.sql`,
-`orders_slice.sql`, `payments_slice.sql` (payments + wallet/ledger), and `02_seed_min.sql`.
+`orders_slice.sql`, `payments_slice.sql` (payments + wallet/ledger), `auctions_slice.sql`
+(auctions + bids + EMD ledger bits), and `02_seed_min.sql`.
 
 Caveats if you ever use them:
 - they are a hand-maintained subset — they can fall behind the real migrations;
