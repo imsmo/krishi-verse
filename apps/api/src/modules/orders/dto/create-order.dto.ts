@@ -4,5 +4,6 @@ import { z } from 'zod';
 export const CheckoutSchema = z.object({
   deliveryMethodId: z.string().uuid().optional(),
   deliveryAddressId: z.string().uuid().optional(),
+  couponCode: z.string().regex(/^[A-Za-z0-9_-]{3,40}$/).optional(),   // applied to the primary order (promotions)
 }).strict();
 export type CheckoutDto = z.infer<typeof CheckoutSchema>;

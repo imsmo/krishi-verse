@@ -113,6 +113,18 @@ export class UserMembershipService {
     return { membership: this.serialize(membership, tier) };
   }
 
+  /** Tx-aware checkout benefit lookup (called by orders' checkout): the buyer's LIVE-membership tier
+   *  benefits that affect the bill — free delivery + a buyer-platform-fee bps override. Null when the
+   *  user has no live membership. Read-only; safe to call inside the checkout tx. */
+  async checkoutBenefits(tx: TxContext, tenantId: string, userId: string): Promise<{ freeDelivery: boolean; platformFeeBpsOverride: number | null } | null> {
+    const m = await this.repo.findLiveForUser(tx, tenantId, userId);
+    if (!m || !isLive(m.status)) return null;
+    const tier = await this.tiers.getSubscribable(tenantId, m.tierId);
+    if (!tier) return null;
+    const t = tier.toProps();
+    return { freeDelivery: t.benefits.freeDelivery, platformFeeBpsOverride: t.platformFeeBpsOverride };
+  }
+
   async list(tenantId: string, actor: MembershipActor, q: { box: 'mine' | 'all'; status?: string; cursor?: { c: string; id: string }; limit: number }) {
     if (q.box === 'all' && !actor.canManage) throw new MembershipForbiddenError('requires membership.manage');
     const rows = await this.repo.listFor(tenantId, { userId: q.box === 'mine' ? actor.userId : undefined, status: q.status, cursor: q.cursor, limit: q.limit });

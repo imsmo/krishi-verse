@@ -92,35 +92,36 @@ export class CouponService {
   async redeem(tenantId: string, userId: string, idemKey: string, dto: { code: string; orderId: string; subtotalMinor: bigint }) {
     return this.idem.remember(idemKey, userId, 'promotions.redeem', () =>
       timed(this.metrics, 'promotions.redeem', { tenant: tenantId }, () =>
-        this.uow.run(tenantId, async (tx) => {
-          const coupon = await this.coupons.getByCodeForUpdate(tx, tenantId, dto.code);
-          if (!coupon) throw new CouponNotFoundError();
-          const promo = await this.promos.getForUpdate(tx, tenantId, coupon.promotionId);
-          if (!promo) throw new PromotionNotFoundError(coupon.promotionId);
-          if (!promo.isRedeemableNow()) throw new CouponNotActiveError(promo.status());
-          const discount = promo.computeDiscount(dto.subtotalMinor);
-          if (discount <= 0n) throw new CouponNotApplicableError();
+        this.uow.run(tenantId, (tx) => this.redeemInTx(tx, tenantId, userId, dto), { userId })));
+  }
 
-          // per-user cap (counted in-tx under the coupon lock)
-          const used = await this.redemptions.countForUser(tx, tenantId, coupon.id, userId);
-          if (used >= coupon.perUserLimit) throw new CouponUserLimitError();
+  /** The atomic redemption CORE — call inside an existing tx (e.g. orders' checkout) so the discount,
+   *  the redemption, and the order all commit together. Same caps/budget guards; same zero-sum. */
+  async redeemInTx(tx: TxContext, tenantId: string, userId: string, dto: { code: string; orderId: string; subtotalMinor: bigint }) {
+    const coupon = await this.coupons.getByCodeForUpdate(tx, tenantId, dto.code);
+    if (!coupon) throw new CouponNotFoundError();
+    const promo = await this.promos.getForUpdate(tx, tenantId, coupon.promotionId);
+    if (!promo) throw new PromotionNotFoundError(coupon.promotionId);
+    if (!promo.isRedeemableNow()) throw new CouponNotActiveError(promo.status());
+    const discount = promo.computeDiscount(dto.subtotalMinor);
+    if (discount <= 0n) throw new CouponNotApplicableError();
 
-          // append the immutable redemption FIRST (idempotent per coupon+order)
-          const redemption = CouponRedemption.create({ id: uuidv7(), couponId: coupon.id, tenantId, userId, orderId: dto.orderId, amountMinor: discount });
-          if (!(await this.redemptions.insert(tx, redemption))) throw new DuplicateRedemptionError();
+    const used = await this.redemptions.countForUser(tx, tenantId, coupon.id, userId);
+    if (used >= coupon.perUserLimit) throw new CouponUserLimitError();
 
-          // consume the global cap + the promotion budget (both fail CLOSED), then persist
-          coupon.consumeUse();
-          promo.recordSpend(discount);
-          await this.coupons.updateUses(tx, coupon);
-          await this.promos.update(tx, promo);
+    const redemption = CouponRedemption.create({ id: uuidv7(), couponId: coupon.id, tenantId, userId, orderId: dto.orderId, amountMinor: discount });
+    if (!(await this.redemptions.insert(tx, redemption))) throw new DuplicateRedemptionError();
 
-          await this.flush(tx, tenantId, coupon.id, [
-            { type: PromotionEventType.CouponRedeemed, payload: { couponId: coupon.id, promotionId: promo.id, orderId: dto.orderId, userId, discountMinor: discount.toString() } },
-            ...promo.pullEvents(),
-          ]);
-          return { code: coupon.code, promotionId: promo.id, orderId: dto.orderId, discountMinor: discount.toString() };
-        }, { userId })));
+    coupon.consumeUse();
+    promo.recordSpend(discount);
+    await this.coupons.updateUses(tx, coupon);
+    await this.promos.update(tx, promo);
+
+    await this.flush(tx, tenantId, coupon.id, [
+      { type: PromotionEventType.CouponRedeemed, payload: { couponId: coupon.id, promotionId: promo.id, orderId: dto.orderId, userId, discountMinor: discount.toString() } },
+      ...promo.pullEvents(),
+    ]);
+    return { code: coupon.code, promotionId: promo.id, orderId: dto.orderId, discountMinor: discount.toString() };
   }
 
   async listMyRedemptions(tenantId: string, userId: string, q: { cursor?: { c: string; id: string }; limit: number }) {

@@ -6,6 +6,8 @@
 import { Inject, Module, OnModuleInit } from '@nestjs/common';
 import { ListingsModule } from '../listings/listings.module';
 import { PaymentsModule } from '../payments/payments.module';
+import { PromotionsModule } from '../promotions/promotions.module';
+import { MembershipsModule } from '../memberships/memberships.module';
 import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
 import { CartsController } from './controllers/v1/carts.controller';
@@ -28,7 +30,7 @@ import { DisputeOpenedHandler } from './events/handlers/dispute-opened.handler';
 import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handler';
 
 @Module({
-  imports: [ListingsModule, PaymentsModule],   // PaymentsModule exports ChargePricingService (checkout fees)
+  imports: [ListingsModule, PaymentsModule, PromotionsModule, MembershipsModule],   // PaymentsModule: ChargePricingService; PromotionsModule: CouponService; MembershipsModule: member checkout benefits
   controllers: [CartsController, CheckoutController, OrdersController],
   providers: [
     CartService, CheckoutService, OrderService, OrderTimelineReadModel,

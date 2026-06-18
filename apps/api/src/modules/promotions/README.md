@@ -53,10 +53,11 @@ FOR UPDATE, no version, ON CONFLICT uniqueness, keyset, per-user count). Integra
 incremented, idempotent per order) → per-user cap + budget both fail closed → cross-tenant RLS denial.
 
 ## Deferred (flagged, not faked) — later wave
-- **Checkout integration** — wiring `redeem()` INTO orders' checkout (set `order.discount_minor` + redeem
-  in the checkout tx, one-coupon-per-order) is the documented next step; `redeem` already takes the order
-  id and is tx-safe. The `order-created.handler` scaffold is left unwired (a discount must be applied
-  BEFORE the order total, so an after-the-fact handler can't price it).
+- **Checkout integration (DONE)** — orders' `CheckoutService` accepts a `couponCode` and calls
+  `CouponService.redeemInTx` INSIDE the checkout tx, applying the discount to the primary order's
+  `order.discount_minor` (atomic: the redemption + the order commit together; behind the `promotions`
+  flag). Proven by `apps/api/src/modules/orders/__tests__/orders.integration.spec.ts`. (The
+  `order-created.handler` scaffold stays unwired — a discount must be priced BEFORE the order total.)
 - **Cashback / recharge-bonus** promo types that CREDIT the buyer's wallet (a real ledger movement via
   the wallet boundary) — deferred; this build ships the discount engine.
 - **`festival-campaign-scheduler` / `promo-budget-watch` jobs** (auto start/stop, budget alerts) — budget

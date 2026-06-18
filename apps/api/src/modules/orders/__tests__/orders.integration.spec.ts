@@ -37,6 +37,16 @@ import { ListingMediaRepository } from '../../listings/repositories/listing-medi
 import { ListingService } from '../../listings/services/listing.service';
 import { ChargePricingService } from '../../payments/services/charge-pricing.service';
 import { ChargeDefinitionRepository } from '../../payments/repositories/charge-definition.repository';
+import { CouponService } from '../../promotions/services/coupon.service';
+import { PromotionService } from '../../promotions/services/promotion.service';
+import { PromotionRepository } from '../../promotions/repositories/promotion.repository';
+import { CouponRepository } from '../../promotions/repositories/coupon.repository';
+import { CouponRedemptionRepository } from '../../promotions/repositories/coupon-redemption.repository';
+import { UserMembershipService } from '../../memberships/services/user-membership.service';
+import { MembershipTierRepository } from '../../memberships/repositories/membership-tier.repository';
+import { UserMembershipRepository } from '../../memberships/repositories/user-membership.repository';
+import { LedgerRepository } from '../../../core/wallet/ledger.repository';
+import { InProcessWalletClient } from '../../../core/wallet/wallet.client.inprocess';
 
 import { CartRepository } from '../repositories/cart.repository';
 import { OrderRepository } from '../repositories/order.repository';
@@ -54,6 +64,8 @@ run('orders slice (integration, real Postgres + RLS)', () => {
   let inspect: Pool;        // kv_app: the RLS isolation proof only
   let carts: CartService;
   let checkout: CheckoutService;
+  let promotions: PromotionService;
+  let couponSvc: CouponService;
   let orders: OrderService;
   let isSuperuser = false;
 
@@ -97,8 +109,13 @@ run('orders slice (integration, real Postgres + RLS)', () => {
     const orderRepo = new OrderRepository(replica as any);
 
     carts = new CartService(uow, metrics, listings, cartRepo);
+    const promoRepo = new PromotionRepository(replica as any);
+    const couponRepo = new CouponRepository(replica as any);
+    promotions = new PromotionService(uow, outbox, idem, metrics, audit, promoRepo);
+    couponSvc = new CouponService(uow, outbox, idem, metrics, audit, promoRepo, couponRepo, new CouponRedemptionRepository(replica as any));
+    const membershipSvc = new UserMembershipService(uow, outbox, idem, metrics, new InProcessWalletClient(new LedgerRepository()), audit, new MembershipTierRepository(replica as any), new UserMembershipRepository(replica as any));
     checkout = new CheckoutService(uow, outbox, quota, idem, metrics, flags, listings, cartRepo, orderRepo,
-      new ChargePricingService(new ChargeDefinitionRepository(replica as any)));
+      new ChargePricingService(new ChargeDefinitionRepository(replica as any)), couponSvc, membershipSvc);
     orders = new OrderService(uow, outbox, metrics, audit, orderRepo);
 
     inspect = new Pool({ connectionString: APP_URL });
@@ -171,4 +188,32 @@ run('orders slice (integration, real Postgres + RLS)', () => {
     expect(await countAs(tenantA)).toBe(1);
     expect(await countAs(tenantB)).toBe(0);
   });
+
+  it('checkout applies a coupon discount to the order (promotions → order.discount_minor)', async () => {
+    const buyer2 = randomUUID();
+    await makeUser(admin, buyer2);
+    await admin.query(`UPDATE feature_flags SET is_enabled=true WHERE key='promotions'`);
+    const now = Date.now();
+    const promo = await promotions.create(tenantA, { userId: seller, canManage: true } as any, `idem-${randomUUID()}`, {
+      promoType: 'festival', defaultName: 'Festival 10%', rules: { discountType: 'percent', percentOff: 10 },
+      startsAt: new Date(now - 3600_000).toISOString(), endsAt: new Date(now + 7 * 86400_000).toISOString(),
+    } as any);
+    const CODE = `SAVE${randomUUID().slice(0, 6).toUpperCase()}`;
+    await couponSvc.createCoupon(tenantA, { userId: seller, canManage: true } as any, `idem-${randomUUID()}`, { promotionId: promo.id, code: CODE, perUserLimit: 1 } as any);
+
+    await carts.addItem(tenantA, buyer2, { listingId, quantity: QTY } as any);
+    const subtotal = PRICE * BigInt(QTY);
+    const res = await checkout.checkout(tenantA, buyer2, `idem-${randomUUID()}`, { couponCode: CODE } as any);
+    const cid = res.orders[0].id;
+    const expectedDiscount = subtotal / 10n;
+    const row = await admin.query(`SELECT discount_minor, total_minor, subtotal_minor FROM orders WHERE id=$1`, [cid]);
+    expect(String(row.rows[0].discount_minor)).toBe(expectedDiscount.toString());          // 10% off recorded on the order
+    expect(String(row.rows[0].total_minor)).toBe((subtotal - expectedDiscount).toString()); // buyer pays less
+    // the redemption was recorded against this order (one coupon per order)
+    const red = await admin.query(`SELECT amount_minor FROM coupon_redemptions WHERE tenant_id=$1 AND order_id=$2`, [tenantA, cid]);
+    expect(red.rowCount).toBe(1);
+    expect(String(red.rows[0].amount_minor)).toBe(expectedDiscount.toString());
+    await admin.query(`UPDATE feature_flags SET is_enabled=false WHERE key='promotions'`);
+  });
+
 });

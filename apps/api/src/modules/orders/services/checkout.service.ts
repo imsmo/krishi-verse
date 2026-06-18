@@ -14,6 +14,8 @@ import { FlagsService } from '../../../core/feature-flags/flags.service';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { ListingService } from '../../listings/services/listing.service';
 import { ChargePricingService } from '../../payments/services/charge-pricing.service';
+import { CouponService } from '../../promotions/services/coupon.service';
+import { UserMembershipService } from '../../memberships/services/user-membership.service';
 import { CartRepository } from '../repositories/cart.repository';
 import { OrderRepository } from '../repositories/order.repository';
 import { Order } from '../domain/order.entity';
@@ -38,6 +40,8 @@ export class CheckoutService {
     private readonly carts: CartRepository,
     private readonly orders: OrderRepository,
     private readonly charges: ChargePricingService,
+    private readonly coupons: CouponService,
+    private readonly memberships: UserMembershipService,
   ) {}
 
   async checkout(tenantId: string, buyerUserId: string, idemKey: string, dto: CheckoutDto) {
@@ -45,6 +49,9 @@ export class CheckoutService {
       timed(this.metrics, 'orders.checkout', { tenant: tenantId }, async () => {
         const requiresPayment = await this.flags.isEnabled('online_payments', { tenantId, userId: buyerUserId });
         const applyCharges = await this.flags.isEnabled('buyer_charges', { tenantId, userId: buyerUserId });
+        const applyCoupon = dto.couponCode ? await this.flags.isEnabled('promotions', { tenantId, userId: buyerUserId }) : false;
+        const applyMemberBenefits = await this.flags.isEnabled('memberships', { tenantId, userId: buyerUserId });
+        let couponApplied = false;   // a coupon is redeemed against the PRIMARY (first) order only
 
         return this.uow.run(tenantId, async (tx) => {
           const cartId = await this.carts.activeIdForUpdate(tx, tenantId, buyerUserId);
@@ -78,11 +85,26 @@ export class CheckoutService {
             await this.quota.assertWithinLimit(tenantId, QUOTA);
             // buyer-side charges (delivery slab + platform fee) on this seller's subtotal — flagged
             const subtotal = g.items.reduce((a, it) => a + it.props.lineTotalMinor, 0n);
-            const { deliveryFeeMinor, platformFeeMinor } = applyCharges
+            let { deliveryFeeMinor, platformFeeMinor } = applyCharges
               ? await this.charges.checkoutCharges(tx, tenantId, subtotal)
               : { deliveryFeeMinor: 0n, platformFeeMinor: 0n };
+            // membership benefits override the buyer-side charges (free delivery + sliding platform fee)
+            if (applyCharges && applyMemberBenefits) {
+              const ben = await this.memberships.checkoutBenefits(tx, tenantId, buyerUserId);
+              if (ben) {
+                if (ben.freeDelivery) deliveryFeeMinor = 0n;
+                if (ben.platformFeeBpsOverride != null) platformFeeMinor = (subtotal * BigInt(ben.platformFeeBpsOverride)) / 10000n;
+              }
+            }
+            // coupon discount: redeemed atomically in THIS tx against the primary order (promotions flag)
+            let discountMinor = 0n;
+            if (applyCoupon && !couponApplied) {
+              const r = await this.coupons.redeemInTx(tx, tenantId, buyerUserId, { code: dto.couponCode!, orderId: g.orderId, subtotalMinor: subtotal });
+              discountMinor = BigInt(r.discountMinor);
+              couponApplied = true;
+            }
             const order = Order.place({ id: g.orderId, tenantId, orderNo: orderNo(g.orderId), checkoutGroupId, buyerUserId,
-              sellerUserId, source: 'direct', currencyCode: 'INR', items: g.items, deliveryFeeMinor, platformFeeMinor,
+              sellerUserId, source: 'direct', currencyCode: 'INR', items: g.items, deliveryFeeMinor, platformFeeMinor, discountMinor,
               deliveryMethodId: dto.deliveryMethodId ?? null, deliveryAddressId: dto.deliveryAddressId ?? null, requiresPayment, now: g.createdAt });
             await this.orders.insertGraph(tx, order, g.items);
             await this.quota.increment(tx, tenantId, QUOTA, 1);

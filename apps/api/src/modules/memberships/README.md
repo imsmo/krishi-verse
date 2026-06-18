@@ -61,5 +61,8 @@ expiry → cross-tenant RLS denial.
   → activate the membership) is left as a documented stub (`events/handlers/payment-succeeded.handler.ts`).
 - **Auto-renew** — the expiry job lapses memberships but does NOT auto-charge; auto-debit needs a stored
   mandate/consent (deferred).
-- **Member fee override at checkout** — the tier's `platform_fee_bps_override` is exposed via the
-  membership; wiring it into the buyer-charge / settlement engines is the next integration.
+- **Member fee override at checkout (DONE)** — orders' `CheckoutService` calls
+  `UserMembershipService.checkoutBenefits(tx, …)` and, behind the `memberships` flag, overrides the
+  buyer-side charges for a live member: `freeDelivery` zeroes the delivery fee and
+  `platform_fee_bps_override` replaces the default buyer platform fee (e.g. 2.5% → 1%). Proven by
+  `apps/api/src/modules/orders/__tests__/checkout-member-benefits.integration.spec.ts`.
