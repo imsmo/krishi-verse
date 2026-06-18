@@ -1,3 +1,7 @@
-// apps/api/src/modules/promotions/dto/query-coupon-redemption.dto.ts · list/filter query params (cursor pagination) · [P2]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/promotions/dto/query-coupon-redemption.dto.ts · the caller's own redemptions (cursor pagination).
+import { z } from 'zod';
+export const QueryRedemptionsSchema = z.object({
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+}).strict();
+export type QueryRedemptionsDto = z.infer<typeof QueryRedemptionsSchema>;
