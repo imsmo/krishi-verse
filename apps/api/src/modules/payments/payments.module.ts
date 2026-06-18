@@ -36,6 +36,7 @@ import { PAYOUT_GATEWAY } from './gateway/payout-gateway.port';
 import { RazorpayXGateway } from './gateway/razorpayx.gateway';
 import { SandboxPayoutGateway } from './gateway/sandbox-payout.gateway';
 import { OrderCompletedHandler } from './events/handlers/order-completed.handler';
+import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handler';
 
 @Module({
   imports: [MediaModule],   // MediaService for rendered statement/invoice PDFs
@@ -58,6 +59,7 @@ import { OrderCompletedHandler } from './events/handlers/order-completed.handler
     ChargePricingService,
     OrderCompletedHandler,
     TradeInvoiceHandler,
+    DisputeResolvedHandler,
     {
       provide: GatewayRegistry,
       useFactory: (resilience: ResilienceService) => {
@@ -96,9 +98,11 @@ export class PaymentsModule implements OnModuleInit {
     @Inject(OUTBOX_HANDLER_REGISTRY) private readonly registry: OutboxHandlerRegistry,
     private readonly orderCompleted: OrderCompletedHandler,
     private readonly tradeInvoice: TradeInvoiceHandler,
+    private readonly disputeResolved: DisputeResolvedHandler,
   ) {}
   onModuleInit(): void {
     this.registry.register(this.orderCompleted);   // settlement split + settlement line
     this.registry.register(this.tradeInvoice);     // buyer GST invoice (fan-out to the same event)
+    this.registry.register(this.disputeResolved);  // dispute refund: escrow → buyer wallet (flag dispute_refunds)
   }
 }

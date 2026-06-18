@@ -79,7 +79,7 @@ export class Order {
   markPacked(bySeller: string): void { this.assertSeller(bySeller); this.to('packed', OrderEventType.Packed, {}, bySeller); }
   markReady(bySeller: string): void { this.assertSeller(bySeller); this.to('ready', OrderEventType.Ready, {}, bySeller); }
   markDelivered(by: string, now: Date = new Date()): void {
-    this.to('delivered', OrderEventType.Delivered, {}, by);
+    this.to('delivered', OrderEventType.Delivered, { buyerUserId: this.props.buyerUserId, sellerUserId: this.props.sellerUserId }, by);
     this.props.qualityWindowEnds = new Date(now.getTime() + QUALITY_WINDOW_MS);
   }
   complete(now: Date = new Date()): void {
@@ -108,13 +108,27 @@ export class Order {
     while (cur() !== 'delivered') {
       const hop = path[cur()];
       if (!hop || guard++ > 6) throw new OrderForbiddenError(`Cannot record carrier delivery from ${cur()}`);
-      this.to(hop.to, hop.evt, {}, 'system');           // each hop is a LEGAL edge (assertTransition enforces)
+      const payload = hop.to === 'delivered' ? { buyerUserId: this.props.buyerUserId, sellerUserId: this.props.sellerUserId } : {};
+      this.to(hop.to, hop.evt, payload, 'system');       // each hop is a LEGAL edge (assertTransition enforces)
       if (hop.to === 'delivered') this.props.qualityWindowEnds = new Date(now.getTime() + QUALITY_WINDOW_MS);
     }
     return true;
   }
 
   dispute(by: string, note?: string): void { this.to('disputed', OrderEventType.Disputed, { note }, by); }
+
+  /** Apply a dispute resolution from the disputes module (the order is in 'disputed'). refund_full →
+   *  refunded; refund_partial → partially_refunded; rejected/replacement → completed (release to seller,
+   *  carrying the settlement payload). Idempotent: a no-op (false) unless currently 'disputed'. */
+  applyDisputeResolution(resolutionType: string, now: Date = new Date()): boolean {
+    if (this.props.status !== 'disputed') return false;
+    if (resolutionType === 'refund_full') { this.to('refunded', OrderEventType.Refunded, { buyerUserId: this.props.buyerUserId, totalMinor: this.props.totalMinor.toString() }, 'system'); return true; }
+    if (resolutionType === 'refund_partial') { this.to('partially_refunded', OrderEventType.PartiallyRefunded, { buyerUserId: this.props.buyerUserId }, 'system'); return true; }
+    // 'rejected' (dispute denied) or 'replacement' → the order completes (escrow releases to the seller)
+    this.to('completed', OrderEventType.Completed, { buyerUserId: this.props.buyerUserId, sellerUserId: this.props.sellerUserId, totalMinor: this.props.totalMinor.toString(), deliveryFeeMinor: this.props.deliveryFeeMinor.toString(), platformFeeMinor: this.props.platformFeeMinor.toString(), currencyCode: this.props.currencyCode, source: this.props.source }, 'system');
+    this.props.completedAt = now;
+    return true;
+  }
 
   cancel(by: string, reasonId: string | null, isBuyer: boolean): void {
     if (!isCancellable(this.props.status)) throw new OrderForbiddenError(`Order cannot be cancelled in status ${this.props.status}`);

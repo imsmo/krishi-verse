@@ -42,7 +42,7 @@ export class OrderCompletedHandler implements OutboxHandler {
 
     const split = await this.flags.isEnabled('commission_split', { tenantId });
     const legs: LedgerLeg[] = [{ account: platform(PlatformAccount.Escrow), amountMinor: -gross }];
-    let line = { gross: settleable, commission: 0n, gst: 0n, tds: 0n, net: settleable };
+    let line = { gross: settleable, commission: 0n, gst: 0n, tds: 0n, net: settleable, tenantCommission: 0n };
     let platformFees = buyerCharges;                // platform keeps the buyer charges
 
     if (split) {
@@ -59,7 +59,7 @@ export class OrderCompletedHandler implements OutboxHandler {
         { account: platform(PlatformAccount.TdsPayable), amountMinor: b.tdsMinor },
       );
       platformFees += b.platformShareMinor;         // platform commission share + buyer charges
-      line = { gross: settleable, commission: b.commissionMinor, gst: b.gstOnCommissionMinor, tds: b.tdsMinor, net: b.sellerNetMinor };
+      line = { gross: settleable, commission: b.commissionMinor, gst: b.gstOnCommissionMinor, tds: b.tdsMinor, net: b.sellerNetMinor, tenantCommission: b.tenantCommissionMinor };
     } else {
       legs.push({ account: userMain(sellerUserId), amountMinor: settleable });
     }
@@ -67,6 +67,6 @@ export class OrderCompletedHandler implements OutboxHandler {
 
     await this.wallet.post(tx, { tenantId, txnType: 'escrow_release', idempotencyKey: `settle:${event.aggregateId}`, referenceType: 'order', referenceId: event.aggregateId, initiatedBy: 'system', legs: legs.filter((l) => l.amountMinor !== 0n) });
     // record the per-order settlement line (source for the seller's statement) — idempotent per order
-    await this.lines.insert(tx, { tenantId, sellerUserId, orderId: event.aggregateId, grossMinor: line.gross, commissionMinor: line.commission, gstMinor: line.gst, tdsMinor: line.tds, netMinor: line.net });
+    await this.lines.insert(tx, { tenantId, sellerUserId, orderId: event.aggregateId, grossMinor: line.gross, commissionMinor: line.commission, gstMinor: line.gst, tdsMinor: line.tds, netMinor: line.net, tenantCommissionMinor: line.tenantCommission, platformFeesMinor: platformFees });
   }
 }

@@ -43,6 +43,13 @@ export class PaymentRepository {
     const r = await tx.query(`SELECT ${COLS} FROM payments WHERE tenant_id=$1 AND gateway_order_id=$2 FOR UPDATE`, [tenantId, gatewayOrderId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
+  /** The captured (success) payment for an order — the source of the buyer + escrowed gross when a
+   *  dispute resolves into a refund. In-tx read (no lock needed; the wallet post enforces no-overdraw). */
+  async findSuccessByOrder(tx: TxContext, tenantId: string, orderId: string): Promise<Payment | null> {
+    const r = await tx.query(`SELECT ${COLS} FROM payments WHERE tenant_id=$1 AND reference_type='order' AND reference_id=$2 AND status='success' ORDER BY created_at DESC LIMIT 1`, [tenantId, orderId]);
+    return r.rows[0] ? toDomain(r.rows[0]) : null;
+  }
+
   async getForUpdate(tx: TxContext, tenantId: string, id: string): Promise<Payment | null> {
     const r = await tx.query(`SELECT ${COLS} FROM payments WHERE id=$1 AND tenant_id=$2 FOR UPDATE`, [id, tenantId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;

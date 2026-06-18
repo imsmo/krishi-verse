@@ -1,0 +1,13 @@
+// modules/disputes/domain/disputes.errors.ts · typed errors with stable codes.
+import { AppError, DomainError, NotFoundError } from '../../../shared/errors/app-error';
+
+export class DisputeNotFoundError extends NotFoundError { constructor(id: string) { super('Dispute not found'); (this as any).details = { id }; } }
+/** The raiser has no eligibility (no delivered order with this counterparty), or isn't a party to it. */
+export class NotEligibleToDisputeError extends AppError { constructor() { super('DISPUTE_NOT_ELIGIBLE', 'You can only dispute an order you are a party to (after delivery)', 403); } }
+/** The actor is not the raiser / the respondent / a moderator, as the action requires. */
+export class DisputeForbiddenError extends AppError { constructor(message = 'Not allowed on this dispute') { super('DISPUTE_FORBIDDEN', message, 403); } }
+/** Acting on a terminal dispute (resolved/rejected/withdrawn). */
+export class DisputeNotActiveError extends AppError { constructor(status: string) { super('DISPUTE_NOT_ACTIVE', `Dispute is not active (status: ${status})`, 409, { status }); } }
+/** The raiser already has an OPEN dispute on this order (bounds dispute spam — one active at a time). */
+export class DuplicateDisputeError extends AppError { constructor() { super('DISPUTE_DUPLICATE', 'You already have an active dispute on this order', 409); } }
+export class InvalidDisputeError extends DomainError { constructor(message: string) { super('DISPUTE_INVALID', message, 400); } }

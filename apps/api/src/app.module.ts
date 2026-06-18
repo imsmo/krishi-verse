@@ -15,11 +15,13 @@ import { AuctionsModule } from './modules/auctions/auctions.module';
 import { OffersModule } from './modules/offers/offers.module';
 import { RequirementsModule } from './modules/requirements/requirements.module';
 import { LogisticsModule } from './modules/logistics/logistics.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
+import { DisputesModule } from './modules/disputes/disputes.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { CatalogueModule } from './modules/catalogue/catalogue.module';
 
 @Module({
-  imports: [CoreModule, IdentityModule, CatalogueModule, ListingsModule, OrdersModule, PaymentsModule, MediaModule, AuctionsModule, OffersModule, RequirementsModule, LogisticsModule],
+  imports: [CoreModule, IdentityModule, CatalogueModule, ListingsModule, OrdersModule, PaymentsModule, MediaModule, AuctionsModule, OffersModule, RequirementsModule, LogisticsModule, ReviewsModule, DisputesModule],
 })
 export class AppModule implements NestModule {
   // request-id THEN tenant-context (Law 1) on every route.

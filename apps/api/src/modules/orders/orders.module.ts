@@ -24,6 +24,8 @@ import { PaymentSucceededHandler } from './events/handlers/payment-succeeded.han
 import { OfferAcceptedHandler } from './events/handlers/offer-accepted.handler';
 import { QuoteAcceptedHandler } from './events/handlers/quote-accepted.handler';
 import { ShipmentDeliveredHandler } from './events/handlers/shipment-delivered.handler';
+import { DisputeOpenedHandler } from './events/handlers/dispute-opened.handler';
+import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handler';
 
 @Module({
   imports: [ListingsModule, PaymentsModule],   // PaymentsModule exports ChargePricingService (checkout fees)
@@ -32,7 +34,7 @@ import { ShipmentDeliveredHandler } from './events/handlers/shipment-delivered.h
     CartService, CheckoutService, OrderService, OrderTimelineReadModel,
     CartRepository, OrderRepository,
     SellerConfirmTimeoutJob, AutoCompleteQualityWindowJob, AbandonedCartsJob,
-    PaymentSucceededHandler, OfferAcceptedHandler, QuoteAcceptedHandler, ShipmentDeliveredHandler,
+    PaymentSucceededHandler, OfferAcceptedHandler, QuoteAcceptedHandler, ShipmentDeliveredHandler, DisputeOpenedHandler, DisputeResolvedHandler,
   ],
   exports: [OrderService, SellerConfirmTimeoutJob, AutoCompleteQualityWindowJob, AbandonedCartsJob],
 })
@@ -43,6 +45,8 @@ export class OrdersModule implements OnModuleInit {
     private readonly offerAccepted: OfferAcceptedHandler,
     private readonly quoteAccepted: QuoteAcceptedHandler,
     private readonly shipmentDelivered: ShipmentDeliveredHandler,
+    private readonly disputeOpened: DisputeOpenedHandler,
+    private readonly disputeResolved: DisputeResolvedHandler,
   ) {}
-  onModuleInit(): void { this.registry.register(this.paymentSucceeded); this.registry.register(this.offerAccepted); this.registry.register(this.quoteAccepted); this.registry.register(this.shipmentDelivered); }
+  onModuleInit(): void { this.registry.register(this.paymentSucceeded); this.registry.register(this.offerAccepted); this.registry.register(this.quoteAccepted); this.registry.register(this.shipmentDelivered); this.registry.register(this.disputeOpened); this.registry.register(this.disputeResolved); }
 }

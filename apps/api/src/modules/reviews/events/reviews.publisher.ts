@@ -1,3 +1,5 @@
-// apps/api/src/modules/reviews/events/reviews.publisher.ts · writes outbox events in the SAME db txn (Law 4) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/reviews/events/reviews.publisher.ts
+// Reviews do NOT use a separate publisher: integration events are written to the outbox in the SAME db
+// transaction as the state change (Law 4), inside ReviewService.flush(). This module re-exports the
+// event-type catalogue for downstream consumers (e.g. a future search-indexer or seller-notification).
+export { ReviewEventType } from '../domain/reviews.events';

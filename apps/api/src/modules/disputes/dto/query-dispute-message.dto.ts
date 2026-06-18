@@ -1,3 +1,7 @@
-// apps/api/src/modules/disputes/dto/query-dispute-message.dto.ts · list/filter query params (cursor pagination) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/disputes/dto/query-dispute-message.dto.ts · list a dispute's messages (cursor pagination).
+import { z } from 'zod';
+export const QueryDisputeMessagesSchema = z.object({
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+}).strict();
+export type QueryDisputeMessagesDto = z.infer<typeof QueryDisputeMessagesSchema>;

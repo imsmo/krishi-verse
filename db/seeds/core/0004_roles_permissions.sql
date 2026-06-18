@@ -38,6 +38,8 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('offer.create','Make/respond to listing offers','M03'),
  ('requirement.post','Post a requirement (demand)','M12'),('requirement.quote','Quote on a requirement','M12'),
  ('logistics.manage','Manage shipments / dispatch','M07'),
+ ('review.create','Write a verified-purchase review','M03'),('review.moderate','Moderate reviews','M03'),
+ ('dispute.raise','Raise an order dispute',NULL),
  ('auction.bid','Place bid','M04'),('auction.create','Create auction','M04'),
  ('wallet.view','View wallet','M05'),('wallet.adjust','Manual wallet adjust','M05'),
  ('payout.approve','Approve payouts','M05'),
@@ -66,5 +68,8 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code='tenant_admin'  AND p.code IN ('product.manage','catalogue.configure'))
    OR (r.code IN ('farmer','pharma_store','organic_store','vyapari') AND p.code IN ('product.manage','order.manage'))
    OR (r.code IN ('farmer','vyapari','pharma_store','organic_store') AND p.code IN ('requirement.quote'))
+   OR (r.code IN ('farmer','vyapari','customer','pharma_store','organic_store') AND p.code IN ('review.create'))
+   OR (r.code IN ('tenant_admin','support_agent','ai_ops') AND p.code IN ('review.moderate'))
+   OR (r.code IN ('farmer','vyapari','customer','pharma_store','organic_store') AND p.code IN ('dispute.raise'))
    OR (r.code='customer' AND p.code IN ('order.create','offer.create','requirement.post'))
 ON CONFLICT DO NOTHING;

@@ -1,3 +1,108 @@
-// apps/api/src/modules/reviews/repositories/review.repository.ts · all SQL for review (tenant-scoped; only this module queries these tables) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/reviews/repositories/review.repository.ts
+// All SQL for the reviews aggregate + the review_eligibility gate. tenant_id in EVERY query (Law 1) +
+// RLS. No version column (add_std_columns) → mutations LOCK the row with SELECT … FOR UPDATE. Reads on
+// the replica; the public list/summary read only PUBLISHED reviews (idx_reviews_target partial index).
+import { Inject, Injectable } from '@nestjs/common';
+import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
+import { TxContext } from '../../../core/database/unit-of-work';
+import { Review, ReviewProps } from '../domain/review.entity';
+import { ReviewStatus } from '../domain/review.state';
+import { ReviewTargetType } from '../domain/reviews.events';
+
+const COLS = `id, tenant_id, order_id, reviewer_user_id, target_type, target_id, stars, sub_ratings, body, tags,
+  is_verified_purchase, status, seller_response, seller_responded_at, helpful_count, created_at`;
+function toDomain(r: any): Review {
+  return Review.rehydrate({
+    id: r.id, tenantId: r.tenant_id, orderId: r.order_id, reviewerUserId: r.reviewer_user_id,
+    targetType: r.target_type as ReviewTargetType, targetId: r.target_id, stars: r.stars,
+    subRatings: r.sub_ratings ?? {}, body: r.body, tags: r.tags ?? [], isVerifiedPurchase: r.is_verified_purchase,
+    status: r.status as ReviewStatus, sellerResponse: r.seller_response, sellerRespondedAt: r.seller_responded_at,
+    helpfulCount: r.helpful_count, createdAt: r.created_at,
+  });
+}
+export interface ReviewListQuery { cursor?: { c: string; id: string }; limit: number; }
+
+@Injectable()
+export class ReviewRepository {
+  constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
+
+  // ---- review_eligibility (verified-purchase gate) ----
+  /** Recorded by the order-completed handler (runs in the relay tx). Idempotent per order. */
+  async insertEligibility(tx: TxContext, tenantId: string, orderId: string, buyerUserId: string, sellerUserId: string): Promise<void> {
+    await tx.query(
+      `INSERT INTO review_eligibility (tenant_id, order_id, buyer_user_id, seller_user_id)
+       VALUES ($1,$2,$3,$4) ON CONFLICT (order_id) DO NOTHING`,
+      [tenantId, orderId, buyerUserId, sellerUserId]);
+  }
+  /** The (buyer, seller) of a completed order, or null if the reviewer isn't eligible for it. */
+  async eligibilityFor(tenantId: string, orderId: string): Promise<{ buyerUserId: string; sellerUserId: string } | null> {
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT buyer_user_id, seller_user_id FROM review_eligibility WHERE tenant_id=$1 AND order_id=$2`, [tenantId, orderId]);
+    return r.rows[0] ? { buyerUserId: r.rows[0].buyer_user_id, sellerUserId: r.rows[0].seller_user_id } : null;
+  }
+
+  // ---- reviews ----
+  async insert(tx: TxContext, rv: Review): Promise<boolean> {
+    const p = rv.toProps();
+    const res = await tx.query(
+      `INSERT INTO reviews (id, tenant_id, order_id, reviewer_user_id, target_type, target_id, stars, sub_ratings, body, tags, is_verified_purchase, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10::jsonb,$11,$12)
+       ON CONFLICT (order_id, reviewer_user_id, target_type, target_id) DO NOTHING`,
+      [p.id, p.tenantId, p.orderId, p.reviewerUserId, p.targetType, p.targetId, p.stars, JSON.stringify(p.subRatings),
+       p.body, JSON.stringify(p.tags), p.isVerifiedPurchase, p.status]);
+    return (res.rowCount ?? 0) > 0;
+  }
+
+  async getForUpdate(tx: TxContext, tenantId: string, id: string): Promise<Review | null> {
+    const r = await tx.query(`SELECT ${COLS} FROM reviews WHERE id=$1 AND tenant_id=$2 FOR UPDATE`, [id, tenantId]);
+    return r.rows[0] ? toDomain(r.rows[0]) : null;
+  }
+  async getById(tenantId: string, id: string): Promise<Review | null> {
+    const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM reviews WHERE id=$1 AND tenant_id=$2`, [id, tenantId]);
+    return r.rows[0] ? toDomain(r.rows[0]) : null;
+  }
+  /** No version column → unconditional update within the FOR UPDATE-locked tx. */
+  async update(tx: TxContext, rv: Review): Promise<void> {
+    const p = rv.toProps();
+    await tx.query(
+      `UPDATE reviews SET stars=$3, sub_ratings=$4::jsonb, body=$5, tags=$6::jsonb, status=$7,
+         seller_response=$8, seller_responded_at=$9, updated_at=now()
+        WHERE id=$1 AND tenant_id=$2`,
+      [p.id, p.tenantId, p.stars, JSON.stringify(p.subRatings), p.body, JSON.stringify(p.tags), p.status, p.sellerResponse, p.sellerRespondedAt]);
+  }
+
+  /** PUBLIC list of a target's published reviews. Keyset (created_at DESC, id DESC) — never OFFSET. */
+  async listForTarget(tenantId: string, targetType: string, targetId: string, q: ReviewListQuery): Promise<Review[]> {
+    const params: unknown[] = [tenantId, targetType, targetId];
+    let where = `tenant_id=$1 AND target_type=$2 AND target_id=$3 AND status='published'`;
+    const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
+    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
+    const lp = p(q.limit);
+    const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM reviews WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
+    return r.rows.map(toDomain);
+  }
+  /** The caller's OWN authored reviews (any status). */
+  async listForReviewer(tenantId: string, reviewerUserId: string, q: ReviewListQuery): Promise<Review[]> {
+    const params: unknown[] = [tenantId, reviewerUserId];
+    let where = `tenant_id=$1 AND reviewer_user_id=$2`;
+    const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
+    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
+    const lp = p(q.limit);
+    const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM reviews WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
+    return r.rows.map(toDomain);
+  }
+
+  /** Aggregate rating rollup for a target (published only). Computed read — no per-review write amplification. */
+  async summaryForTarget(tenantId: string, targetType: string, targetId: string): Promise<{ count: number; avgStars: number; histogram: Record<string, number> }> {
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT count(*)::int AS n, COALESCE(avg(stars),0)::numeric(3,2) AS avg, stars FROM reviews
+        WHERE tenant_id=$1 AND target_type=$2 AND target_id=$3 AND status='published' GROUP BY ROLLUP (stars)`,
+      [tenantId, targetType, targetId]);
+    let count = 0; let avgStars = 0; const histogram: Record<string, number> = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
+    for (const row of r.rows) {
+      if (row.stars == null) { count = row.n; avgStars = Number(row.avg); }
+      else histogram[String(row.stars)] = row.n;
+    }
+    return { count, avgStars, histogram };
+  }
+}
