@@ -88,6 +88,32 @@ export class Order {
     this.to('completed', OrderEventType.Completed, { buyerUserId: this.props.buyerUserId, sellerUserId: this.props.sellerUserId, totalMinor: this.props.totalMinor.toString(), deliveryFeeMinor: this.props.deliveryFeeMinor.toString(), platformFeeMinor: this.props.platformFeeMinor.toString(), currencyCode: this.props.currencyCode, source: this.props.source });
     this.props.completedAt = now;
   }
+  /** Carrier/logistics confirmed physical delivery (the ground truth). Walks the order through the
+   *  LEGAL state-machine edges to 'delivered' (the seller-driven manual chain may have been skipped
+   *  once logistics owns fulfilment). Idempotent: a no-op (returns false) if already delivered/completed
+   *  or in a state from which delivery doesn't apply (cancelled/refunded/disputed/pre-confirmation). */
+  recordCarrierDelivery(now: Date = new Date()): boolean {
+    const path: Partial<Record<OrderStatus, { to: OrderStatus; evt: string }>> = {
+      confirmed:        { to: 'packed', evt: OrderEventType.Packed },
+      packed:           { to: 'ready', evt: OrderEventType.Ready },
+      ready:            { to: 'out_for_delivery', evt: OrderEventType.OutForDelivery },
+      picked_up:        { to: 'delivered', evt: OrderEventType.Delivered },
+      in_transit:       { to: 'delivered', evt: OrderEventType.Delivered },
+      out_for_delivery: { to: 'delivered', evt: OrderEventType.Delivered },
+    };
+    const cur = (): OrderStatus => this.props.status;   // re-read each step (defeats over-narrowing)
+    if (cur() === 'delivered' || cur() === 'completed') return false;
+    if (!path[cur()]) return false;                     // cancelled/refunded/disputed/created/payment_pending → ignore
+    let guard = 0;
+    while (cur() !== 'delivered') {
+      const hop = path[cur()];
+      if (!hop || guard++ > 6) throw new OrderForbiddenError(`Cannot record carrier delivery from ${cur()}`);
+      this.to(hop.to, hop.evt, {}, 'system');           // each hop is a LEGAL edge (assertTransition enforces)
+      if (hop.to === 'delivered') this.props.qualityWindowEnds = new Date(now.getTime() + QUALITY_WINDOW_MS);
+    }
+    return true;
+  }
+
   dispute(by: string, note?: string): void { this.to('disputed', OrderEventType.Disputed, { note }, by); }
 
   cancel(by: string, reasonId: string | null, isBuyer: boolean): void {

@@ -1,3 +1,16 @@
-// apps/api/src/modules/logistics/domain/logistics.events.ts · domain event definitions published by logistics · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/logistics/domain/logistics.events.ts · integration events (via outbox, Law 4).
+export const ShipmentEventType = {
+  Created:         'logistics.shipment_created',
+  Assigned:        'logistics.shipment_assigned',
+  PickupScheduled: 'logistics.shipment_pickup_scheduled',
+  PickedUp:        'logistics.shipment_picked_up',
+  InTransit:       'logistics.shipment_in_transit',
+  AtHub:           'logistics.shipment_at_hub',
+  OutForDelivery:  'logistics.shipment_out_for_delivery',
+  DeliveryOtpIssued: 'logistics.delivery_otp_issued',   // carries the OTP for the (deferred) SMS relay — internal only
+  Delivered:       'logistics.shipment_delivered',      // → orders marks the order delivered (downstream)
+  Failed:          'logistics.shipment_failed',
+  Returned:        'logistics.shipment_returned',
+  Cancelled:       'logistics.shipment_cancelled',
+} as const;
+export type DomainEvent = { type: string; payload: Record<string, unknown> };

@@ -37,6 +37,7 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('order.create','Place order','M06'),('order.manage','Manage orders','M06'),
  ('offer.create','Make/respond to listing offers','M03'),
  ('requirement.post','Post a requirement (demand)','M12'),('requirement.quote','Quote on a requirement','M12'),
+ ('logistics.manage','Manage shipments / dispatch','M07'),
  ('auction.bid','Place bid','M04'),('auction.create','Create auction','M04'),
  ('wallet.view','View wallet','M05'),('wallet.adjust','Manual wallet adjust','M05'),
  ('payout.approve','Approve payouts','M05'),
@@ -56,7 +57,7 @@ INSERT INTO role_permissions (role_id, permission_code)
 SELECT r.id, p.code FROM roles r CROSS JOIN permissions p
 WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','listing.publish','order.create','offer.create','requirement.post','auction.bid','wallet.view','worker.book'))
    OR (r.code='vyapari'       AND p.code IN ('order.create','offer.create','requirement.post','auction.bid','auction.create','wallet.view'))
-   OR (r.code='tenant_admin'  AND p.code IN ('listing.approve','listing.moderate','order.manage','user.approve','dispute.resolve','report.view','tenant.settings','payout.approve','wallet.adjust','booking.manage'))
+   OR (r.code='tenant_admin'  AND p.code IN ('listing.approve','listing.moderate','order.manage','user.approve','dispute.resolve','report.view','tenant.settings','payout.approve','wallet.adjust','booking.manage','logistics.manage'))
    OR (r.code='support_agent' AND p.code IN ('dispute.resolve','report.view'))
    OR (r.code='auditor'       AND p.code IN ('ledger.read','report.view'))
    OR (r.code='ai_ops'        AND p.code IN ('ai.review','listing.moderate'))

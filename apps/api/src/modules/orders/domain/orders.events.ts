@@ -6,6 +6,7 @@ export const OrderEventType = {
   Cancelled: 'orders.order_cancelled',
   Packed: 'orders.order_packed',
   Ready: 'orders.order_ready',
+  OutForDelivery: 'orders.order_out_for_delivery',
   Delivered: 'orders.order_delivered',
   Completed: 'orders.order_completed',
   Disputed: 'orders.order_disputed',

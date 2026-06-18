@@ -1,0 +1,11 @@
+-- ============================================================================
+-- MIGRATION 0023 — SHIPMENT ↔ ORDER lookup index
+-- Runner: db/scripts/migrate.js wraps this file in ONE transaction.
+-- The logistics module auto-creates ONE shipment per confirmed order (orders.order_confirmed →
+-- the logistics handler). It needs a fast "does a shipment already exist for this order?" idempotency
+-- lookup, and order→shipment tracking reads. Add the index (mirrors idx_orders_offer/idx_orders_requirement).
+--
+-- `shipments` is PARTITIONED BY RANGE (created_at); a NON-unique index propagates to every partition
+-- and is sufficient for the point lookup. (Creation is single-shot + idempotent in the handler.)
+-- ============================================================================
+CREATE INDEX IF NOT EXISTS idx_shipments_order ON shipments (tenant_id, order_id);

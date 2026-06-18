@@ -1,3 +1,6 @@
-// apps/api/src/modules/logistics/events/logistics.publisher.ts · writes outbox events in the SAME db txn (Law 4) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/logistics/events/logistics.publisher.ts
+// Logistics does NOT use a separate publisher: integration events are written to the outbox in the
+// SAME db transaction as the state change (Law 4), inside ShipmentService.flush(). This module
+// re-exports the event-type catalogue for downstream consumers (e.g. orders' ShipmentDeliveredHandler,
+// and the deferred notifications relay that SMSs the delivery OTP).
+export { ShipmentEventType } from '../domain/logistics.events';

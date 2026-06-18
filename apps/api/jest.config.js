@@ -19,6 +19,7 @@ module.exports = {
         '<rootDir>/modules/auctions/__tests__/**/*.spec.ts',
         '<rootDir>/modules/offers/__tests__/**/*.spec.ts',
         '<rootDir>/modules/requirements/__tests__/**/*.spec.ts',
+        '<rootDir>/modules/logistics/__tests__/**/*.spec.ts',
         '<rootDir>/core/**/__tests__/**/*.spec.ts',
         '<rootDir>/shared/**/__tests__/**/*.spec.ts',
       ],
@@ -31,7 +32,7 @@ module.exports = {
       rootDir: 'src',
       // Build the test DB ONCE from the real db/migrations + seeds (single source of truth).
       globalSetup: '<rootDir>/../test/integration-global-setup.js',
-      testMatch: ['<rootDir>/modules/listings/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/identity/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/catalogue/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/orders/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/payments/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/auctions/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/offers/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/requirements/__tests__/**/*.integration.spec.ts', '<rootDir>/core/**/__tests__/**/*.integration.spec.ts'],
+      testMatch: ['<rootDir>/modules/listings/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/identity/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/catalogue/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/orders/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/payments/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/auctions/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/offers/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/requirements/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/logistics/__tests__/**/*.integration.spec.ts', '<rootDir>/core/**/__tests__/**/*.integration.spec.ts'],
     },
   ],
 };
