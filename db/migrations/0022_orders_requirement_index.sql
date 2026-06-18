@@ -1,0 +1,13 @@
+-- ============================================================================
+-- MIGRATION 0022 — ORDER ↔ REQUIREMENT idempotency index
+-- Runner: db/scripts/migrate.js wraps this file in ONE transaction.
+-- `orders.requirement_id` already exists (0005, provenance for a reverse-marketplace order). The
+-- requirements module turns an ACCEPTED quote (requirement_response) into an order (source='requirement')
+-- via the outbox relay; the orders-side handler needs a fast "does an order already exist for this
+-- requirement?" idempotency lookup. Add the partial index (mirrors idx_orders_offer from 0021).
+--
+-- `orders` is PARTITIONED BY RANGE (created_at); a NON-unique partial index propagates to every
+-- partition and is sufficient for the point lookup. (A buyer accepts ONE quote per requirement, and
+-- requirement-fulfilment is single-shot, so at most one order per requirement is ever created.)
+-- ============================================================================
+CREATE INDEX IF NOT EXISTS idx_orders_requirement ON orders (tenant_id, requirement_id) WHERE requirement_id IS NOT NULL;

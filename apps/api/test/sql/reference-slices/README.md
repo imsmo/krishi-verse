@@ -17,7 +17,7 @@ Why keep them:
 
 Available slices: `00_listings_slice.sql`, `catalogue_slice.sql`, `identity_slice.sql`,
 `orders_slice.sql`, `payments_slice.sql` (payments + wallet/ledger), `auctions_slice.sql`
-(auctions + bids + EMD ledger bits), `offers_slice.sql` (listing_offers negotiation + 0020 RLS), and `02_seed_min.sql`.
+(auctions + bids + EMD ledger bits), `offers_slice.sql` (listing_offers negotiation + 0020 RLS), `requirements_slice.sql` (reverse marketplace: requirements + requirement_responses), and `02_seed_min.sql`.
 
 Caveats if you ever use them:
 - they are a hand-maintained subset — they can fall behind the real migrations;

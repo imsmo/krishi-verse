@@ -22,6 +22,7 @@ import { AutoCompleteQualityWindowJob } from './jobs/auto-complete-quality-windo
 import { AbandonedCartsJob } from './jobs/abandoned-carts.job';
 import { PaymentSucceededHandler } from './events/handlers/payment-succeeded.handler';
 import { OfferAcceptedHandler } from './events/handlers/offer-accepted.handler';
+import { QuoteAcceptedHandler } from './events/handlers/quote-accepted.handler';
 
 @Module({
   imports: [ListingsModule, PaymentsModule],   // PaymentsModule exports ChargePricingService (checkout fees)
@@ -30,7 +31,7 @@ import { OfferAcceptedHandler } from './events/handlers/offer-accepted.handler';
     CartService, CheckoutService, OrderService, OrderTimelineReadModel,
     CartRepository, OrderRepository,
     SellerConfirmTimeoutJob, AutoCompleteQualityWindowJob, AbandonedCartsJob,
-    PaymentSucceededHandler, OfferAcceptedHandler,
+    PaymentSucceededHandler, OfferAcceptedHandler, QuoteAcceptedHandler,
   ],
   exports: [OrderService, SellerConfirmTimeoutJob, AutoCompleteQualityWindowJob, AbandonedCartsJob],
 })
@@ -39,6 +40,7 @@ export class OrdersModule implements OnModuleInit {
     @Inject(OUTBOX_HANDLER_REGISTRY) private readonly registry: OutboxHandlerRegistry,
     private readonly paymentSucceeded: PaymentSucceededHandler,
     private readonly offerAccepted: OfferAcceptedHandler,
+    private readonly quoteAccepted: QuoteAcceptedHandler,
   ) {}
-  onModuleInit(): void { this.registry.register(this.paymentSucceeded); this.registry.register(this.offerAccepted); }
+  onModuleInit(): void { this.registry.register(this.paymentSucceeded); this.registry.register(this.offerAccepted); this.registry.register(this.quoteAccepted); }
 }

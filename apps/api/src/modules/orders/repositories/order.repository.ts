@@ -11,7 +11,7 @@ import { Order, OrderProps } from '../domain/order.entity';
 import { OrderItem } from '../domain/order-item.entity';
 import { OrderStatus } from '../domain/order.state';
 
-const COLS = `id, tenant_id, order_no, checkout_group_id, buyer_user_id, seller_user_id, source, offer_id, currency_code,
+const COLS = `id, tenant_id, order_no, checkout_group_id, buyer_user_id, seller_user_id, source, offer_id, requirement_id, currency_code,
   subtotal_minor, delivery_fee_minor, discount_minor, tax_minor, commission_minor, platform_fee_minor, tds_minor,
   total_minor, status, delivery_method_id, delivery_address_id, acceptance_deadline, quality_window_ends,
   cancel_reason_id, cancelled_by, version, created_at, completed_at`;
@@ -20,7 +20,7 @@ const PRUNE = `created_at >= uuid_v7_time($1) - interval '5 seconds' AND created
 const big = (v: any) => BigInt(v);
 function toDomain(r: any): Order {
   return Order.rehydrate({ id: r.id, tenantId: r.tenant_id, orderNo: r.order_no, checkoutGroupId: r.checkout_group_id,
-    buyerUserId: r.buyer_user_id, sellerUserId: r.seller_user_id, source: r.source, offerId: r.offer_id ?? null, currencyCode: r.currency_code,
+    buyerUserId: r.buyer_user_id, sellerUserId: r.seller_user_id, source: r.source, offerId: r.offer_id ?? null, requirementId: r.requirement_id ?? null, currencyCode: r.currency_code,
     subtotalMinor: big(r.subtotal_minor), deliveryFeeMinor: big(r.delivery_fee_minor), discountMinor: big(r.discount_minor),
     taxMinor: big(r.tax_minor), commissionMinor: big(r.commission_minor), platformFeeMinor: big(r.platform_fee_minor),
     tdsMinor: big(r.tds_minor), totalMinor: big(r.total_minor), status: r.status as OrderStatus,
@@ -37,14 +37,14 @@ export class OrderRepository {
   async insertGraph(tx: TxContext, order: Order, items: OrderItem[]): Promise<void> {
     const p = order.toProps();
     await tx.query(
-      `INSERT INTO orders (id, tenant_id, order_no, checkout_group_id, buyer_user_id, seller_user_id, source, offer_id, currency_code,
+      `INSERT INTO orders (id, tenant_id, order_no, checkout_group_id, buyer_user_id, seller_user_id, source, offer_id, requirement_id, currency_code,
         subtotal_minor, delivery_fee_minor, discount_minor, tax_minor, commission_minor, platform_fee_minor, tds_minor,
-        total_minor, status, delivery_method_id, delivery_address_id, acceptance_deadline, version, created_at, offer_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)`,
+        total_minor, status, delivery_method_id, delivery_address_id, acceptance_deadline, version, created_at, offer_id, requirement_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)`,
       [p.id, p.tenantId, p.orderNo, p.checkoutGroupId, p.buyerUserId, p.sellerUserId, p.source, p.currencyCode,
        p.subtotalMinor.toString(), p.deliveryFeeMinor.toString(), p.discountMinor.toString(), p.taxMinor.toString(),
        p.commissionMinor.toString(), p.platformFeeMinor.toString(), p.tdsMinor.toString(), p.totalMinor.toString(),
-       p.status, p.deliveryMethodId, p.deliveryAddressId, p.acceptanceDeadline, p.version, p.createdAt, p.offerId]);
+       p.status, p.deliveryMethodId, p.deliveryAddressId, p.acceptanceDeadline, p.version, p.createdAt, p.offerId, p.requirementId]);
     for (const it of items) {
       const v = it.props;
       await tx.query(
@@ -65,6 +65,13 @@ export class OrderRepository {
    *  accepted offer? (Uses idx_orders_offer; cross-partition by design — a rare, bounded lookup.) */
   async existsForOffer(tx: TxContext, tenantId: string, offerId: string): Promise<boolean> {
     const r = await tx.query(`SELECT 1 FROM orders WHERE tenant_id=$1 AND offer_id=$2 LIMIT 1`, [tenantId, offerId]);
+    return (r.rowCount ?? 0) > 0;
+  }
+
+  /** Idempotency guard for the order-from-requirement handler: has an order already been created for
+   *  this accepted requirement? (Uses idx_orders_requirement; cross-partition by design, bounded.) */
+  async existsForRequirement(tx: TxContext, tenantId: string, requirementId: string): Promise<boolean> {
+    const r = await tx.query(`SELECT 1 FROM orders WHERE tenant_id=$1 AND requirement_id=$2 LIMIT 1`, [tenantId, requirementId]);
     return (r.rowCount ?? 0) > 0;
   }
 

@@ -11,5 +11,6 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   ('buyer_charges','Apply buyer-side charges (delivery slab + platform fee) at checkout — OFF = none', false, 100, '{}'),
   ('document_pdfs','Render + store statement/invoice PDFs to media — OFF = data only (no S3 write)', false, 100, '{}'),
   ('auctions','English/sealed auctions + bidding (EMD holds) — OFF until launch', false, 100, '{}'),
-  ('offers','Buyer-seller price negotiation (offers/counters/accept) — OFF until launch', false, 100, '{}')
+  ('offers','Buyer-seller price negotiation (offers/counters/accept) — OFF until launch', false, 100, '{}'),
+  ('requirements','Reverse marketplace: demand posts + seller quotes — OFF until launch', false, 100, '{}')
 ON CONFLICT (key) DO NOTHING;
