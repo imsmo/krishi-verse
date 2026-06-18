@@ -19,5 +19,6 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   ('dispute_refunds','Wallet reversal (escrow → buyer) on a dispute refund — OFF until launch', false, 100, '{}'),
   ('promotions','Promotions + coupon codes (discount engine) — OFF until launch', false, 100, '{}'),
   ('memberships','Subscription tiers + wallet-paid memberships — OFF until launch', false, 100, '{}'),
-  ('tenancy','SaaS plans + tenant subscriptions (quota foundation) — OFF until launch', false, 100, '{}')
+  ('tenancy','SaaS plans + tenant subscriptions (quota foundation) — OFF until launch', false, 100, '{}'),
+  ('labour','Labour bookings + assignments + wage settlement (dignity floor) — OFF until launch', false, 100, '{}')
 ON CONFLICT (key) DO NOTHING;
