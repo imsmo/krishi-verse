@@ -9,7 +9,7 @@ import { OrderEventType, DomainEvent } from './orders.events';
 
 export interface OrderProps {
   id: string; tenantId: string; orderNo: string; checkoutGroupId: string | null;
-  buyerUserId: string; sellerUserId: string; source: string; currencyCode: string;
+  buyerUserId: string; sellerUserId: string; source: string; offerId: string | null; currencyCode: string;
   subtotalMinor: bigint; deliveryFeeMinor: bigint; discountMinor: bigint; taxMinor: bigint;
   commissionMinor: bigint; platformFeeMinor: bigint; tdsMinor: bigint; totalMinor: bigint;
   status: OrderStatus; deliveryMethodId: string | null; deliveryAddressId: string | null;
@@ -28,7 +28,7 @@ export class Order {
   /** Build an order from priced items. requiresPayment ⇒ starts at payment_pending. */
   static place(input: {
     id: string; tenantId: string; orderNo: string; checkoutGroupId: string | null; buyerUserId: string;
-    sellerUserId: string; source: string; currencyCode: string; items: OrderItem[];
+    sellerUserId: string; source: string; offerId?: string | null; currencyCode: string; items: OrderItem[];
     deliveryFeeMinor?: bigint; platformFeeMinor?: bigint; discountMinor?: bigint; deliveryMethodId: string | null; deliveryAddressId: string | null;
     requiresPayment: boolean; now?: Date;
   }): Order {
@@ -42,7 +42,7 @@ export class Order {
     const total = subtotal + delivery + platformFee - discount;
     const o = new Order({
       id: input.id, tenantId: input.tenantId, orderNo: input.orderNo, checkoutGroupId: input.checkoutGroupId,
-      buyerUserId: input.buyerUserId, sellerUserId: input.sellerUserId, source: input.source, currencyCode: input.currencyCode,
+      buyerUserId: input.buyerUserId, sellerUserId: input.sellerUserId, source: input.source, offerId: input.offerId ?? null, currencyCode: input.currencyCode,
       subtotalMinor: subtotal, deliveryFeeMinor: delivery, discountMinor: discount, taxMinor: 0n,
       commissionMinor: 0n, platformFeeMinor: platformFee, tdsMinor: 0n, totalMinor: total < 0n ? 0n : total,
       status: input.requiresPayment ? 'payment_pending' : 'created',

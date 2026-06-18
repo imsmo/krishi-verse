@@ -83,7 +83,7 @@ export class ListingOffer {
     const agreed = this.priceOnTableFor(party);
     if (agreed <= 0n) throw new InvalidOfferError('no price to accept');
     this.acceptedPriceMinor = agreed;
-    this.to('accepted', OfferEventType.Accepted, { by: party, agreedPriceMinor: agreed.toString(), quantity: this.props.quantity });
+    this.to('accepted', OfferEventType.Accepted, { by: party, agreedPriceMinor: agreed.toString(), quantity: this.props.quantity, buyerUserId: this.props.buyerUserId });
   }
 
   /** Either party may decline / withdraw while the negotiation is live (turn not enforced). */

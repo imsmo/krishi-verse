@@ -19,8 +19,11 @@ the `offers` feature flag (default OFF).
   (the buyer is `buyer_user_id`; the seller is the listing's seller, via **ListingService** — Law 11,
   never the listings repo). Turn + state are enforced by the aggregate.
 - **Accept = a deal, not money** — accepting emits `offers.offer_accepted` (agreed per-unit price +
-  quantity) via the **outbox** in the same tx. Order creation + payment happen **downstream** (orders);
-  the order links back by calling `markConverted` (`converted_order_id`, status → `converted`).
+  quantity + buyer) via the **outbox** in the same tx. The orders module's `OfferAcceptedHandler`
+  consumes it and creates the order (`source='offer'`, agreed price × qty), then emits
+  `orders.order_from_offer_created`; this module's `OrderFromOfferCreatedHandler` consumes that and
+  links back (`converted_order_id`, status → `converted`). Each handler is idempotent and touches only
+  its own module's tables — the two steps are atomic per relay tx and decoupled via the outbox.
 - **Expiry** — the `expire-offers` worker job lapses `open|countered` offers past `expires_at`
   (kv_relay pool, `FOR UPDATE SKIP LOCKED`, bounded, idempotent).
 
@@ -53,10 +56,16 @@ ping-pong, accept price per party, reject/expire/convert). `tenant-isolation.spe
 (`offers.integration.spec.ts`, real Postgres + RLS): make → counter → accept (offer_accepted in the
 outbox) → self-deal blocked → IDOR blocked → expiry job → cross-tenant RLS denial.
 
+## Order creation from an accepted offer (implemented — event-driven)
+An accepted offer becomes a real order via the **outbox relay**, fully decoupled: the orders module's
+`OfferAcceptedHandler` consumes `offers.offer_accepted` and creates the order (`source='offer'`,
+`offer_id` set, agreed price × quantity, buyer/seller from the listing — Law 11), then emits
+`orders.order_from_offer_created`; this module's `OrderFromOfferCreatedHandler` consumes that and links
+back (`converted_order_id`, status → `converted`). Both handlers are idempotent and touch only their own
+module's tables. Proven by `apps/api/src/modules/orders/__tests__/order-from-offer.integration.spec.ts`.
+Migration **0021** adds `orders.offer_id` + the idempotency index.
+
 ## Deferred (flagged, not faked) — next wave
-- **Order creation from an accepted offer** — emitted as `offers.offer_accepted`; the orders-side
-  handler (create the buyer's order at the agreed price × quantity, source='offer', then call
-  `markConverted`) is the integration point.
 - **AI price suggestion** — the `ai_suggested` jsonb column is reserved for an AI service to attach a
   fair-price band; not populated here.
 - **Per-offer notifications/watchers** and a buyer↔seller negotiation thread (chat) — communication wave.

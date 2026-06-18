@@ -9,6 +9,7 @@ export const OrderEventType = {
   Delivered: 'orders.order_delivered',
   Completed: 'orders.order_completed',
   Disputed: 'orders.order_disputed',
+  FromOfferCreated: 'orders.order_from_offer_created',   // an accepted offer became this order (→ offers links back)
   StatusChanged: 'orders.order_status_changed',
 } as const;
 export type OrderEventType = typeof OrderEventType[keyof typeof OrderEventType];

@@ -108,17 +108,6 @@ export class ListingOfferService {
     }, { userId: 'system' });
   }
 
-  /** Downstream (orders) links a created order to its accepted offer. Idempotent at the handler. */
-  async markConverted(tenantId: string, offerId: string, orderId: string): Promise<void> {
-    await this.uow.run(tenantId, async (tx) => {
-      const o = await this.repo.getForUpdate(tx, tenantId, offerId);
-      if (!o || o.status === 'converted') return;
-      o.convert(orderId);
-      await this.repo.update(tx, o);
-      await this.flush(tx, tenantId, offerId, o.pullEvents());
-    }, { userId: 'system' });
-  }
-
   async getById(tenantId: string, actor: OfferActor, offerId: string) {
     const o = await this.repo.getById(tenantId, offerId);
     if (!o) throw new OfferNotFoundError(offerId);
