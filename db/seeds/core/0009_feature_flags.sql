@@ -17,5 +17,6 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   ('reviews','Verified-purchase ratings + moderation — OFF until launch', false, 100, '{}'),
   ('disputes','Order disputes + evidence + moderator resolution — OFF until launch', false, 100, '{}'),
   ('dispute_refunds','Wallet reversal (escrow → buyer) on a dispute refund — OFF until launch', false, 100, '{}'),
-  ('promotions','Promotions + coupon codes (discount engine) — OFF until launch', false, 100, '{}')
+  ('promotions','Promotions + coupon codes (discount engine) — OFF until launch', false, 100, '{}'),
+  ('memberships','Subscription tiers + wallet-paid memberships — OFF until launch', false, 100, '{}')
 ON CONFLICT (key) DO NOTHING;

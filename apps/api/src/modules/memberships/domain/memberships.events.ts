@@ -1,3 +1,13 @@
-// apps/api/src/modules/memberships/domain/memberships.events.ts · domain event definitions published by memberships · [P2]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/memberships/domain/memberships.events.ts · integration events (via outbox, Law 4).
+export const MembershipEventType = {
+  TierCreated:  'memberships.tier_created',
+  TierUpdated:  'memberships.tier_updated',
+  Subscribed:   'memberships.subscribed',
+  Renewed:      'memberships.renewed',
+  Cancelled:    'memberships.cancelled',
+  Expired:      'memberships.expired',
+} as const;
+export type DomainEvent = { type: string; payload: Record<string, unknown> };
+
+export const BILLING_CYCLES = ['monthly', 'annual'] as const;
+export type BillingCycle = (typeof BILLING_CYCLES)[number];

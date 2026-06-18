@@ -41,6 +41,7 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('review.create','Write a verified-purchase review','M03'),('review.moderate','Moderate reviews','M03'),
  ('dispute.raise','Raise an order dispute',NULL),
  ('promotion.manage','Manage promotions + coupons','M03'),
+ ('membership.manage','Manage membership tiers','M13'),
  ('auction.bid','Place bid','M04'),('auction.create','Create auction','M04'),
  ('wallet.view','View wallet','M05'),('wallet.adjust','Manual wallet adjust','M05'),
  ('payout.approve','Approve payouts','M05'),
@@ -60,7 +61,7 @@ INSERT INTO role_permissions (role_id, permission_code)
 SELECT r.id, p.code FROM roles r CROSS JOIN permissions p
 WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','listing.publish','order.create','offer.create','requirement.post','auction.bid','wallet.view','worker.book'))
    OR (r.code='vyapari'       AND p.code IN ('order.create','offer.create','requirement.post','auction.bid','auction.create','wallet.view'))
-   OR (r.code='tenant_admin'  AND p.code IN ('listing.approve','listing.moderate','order.manage','user.approve','dispute.resolve','report.view','tenant.settings','payout.approve','wallet.adjust','booking.manage','logistics.manage','promotion.manage'))
+   OR (r.code='tenant_admin'  AND p.code IN ('listing.approve','listing.moderate','order.manage','user.approve','dispute.resolve','report.view','tenant.settings','payout.approve','wallet.adjust','booking.manage','logistics.manage','promotion.manage','membership.manage'))
    OR (r.code='support_agent' AND p.code IN ('dispute.resolve','report.view'))
    OR (r.code='auditor'       AND p.code IN ('ledger.read','report.view'))
    OR (r.code='ai_ops'        AND p.code IN ('ai.review','listing.moderate'))

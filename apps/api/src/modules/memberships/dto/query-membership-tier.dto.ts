@@ -1,3 +1,8 @@
-// apps/api/src/modules/memberships/dto/query-membership-tier.dto.ts · list/filter query params (cursor pagination) · [P2]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/memberships/dto/query-membership-tier.dto.ts · list tiers (cursor pagination, never OFFSET).
+import { z } from 'zod';
+export const QueryTiersSchema = z.object({
+  activeOnly: z.coerce.boolean().optional(),
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+}).strict();
+export type QueryTiersDto = z.infer<typeof QueryTiersSchema>;

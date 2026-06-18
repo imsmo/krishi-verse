@@ -1,3 +1,8 @@
-// apps/api/src/modules/memberships/dto/create-user-membership.dto.ts · create payload (zod/class-validator) · [P2]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/memberships/dto/create-user-membership.dto.ts · zod .strict() subscribe payload.
+import { z } from 'zod';
+import { BILLING_CYCLES } from '../domain/memberships.events';
+export const SubscribeSchema = z.object({
+  tierId: z.string().uuid(),
+  billingCycle: z.enum(BILLING_CYCLES as unknown as [string, ...string[]]).default('monthly'),
+}).strict();
+export type SubscribeDto = z.infer<typeof SubscribeSchema>;
