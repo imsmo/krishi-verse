@@ -1,3 +1,16 @@
-// apps/api/src/modules/dairy/dto/create-milk-collection.dto.ts · create payload (zod/class-validator) · [P2]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/dairy/dto/create-milk-collection.dto.ts · zod .strict() counter-entry payload.
+// weight/fat/snf are DECIMAL STRINGS (parsed into scaled integers; no float). amount is server-computed.
+import { z } from 'zod';
+import { MILK_SHIFTS } from '../domain/dairy.events';
+const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+export const RecordCollectionSchema = z.object({
+  membershipId: z.string().uuid(),
+  shift: z.enum(MILK_SHIFTS as unknown as [string, ...string[]]),
+  collectedOn: dateStr,
+  weightKg: z.string().regex(/^\d{1,5}(\.\d{1,3})?$/, 'weight kg, up to 3 decimals'),
+  fatPct: z.string().regex(/^\d{1,2}(\.\d{1,2})?$/, 'fat %, up to 2 decimals'),
+  snfPct: z.string().regex(/^\d{1,2}(\.\d{1,2})?$/, 'snf %, up to 2 decimals'),
+  waterFlag: z.boolean().default(false),
+  adulterationFlags: z.array(z.string().max(40)).max(10).default([]),
+}).strict();
+export type RecordCollectionDto = z.infer<typeof RecordCollectionSchema>;

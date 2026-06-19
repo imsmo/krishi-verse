@@ -21,5 +21,6 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   ('memberships','Subscription tiers + wallet-paid memberships — OFF until launch', false, 100, '{}'),
   ('tenancy','SaaS plans + tenant subscriptions (quota foundation) — OFF until launch', false, 100, '{}'),
   ('labour','Labour bookings + assignments + wage settlement (dignity floor) — OFF until launch', false, 100, '{}'),
-  ('livestock','Animal registry + vet marketplace + fee settlement — OFF until launch', false, 100, '{}')
+  ('livestock','Animal registry + vet marketplace + fee settlement — OFF until launch', false, 100, '{}'),
+  ('dairy','Milk procurement: MCC/collections/rate-cards/bills + wallet payout — OFF until launch', false, 100, '{}')
 ON CONFLICT (key) DO NOTHING;

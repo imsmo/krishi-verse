@@ -1,3 +1,22 @@
-// apps/api/src/modules/dairy/domain/dairy.events.ts · domain event definitions published by dairy · [P2]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/dairy/domain/dairy.events.ts · integration events published by dairy (via outbox, Law 4).
+export const DairyEventType = {
+  MccCreated:        'dairy.mcc_created',
+  MembershipCreated: 'dairy.membership_created',
+  RateCardCreated:   'dairy.rate_card_created',
+  CollectionRecorded:'dairy.collection_recorded',
+  BillGenerated:     'dairy.bill_generated',
+  BillPreviewed:     'dairy.bill_previewed',
+  BillApproved:      'dairy.bill_approved',
+  BillPaid:          'dairy.bill_paid',
+  BillDisputed:      'dairy.bill_disputed',
+} as const;
+export type DomainEvent = { type: string; payload: Record<string, unknown> };
+
+export const ANIMAL_TYPES = ['cow', 'buffalo', 'mixed'] as const;
+export type AnimalType = (typeof ANIMAL_TYPES)[number];
+export const PAYMENT_CYCLES = ['daily', 'weekly', 'fortnightly', 'monthly'] as const;
+export type PaymentCycle = (typeof PAYMENT_CYCLES)[number];
+export const PRICING_MODELS = ['two_axis', 'fat_pooled', 'snf_pooled'] as const;
+export type PricingModel = (typeof PRICING_MODELS)[number];
+export const MILK_SHIFTS = ['morning', 'evening'] as const;
+export type MilkShift = (typeof MILK_SHIFTS)[number];

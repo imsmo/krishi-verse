@@ -54,7 +54,8 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('tenant.manage','Manage tenants (god mode)',NULL),
  ('product.manage','Manage own products + batches','M02'),
  ('catalogue.configure','Enable/disable categories for the tenant','M02'),
- ('animal.manage','Manage own animals (livestock registry)','M15'),('vet.book','Book a veterinarian','M15'),('vet.manage','Manage vet profile + services','M15')
+ ('animal.manage','Manage own animals (livestock registry)','M15'),('vet.book','Book a veterinarian','M15'),('vet.manage','Manage vet profile + services','M15'),
+ ('dairy.manage','Manage dairy MCC + collections + milk bills','M16')
 ON CONFLICT (code) DO NOTHING;
 
 -- grants (sample of the full PRD §10 matrix; complete in admin UI)
@@ -78,4 +79,5 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('farmer','pashupalak','dairy_farmer') AND p.code IN ('animal.manage','vet.book'))
    OR (r.code='vet' AND p.code IN ('vet.manage','animal.manage'))
    OR (r.code='tenant_admin' AND p.code IN ('vet.manage'))
+   OR (r.code IN ('dairy_farmer','tenant_admin') AND p.code IN ('dairy.manage'))
 ON CONFLICT DO NOTHING;

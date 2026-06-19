@@ -1,3 +1,68 @@
-// apps/api/src/modules/dairy/domain/milk-bill.entity.ts · domain entity (pure TS, no framework imports) · [P2]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/dairy/domain/milk-bill.entity.ts · the milk_bills aggregate root (per-cycle settlement → payout).
+// Aggregates a membership's collections over a period: gross − deductions = net. Lifecycle via milk-bill.state
+// (draft→previewed→approved→paid, +disputed). Money is bigint minor units; the payout (tenant → farmer)
+// happens in the service via the wallet boundary (Law 2) when the bill is paid. No version → lock FOR UPDATE.
+import { BillStatus, assertTransition } from './milk-bill.state';
+import { DomainEvent, DairyEventType } from './dairy.events';
+import { BillNotPayableError } from './dairy.errors';
+
+export interface BillDeduction { type: string; amountMinor: bigint; }
+export interface MilkBillProps {
+  id: string; tenantId: string; membershipId: string; periodStart: string; periodEnd: string;
+  totalLitresMilli: bigint;       // litres ×1000 (scaled integer; here = sum of weight milli-kg)
+  grossMinor: bigint;
+  deductions: BillDeduction[];
+  deductionsMinor: bigint;
+  netMinor: bigint;
+  status: BillStatus;
+  disputeWindowEnds: Date | null;
+  payoutId: string | null;
+  createdAt?: Date;
+}
+
+export class MilkBill {
+  private readonly events: DomainEvent[] = [];
+  private constructor(private props: MilkBillProps) {}
+
+  /** Build a draft bill from the aggregated collection totals + any deductions. net = gross − deductions. */
+  static generate(input: { id: string; tenantId: string; membershipId: string; periodStart: string; periodEnd: string;
+    totalLitresMilli: bigint; grossMinor: bigint; deductions?: BillDeduction[]; disputeWindowEnds?: Date | null }): MilkBill {
+    const deductions = input.deductions ?? [];
+    const deductionsMinor = deductions.reduce((a, d) => a + d.amountMinor, 0n);
+    const netMinor = input.grossMinor - deductionsMinor;
+    if (netMinor < 0n) throw new BillNotPayableError('deductions exceed gross');
+    const b = new MilkBill({ id: input.id, tenantId: input.tenantId, membershipId: input.membershipId, periodStart: input.periodStart,
+      periodEnd: input.periodEnd, totalLitresMilli: input.totalLitresMilli, grossMinor: input.grossMinor, deductions, deductionsMinor,
+      netMinor, status: 'draft', disputeWindowEnds: input.disputeWindowEnds ?? null, payoutId: null });
+    b.events.push({ type: DairyEventType.BillGenerated, payload: { billId: b.props.id, membershipId: b.props.membershipId, netMinor: netMinor.toString() } });
+    return b;
+  }
+  static rehydrate(props: MilkBillProps): MilkBill { return new MilkBill(props); }
+
+  get id() { return this.props.id; }
+  get tenantId() { return this.props.tenantId; }
+  get membershipId() { return this.props.membershipId; }
+  get status() { return this.props.status; }
+  get netMinor() { return this.props.netMinor; }
+  toProps(): Readonly<MilkBillProps> { return Object.freeze({ ...this.props }); }
+  pullEvents(): DomainEvent[] { const e = [...this.events]; this.events.length = 0; return e; }
+
+  private transition(to: BillStatus, eventType: string, extra: Record<string, unknown> = {}): void {
+    const from = this.props.status;
+    assertTransition(from, to);
+    this.props.status = to;
+    this.events.push({ type: eventType, payload: { billId: this.props.id, from, to, ...extra } });
+  }
+  preview(): void { this.transition('previewed', DairyEventType.BillPreviewed); }
+  dispute(reason?: string): void { this.transition('disputed', DairyEventType.BillDisputed, reason ? { reason } : {}); }
+  approve(): void { this.transition('approved', DairyEventType.BillApproved); }
+  /** Mark paid + stamp the settlement txn (wallet payout posted by the service in the same tx). */
+  markPaid(): void {
+    if (this.props.status !== 'approved') throw new BillNotPayableError(this.props.status);
+    this.transition('paid', DairyEventType.BillPaid, { netMinor: this.props.netMinor.toString() });
+  }
+  toJSON() { const v = this.props; return { id: v.id, membershipId: v.membershipId, periodStart: v.periodStart, periodEnd: v.periodEnd,
+    totalLitres: (Number(v.totalLitresMilli) / 1000).toFixed(3), grossMinor: v.grossMinor.toString(),
+    deductions: v.deductions.map((d) => ({ type: d.type, amountMinor: d.amountMinor.toString() })), deductionsMinor: v.deductionsMinor.toString(),
+    netMinor: v.netMinor.toString(), status: v.status, disputeWindowEnds: v.disputeWindowEnds, payoutId: v.payoutId, createdAt: v.createdAt }; }
+}
