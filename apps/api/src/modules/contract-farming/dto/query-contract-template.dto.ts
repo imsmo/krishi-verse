@@ -1,3 +1,4 @@
-// apps/api/src/modules/contract-farming/dto/query-contract-template.dto.ts · list/filter query params (cursor pagination) · [P2]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/contract-farming/dto/query-contract-template.dto.ts · zod .strict() template browse.
+import { z } from 'zod';
+export const QueryTemplatesSchema = z.object({ activeOnly: z.coerce.boolean().default(true) }).strict();
+export type QueryTemplatesDto = z.infer<typeof QueryTemplatesSchema>;

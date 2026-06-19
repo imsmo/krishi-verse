@@ -1,3 +1,4 @@
-// apps/api/src/modules/contract-farming/dto/update-contract-template.dto.ts · update payload · [P2]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/contract-farming/dto/update-contract-template.dto.ts · zod .strict() template active toggle.
+import { z } from 'zod';
+export const SetTemplateActiveSchema = z.object({ isActive: z.boolean() }).strict();
+export type SetTemplateActiveDto = z.infer<typeof SetTemplateActiveSchema>;

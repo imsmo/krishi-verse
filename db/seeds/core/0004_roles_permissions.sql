@@ -57,7 +57,8 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('animal.manage','Manage own animals (livestock registry)','M15'),('vet.book','Book a veterinarian','M15'),('vet.manage','Manage vet profile + services','M15'),
  ('dairy.manage','Manage dairy MCC + collections + milk bills','M16'),
  ('equipment.manage','Manage equipment assets + rates + rental fulfilment','M20'),('equipment.rent','Rent equipment (request/confirm bookings)','M20'),
- ('warehouse.manage','Manage warehouses + storage + assays + eNWR','M21'),('warehouse.store','Deposit produce in a warehouse','M21')
+ ('warehouse.manage','Manage warehouses + storage + assays + eNWR','M21'),('warehouse.store','Deposit produce in a warehouse','M21'),
+ ('contract.manage','Manage farming contracts + advances + settlement','M22'),('contract.grow','Participate as a contract grower','M22')
 ON CONFLICT (code) DO NOTHING;
 
 -- grants (sample of the full PRD §10 matrix; complete in admin UI)
@@ -86,4 +87,6 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('farmer','pashupalak','vyapari','customer') AND p.code IN ('equipment.rent'))
    OR (r.code='tenant_admin' AND p.code IN ('warehouse.manage'))
    OR (r.code IN ('farmer','vyapari','customer') AND p.code IN ('warehouse.store'))
+   OR (r.code IN ('vyapari','tenant_admin') AND p.code IN ('contract.manage'))
+   OR (r.code IN ('farmer','pashupalak') AND p.code IN ('contract.grow'))
 ON CONFLICT DO NOTHING;

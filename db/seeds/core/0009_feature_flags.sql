@@ -24,5 +24,6 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   ('livestock','Animal registry + vet marketplace + fee settlement — OFF until launch', false, 100, '{}'),
   ('dairy','Milk procurement: MCC/collections/rate-cards/bills + wallet payout — OFF until launch', false, 100, '{}'),
   ('equipment','Equipment/CHC rental: assets/rates/bookings + escrow settlement — OFF until launch', false, 100, '{}'),
-  ('warehousing','Warehouse storage bookings + assays + eNWR + storage-fee settlement — OFF until launch', false, 100, '{}')
+  ('warehousing','Warehouse storage bookings + assays + eNWR + storage-fee settlement — OFF until launch', false, 100, '{}'),
+  ('contract_farming','Contract farming: contracts + growers + input advances + grower settlement — OFF until launch', false, 100, '{}')
 ON CONFLICT (key) DO NOTHING;
