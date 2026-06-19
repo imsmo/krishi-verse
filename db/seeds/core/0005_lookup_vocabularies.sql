@@ -9,7 +9,8 @@ INSERT INTO lookup_types (code,default_name,is_tenant_extendable) VALUES
  ('delivery_method','Delivery method',false),('vehicle_type','Vehicle type',false),
  ('ticket_category','Support ticket category',true),('report_reason','Moderation reason',false),
  ('vet_service','Veterinary service type',false),('animal_health_event','Animal health event type',false),
- ('export_doc','Export document type',false)
+ ('export_doc','Export document type',false),
+ ('irrigation','Irrigation type',false),('weather_alert','Weather alert type',false)
 ON CONFLICT (code) DO NOTHING;
 
 INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
@@ -34,5 +35,7 @@ INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order
  ('payment_purpose',NULL,'wallet_recharge','Wallet recharge','{}',1),('payment_purpose',NULL,'direct_order','Direct order','{}',2),
  ('payout_purpose',NULL,'settlement','Seller settlement','{}',1),('payout_purpose',NULL,'wage','Worker wage','{}',2),
  ('delivery_method',NULL,'self_pickup','Self pickup','{}',1),('delivery_method',NULL,'tenant_delivery','Tenant delivery','{}',2),
- ('export_doc',NULL,'bol','Bill of Lading','{}',1),('export_doc',NULL,'awb','Air Waybill','{}',2),('export_doc',NULL,'commercial_invoice','Commercial Invoice','{}',3),('export_doc',NULL,'packing_list','Packing List','{}',4),('export_doc',NULL,'coo','Certificate of Origin','{}',5),('export_doc',NULL,'phyto','Phytosanitary Certificate','{}',6),('export_doc',NULL,'fumigation','Fumigation Certificate','{}',7),('export_doc',NULL,'insurance','Marine Insurance','{}',8),('export_doc',NULL,'inspection','Inspection Certificate','{}',9)
+ ('export_doc',NULL,'bol','Bill of Lading','{}',1),('export_doc',NULL,'awb','Air Waybill','{}',2),('export_doc',NULL,'commercial_invoice','Commercial Invoice','{}',3),('export_doc',NULL,'packing_list','Packing List','{}',4),('export_doc',NULL,'coo','Certificate of Origin','{}',5),('export_doc',NULL,'phyto','Phytosanitary Certificate','{}',6),('export_doc',NULL,'fumigation','Fumigation Certificate','{}',7),('export_doc',NULL,'insurance','Marine Insurance','{}',8),('export_doc',NULL,'inspection','Inspection Certificate','{}',9),
+ ('irrigation',NULL,'rainfed','Rainfed','{}',1),('irrigation',NULL,'canal','Canal','{}',2),('irrigation',NULL,'borewell','Borewell','{}',3),('irrigation',NULL,'drip','Drip','{}',4),('irrigation',NULL,'sprinkler','Sprinkler','{}',5),
+ ('weather_alert',NULL,'heavy_rain','Heavy rain','{}',1),('weather_alert',NULL,'drought','Drought','{}',2),('weather_alert',NULL,'frost','Frost','{}',3),('weather_alert',NULL,'hail','Hail','{}',4),('weather_alert',NULL,'heatwave','Heatwave','{}',5),('weather_alert',NULL,'cyclone','Cyclone','{}',6),('weather_alert',NULL,'pest_risk','Pest risk','{}',7)
 ON CONFLICT (type_code,tenant_id,code) DO NOTHING;

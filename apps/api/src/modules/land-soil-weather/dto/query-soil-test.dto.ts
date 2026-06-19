@@ -1,3 +1,4 @@
-// apps/api/src/modules/land-soil-weather/dto/query-soil-test.dto.ts · list/filter query params (cursor pagination) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/land-soil-weather/dto/query-soil-test.dto.ts · zod .strict() soil test list query (by parcel).
+import { z } from 'zod';
+export const QuerySoilTestsSchema = z.object({ parcelId: z.string().uuid() }).strict();
+export type QuerySoilTestsDto = z.infer<typeof QuerySoilTestsSchema>;

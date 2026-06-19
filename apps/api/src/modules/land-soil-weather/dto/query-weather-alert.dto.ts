@@ -1,3 +1,8 @@
-// apps/api/src/modules/land-soil-weather/dto/query-weather-alert.dto.ts · list/filter query params (cursor pagination) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/land-soil-weather/dto/query-weather-alert.dto.ts · zod .strict() weather alert browse (read-only, by region).
+import { z } from 'zod';
+export const QueryWeatherSchema = z.object({
+  regionId: z.string().uuid(),
+  activeOnly: z.coerce.boolean().default(true),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+}).strict();
+export type QueryWeatherDto = z.infer<typeof QueryWeatherSchema>;

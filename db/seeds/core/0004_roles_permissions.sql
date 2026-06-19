@@ -59,7 +59,8 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('equipment.manage','Manage equipment assets + rates + rental fulfilment','M20'),('equipment.rent','Rent equipment (request/confirm bookings)','M20'),
  ('warehouse.manage','Manage warehouses + storage + assays + eNWR','M21'),('warehouse.store','Deposit produce in a warehouse','M21'),
  ('contract.manage','Manage farming contracts + advances + settlement','M22'),('contract.grow','Participate as a contract grower','M22'),
- ('export.manage','Manage exporter registrations + export shipments + docs','M23')
+ ('export.manage','Manage exporter registrations + export shipments + docs','M23'),
+ ('land.manage','Manage own land parcels + crop seasons + soil tests','M24')
 ON CONFLICT (code) DO NOTHING;
 
 -- grants (sample of the full PRD §10 matrix; complete in admin UI)
@@ -91,4 +92,5 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('vyapari','tenant_admin') AND p.code IN ('contract.manage'))
    OR (r.code IN ('farmer','pashupalak') AND p.code IN ('contract.grow'))
    OR (r.code IN ('vyapari','tenant_admin') AND p.code IN ('export.manage'))
+   OR (r.code IN ('farmer','pashupalak','dairy_farmer') AND p.code IN ('land.manage'))
 ON CONFLICT DO NOTHING;
