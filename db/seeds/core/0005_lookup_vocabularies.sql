@@ -7,7 +7,8 @@ INSERT INTO lookup_types (code,default_name,is_tenant_extendable) VALUES
  ('labour_task','Labour task type',true),('labour_demand_type','Labour demand type',false),
  ('boost_tier','Listing boost tier',false),('address_label','Address label',true),
  ('delivery_method','Delivery method',false),('vehicle_type','Vehicle type',false),
- ('ticket_category','Support ticket category',true),('report_reason','Moderation reason',false)
+ ('ticket_category','Support ticket category',true),('report_reason','Moderation reason',false),
+ ('vet_service','Veterinary service type',false),('animal_health_event','Animal health event type',false)
 ON CONFLICT (code) DO NOTHING;
 
 INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
@@ -28,7 +29,7 @@ INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order
  ('ledger_txn_type',NULL,'escrow_release','Escrow release','{}',3),('ledger_txn_type',NULL,'commission','Commission','{}',4),
  ('ledger_txn_type',NULL,'wage_payout','Wage payout','{}',5),('ledger_txn_type',NULL,'emd_hold','EMD hold','{}',6),
  ('ledger_txn_type',NULL,'payout','Wallet payout / withdrawal','{}',7),('ledger_txn_type',NULL,'refund','Refund to buyer','{}',8),
- ('ledger_txn_type',NULL,'subscription','Membership subscription','{}',9),
+ ('ledger_txn_type',NULL,'subscription','Membership subscription','{}',9),('ledger_txn_type',NULL,'service_fee','Service marketplace fee (vet/etc.)','{}',10),
  ('payment_purpose',NULL,'wallet_recharge','Wallet recharge','{}',1),('payment_purpose',NULL,'direct_order','Direct order','{}',2),
  ('payout_purpose',NULL,'settlement','Seller settlement','{}',1),('payout_purpose',NULL,'wage','Worker wage','{}',2),
  ('delivery_method',NULL,'self_pickup','Self pickup','{}',1),('delivery_method',NULL,'tenant_delivery','Tenant delivery','{}',2)

@@ -1,3 +1,4 @@
-// apps/api/src/modules/livestock/dto/query-animal-breed.dto.ts · list/filter query params (cursor pagination) · [P2]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/livestock/dto/query-animal-breed.dto.ts · zod .strict() breed browse query (by species).
+import { z } from 'zod';
+export const QueryBreedsSchema = z.object({ speciesId: z.string().uuid() }).strict();
+export type QueryBreedsDto = z.infer<typeof QueryBreedsSchema>;

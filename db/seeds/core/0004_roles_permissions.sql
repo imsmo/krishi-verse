@@ -53,7 +53,8 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('ai.review','AI review queue',NULL),('plan.manage','Manage plans (god mode)',NULL),
  ('tenant.manage','Manage tenants (god mode)',NULL),
  ('product.manage','Manage own products + batches','M02'),
- ('catalogue.configure','Enable/disable categories for the tenant','M02')
+ ('catalogue.configure','Enable/disable categories for the tenant','M02'),
+ ('animal.manage','Manage own animals (livestock registry)','M15'),('vet.book','Book a veterinarian','M15'),('vet.manage','Manage vet profile + services','M15')
 ON CONFLICT (code) DO NOTHING;
 
 -- grants (sample of the full PRD §10 matrix; complete in admin UI)
@@ -74,4 +75,7 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('tenant_admin','support_agent','ai_ops') AND p.code IN ('review.moderate'))
    OR (r.code IN ('farmer','vyapari','customer','pharma_store','organic_store') AND p.code IN ('dispute.raise'))
    OR (r.code='customer' AND p.code IN ('order.create','offer.create','requirement.post'))
+   OR (r.code IN ('farmer','pashupalak','dairy_farmer') AND p.code IN ('animal.manage','vet.book'))
+   OR (r.code='vet' AND p.code IN ('vet.manage','animal.manage'))
+   OR (r.code='tenant_admin' AND p.code IN ('vet.manage'))
 ON CONFLICT DO NOTHING;

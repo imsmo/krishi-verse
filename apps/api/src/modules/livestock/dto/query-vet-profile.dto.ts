@@ -1,3 +1,9 @@
-// apps/api/src/modules/livestock/dto/query-vet-profile.dto.ts · list/filter query params (cursor pagination) · [P2]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/livestock/dto/query-vet-profile.dto.ts · zod .strict() vet browse query (keyset pagination).
+import { z } from 'zod';
+export const QueryVetsSchema = z.object({
+  baseRegionId: z.string().uuid().optional(),
+  isAiTechnician: z.coerce.boolean().optional(),
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+}).strict();
+export type QueryVetsDto = z.infer<typeof QueryVetsSchema>;
