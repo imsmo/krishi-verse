@@ -1,3 +1,35 @@
-// apps/api/src/modules/warehousing/domain/nwr-receipt.entity.ts · domain entity (pure TS, no framework imports) · [P2]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/warehousing/domain/nwr-receipt.entity.ts · the nwr_receipts aggregate (electronic Negotiable
+// Warehouse Receipt). Lifecycle via nwr-receipt.state (issued → released | cancelled; pledge→loan deferred).
+// valuation_minor is bigint minor units (Law 2) — the collateral value; auto-valuation from assay + mandi
+// price is deferred (operator supplies it at issuance).
+import { NwrStatus, assertTransition } from './nwr-receipt.state';
+import { NwrRepository, DomainEvent, WarehousingEventType } from './warehousing.events';
+import { InvalidNwrError } from './warehousing.errors';
+
+export interface NwrReceiptProps {
+  id: string; tenantId: string; storageBookingId: string; repository: NwrRepository; enwrNo: string; holderUserId: string;
+  quantityMilli: bigint; valuationMinor: bigint; status: NwrStatus; pledgedLoanId: string | null; issuedAt: Date; expiresAt: string | null; createdAt?: Date;
+}
+export class NwrReceipt {
+  private readonly events: DomainEvent[] = [];
+  private constructor(private props: NwrReceiptProps) {}
+  static issue(input: Omit<NwrReceiptProps, 'status' | 'pledgedLoanId'>): NwrReceipt {
+    if (input.quantityMilli <= 0n) throw new InvalidNwrError('quantity must be greater than zero');
+    if (input.valuationMinor <= 0n) throw new InvalidNwrError('valuation must be greater than zero');
+    const n = new NwrReceipt({ ...input, status: 'issued', pledgedLoanId: null });
+    n.events.push({ type: WarehousingEventType.NwrIssued, payload: { nwrId: n.props.id, enwrNo: n.props.enwrNo, holderUserId: n.props.holderUserId, valuationMinor: n.props.valuationMinor.toString() } });
+    return n;
+  }
+  static rehydrate(props: NwrReceiptProps): NwrReceipt { return new NwrReceipt(props); }
+  get id() { return this.props.id; }
+  get tenantId() { return this.props.tenantId; }
+  get holderUserId() { return this.props.holderUserId; }
+  get status() { return this.props.status; }
+  toProps(): Readonly<NwrReceiptProps> { return Object.freeze({ ...this.props }); }
+  pullEvents(): DomainEvent[] { const e = [...this.events]; this.events.length = 0; return e; }
+  private transition(to: NwrStatus, eventType: string): void { const from = this.props.status; assertTransition(from, to); this.props.status = to; this.events.push({ type: eventType, payload: { nwrId: this.props.id, from, to } }); }
+  release(): void { this.transition('released', WarehousingEventType.NwrReleased); }
+  cancel(): void { this.transition('cancelled', WarehousingEventType.NwrCancelled); }
+  toJSON() { const v = this.props; return { id: v.id, storageBookingId: v.storageBookingId, repository: v.repository, enwrNo: v.enwrNo, holderUserId: v.holderUserId,
+    quantity: (Number(v.quantityMilli) / 1000).toFixed(3), valuationMinor: v.valuationMinor.toString(), status: v.status, pledgedLoanId: v.pledgedLoanId, issuedAt: v.issuedAt, expiresAt: v.expiresAt, createdAt: v.createdAt }; }
+}

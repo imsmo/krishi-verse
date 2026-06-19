@@ -56,7 +56,8 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('catalogue.configure','Enable/disable categories for the tenant','M02'),
  ('animal.manage','Manage own animals (livestock registry)','M15'),('vet.book','Book a veterinarian','M15'),('vet.manage','Manage vet profile + services','M15'),
  ('dairy.manage','Manage dairy MCC + collections + milk bills','M16'),
- ('equipment.manage','Manage equipment assets + rates + rental fulfilment','M20'),('equipment.rent','Rent equipment (request/confirm bookings)','M20')
+ ('equipment.manage','Manage equipment assets + rates + rental fulfilment','M20'),('equipment.rent','Rent equipment (request/confirm bookings)','M20'),
+ ('warehouse.manage','Manage warehouses + storage + assays + eNWR','M21'),('warehouse.store','Deposit produce in a warehouse','M21')
 ON CONFLICT (code) DO NOTHING;
 
 -- grants (sample of the full PRD §10 matrix; complete in admin UI)
@@ -83,4 +84,6 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('dairy_farmer','tenant_admin') AND p.code IN ('dairy.manage'))
    OR (r.code='equipment_owner' AND p.code IN ('equipment.manage','equipment.rent'))
    OR (r.code IN ('farmer','pashupalak','vyapari','customer') AND p.code IN ('equipment.rent'))
+   OR (r.code='tenant_admin' AND p.code IN ('warehouse.manage'))
+   OR (r.code IN ('farmer','vyapari','customer') AND p.code IN ('warehouse.store'))
 ON CONFLICT DO NOTHING;
