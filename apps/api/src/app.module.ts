@@ -23,11 +23,12 @@ import { TenancyModule } from './modules/tenancy/tenancy.module';
 import { LabourModule } from './modules/labour/labour.module';
 import { LivestockModule } from './modules/livestock/livestock.module';
 import { DairyModule } from './modules/dairy/dairy.module';
+import { EquipmentModule } from './modules/equipment/equipment.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { CatalogueModule } from './modules/catalogue/catalogue.module';
 
 @Module({
-  imports: [CoreModule, IdentityModule, CatalogueModule, ListingsModule, OrdersModule, PaymentsModule, MediaModule, AuctionsModule, OffersModule, RequirementsModule, LogisticsModule, ReviewsModule, DisputesModule, PromotionsModule, MembershipsModule, TenancyModule, LabourModule, LivestockModule, DairyModule],
+  imports: [CoreModule, IdentityModule, CatalogueModule, ListingsModule, OrdersModule, PaymentsModule, MediaModule, AuctionsModule, OffersModule, RequirementsModule, LogisticsModule, ReviewsModule, DisputesModule, PromotionsModule, MembershipsModule, TenancyModule, LabourModule, LivestockModule, DairyModule, EquipmentModule],
 })
 export class AppModule implements NestModule {
   // request-id THEN tenant-context (Law 1) on every route.

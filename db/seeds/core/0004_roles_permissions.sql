@@ -55,7 +55,8 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('product.manage','Manage own products + batches','M02'),
  ('catalogue.configure','Enable/disable categories for the tenant','M02'),
  ('animal.manage','Manage own animals (livestock registry)','M15'),('vet.book','Book a veterinarian','M15'),('vet.manage','Manage vet profile + services','M15'),
- ('dairy.manage','Manage dairy MCC + collections + milk bills','M16')
+ ('dairy.manage','Manage dairy MCC + collections + milk bills','M16'),
+ ('equipment.manage','Manage equipment assets + rates + rental fulfilment','M20'),('equipment.rent','Rent equipment (request/confirm bookings)','M20')
 ON CONFLICT (code) DO NOTHING;
 
 -- grants (sample of the full PRD §10 matrix; complete in admin UI)
@@ -80,4 +81,6 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code='vet' AND p.code IN ('vet.manage','animal.manage'))
    OR (r.code='tenant_admin' AND p.code IN ('vet.manage'))
    OR (r.code IN ('dairy_farmer','tenant_admin') AND p.code IN ('dairy.manage'))
+   OR (r.code='equipment_owner' AND p.code IN ('equipment.manage','equipment.rent'))
+   OR (r.code IN ('farmer','pashupalak','vyapari','customer') AND p.code IN ('equipment.rent'))
 ON CONFLICT DO NOTHING;
