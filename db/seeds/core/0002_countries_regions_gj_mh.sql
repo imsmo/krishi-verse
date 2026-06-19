@@ -1,6 +1,12 @@
 -- 0002 · India + Phase-1 states (Gujarat, Maharashtra) with district samples · [P1]
 INSERT INTO countries (code,default_name,currency_code,phone_prefix,timezone,is_active) VALUES
- ('IN','India','INR','+91','Asia/Kolkata',true)
+ ('IN','India','INR','+91','Asia/Kolkata',true),
+ ('US','United States','USD','+1','America/New_York',true),
+ ('AE','United Arab Emirates','AED','+971','Asia/Dubai',true),
+ ('GB','United Kingdom','GBP','+44','Europe/London',true),
+ ('SA','Saudi Arabia','SAR','+966','Asia/Riyadh',true),
+ ('DE','Germany','EUR','+49','Europe/Berlin',true),
+ ('JP','Japan','JPY','+81','Asia/Tokyo',true)
 ON CONFLICT (code) DO NOTHING;
 
 -- States

@@ -1,3 +1,7 @@
-// apps/api/src/modules/exports/dto/query-compliance-requirement.dto.ts · list/filter query params (cursor pagination) · [P3]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/exports/dto/query-compliance-requirement.dto.ts · zod .strict() compliance browse (read-only).
+import { z } from 'zod';
+export const QueryComplianceSchema = z.object({
+  destinationCountry: z.string().regex(/^[A-Z]{2}$/),
+  categoryId: z.string().uuid().optional(),
+}).strict();
+export type QueryComplianceDto = z.infer<typeof QueryComplianceSchema>;

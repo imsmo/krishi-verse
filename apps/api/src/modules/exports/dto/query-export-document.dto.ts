@@ -1,3 +1,4 @@
-// apps/api/src/modules/exports/dto/query-export-document.dto.ts · list/filter query params (cursor pagination) · [P3]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/exports/dto/query-export-document.dto.ts · zod .strict() document list query (by shipment).
+import { z } from 'zod';
+export const QueryDocumentsSchema = z.object({ shipmentId: z.string().uuid() }).strict();
+export type QueryDocumentsDto = z.infer<typeof QueryDocumentsSchema>;

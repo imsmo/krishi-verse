@@ -1,3 +1,8 @@
-// apps/api/src/modules/exports/dto/query-exporter-registration.dto.ts · list/filter query params (cursor pagination) · [P3]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/exports/dto/query-exporter-registration.dto.ts · zod .strict() exporter list query (keyset).
+import { z } from 'zod';
+export const QueryExportersSchema = z.object({
+  box: z.enum(['mine', 'all']).default('mine'),
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+}).strict();
+export type QueryExportersDto = z.infer<typeof QueryExportersSchema>;

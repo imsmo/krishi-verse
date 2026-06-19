@@ -8,7 +8,8 @@ INSERT INTO lookup_types (code,default_name,is_tenant_extendable) VALUES
  ('boost_tier','Listing boost tier',false),('address_label','Address label',true),
  ('delivery_method','Delivery method',false),('vehicle_type','Vehicle type',false),
  ('ticket_category','Support ticket category',true),('report_reason','Moderation reason',false),
- ('vet_service','Veterinary service type',false),('animal_health_event','Animal health event type',false)
+ ('vet_service','Veterinary service type',false),('animal_health_event','Animal health event type',false),
+ ('export_doc','Export document type',false)
 ON CONFLICT (code) DO NOTHING;
 
 INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
@@ -32,5 +33,6 @@ INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order
  ('ledger_txn_type',NULL,'subscription','Membership subscription','{}',9),('ledger_txn_type',NULL,'service_fee','Service marketplace fee (vet/etc.)','{}',10),('ledger_txn_type',NULL,'milk_payment','Milk procurement payment (coop → farmer)','{}',11),('ledger_txn_type',NULL,'storage_fee','Warehouse storage fee (depositor → operator)','{}',12),('ledger_txn_type',NULL,'contract_payment','Contract-farming advance/settlement (buyer → grower)','{}',13),
  ('payment_purpose',NULL,'wallet_recharge','Wallet recharge','{}',1),('payment_purpose',NULL,'direct_order','Direct order','{}',2),
  ('payout_purpose',NULL,'settlement','Seller settlement','{}',1),('payout_purpose',NULL,'wage','Worker wage','{}',2),
- ('delivery_method',NULL,'self_pickup','Self pickup','{}',1),('delivery_method',NULL,'tenant_delivery','Tenant delivery','{}',2)
+ ('delivery_method',NULL,'self_pickup','Self pickup','{}',1),('delivery_method',NULL,'tenant_delivery','Tenant delivery','{}',2),
+ ('export_doc',NULL,'bol','Bill of Lading','{}',1),('export_doc',NULL,'awb','Air Waybill','{}',2),('export_doc',NULL,'commercial_invoice','Commercial Invoice','{}',3),('export_doc',NULL,'packing_list','Packing List','{}',4),('export_doc',NULL,'coo','Certificate of Origin','{}',5),('export_doc',NULL,'phyto','Phytosanitary Certificate','{}',6),('export_doc',NULL,'fumigation','Fumigation Certificate','{}',7),('export_doc',NULL,'insurance','Marine Insurance','{}',8),('export_doc',NULL,'inspection','Inspection Certificate','{}',9)
 ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
