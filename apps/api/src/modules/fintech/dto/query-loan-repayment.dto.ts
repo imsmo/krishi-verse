@@ -1,3 +1,4 @@
-// apps/api/src/modules/fintech/dto/query-loan-repayment.dto.ts · list/filter query params (cursor pagination) · [P2]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/fintech/dto/query-loan-repayment.dto.ts · zod .strict() repayment list query (by loan).
+import { z } from 'zod';
+export const QueryRepaymentsSchema = z.object({ loanId: z.string().uuid() }).strict();
+export type QueryRepaymentsDto = z.infer<typeof QueryRepaymentsSchema>;

@@ -28,11 +28,12 @@ import { WarehousingModule } from './modules/warehousing/warehousing.module';
 import { ContractFarmingModule } from './modules/contract-farming/contract-farming.module';
 import { ExportsModule } from './modules/exports/exports.module';
 import { LandSoilWeatherModule } from './modules/land-soil-weather/land-soil-weather.module';
+import { FintechModule } from './modules/fintech/fintech.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { CatalogueModule } from './modules/catalogue/catalogue.module';
 
 @Module({
-  imports: [CoreModule, IdentityModule, CatalogueModule, ListingsModule, OrdersModule, PaymentsModule, MediaModule, AuctionsModule, OffersModule, RequirementsModule, LogisticsModule, ReviewsModule, DisputesModule, PromotionsModule, MembershipsModule, TenancyModule, LabourModule, LivestockModule, DairyModule, EquipmentModule, WarehousingModule, ContractFarmingModule, ExportsModule, LandSoilWeatherModule],
+  imports: [CoreModule, IdentityModule, CatalogueModule, ListingsModule, OrdersModule, PaymentsModule, MediaModule, AuctionsModule, OffersModule, RequirementsModule, LogisticsModule, ReviewsModule, DisputesModule, PromotionsModule, MembershipsModule, TenancyModule, LabourModule, LivestockModule, DairyModule, EquipmentModule, WarehousingModule, ContractFarmingModule, ExportsModule, LandSoilWeatherModule, FintechModule],
 })
 export class AppModule implements NestModule {
   // request-id THEN tenant-context (Law 1) on every route.

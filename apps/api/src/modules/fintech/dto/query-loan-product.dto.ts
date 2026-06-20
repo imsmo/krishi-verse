@@ -1,3 +1,7 @@
-// apps/api/src/modules/fintech/dto/query-loan-product.dto.ts · list/filter query params (cursor pagination) · [P2]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/fintech/dto/query-loan-product.dto.ts · zod .strict() loan-product browse (read-only).
+import { z } from 'zod';
+export const QueryLoanProductsSchema = z.object({
+  partnerId: z.string().uuid().optional(),
+  activeOnly: z.coerce.boolean().default(true),
+}).strict();
+export type QueryLoanProductsDto = z.infer<typeof QueryLoanProductsSchema>;
