@@ -28,5 +28,6 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   ('contract_farming','Contract farming: contracts + growers + input advances + grower settlement — OFF until launch', false, 100, '{}'),
   ('exports','Export compliance: exporter registrations + shipments + document checklist — OFF until launch', false, 100, '{}'),
   ('land_soil_weather','Land parcels + crop seasons + soil tests + weather advisory browse — OFF until launch', false, 100, '{}'),
-  ('fintech','Agri-fintech lending: loan applications + disbursement + repayment (FPO lender) — OFF until launch', false, 100, '{}')
+  ('fintech','Agri-fintech lending: loan applications + disbursement + repayment (FPO lender) — OFF until launch', false, 100, '{}'),
+  ('schemes','Government scheme applications + eligibility + observed DBT records — OFF until launch', false, 100, '{}')
 ON CONFLICT (key) DO NOTHING;

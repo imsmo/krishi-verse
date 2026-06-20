@@ -11,7 +11,8 @@ INSERT INTO lookup_types (code,default_name,is_tenant_extendable) VALUES
  ('vet_service','Veterinary service type',false),('animal_health_event','Animal health event type',false),
  ('export_doc','Export document type',false),
  ('irrigation','Irrigation type',false),('weather_alert','Weather alert type',false),
- ('loan_kind','Loan product kind',false)
+ ('loan_kind','Loan product kind',false),
+ ('scheme_category','Government scheme category',false)
 ON CONFLICT (code) DO NOTHING;
 
 INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
@@ -39,5 +40,6 @@ INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order
  ('export_doc',NULL,'bol','Bill of Lading','{}',1),('export_doc',NULL,'awb','Air Waybill','{}',2),('export_doc',NULL,'commercial_invoice','Commercial Invoice','{}',3),('export_doc',NULL,'packing_list','Packing List','{}',4),('export_doc',NULL,'coo','Certificate of Origin','{}',5),('export_doc',NULL,'phyto','Phytosanitary Certificate','{}',6),('export_doc',NULL,'fumigation','Fumigation Certificate','{}',7),('export_doc',NULL,'insurance','Marine Insurance','{}',8),('export_doc',NULL,'inspection','Inspection Certificate','{}',9),
  ('irrigation',NULL,'rainfed','Rainfed','{}',1),('irrigation',NULL,'canal','Canal','{}',2),('irrigation',NULL,'borewell','Borewell','{}',3),('irrigation',NULL,'drip','Drip','{}',4),('irrigation',NULL,'sprinkler','Sprinkler','{}',5),
  ('weather_alert',NULL,'heavy_rain','Heavy rain','{}',1),('weather_alert',NULL,'drought','Drought','{}',2),('weather_alert',NULL,'frost','Frost','{}',3),('weather_alert',NULL,'hail','Hail','{}',4),('weather_alert',NULL,'heatwave','Heatwave','{}',5),('weather_alert',NULL,'cyclone','Cyclone','{}',6),('weather_alert',NULL,'pest_risk','Pest risk','{}',7),
- ('loan_kind',NULL,'kcc','Kisan Credit Card','{}',1),('loan_kind',NULL,'crop','Crop loan','{}',2),('loan_kind',NULL,'tractor','Tractor loan','{}',3),('loan_kind',NULL,'dairy','Dairy loan','{}',4),('loan_kind',NULL,'whr','Warehouse receipt loan','{}',5),('loan_kind',NULL,'gold','Gold loan','{}',6),('loan_kind',NULL,'bnpl','Buy-now-pay-later','{}',7),('loan_kind',NULL,'shg','SHG group loan','{}',8),('loan_kind',NULL,'tenant_wc','Tenant working capital','{}',9)
+ ('loan_kind',NULL,'kcc','Kisan Credit Card','{}',1),('loan_kind',NULL,'crop','Crop loan','{}',2),('loan_kind',NULL,'tractor','Tractor loan','{}',3),('loan_kind',NULL,'dairy','Dairy loan','{}',4),('loan_kind',NULL,'whr','Warehouse receipt loan','{}',5),('loan_kind',NULL,'gold','Gold loan','{}',6),('loan_kind',NULL,'bnpl','Buy-now-pay-later','{}',7),('loan_kind',NULL,'shg','SHG group loan','{}',8),('loan_kind',NULL,'tenant_wc','Tenant working capital','{}',9),
+ ('scheme_category',NULL,'income_support','Income support','{}',1),('scheme_category',NULL,'insurance','Insurance','{}',2),('scheme_category',NULL,'credit','Credit','{}',3),('scheme_category',NULL,'mechanisation','Mechanisation','{}',4),('scheme_category',NULL,'irrigation','Irrigation','{}',5),('scheme_category',NULL,'livestock','Livestock','{}',6),('scheme_category',NULL,'subsidy','Input subsidy','{}',7),('scheme_category',NULL,'women','Women farmers','{}',8)
 ON CONFLICT (type_code,tenant_id,code) DO NOTHING;

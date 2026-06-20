@@ -61,7 +61,8 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('contract.manage','Manage farming contracts + advances + settlement','M22'),('contract.grow','Participate as a contract grower','M22'),
  ('export.manage','Manage exporter registrations + export shipments + docs','M23'),
  ('land.manage','Manage own land parcels + crop seasons + soil tests','M24'),
- ('loan.borrow','Apply for + repay loans','M19'),('loan.manage','Review/approve/disburse loans (lender officer)','M19')
+ ('loan.borrow','Apply for + repay loans','M19'),('loan.manage','Review/approve/disburse loans (lender officer)','M19'),
+ ('scheme.apply','Apply to government schemes','M17')
 ON CONFLICT (code) DO NOTHING;
 
 -- grants (sample of the full PRD §10 matrix; complete in admin UI)
@@ -96,4 +97,5 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('farmer','pashupalak','dairy_farmer') AND p.code IN ('land.manage'))
    OR (r.code IN ('farmer','pashupalak','dairy_farmer','vyapari') AND p.code IN ('loan.borrow'))
    OR (r.code IN ('banker','tenant_admin') AND p.code IN ('loan.manage'))
+   OR (r.code IN ('farmer','pashupalak','dairy_farmer','vyapari','customer') AND p.code IN ('scheme.apply'))
 ON CONFLICT DO NOTHING;

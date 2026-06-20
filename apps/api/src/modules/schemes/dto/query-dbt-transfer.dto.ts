@@ -1,3 +1,4 @@
-// apps/api/src/modules/schemes/dto/query-dbt-transfer.dto.ts · list/filter query params (cursor pagination) · [P2]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/schemes/dto/query-dbt-transfer.dto.ts · zod .strict() DBT list query (by application).
+import { z } from 'zod';
+export const QueryDbtSchema = z.object({ applicationId: z.string().uuid() }).strict();
+export type QueryDbtDto = z.infer<typeof QueryDbtSchema>;
