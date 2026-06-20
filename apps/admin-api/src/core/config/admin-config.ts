@@ -1,0 +1,58 @@
+// apps/admin-api/src/core/config/admin-config.ts · the ONLY place process.env is read in admin-api.
+// Separate security realm from apps/api (own JWT issuer/secret, own DB role kv_admin, IP allowlist). Fail-closed
+// (§4): in production it refuses to boot with a weak/dev admin JWT secret, with the IP allowlist disabled, or
+// with hardware-key/step-up enforcement turned off. Injected everywhere — never read env elsewhere.
+import { Injectable } from '@nestjs/common';
+
+export interface AdminEnv {
+  NODE_ENV: string;
+  PORT: number;
+  DATABASE_ADMIN_URL: string;          // connects as kv_admin (RLS-bypass capable; every query audited)
+  ADMIN_JWT_SECRET: string;            // distinct from apps/api's JWT secrets
+  ADMIN_JWT_ISSUER: string;
+  ADMIN_JWT_AUDIENCE: string;
+  ADMIN_IP_ALLOWLIST: string[];        // CIDR-free exact IPs/prefixes; empty = allow-all (non-prod only)
+  ADMIN_REQUIRE_HARDWARE_KEY: boolean; // require amr=hwk (FIDO2 at login)
+  ADMIN_STEP_UP_MAX_AGE_SEC: number;   // sensitive ops require a re-auth this recent
+  DATABASE_POOL_MAX: number;
+}
+
+function num(v: unknown, d: number): number { const n = Number(v); return Number.isFinite(n) ? n : d; }
+function bool(v: unknown, d: boolean): boolean { return v === undefined ? d : v === 'true' || v === true; }
+function list(v: unknown): string[] { return typeof v === 'string' && v.length ? v.split(',').map((s) => s.trim()).filter(Boolean) : []; }
+
+@Injectable()
+export class AdminConfig {
+  readonly env: AdminEnv;
+  constructor(raw: Record<string, unknown> = process.env) {
+    this.env = {
+      NODE_ENV: String(raw.NODE_ENV ?? 'development'),
+      PORT: num(raw.ADMIN_PORT, 4001),
+      DATABASE_ADMIN_URL: String(raw.DATABASE_ADMIN_URL ?? raw.DATABASE_URL ?? ''),
+      ADMIN_JWT_SECRET: String(raw.ADMIN_JWT_SECRET ?? ''),
+      ADMIN_JWT_ISSUER: String(raw.ADMIN_JWT_ISSUER ?? 'krishi-verse-admin'),
+      ADMIN_JWT_AUDIENCE: String(raw.ADMIN_JWT_AUDIENCE ?? 'krishi-verse-admin-api'),
+      ADMIN_IP_ALLOWLIST: list(raw.ADMIN_IP_ALLOWLIST),
+      ADMIN_REQUIRE_HARDWARE_KEY: bool(raw.ADMIN_REQUIRE_HARDWARE_KEY, raw.NODE_ENV === 'production'),
+      ADMIN_STEP_UP_MAX_AGE_SEC: num(raw.ADMIN_STEP_UP_MAX_AGE_SEC, 900),   // 15 min
+      DATABASE_POOL_MAX: num(raw.DATABASE_ADMIN_POOL_MAX, 10),
+    };
+    this.assertProductionSecurity();
+  }
+
+  /** Fail-closed: a weak/misconfigured god-mode realm crashes boot, never ships. */
+  private assertProductionSecurity(): void {
+    if (this.env.NODE_ENV !== 'production') return;
+    const weak = (v: string) => !v || v.length < 32 || /change-?me|dev-|test|secret-secret|placeholder/i.test(v);
+    const problems: string[] = [];
+    if (weak(this.env.ADMIN_JWT_SECRET)) problems.push('ADMIN_JWT_SECRET (unique random >=32 chars)');
+    if (this.env.ADMIN_IP_ALLOWLIST.length === 0) problems.push('ADMIN_IP_ALLOWLIST must be set (god-mode is IP-restricted)');
+    if (!this.env.ADMIN_REQUIRE_HARDWARE_KEY) problems.push('ADMIN_REQUIRE_HARDWARE_KEY must be true in production');
+    if (!this.env.DATABASE_ADMIN_URL) problems.push('DATABASE_ADMIN_URL must be set');
+    if (problems.length) throw new Error(`FATAL: insecure admin-api config -> ${problems.join('; ')}`);
+  }
+
+  get isProd() { return this.env.NODE_ENV === 'production'; }
+  get jwt() { return { secret: this.env.ADMIN_JWT_SECRET, issuer: this.env.ADMIN_JWT_ISSUER, audience: this.env.ADMIN_JWT_AUDIENCE }; }
+}
+export const ADMIN_CONFIG = Symbol('ADMIN_CONFIG');

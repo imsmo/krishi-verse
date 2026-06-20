@@ -72,3 +72,11 @@ INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order
  ('ticket_category',NULL,'technical','Technical','{}',5),('ticket_category',NULL,'safety','Safety','{}',6),
  ('ticket_category',NULL,'emergency_vet','Emergency vet','{}',7),('ticket_category',NULL,'women_safety','Women safety','{}',8)
 ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
+
+-- ai-governance / moderation: report reason vocabulary (type 'report_reason' declared above; values here)
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
+ ('report_reason',NULL,'spam','Spam or repetitive content','{}',1),('report_reason',NULL,'fraud','Fraud or scam','{}',2),
+ ('report_reason',NULL,'counterfeit','Counterfeit / misrepresented produce','{}',3),('report_reason',NULL,'inappropriate','Inappropriate or offensive content','{}',4),
+ ('report_reason',NULL,'harassment','Harassment or abuse','{}',5),('report_reason',NULL,'prohibited','Prohibited / illegal item','{}',6),
+ ('report_reason',NULL,'misinformation','Misinformation','{}',7),('report_reason',NULL,'other','Other','{}',99)
+ON CONFLICT (type_code,tenant_id,code) DO NOTHING;

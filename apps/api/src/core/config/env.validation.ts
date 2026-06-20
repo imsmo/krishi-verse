@@ -37,6 +37,9 @@ export const EnvSchema = z.object({
   // --- optional infra / integrations (empty-safe defaults) ---
   REDIS_URL: z.string().optional(),                     // absent ⇒ in-memory cache
   OPENSEARCH_URL: z.string().optional(),                // absent ⇒ replica-backed search
+  OPENSEARCH_USERNAME: z.string().optional(),           // optional basic-auth for the OpenSearch cluster
+  OPENSEARCH_PASSWORD: z.string().optional(),
+  OPENSEARCH_INDEX_PREFIX: z.string().default('kv'),    // namespaces indices, e.g. kv_listings
   WALLET_GRPC_URL: z.string().default(''),
   AWS_REGION: z.string().default('ap-south-1'),
   S3_MEDIA_BUCKET: z.string().default(''),

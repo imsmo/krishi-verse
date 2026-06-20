@@ -42,7 +42,7 @@ export class AppConfig {
     };
   }
   get redis()  { return { url: this.env.REDIS_URL ?? null }; }
-  get search() { return { url: this.env.OPENSEARCH_URL ?? null }; }
+  get search() { return { url: this.env.OPENSEARCH_URL ?? null, username: this.env.OPENSEARCH_USERNAME ?? null, password: this.env.OPENSEARCH_PASSWORD ?? null, indexPrefix: this.env.OPENSEARCH_INDEX_PREFIX }; }
   get jwt()    { return { accessSecret: this.env.JWT_ACCESS_SECRET, issuer: this.env.JWT_ISSUER, audience: this.env.JWT_AUDIENCE }; }
   get auth() {
     return {
