@@ -1,3 +1,10 @@
-// apps/api/src/modules/services-marketplace/dto/query-service-booking.dto.ts · list/filter query params (cursor pagination) · [P2]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/services-marketplace/dto/query-service-booking.dto.ts · zod .strict() booking list query (keyset).
+import { z } from 'zod';
+import { BOOKING_STATUSES } from '../domain/service-booking.state';
+export const QueryBookingsSchema = z.object({
+  box: z.enum(['customer', 'provider', 'all']).default('customer'),
+  status: z.enum(BOOKING_STATUSES as unknown as [string, ...string[]]).optional(),
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+}).strict();
+export type QueryBookingsDto = z.infer<typeof QueryBookingsSchema>;

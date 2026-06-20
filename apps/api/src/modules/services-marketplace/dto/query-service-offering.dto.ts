@@ -1,3 +1,11 @@
-// apps/api/src/modules/services-marketplace/dto/query-service-offering.dto.ts · list/filter query params (cursor pagination) · [P2]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/services-marketplace/dto/query-service-offering.dto.ts · zod .strict() offering list query (keyset).
+import { z } from 'zod';
+import { OFFERING_STATUSES } from '../domain/services-marketplace.events';
+export const QueryOfferingsSchema = z.object({
+  box: z.enum(['mine', 'browse', 'all']).default('browse'),   // mine=provider's; browse=published marketplace; all=admin
+  categoryId: z.string().uuid().optional(),
+  status: z.enum(OFFERING_STATUSES as unknown as [string, ...string[]]).optional(),
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+}).strict();
+export type QueryOfferingsDto = z.infer<typeof QueryOfferingsSchema>;

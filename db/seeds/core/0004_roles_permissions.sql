@@ -62,7 +62,8 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('export.manage','Manage exporter registrations + export shipments + docs','M23'),
  ('land.manage','Manage own land parcels + crop seasons + soil tests','M24'),
  ('loan.borrow','Apply for + repay loans','M19'),('loan.manage','Review/approve/disburse loans (lender officer)','M19'),
- ('scheme.apply','Apply to government schemes','M17')
+ ('scheme.apply','Apply to government schemes','M17'),
+ ('service.offer','List + manage own service offerings + drive booking lifecycle','M30'),('service.book','Request + complete-and-pay service bookings','M30')
 ON CONFLICT (code) DO NOTHING;
 
 -- grants (sample of the full PRD §10 matrix; complete in admin UI)
@@ -98,4 +99,6 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('farmer','pashupalak','dairy_farmer','vyapari') AND p.code IN ('loan.borrow'))
    OR (r.code IN ('banker','tenant_admin') AND p.code IN ('loan.manage'))
    OR (r.code IN ('farmer','pashupalak','dairy_farmer','vyapari','customer') AND p.code IN ('scheme.apply'))
+   OR (r.code IN ('farmer','pashupalak','dairy_farmer','vyapari','vet','equipment_owner') AND p.code IN ('service.offer'))
+   OR (r.code IN ('farmer','pashupalak','dairy_farmer','vyapari','customer') AND p.code IN ('service.book'))
 ON CONFLICT DO NOTHING;
