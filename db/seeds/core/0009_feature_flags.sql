@@ -39,5 +39,6 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   ('market_intel','Mandi Pulse: mandi registry + price observations + fair-price bands + price alerts — OFF until launch', false, 100, '{}'),
   ('traceability','Farm-to-fork QR: trace lots + hash-chained journey + public scan — OFF until launch', false, 100, '{}'),
   ('ai_governance','AI governance: model registry (read) + inference audit log + human-in-the-loop review queue + content moderation reports — OFF until launch', false, 100, '{}'),
-  ('search_indexing','OpenSearch projection: keep listings/products search indices in sync off the outbox — OFF = replica-backed search (kill switch; requires OPENSEARCH_URL)', false, 100, '{}')
+  ('search_indexing','OpenSearch projection: keep listings/products search indices in sync off the outbox — OFF = replica-backed search (kill switch; requires OPENSEARCH_URL)', false, 100, '{}'),
+  ('bulk_import','Bulk CSV import: upload a CSV + apply it row-by-row through a registered applier (products/…) — OFF until launch', false, 100, '{}')
 ON CONFLICT (key) DO NOTHING;
