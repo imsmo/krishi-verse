@@ -34,5 +34,6 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   ('communication','Notification spine: event catalog + templates + preferences + quiet hours + delivery log + domain-event fanout (external notifier) — OFF until launch', false, 100, '{}'),
   ('education','Agri-learning: instructors + courses + lessons + enrollment (free + paid wallet split) + progress — OFF until launch', false, 100, '{}'),
   ('ambassadors','Ambassador network: profiles + referrals + commission accrual + weekly wallet payout — OFF until launch', false, 100, '{}'),
-  ('support','Helpdesk: support tickets + SLA + agent workflow + dispute auto-open — OFF until launch', false, 100, '{}')
+  ('support','Helpdesk: support tickets + SLA + agent workflow + dispute auto-open — OFF until launch', false, 100, '{}'),
+  ('cms','CMS: versioned content pages + scheduled banners — OFF until launch', false, 100, '{}')
 ON CONFLICT (key) DO NOTHING;

@@ -69,7 +69,8 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('course.author','Author courses + lessons (instructor)','M09'),('course.publish','Review/publish/pause courses (editor)','M09'),
  ('channel.host','Register external content channels + publish resources + host live sessions','M09'),('content.moderate','Approve/suspend channels + take down resources (M09)','M09'),
  ('ambassador.manage','Enroll/suspend ambassadors + activate referrals + run commission payouts','M-AMB'),
- ('support.handle','Handle support tickets: assign/respond/transition/resolve','M50')
+ ('support.handle','Handle support tickets: assign/respond/transition/resolve','M50'),
+ ('cms.manage','Author/publish CMS pages + manage banners','M50')
 ON CONFLICT (code) DO NOTHING;
 
 -- grants (sample of the full PRD §10 matrix; complete in admin UI)
@@ -115,4 +116,5 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('tenant_admin','support_agent','ai_ops') AND p.code IN ('content.moderate'))
    OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('ambassador.manage'))
    OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('support.handle'))
+   OR (r.code IN ('tenant_admin') AND p.code IN ('cms.manage'))
 ON CONFLICT DO NOTHING;
