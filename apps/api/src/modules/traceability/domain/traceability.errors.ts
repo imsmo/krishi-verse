@@ -1,0 +1,8 @@
+// modules/traceability/domain/traceability.errors.ts · typed errors, stable codes → HTTP.
+import { DomainError } from '../../../shared/errors/app-error';
+
+export class TraceLotNotFoundError extends DomainError { constructor(id: string) { super('TRACE_LOT_NOT_FOUND', `Trace lot ${id} not found`, 404, { id }); } }
+export class InvalidTraceLotError extends DomainError { constructor(detail: string) { super('TRACE_LOT_INVALID', detail, 422, { detail }); } }
+export class InvalidTraceEventError extends DomainError { constructor(detail: string) { super('TRACE_EVENT_INVALID', detail, 422, { detail }); } }
+export class TraceForbiddenError extends DomainError { constructor(detail = 'forbidden') { super('TRACE_FORBIDDEN', detail, 403, {}); } }
+export class ScanNotFoundError extends DomainError { constructor() { super('TRACE_SCAN_NOT_FOUND', 'No provenance found for this code', 404, {}); } }

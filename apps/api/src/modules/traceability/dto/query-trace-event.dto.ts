@@ -1,3 +1,7 @@
-// apps/api/src/modules/traceability/dto/query-trace-event.dto.ts · list/filter query params (cursor pagination) · [P2]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/traceability/dto/query-trace-event.dto.ts · zod .strict() — a lot's journey timeline (keyset, ascending).
+import { z } from 'zod';
+export const QueryEventsSchema = z.object({
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+}).strict();
+export type QueryEventsDto = z.infer<typeof QueryEventsSchema>;

@@ -71,7 +71,8 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('ambassador.manage','Enroll/suspend ambassadors + activate referrals + run commission payouts','M-AMB'),
  ('support.handle','Handle support tickets: assign/respond/transition/resolve','M50'),
  ('cms.manage','Author/publish CMS pages + manage banners','M50'),
- ('market.manage','Ingest mandi prices + generate fair-price predictions','M16')
+ ('market.manage','Ingest mandi prices + generate fair-price predictions','M16'),
+ ('trace.manage','Create trace lots + append farm-to-fork journey events','M16')
 ON CONFLICT (code) DO NOTHING;
 
 -- grants (sample of the full PRD §10 matrix; complete in admin UI)
@@ -119,4 +120,5 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('support.handle'))
    OR (r.code IN ('tenant_admin') AND p.code IN ('cms.manage'))
    OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('market.manage'))
+   OR (r.code IN ('farmer','pashupalak','dairy_farmer','vyapari','tenant_admin') AND p.code IN ('trace.manage'))
 ON CONFLICT DO NOTHING;
