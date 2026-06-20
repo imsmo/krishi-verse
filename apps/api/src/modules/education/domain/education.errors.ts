@@ -1,0 +1,13 @@
+// modules/education/domain/education.errors.ts · typed errors, stable codes → HTTP.
+import { DomainError } from '../../../shared/errors/app-error';
+
+export class InstructorNotFoundError extends DomainError { constructor(id: string) { super('INSTRUCTOR_NOT_FOUND', `Instructor ${id} not found`, 404, { id }); } }
+export class CourseNotFoundError extends DomainError { constructor(id: string) { super('COURSE_NOT_FOUND', `Course ${id} not found`, 404, { id }); } }
+export class LessonNotFoundError extends DomainError { constructor(id: string) { super('LESSON_NOT_FOUND', `Lesson ${id} not found`, 404, { id }); } }
+export class EnrollmentNotFoundError extends DomainError { constructor(id: string) { super('ENROLLMENT_NOT_FOUND', `Enrollment ${id} not found`, 404, { id }); } }
+export class CourseNotPublishedError extends DomainError { constructor(status: string) { super('COURSE_NOT_PUBLISHED', `Course is ${status}, not open for enrollment`, 409, { status }); } }
+export class AlreadyEnrolledError extends DomainError { constructor(courseId: string) { super('ALREADY_ENROLLED', `Already enrolled in course ${courseId}`, 409, { courseId }); } }
+export class InvalidCourseError extends DomainError { constructor(detail: string) { super('COURSE_INVALID', detail, 422, { detail }); } }
+export class InvalidRoyaltyError extends DomainError { constructor(bps: number) { super('ROYALTY_INVALID', `royalty_bps must be 0..10000, got ${bps}`, 422, { bps }); } }
+export class CannotEnrollOwnCourseError extends DomainError { constructor() { super('CANNOT_ENROLL_OWN_COURSE', 'An instructor cannot enroll in their own course', 409, {}); } }
+export class EducationForbiddenError extends DomainError { constructor(detail = 'forbidden') { super('EDUCATION_FORBIDDEN', detail, 403, {}); } }

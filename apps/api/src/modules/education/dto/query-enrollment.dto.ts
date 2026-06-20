@@ -1,3 +1,8 @@
-// apps/api/src/modules/education/dto/query-enrollment.dto.ts · list/filter query params (cursor pagination) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/education/dto/query-enrollment.dto.ts · zod .strict() — list the caller's enrollments (keyset).
+import { z } from 'zod';
+export const QueryEnrollmentsSchema = z.object({
+  completedOnly: z.coerce.boolean().optional(),
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+}).strict();
+export type QueryEnrollmentsDto = z.infer<typeof QueryEnrollmentsSchema>;
