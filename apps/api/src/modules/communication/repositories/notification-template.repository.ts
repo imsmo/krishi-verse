@@ -1,3 +1,54 @@
-// apps/api/src/modules/communication/repositories/notification-template.repository.ts · all SQL for notification-template (tenant-scoped; only this module queries these tables) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/communication/repositories/notification-template.repository.ts · per event×channel×language templates
+// (+ tenant overrides). resolve() prefers the tenant's own active template, else the platform default
+// (tenant_id IS NULL) — the UNIQUE(event_code,channel,language_code,tenant_id) backs the upsert. tenant_id in
+// every tenant-scoped query (Law 1) + RLS. Reads accept an optional tx for the fanout handler's connection.
+import { Inject, Injectable } from '@nestjs/common';
+import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
+import { TxContext } from '../../../core/database/unit-of-work';
+import { NotificationTemplate } from '../domain/notification-template.entity';
+import { NotifChannel } from '../domain/communication.events';
+
+const COLS = `id, event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active, created_at`;
+function toDomain(r: any): NotificationTemplate {
+  return NotificationTemplate.rehydrate({ id: r.id, eventCode: r.event_code, channel: r.channel as NotifChannel, languageCode: r.language_code,
+    tenantId: r.tenant_id, subject: r.subject, body: r.body, providerTemplateRef: r.provider_template_ref, isActive: r.is_active, createdAt: r.created_at });
+}
+export interface TemplateListQuery { eventCode?: string; channel?: string; languageCode?: string; cursor?: { c: string; id: string }; limit: number; }
+
+@Injectable()
+export class NotificationTemplateRepository {
+  constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
+
+  /** Resolve the effective template: tenant override first, then platform default. Active only. */
+  async resolve(tenantId: string | null, eventCode: string, channel: string, languageCode: string, tx?: TxContext): Promise<NotificationTemplate | null> {
+    const sql = `SELECT ${COLS} FROM notification_templates
+       WHERE event_code=$1 AND channel=$2 AND language_code=$3 AND is_active=true AND deleted_at IS NULL
+         AND (tenant_id=$4 OR tenant_id IS NULL)
+       ORDER BY tenant_id NULLS LAST LIMIT 1`;          // a tenant row sorts before the NULL platform row
+    const params = [eventCode, channel, languageCode, tenantId];
+    const r = tx ? await tx.query(sql, params) : await this.replica.forTenant(tenantId ?? '').query(sql, params);
+    return r.rows[0] ? toDomain(r.rows[0]) : null;
+  }
+
+  async upsert(tx: TxContext, tenantId: string, t: { eventCode: string; channel: string; languageCode: string; subject: string | null; body: string; providerTemplateRef: string | null; isActive: boolean }, id: string): Promise<void> {
+    await tx.query(
+      `INSERT INTO notification_templates (id, event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NULL)
+       ON CONFLICT (event_code, channel, language_code, tenant_id) DO UPDATE
+         SET subject=EXCLUDED.subject, body=EXCLUDED.body, provider_template_ref=EXCLUDED.provider_template_ref, is_active=EXCLUDED.is_active, updated_at=now()`,
+      [id, t.eventCode, t.channel, t.languageCode, tenantId, t.subject, t.body, t.providerTemplateRef, t.isActive]);
+  }
+
+  /** Tenant templates + platform defaults visible to the tenant. Keyset (never OFFSET). */
+  async listFor(tenantId: string, q: TemplateListQuery): Promise<NotificationTemplate[]> {
+    const params: unknown[] = [tenantId]; let where = `(tenant_id=$1 OR tenant_id IS NULL) AND deleted_at IS NULL`;
+    const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
+    if (q.eventCode) where += ` AND event_code=${p(q.eventCode)}`;
+    if (q.channel) where += ` AND channel=${p(q.channel)}`;
+    if (q.languageCode) where += ` AND language_code=${p(q.languageCode)}`;
+    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
+    const lp = p(q.limit);
+    const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM notification_templates WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
+    return r.rows.map(toDomain);
+  }
+}

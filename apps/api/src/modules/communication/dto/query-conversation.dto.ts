@@ -1,3 +1,9 @@
-// apps/api/src/modules/communication/dto/query-conversation.dto.ts · list/filter query params (cursor pagination) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/communication/dto/query-conversation.dto.ts · zod .strict() — list the caller's conversations (keyset).
+import { z } from 'zod';
+import { CONTEXT_TYPES } from '../domain/messaging.events';
+export const QueryConversationsSchema = z.object({
+  contextType: z.enum(CONTEXT_TYPES as unknown as [string, ...string[]]).optional(),
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+}).strict();
+export type QueryConversationsDto = z.infer<typeof QueryConversationsSchema>;

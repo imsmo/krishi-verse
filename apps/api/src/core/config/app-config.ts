@@ -80,4 +80,18 @@ export class AppConfig {
   get wallet() { return { grpcUrl: this.env.WALLET_GRPC_URL }; }
   get razorpay(){ return { keyId: this.env.RAZORPAY_KEY_ID, webhookSecret: this.env.RAZORPAY_WEBHOOK_SECRET }; }
   get smsBudgetPaise() { return this.env.SMS_DAILY_BUDGET_PAISE; }
+  get notifications() {
+    return {
+      gatewayUrl: this.env.NOTIFY_GATEWAY_URL || null,   // null ⇒ noop gateway (dev) / drop (prod)
+      gatewayApiKey: this.env.NOTIFY_GATEWAY_API_KEY,
+      webhookSecret: this.env.NOTIFY_WEBHOOK_SECRET,
+    };
+  }
+  get masking() {
+    return {
+      providerUrl: this.env.MASKING_PROVIDER_URL || null,   // null ⇒ noop masking provider
+      providerApiKey: this.env.MASKING_PROVIDER_API_KEY,
+      webhookSecret: this.env.MASKING_WEBHOOK_SECRET,
+    };
+  }
 }

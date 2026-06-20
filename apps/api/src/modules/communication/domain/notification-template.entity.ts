@@ -1,3 +1,32 @@
-// apps/api/src/modules/communication/domain/notification-template.entity.ts · domain entity (pure TS, no framework imports) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/communication/domain/notification-template.entity.ts · a per event×channel×language template
+// (+ optional tenant override). Owns the {{variable}} render — the ONLY place body interpolation happens.
+import { NotifChannel } from './communication.events';
+
+export interface NotificationTemplateProps {
+  id: string; eventCode: string; channel: NotifChannel; languageCode: string; tenantId: string | null;
+  subject: string | null; body: string; providerTemplateRef: string | null; isActive: boolean; createdAt?: Date;
+}
+// Conservative, ReDoS-safe token: {{ alphanum/underscore/dot path }} only.
+const TOKEN = /\{\{\s*([a-zA-Z0-9_.]{1,64})\s*\}\}/g;
+
+export class NotificationTemplate {
+  private constructor(private readonly props: NotificationTemplateProps) {}
+  static rehydrate(p: NotificationTemplateProps): NotificationTemplate { return new NotificationTemplate(p); }
+  get id() { return this.props.id; }
+  get channel() { return this.props.channel; }
+  get languageCode() { return this.props.languageCode; }
+  get providerTemplateRef() { return this.props.providerTemplateRef; }
+  get isTenantOverride() { return this.props.tenantId !== null; }
+
+  /** Interpolate {{vars}} from the payload. Missing keys render as '' (never leak '{{x}}' to a user). */
+  render(vars: Record<string, unknown>): { subject: string | null; body: string } {
+    const sub = (s: string | null) => (s == null ? null : s.replace(TOKEN, (_m, k: string) => stringify(pick(vars, k))));
+    return { subject: sub(this.props.subject), body: this.props.body.replace(TOKEN, (_m, k: string) => stringify(pick(vars, k))) };
+  }
+  get createdAt() { return this.props.createdAt; }
+  toJSON() { return { ...this.props }; }
+}
+function pick(obj: Record<string, unknown>, path: string): unknown {
+  return path.split('.').reduce<unknown>((acc, k) => (acc != null && typeof acc === 'object' ? (acc as Record<string, unknown>)[k] : undefined), obj);
+}
+function stringify(v: unknown): string { return v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v); }

@@ -51,6 +51,12 @@ export const EnvSchema = z.object({
   RAZORPAY_WEBHOOK_SECRET: z.string().default(''),
   MSG91_AUTH_KEY: z.string().default(''),
   SMS_DAILY_BUDGET_PAISE: z.coerce.number().nonnegative().default(0),
+  NOTIFY_GATEWAY_URL: z.string().default(''),           // external notification product base URL; absent ⇒ noop gateway
+  NOTIFY_GATEWAY_API_KEY: z.string().default(''),
+  NOTIFY_WEBHOOK_SECRET: z.string().default(''),        // HMAC secret for the delivery-status callback
+  MASKING_PROVIDER_URL: z.string().default(''),         // external number-masking telephony provider; absent ⇒ noop
+  MASKING_PROVIDER_API_KEY: z.string().default(''),
+  MASKING_WEBHOOK_SECRET: z.string().default(''),       // HMAC secret for the call-status callback
 });
 
 export type Env = z.infer<typeof EnvSchema>;
