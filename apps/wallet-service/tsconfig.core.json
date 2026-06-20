@@ -1,0 +1,10 @@
+// Offline/core typecheck: the money core (no @grpc dependency). The gRPC transport (src/grpc, src/main) +
+// the as-yet-unbuilt payment-gateway scaffolds compile under the full tsconfig in CI, where the declared
+// @grpc/@nestjs deps are installed (this monorepo uses the pnpm `workspace:` protocol that plain npm can't
+// resolve offline). This config proves the ledger engine + accounts + reconciliation typecheck cleanly.
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src", "noEmit": true },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "src/grpc/**", "src/main.ts", "src/payments/**", "src/payouts/**"]
+}
