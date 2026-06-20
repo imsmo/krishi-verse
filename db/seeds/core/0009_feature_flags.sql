@@ -35,5 +35,6 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   ('education','Agri-learning: instructors + courses + lessons + enrollment (free + paid wallet split) + progress — OFF until launch', false, 100, '{}'),
   ('ambassadors','Ambassador network: profiles + referrals + commission accrual + weekly wallet payout — OFF until launch', false, 100, '{}'),
   ('support','Helpdesk: support tickets + SLA + agent workflow + dispute auto-open — OFF until launch', false, 100, '{}'),
-  ('cms','CMS: versioned content pages + scheduled banners — OFF until launch', false, 100, '{}')
+  ('cms','CMS: versioned content pages + scheduled banners — OFF until launch', false, 100, '{}'),
+  ('market_intel','Mandi Pulse: mandi registry + price observations + fair-price bands + price alerts — OFF until launch', false, 100, '{}')
 ON CONFLICT (key) DO NOTHING;

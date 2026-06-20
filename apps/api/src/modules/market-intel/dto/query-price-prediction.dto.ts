@@ -1,3 +1,7 @@
-// apps/api/src/modules/market-intel/dto/query-price-prediction.dto.ts · list/filter query params (cursor pagination) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/market-intel/dto/query-price-prediction.dto.ts · zod .strict() — latest band for product+region.
+import { z } from 'zod';
+export const QueryPredictionSchema = z.object({
+  productId: z.string().uuid(),
+  regionId: z.string().uuid(),
+}).strict();
+export type QueryPredictionDto = z.infer<typeof QueryPredictionSchema>;

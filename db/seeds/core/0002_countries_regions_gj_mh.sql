@@ -26,3 +26,11 @@ INSERT INTO pincodes (country_code,pincode,region_id,lat,lng) VALUES
  ('IN','362001','11111111-0000-7000-8000-000000000101',21.5222,70.4579),
  ('IN','360001','11111111-0000-7000-8000-000000000102',22.3039,70.8022)
 ON CONFLICT (country_code,pincode) DO NOTHING;
+
+
+-- Mandi Pulse: a few sample physical markets (global reference; region linked later via admin UI)
+INSERT INTO mandis (default_name, region_id, mandi_code, is_active) VALUES
+ ('Ahmedabad APMC', NULL, 'GJ-AHM-01', true),
+ ('Rajkot APMC', NULL, 'GJ-RAJ-01', true),
+ ('Pune Market Yard', NULL, 'MH-PUN-01', true)
+ON CONFLICT (mandi_code) DO NOTHING;

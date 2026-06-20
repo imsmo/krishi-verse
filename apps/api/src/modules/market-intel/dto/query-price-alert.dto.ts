@@ -1,3 +1,8 @@
-// apps/api/src/modules/market-intel/dto/query-price-alert.dto.ts · list/filter query params (cursor pagination) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/market-intel/dto/query-price-alert.dto.ts · zod .strict() — list the caller's own alerts (keyset).
+import { z } from 'zod';
+export const QueryAlertsSchema = z.object({
+  activeOnly: z.coerce.boolean().optional(),
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+}).strict();
+export type QueryAlertsDto = z.infer<typeof QueryAlertsSchema>;
