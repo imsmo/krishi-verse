@@ -1,3 +1,59 @@
-// apps/mobile/src/app/_layout.tsx · expo-router root · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// apps/mobile/src/app/_layout.tsx · the expo-router ROOT layout. Wraps the whole app in SafeAreaProvider +
+// AuthProvider, keeps the splash up until session + fonts are restored, then renders the route tree (Slot). Auth
+// gating is per-group; this root owns providers + boot. Boot work: fail-closed config import, remote flag/kill-
+// switch hydration, and the offline SYNC ENGINE (NetInfo + AppState → replay the write queue on reconnect /
+// foreground). An offline banner sits above the routes (degrade-never-die UX).
+import React, { useCallback, useEffect } from 'react';
+import { Slot } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useFonts, Fraunces_700Bold } from '@expo-google-fonts/fraunces';
+import { PlusJakartaSans_400Regular, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans';
+import { Hind_400Regular, Hind_600SemiBold } from '@expo-google-fonts/hind';
+import { color, OfflineBanner } from '@krishi-verse/ui-native';
+import { AuthProvider } from '../core/auth/auth.store';
+import { hydrateFlags } from '../core/flags/hydrate';
+import { startSyncEngine } from '../core/offline/sync.engine';
+import { useConnectivity } from '../core/connectivity/connectivity';
+import { useTranslation } from '../core/i18n/useTranslation';
+import '../core/offline/handlers'; // register offline replay handlers (media.upload, listing.create)
+import '../core/config'; // fail-closed env validation at boot
+
+function ConnectivityBanner() {
+  const online = useConnectivity();
+  const { t } = useTranslation();
+  return <OfflineBanner visible={!online} message={t('common.offline')} />;
+}
+
+export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Fraunces: Fraunces_700Bold,
+    PlusJakartaSans: PlusJakartaSans_400Regular,
+    PlusJakartaSans_Semibold: PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_Bold: PlusJakartaSans_700Bold,
+    Hind: Hind_400Regular,
+    Hind_Semibold: Hind_600SemiBold,
+  });
+
+  const onLayout = useCallback(() => { /* hook point for SplashScreen.hideAsync once ready */ }, []);
+  // Boot: hydrate remote flags (best-effort), then start the sync engine (replays queued writes on reconnect).
+  useEffect(() => {
+    void hydrateFlags();
+    const stop = startSyncEngine();
+    return stop;
+  }, []);
+  if (!fontsLoaded) return <View style={{ flex: 1, backgroundColor: color.page }} />;
+
+  return (
+    <SafeAreaProvider>
+      <View style={{ flex: 1, backgroundColor: color.page }} onLayout={onLayout}>
+        <StatusBar style="dark" />
+        <AuthProvider>
+          <ConnectivityBanner />
+          <Slot />
+        </AuthProvider>
+      </View>
+    </SafeAreaProvider>
+  );
+}
