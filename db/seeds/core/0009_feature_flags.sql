@@ -32,5 +32,6 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   ('schemes','Government scheme applications + eligibility + observed DBT records — OFF until launch', false, 100, '{}'),
   ('services_marketplace','P2P service marketplace: offerings + bookings + fee settlement (customer→provider) — OFF until launch', false, 100, '{}'),
   ('communication','Notification spine: event catalog + templates + preferences + quiet hours + delivery log + domain-event fanout (external notifier) — OFF until launch', false, 100, '{}'),
-  ('education','Agri-learning: instructors + courses + lessons + enrollment (free + paid wallet split) + progress — OFF until launch', false, 100, '{}')
+  ('education','Agri-learning: instructors + courses + lessons + enrollment (free + paid wallet split) + progress — OFF until launch', false, 100, '{}'),
+  ('ambassadors','Ambassador network: profiles + referrals + commission accrual + weekly wallet payout — OFF until launch', false, 100, '{}')
 ON CONFLICT (key) DO NOTHING;

@@ -54,3 +54,12 @@ INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order
  ('course_topic',NULL,'schemes','Govt schemes','{}',7),('course_topic',NULL,'digital','Digital skills','{}',8),
  ('course_topic',NULL,'safety','Farm safety','{}',9)
 ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
+
+
+-- ambassadors: tier vocabulary (global lookup_values)
+INSERT INTO lookup_types (code,default_name,is_tenant_extendable) VALUES ('ambassador_tier','Ambassador tier',false) ON CONFLICT (code) DO NOTHING;
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
+ ('ambassador_tier',NULL,'trainee','Trainee','{}',1),('ambassador_tier',NULL,'ambassador','Ambassador','{}',2),
+ ('ambassador_tier',NULL,'senior','Senior ambassador','{}',3),('ambassador_tier',NULL,'cluster_lead','Cluster lead','{}',4),
+ ('ambassador_tier',NULL,'district_coordinator','District coordinator','{}',5)
+ON CONFLICT (type_code,tenant_id,code) DO NOTHING;

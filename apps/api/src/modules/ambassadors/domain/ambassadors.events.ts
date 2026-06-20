@@ -1,3 +1,14 @@
-// apps/api/src/modules/ambassadors/domain/ambassadors.events.ts · domain event definitions published by ambassadors · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/ambassadors/domain/ambassadors.events.ts · integration events (via outbox) + vocab.
+export const AmbassadorEventType = {
+  AmbassadorEnrolled:  'ambassadors.enrolled',
+  AmbassadorSuspended: 'ambassadors.suspended',
+  ReferralCreated:     'ambassadors.referral_created',
+  ReferralActivated:   'ambassadors.referral_activated',
+  EarningAccrued:      'ambassadors.earning_accrued',
+  EarningsPaidOut:     'ambassadors.earnings_paid_out',
+} as const;
+export type AmbassadorEventType = (typeof AmbassadorEventType)[keyof typeof AmbassadorEventType];
+export type DomainEvent = { type: string; payload: Record<string, unknown> };
+
+export const REFERRAL_STATUSES = ['invited', 'signed_up', 'activated', 'rewarded'] as const;
+export type ReferralStatus = (typeof REFERRAL_STATUSES)[number];

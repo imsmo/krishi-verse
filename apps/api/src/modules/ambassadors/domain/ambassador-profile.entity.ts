@@ -1,3 +1,40 @@
-// apps/api/src/modules/ambassadors/domain/ambassador-profile.entity.ts · domain entity (pure TS, no framework imports) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/ambassadors/domain/ambassador-profile.entity.ts · the ambassador_profiles aggregate.
+// One profile per user (UNIQUE user_id). Enrolled by an admin (Law 11 — being an ambassador is not self-grant).
+// monthly_stipend_minor is bigint minor units (Law 2). No version column → repo locks FOR UPDATE on mutation.
+import { DomainEvent, AmbassadorEventType } from './ambassadors.events';
+
+export interface AmbassadorProfileProps {
+  id: string; userId: string; tenantId: string; clusterRegionIds: string[]; tierId: string | null; mentorAmbassadorId: string | null;
+  trainingCompletedAt: Date | null; kioskEnabled: boolean; aepsEnabled: boolean; monthlyStipendMinor: bigint;
+  lastActivityAt: Date | null; isActive: boolean; createdAt?: Date;
+}
+export class AmbassadorProfile {
+  private readonly events: DomainEvent[] = [];
+  private constructor(private props: AmbassadorProfileProps) {}
+
+  static enroll(input: Omit<AmbassadorProfileProps, 'isActive' | 'lastActivityAt'>): AmbassadorProfile {
+    const a = new AmbassadorProfile({ ...input, isActive: true, lastActivityAt: null });
+    a.events.push({ type: AmbassadorEventType.AmbassadorEnrolled, payload: { ambassadorId: a.props.id, userId: a.props.userId } });
+    return a;
+  }
+  static rehydrate(p: AmbassadorProfileProps): AmbassadorProfile { return new AmbassadorProfile(p); }
+  get id() { return this.props.id; }
+  get userId() { return this.props.userId; }
+  get tenantId() { return this.props.tenantId; }
+  get isActive() { return this.props.isActive; }
+  toProps(): Readonly<AmbassadorProfileProps> { return Object.freeze({ ...this.props }); }
+  pullEvents(): DomainEvent[] { const e = [...this.events]; this.events.length = 0; return e; }
+
+  update(patch: Partial<Pick<AmbassadorProfileProps, 'clusterRegionIds' | 'tierId' | 'mentorAmbassadorId' | 'kioskEnabled' | 'aepsEnabled' | 'monthlyStipendMinor' | 'trainingCompletedAt'>>): void {
+    for (const [k, v] of Object.entries(patch)) { if (v !== undefined) (this.props as any)[k] = v; }
+  }
+  suspend(): void { if (!this.props.isActive) return; this.props.isActive = false; this.events.push({ type: AmbassadorEventType.AmbassadorSuspended, payload: { ambassadorId: this.props.id } }); }
+  reinstate(): void { this.props.isActive = true; }
+  touch(): void { this.props.lastActivityAt = new Date(); }
+  toJSON() {
+    const v = this.props;
+    return { id: v.id, userId: v.userId, clusterRegionIds: v.clusterRegionIds, tierId: v.tierId, mentorAmbassadorId: v.mentorAmbassadorId,
+      trainingCompletedAt: v.trainingCompletedAt, kioskEnabled: v.kioskEnabled, aepsEnabled: v.aepsEnabled, monthlyStipendMinor: v.monthlyStipendMinor.toString(),
+      lastActivityAt: v.lastActivityAt, isActive: v.isActive, createdAt: v.createdAt };
+  }
+}
