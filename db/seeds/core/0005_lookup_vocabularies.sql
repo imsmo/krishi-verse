@@ -63,3 +63,12 @@ INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order
  ('ambassador_tier',NULL,'senior','Senior ambassador','{}',3),('ambassador_tier',NULL,'cluster_lead','Cluster lead','{}',4),
  ('ambassador_tier',NULL,'district_coordinator','District coordinator','{}',5)
 ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
+
+
+-- support: ticket category vocabulary (type declared above; values here)
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
+ ('ticket_category',NULL,'payment','Payment','{}',1),('ticket_category',NULL,'kyc','KYC','{}',2),
+ ('ticket_category',NULL,'order','Order','{}',3),('ticket_category',NULL,'dispute','Dispute','{}',4),
+ ('ticket_category',NULL,'technical','Technical','{}',5),('ticket_category',NULL,'safety','Safety','{}',6),
+ ('ticket_category',NULL,'emergency_vet','Emergency vet','{}',7),('ticket_category',NULL,'women_safety','Women safety','{}',8)
+ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
