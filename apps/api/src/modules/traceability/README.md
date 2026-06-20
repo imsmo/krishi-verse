@@ -16,8 +16,15 @@ hash chain; a consumer scans the QR (no login) and sees the provenance. Money-fr
 
 ## Flows
 
+- **Read provenance is universal.** The public scan needs **no role and no login at all** — any authenticated
+  role *and* anonymous consumers can read a lot's farm-to-fork journey from its QR. Traceability is **not**
+  "farmer + admin only"; only *authoring* is gated.
 - **Author** (`trace.manage`): `create` a lot (Idempotency-Key; seeds a genesis event) and `append` journey
   events (each chained off the previous hash under a `FOR UPDATE` lock on the lot so the chain head is stable).
+  Authoring is least-privilege (§4 / Law 6): held only by roles that physically own/produce a saleable lot —
+  **farmer, pashupalak, dairy_farmer, vyapari, organic_store, pharma_store, fpo_coordinator** (+ `tenant_admin`).
+  Buyers/handlers (customer, delivery_partner, vet, banker, ambassador, …) cannot fabricate provenance; the
+  in-transit/delivered legs are intended to arrive from the deferred logistics-outbox fanout, not manual entry.
 - **Public scan** (NO auth): `GET /v1/traceability/scan/:qrToken` returns a curated provenance projection via
   the **`SECURITY DEFINER` `trace_scan()` function** (migration 0028) — the single controlled RLS-bypass path.
   It returns only `qrToken / listingId / declaredInputs / certificateIds / anchored / events[]` — **never**

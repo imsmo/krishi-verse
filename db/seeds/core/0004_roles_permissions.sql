@@ -120,5 +120,5 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('support.handle'))
    OR (r.code IN ('tenant_admin') AND p.code IN ('cms.manage'))
    OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('market.manage'))
-   OR (r.code IN ('farmer','pashupalak','dairy_farmer','vyapari','tenant_admin') AND p.code IN ('trace.manage'))
+   OR (r.code IN ('farmer','pashupalak','dairy_farmer','vyapari','organic_store','pharma_store','fpo_coordinator','tenant_admin') AND p.code IN ('trace.manage'))
 ON CONFLICT DO NOTHING;
