@@ -9,7 +9,7 @@ import { Instructor } from '../domain/instructor.entity';
 import { InstructorRepository } from '../repositories/instructor.repository';
 import { InstructorNotFoundError, EducationForbiddenError } from '../domain/education.errors';
 
-export interface EducationActor { userId: string; canAuthor: boolean; canPublish: boolean; isAdmin: boolean; }
+export interface EducationActor { userId: string; canAuthor: boolean; canPublish: boolean; isAdmin: boolean; canHost: boolean; canModerate: boolean; }
 
 @Injectable()
 export class InstructorService {

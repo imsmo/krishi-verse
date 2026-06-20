@@ -11,7 +11,7 @@ import { RequestContext } from '../../../../core/tenancy-context/request-context
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { EnrollmentService } from '../../services/enrollment.service';
 import { LessonProgressService } from '../../services/lesson-progress.service';
-import { canAuthor, canPublish, isEducationAdmin } from '../../policies/education.policies';
+import { canAuthor, canPublish, isEducationAdmin, canHost, canModerateContent } from '../../policies/education.policies';
 import { QueryEnrollmentsSchema, QueryEnrollmentsDto } from '../../dto/query-enrollment.dto';
 import { MarkProgressSchema, MarkProgressDto } from '../../dto/mark-lesson-progress.dto';
 import { EnrollBodySchema, EnrollBodyDto } from '../../dto/enroll.dto';
@@ -23,7 +23,7 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @FeatureFlag('education')
 export class EnrollmentsController {
   constructor(private readonly enroll: EnrollmentService, private readonly progress: LessonProgressService) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canAuthor: canAuthor(ctx), canPublish: canPublish(ctx), isAdmin: isEducationAdmin(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canAuthor: canAuthor(ctx), canPublish: canPublish(ctx), isAdmin: isEducationAdmin(ctx), canHost: canHost(ctx), canModerate: canModerateContent(ctx) }; }
 
   @Post()
   create(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(EnrollBodySchema) body: EnrollBodyDto) {

@@ -66,7 +66,8 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('service.offer','List + manage own service offerings + drive booking lifecycle','M30'),('service.book','Request + complete-and-pay service bookings','M30'),
  ('notification.manage','Author notification templates + read tenant delivery log','M13'),
  ('message.moderate','Moderate chat: review/unflag/lock conversations','M13'),
- ('course.author','Author courses + lessons (instructor)','M09'),('course.publish','Review/publish/pause courses (editor)','M09')
+ ('course.author','Author courses + lessons (instructor)','M09'),('course.publish','Review/publish/pause courses (editor)','M09'),
+ ('channel.host','Register external content channels + publish resources + host live sessions','M09'),('content.moderate','Approve/suspend channels + take down resources (M09)','M09')
 ON CONFLICT (code) DO NOTHING;
 
 -- grants (sample of the full PRD §10 matrix; complete in admin UI)
@@ -108,4 +109,6 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('tenant_admin','support_agent','ai_ops') AND p.code IN ('message.moderate'))
    OR (r.code IN ('farmer','pashupalak','dairy_farmer','vyapari','vet','tenant_admin') AND p.code IN ('course.author'))
    OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('course.publish'))
+   OR (r.code IN ('farmer','pashupalak','dairy_farmer','vyapari','vet','tenant_admin') AND p.code IN ('channel.host'))
+   OR (r.code IN ('tenant_admin','support_agent','ai_ops') AND p.code IN ('content.moderate'))
 ON CONFLICT DO NOTHING;

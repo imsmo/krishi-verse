@@ -23,7 +23,7 @@ function harness(opts: { course?: Course | null; instructor?: Instructor | null;
   const svc = new EnrollmentService(uow as any, outbox as any, idem as any, metrics as any, wallet as any, courses as any, instructors as any, enrollments as any);
   return { svc, wallet, enrollments };
 }
-const learner = { userId: 'learner', canAuthor: false, canPublish: false, isAdmin: false };
+const learner = { userId: 'learner', canAuthor: false, canPublish: false, isAdmin: false, canHost: false, canModerate: false };
 
 describe('EnrollmentService.enroll', () => {
   it('free course → instant enroll, no wallet movement', async () => {

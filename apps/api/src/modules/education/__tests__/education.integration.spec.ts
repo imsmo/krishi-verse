@@ -95,3 +95,67 @@ run('education spine (integration, real Postgres + RLS + royalty split)', () => 
     expect((await inspect.query(`SELECT id FROM enrollments WHERE id=$1`, [enrollmentId])).rows.length).toBe(1);
   });
 });
+
+// ---- CREATOR CONTENT (channels / resources / live sessions) against real Postgres + RLS ------------------
+import { LearningChannelRepository } from '../repositories/learning-channel.repository';
+import { LearningResourceRepository } from '../repositories/learning-resource.repository';
+import { LiveSessionRepository } from '../repositories/live-session.repository';
+import { LearningChannelService } from '../services/learning-channel.service';
+import { LearningResourceService } from '../services/learning-resource.service';
+import { LiveSessionService } from '../services/live-session.service';
+import { NoopStreamGateway } from '../gateway/noop-stream.gateway';
+import { AuditWriter } from '../../../core/audit/audit.writer';
+
+run('education creator-content (integration, real Postgres + RLS + approval gate)', () => {
+  let pools: PgPoolProvider; let admin: Pool; let inspect: Pool; let uow: PgUnitOfWork;
+  let channels: LearningChannelService; let resources: LearningResourceService; let live: LiveSessionService;
+  const tenantA = randomUUID(); const tenantB = randomUUID(); const hostU = randomUUID(); const modU = randomUUID();
+  let channelId = ''; let sessionId = '';
+  const hostActor = { userId: hostU, canAuthor: false, canPublish: false, isAdmin: false, canHost: true, canModerate: false };
+  const modActor = { userId: modU, canAuthor: false, canPublish: false, isAdmin: false, canHost: false, canModerate: true };
+
+  beforeAll(async () => {
+    admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
+    await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B'); await makeUser(admin, hostU); await makeUser(admin, modU);
+    const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
+    pools = new PgPoolProvider(config);
+    const shards = new ShardRouter(config);
+    uow = new PgUnitOfWork(pools, shards);
+    const replica = new PgReadReplicaProvider(pools, shards);
+    const outbox = new PgOutboxWriter(); const metrics = new PromMetrics(); const audit = new AuditWriter(pools);
+    const chRepo = new LearningChannelRepository(replica as any); const rRepo = new LearningResourceRepository(replica as any); const lRepo = new LiveSessionRepository(replica as any);
+    channels = new LearningChannelService(uow, outbox, metrics, audit, chRepo);
+    resources = new LearningResourceService(uow, outbox, metrics, audit, rRepo, chRepo);
+    live = new LiveSessionService(uow, outbox, metrics, new NoopStreamGateway(config), lRepo, chRepo);
+    inspect = new Pool({ connectionString: APP_URL });
+  }, 30000);
+  afterAll(async () => { await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end(); });
+
+  it('host registers a channel (pending); a moderator approves it', async () => {
+    const c: any = await channels.register(tenantA, hostActor, { provider: 'youtube', title: 'KrishiTV', handle: '@krishi', externalUrl: `https://youtube.com/@krishi-${randomUUID()}` } as any);
+    channelId = c.id; expect(c.status).toBe('pending');
+    expect((await channels.moderate(tenantA, modActor, channelId, 'approve', null, null)).status).toBe('approved');
+  });
+  it('a resource under the host\'s own approved channel auto-approves', async () => {
+    const r: any = await resources.publish(tenantA, hostActor, { channelId, kind: 'video', title: 'Drip 101', externalUrl: 'https://youtu.be/abc' } as any);
+    expect(r.status).toBe('approved');
+  });
+  it('host schedules + starts + ends a live session (noop stream provider)', async () => {
+    const s: any = await live.schedule(tenantA, hostActor, { channelId, title: 'Soil Q&A', scheduledAt: new Date(Date.now() + 3600_000).toISOString() } as any);
+    sessionId = s.id; expect(s.status).toBe('scheduled');
+    const started: any = await live.start(tenantA, hostActor, sessionId);
+    expect(started.status).toBe('live'); expect(started.playbackUrl).toBeTruthy();
+    expect((await live.end(tenantA, hostActor, sessionId, null)).status).toBe('ended');
+  });
+  it('a non-approved channel cannot host a live session', async () => {
+    const c2: any = await channels.register(tenantA, hostActor, { provider: 'website', title: 'Blog', externalUrl: `https://blog.example/${randomUUID()}` } as any);
+    await expect(live.schedule(tenantA, hostActor, { channelId: c2.id, title: 'x', scheduledAt: new Date().toISOString() } as any)).rejects.toMatchObject({ code: 'CHANNEL_NOT_APPROVED' });
+  });
+  it('RLS: tenant B cannot see tenant A\'s channel or live session', async () => {
+    await inspect.query(`SELECT set_config('app.tenant_id',$1,false)`, [tenantB]);
+    expect((await inspect.query(`SELECT id FROM learning_channels WHERE id=$1`, [channelId])).rows.length).toBe(0);
+    expect((await inspect.query(`SELECT id FROM live_sessions WHERE id=$1`, [sessionId])).rows.length).toBe(0);
+    await inspect.query(`SELECT set_config('app.tenant_id',$1,false)`, [tenantA]);
+    expect((await inspect.query(`SELECT id FROM learning_channels WHERE id=$1`, [channelId])).rows.length).toBe(1);
+  });
+});

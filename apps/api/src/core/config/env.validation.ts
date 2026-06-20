@@ -57,6 +57,8 @@ export const EnvSchema = z.object({
   MASKING_PROVIDER_URL: z.string().default(''),         // external number-masking telephony provider; absent ⇒ noop
   MASKING_PROVIDER_API_KEY: z.string().default(''),
   MASKING_WEBHOOK_SECRET: z.string().default(''),       // HMAC secret for the call-status callback
+  STREAM_PROVIDER_URL: z.string().default(''),          // external live-streaming provider; absent ⇒ noop
+  STREAM_PROVIDER_API_KEY: z.string().default(''),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

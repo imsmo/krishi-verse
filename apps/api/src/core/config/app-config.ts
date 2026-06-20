@@ -94,4 +94,10 @@ export class AppConfig {
       webhookSecret: this.env.MASKING_WEBHOOK_SECRET,
     };
   }
+  get streaming() {
+    return {
+      providerUrl: this.env.STREAM_PROVIDER_URL || null,    // null ⇒ noop stream provider
+      providerApiKey: this.env.STREAM_PROVIDER_API_KEY,
+    };
+  }
 }

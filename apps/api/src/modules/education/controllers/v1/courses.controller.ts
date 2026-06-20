@@ -9,7 +9,7 @@ import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { CourseService } from '../../services/course.service';
-import { EducationPermissions, canAuthor, canPublish, isEducationAdmin } from '../../policies/education.policies';
+import { EducationPermissions, canAuthor, canPublish, isEducationAdmin, canHost, canModerateContent } from '../../policies/education.policies';
 import { CreateCourseSchema, CreateCourseDto, UpdateCourseSchema, UpdateCourseDto } from '../../dto/create-course.dto';
 import { QueryCoursesSchema, QueryCoursesDto } from '../../dto/query-course.dto';
 import { UpsertLessonSchema, UpsertLessonDto } from '../../dto/create-course-lesson.dto';
@@ -21,7 +21,7 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @FeatureFlag('education')
 export class CoursesController {
   constructor(private readonly svc: CourseService) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canAuthor: canAuthor(ctx), canPublish: canPublish(ctx), isAdmin: isEducationAdmin(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canAuthor: canAuthor(ctx), canPublish: canPublish(ctx), isAdmin: isEducationAdmin(ctx), canHost: canHost(ctx), canModerate: canModerateContent(ctx) }; }
 
   @Post() @RequirePermissions(EducationPermissions.Author)
   create(@CurrentContext() ctx: RequestContext, @ZodBody(CreateCourseSchema) dto: CreateCourseDto) { return this.svc.create(ctx.tenantId, this.actor(ctx), dto).then((data) => ({ data })); }

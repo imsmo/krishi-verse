@@ -39,11 +39,36 @@ to publish/pause): `POST /v1/education/courses`, `GET` (box=`browse|mine|all`), 
   platform remainder = price); idempotent purchase (Law 3) so a retry never double-charges.
 - **Abuse/DoS** — bounded list `LIMIT` + keyset pagination; enrol is idempotent per (user, endpoint).
 
+## Creator content (channels + resources + live streaming) — migration 0027
+
+A community-learning layer so any role (with `channel.host`) can share knowledge, **gated by tenant-admin
+approval** (`content.moderate`):
+
+- **Channels** — register an external content channel (`youtube`/`vimeo`/`website`/`podcast`/`other`) with a
+  validated http(s) URL. Born `pending`; a moderator `approve`/`suspend`/`reject`s it (state machine; each
+  moderation writes an `audit_log` row in the same tx). The approved channel IS the host-authority gate.
+- **Resources** — curated items (`video`/`blog`/`post`/`audio`/`article`) pointing at an external URL or a media
+  file. Under the host's **own approved channel** a resource auto-approves (trust established); otherwise it's
+  `pending` until a moderator approves. Moderators can take a resource down.
+- **Live sessions** — an approved-channel host schedules a session, then `start`s it: the external streaming
+  provider (resilience-wrapped `STREAM_PROVIDER` port; HTTP adapter by config else noop) issues a stream ref +
+  playback URL; lifecycle `scheduled → live → ended` (cancel only while scheduled). Any learner can register.
+
+Surface: `POST/GET/PATCH /v1/education/channels` + `POST /:id/{approve,suspend,reject}` (moderator);
+`POST/GET /v1/education/resources` + `POST /:id/{approve,takedown}`; `POST/GET /v1/education/live-sessions`,
+`GET /:id`, `POST /:id/{start,end,cancel,register}`. New perms: `channel.host`, `content.moderate`.
+
+Threats: only a channel's owner may edit it / host its sessions (404, not 403, on non-owners); an unapproved
+channel can't publish or stream (fail-closed); moderation is `content.moderate`-only + audited; external URLs
+are anchored-regex validated (no `javascript:`/SSRF bait); the stream provider degrades to a typed 503 (no
+half-started sessions); RLS isolates channels/resources/sessions per tenant.
+
 ## Deferred (schema present, not built)
 
 Certificate (PDF) issuance on completion (`cert_enabled` + `certificate_media_id` are stored; rendering reuses
 the media/PDF pipeline when wired); the online payment-intent enrol path (wallet purchase is the path here);
-instructor payout aggregation jobs; quiz auto-grading.
+instructor payout aggregation jobs; quiz auto-grading; external channel-metadata fetch + live recording
+retrieval (the `recording_media_id` slot is stored, ingestion deferred).
 
 ## Tests
 

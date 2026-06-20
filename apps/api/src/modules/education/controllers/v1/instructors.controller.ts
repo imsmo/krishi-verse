@@ -8,7 +8,7 @@ import { ZodBody } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { InstructorService } from '../../services/instructor.service';
-import { EducationPermissions, canAuthor, canPublish, isEducationAdmin } from '../../policies/education.policies';
+import { EducationPermissions, canAuthor, canPublish, isEducationAdmin, canHost, canModerateContent } from '../../policies/education.policies';
 import { CreateInstructorSchema, CreateInstructorDto } from '../../dto/create-instructor.dto';
 
 @Controller({ path: 'education/instructors', version: '1' })
@@ -16,7 +16,7 @@ import { CreateInstructorSchema, CreateInstructorDto } from '../../dto/create-in
 @FeatureFlag('education')
 export class InstructorsController {
   constructor(private readonly svc: InstructorService) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canAuthor: canAuthor(ctx), canPublish: canPublish(ctx), isAdmin: isEducationAdmin(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canAuthor: canAuthor(ctx), canPublish: canPublish(ctx), isAdmin: isEducationAdmin(ctx), canHost: canHost(ctx), canModerate: canModerateContent(ctx) }; }
 
   @Put('me') @RequirePermissions(EducationPermissions.Author)
   become(@CurrentContext() ctx: RequestContext, @ZodBody(CreateInstructorSchema) dto: CreateInstructorDto) { return this.svc.become(ctx.tenantId, this.actor(ctx), dto.bio ?? null).then((data) => ({ data })); }
