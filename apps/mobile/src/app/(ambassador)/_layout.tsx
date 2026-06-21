@@ -41,6 +41,17 @@ export default function AmbassadorTabsLayout() {
       <Tabs.Screen name="help-listing" options={{ href: null }} />
       <Tabs.Screen name="help-order" options={{ href: null }} />
       <Tabs.Screen name="visit-log" options={{ href: null }} />
+      <Tabs.Screen name="commissions" options={{ href: null }} />
+      <Tabs.Screen name="withdraw" options={{ href: null }} />
+      <Tabs.Screen name="leaderboard" options={{ href: null }} />
+      <Tabs.Screen name="targets" options={{ href: null }} />
+      <Tabs.Screen name="goal-setting" options={{ href: null }} />
+      <Tabs.Screen name="training" options={{ href: null }} />
+      <Tabs.Screen name="course/[id]" options={{ href: null }} />
+      <Tabs.Screen name="lesson/[id]" options={{ href: null }} />
+      <Tabs.Screen name="quiz/[id]" options={{ href: null }} />
+      <Tabs.Screen name="faq" options={{ href: null }} />
+      <Tabs.Screen name="profile" options={{ href: null }} />
     </Tabs>
   );
 }

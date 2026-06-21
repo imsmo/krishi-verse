@@ -104,4 +104,23 @@ describe('HttpClient via resources', () => {
     expect(page.items[0].amountMinor).toBe('250000');
     expect(typeof page.items[0].amountMinor).toBe('string');
   });
+
+  it('enrollments.enroll POSTs /v1/education/enrollments with an idempotency key', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'en1', courseId: 'c1', learnerUserId: 'u1', paymentId: null, progressPct: 0, completedAt: null, certificateMediaId: null, createdAt: '2026-01-01' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const e = await c.enrollments.enroll('c1', 'idem-enroll-1');
+    expect(calls[0].url).toBe('https://api.test/v1/education/enrollments');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-enroll-1');
+    expect(e.courseId).toBe('c1');
+  });
+
+  it('enrollments.markProgress POSTs the lesson progress path', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { lessonId: 'l1', completedAt: '2026-01-02', secondsWatched: 120, quizScore: 80 } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const p = await c.enrollments.markProgress('en1', 'l1', { secondsWatched: 120, quizScore: 80, completed: true });
+    expect(calls[0].url).toBe('https://api.test/v1/education/enrollments/en1/lessons/l1/progress');
+    expect(calls[0].init.method).toBe('POST');
+    expect(p.quizScore).toBe(80);
+  });
 });

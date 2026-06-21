@@ -16,4 +16,5 @@ export type { Page, ListingCard, ListingQuery, ProductCard, TraceProvenance, Aut
   ListingOffer, Conversation, ConversationContext, Message, MaskedCall,
   Auction, AuctionKind, BidHistoryItem, PlaceBidResult,
   WorkerProfile, LabourBooking, LabourAssignment,
-  AmbassadorProfile, Referral, AmbassadorEarning, CommissionPlan } from './types';
+  AmbassadorProfile, Referral, AmbassadorEarning, CommissionPlan,
+  Course, CourseLesson, Enrollment, LessonProgress } from './types';

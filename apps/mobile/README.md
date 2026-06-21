@@ -116,6 +116,36 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
   account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
 - **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
 
+## Ambassador earnings + training (`features/ambassador` + `features/education`, roadmap P-16)
+
+Wave 6 — the ambassador's money + upskilling, behind `ambassador_training`. **Commissions** (92) is the full
+commission ledger (keyset load-more) with **BigInt** totals (Law 2) + paid/unpaid split; **Withdraw** (168)
+reuses the wallet payout path (`FLAG_SECURE`) — the server settles, the app never moves money (Law 11).
+**Training** (94) browses published courses (education); a **course** opens its lessons + a REAL idempotent
+**enrol** (Law 3); a **lesson** (165) fetches a presigned media URL and marks watched; a **quiz** (166) is parsed
+defensively from the opaque lesson payload, scored by the PURE `scoreQuiz`, and the score + completion are posted
+via `markProgress` (the server recomputes enrollment %). **Profile** (95) shows the server-owned profile + sign
+out; **FAQ** (167) is localized help. New SDK: `courses` + `enrollments` resources. Pure `learn` logic unit-tested.
+
+### Flagged backend gaps (built the real ledger/training; did NOT fake the rest)
+- **No leaderboard / targets / goal-setting endpoint** → screens 93/169/170 state "coming soon" rather than
+  fabricating ranks/quotas. The honest signal an ambassador has today is their own funnel (Home) + ledger.
+- **No in-app video dependency** → the lesson "video-player" opens the presigned media URL via the OS player
+  (`Linking`) instead of embedding a fabricated player; the watched/complete write is real.
+- **Quiz payload is opaque** (loosely typed at authoring) → `parseQuiz` normalizes the common shape and returns
+  null on drift (the quiz screen then says "no quiz here"); it never invents questions.
+
+### Threats considered (commission / training / payout)
+- **Commission ledger + score are server-owned.** The app sums what the server returns (BigInt, never float) and
+  posts a client-computed quiz score the **server stores + recomputes** the enrollment from — a patched client
+  can't credit itself commission or self-complete a course server-side.
+- **No client money movement (Law 11).** Withdraw is a REAL, idempotent payout the SERVER authorizes
+  (balance/KYC/limits); enrol is idempotent (Law 3) and a paid enrol charges server-side. `FLAG_SECURE` on
+  withdraw.
+- **IDOR / ownership.** Enrollments/progress/earnings are the caller's own (server resolves the learner/
+  ambassador — `me`/own-enrollment only); ids from params are re-checked server-side. Media URLs are presigned,
+  time-bounded, and only returned for a clean asset. Kill-switch: `ambassador_training`.
+
 ## Village ambassador: home + referral-led farmer onboarding (`features/ambassador`, roadmap P-15)
 
 Wave 6 — the acquisition agent. A new `(ambassador)` tab group (Home / Farmers / Earnings) behind `ambassador_app`.
@@ -560,7 +590,7 @@ Hardening still owed before GA (roadmap P-30): TLS pinning, root/integrity attes
 
 ## Verification
 
-- `pnpm --filter @krishi-verse/mobile test` → **194 unit tests green** (session reducer, offline queue, helpers,
+- `pnpm --filter @krishi-verse/mobile test` → **204 unit tests green** (session reducer, offline queue, helpers,
   feature flags, SHA-256 FIPS vectors, base64, media-mime, cache policies, SWR cache engine, sync transitions,
   payment money/status, quiet-hours, deep-link routing, notification presenters, STT locale map, wallet txn
   presenters + withdrawal BigInt guard, order-status action map + PoD-OTP + tracking steps, buyer search-query +
@@ -569,9 +599,10 @@ Hardening still owed before GA (roadmap P-30): TLS pinning, root/integrity attes
   rupees→wage-minor + buildWorkerPatch + isJobOpen, geofence haversine/clock-in-100m-eligibility/distance-parts,
   worker-jobs bucketing + BigInt earnings sum + clock-in precondition, hire booking-lifecycle actions + assignment
   tally + buildBookingDraft validation + wage rupees→paise, ambassador referral funnel + code normalize/validate +
-  BigInt commission sum) — run offline via ts-jest scoped to `src/core/__tests__`. `@krishi-verse/sdk-js` 9/9 still
+  BigInt commission sum, education quiz parse/score + course progress) — run offline via ts-jest scoped to
+  `src/core/__tests__`. `@krishi-verse/sdk-js` 11/11 still
   green (payments/payouts/kyc/bankAccounts/notifications/listings/orders/shipments/reviews/cart/checkout/addresses/
-  offers/messaging/auctions/labour/ambassadors resources).
+  offers/messaging/auctions/labour/ambassadors/education resources).
 - Screens are thin (guide §3): every API call lives in a `features/<area>/*.api.ts` data layer (farmer
   dashboard, orders, wallet, listings, catalogue) — no screen calls `apiClient` directly. All user-facing strings
   are i18n keys in hi/en/gu (no literals). `.eslintrc.js` (eslint-config-expo) gates lint in CI.

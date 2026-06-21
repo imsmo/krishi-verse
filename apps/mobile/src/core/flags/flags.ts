@@ -19,6 +19,7 @@ export type FlagKey =
   | 'kyc'               // KYC doc submit/status (P-03) — OFF until staging-verified
   | 'notifications'     // push + in-app notification center (P-04) — OFF until staging-verified
   | 'ambassador_app'    // village ambassador: home + referral-led farmer onboarding + earnings (P-15) — OFF
+  | 'ambassador_training' // ambassador commissions + withdraw + training/courses/quiz + profile (P-16) — OFF
   | 'buyer_app' | 'worker_app' | 'trader_app' | 'tenant_admin_lite'; // future verticals — OFF
 
 // Defaults: OFF unless the vertical is built AND verified. Flip a future vertical's default to true only when it
@@ -41,6 +42,7 @@ const DEFAULTS: Record<FlagKey, boolean> = {
   worker_app: false,
   trader_app: false,
   ambassador_app: false,
+  ambassador_training: false,
   tenant_admin_lite: false,
 };
 

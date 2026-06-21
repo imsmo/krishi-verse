@@ -16,6 +16,7 @@ export default function AmbassadorHome() {
   const { t } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('ambassador_app');
+  const training = useFlag('ambassador_training');
   const [profile, setProfile] = useState<AmbassadorProfile | null>(null);
   const [refs, setRefs] = useState<Referral[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,6 +57,15 @@ export default function AmbassadorHome() {
             <Button title={t('amb.tabs.farmers')} variant="outline" onPress={() => router.push('/(ambassador)/farmers')} />
             <Button title={t('amb.visit.cta')} variant="outline" onPress={() => router.push('/(ambassador)/visit-log')} />
             <Button title={t('amb.help.title')} variant="outline" onPress={() => router.push('/(ambassador)/help-listing')} />
+            {training ? (
+              <>
+                <Button title={t('amb.training.title')} variant="outline" onPress={() => router.push('/(ambassador)/training')} />
+                <Button title={t('amb.commissions.title')} variant="outline" onPress={() => router.push('/(ambassador)/commissions')} />
+                <Button title={t('amb.leaderboard.title')} variant="outline" onPress={() => router.push('/(ambassador)/leaderboard')} />
+                <Button title={t('amb.targets.title')} variant="outline" onPress={() => router.push('/(ambassador)/targets')} />
+                <Button title={t('amb.profile.title')} variant="outline" onPress={() => router.push('/(ambassador)/profile')} />
+              </>
+            ) : null}
           </View>
         </>
       )}

@@ -157,6 +157,27 @@ export interface AmbassadorEarning { id: string; ambassadorId: string; eventCode
 /** A commission plan (read-only catalogue for display). */
 export interface CommissionPlan { id: string; code: string; name?: string; [k: string]: unknown; }
 
+// --- education (module 9 — courses/lessons/enrollments) — money is bigint minor STRINGS (Law 2) ---
+/** A course (training). `priceMinor` 0 = free. Browse returns published courses. */
+export interface Course {
+  id: string; instructorId: string; defaultTitle: string; topicId: string | null; audienceRoleIds: string[];
+  level: string; priceMinor: string; currencyCode: string; certEnabled: boolean; coverMediaId: string | null;
+  status: string; createdAt?: string;
+}
+/** A lesson within a course. `contentKind` ∈ video|pdf|article|quiz|live|audio. `quiz` is an opaque JSON payload
+ * (parsed defensively client-side). `mediaId` resolves to a presigned URL via the media resource. */
+export interface CourseLesson {
+  id: string; courseId: string; moduleNo: number; lessonNo: number; defaultTitle: string; contentKind: string;
+  mediaId: string | null; body: string | null; durationSecs: number | null; quiz: unknown | null; createdAt?: string;
+}
+/** The caller's own enrollment in a course (progress + completion + certificate). */
+export interface Enrollment {
+  id: string; courseId: string; learnerUserId: string; paymentId: string | null; progressPct: number;
+  completedAt: string | null; certificateMediaId: string | null; createdAt?: string;
+}
+/** Per-lesson progress within an enrollment. */
+export interface LessonProgress { lessonId: string; completedAt: string | null; secondsWatched: number; quizScore: number | null; }
+
 // --- media (core/media) ---
 export type MediaKind = 'image' | 'video' | 'audio' | 'document';
 /** Presigned PUT ticket: upload the raw bytes to `uploadUrl` (S3, NOT the API host), then confirm. */
