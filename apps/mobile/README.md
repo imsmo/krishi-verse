@@ -80,6 +80,42 @@ marks read), settings (171, per event×channel `Toggle` + quiet hours). Bell on 
   locally (foreground) and server-side (delivery).
 - **Kill-switch:** the `notifications` flag disables the center + push registration remotely without a release.
 
+## Farmer wallet + transactions + payouts (`features/wallet`, roadmap P-06)
+
+The money home. The wallet **hub** (19) shows the SERVER's reconciled balance (bigint paise via `MoneyText`, Law 2)
+and routes to Add money (P-03), **Withdraw**, **Transactions**, and **Payout history**. **Transactions** (21) lists
+the caller's payments and **Payout history** (59) lists payouts — both **keyset/cursor-paged** (never offset) via a
+shared `TxnList` (FlatList, stable keys, pull-to-refresh, infinite scroll), with a unified **txn-detail** (71).
+**Withdraw** (70) is a **real, idempotent** payout (`payouts.request`) to a tokenised bank/UPI destination on file:
+a pure `withdrawable` BigInt guard pre-checks amount ≤ balance (UX only — the server re-checks balance/KYC/limits),
+`FLAG_SECURE` is on while the screen shows, and a 403/409 maps to a precise "complete KYC"/"exceeds balance"
+message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdrawable`) are unit-tested. Behind the
+`wallet` flag (OFF); add-money keeps `payments_addmoney`.
+
+### Flagged backend gaps (built real where the endpoint exists; did NOT fake the rest)
+- **No HTTP wallet-ledger read-model:** the double-entry ledger lives in the gRPC wallet-service. The real money
+  movements a user can see are payments (money-in) and payouts (money-out), so Transactions = payments and Payout
+  history = payouts (both real keyset endpoints). A single per-entry ledger feed awaits a wallet read-model.
+- **Balance** uses the assumed `GET /v1/wallet/balance` (degrades to ₹0 + retry until the read-model lands).
+- **Earnings (58)** (settlement credits), **spending-insights (182)**, and **autopay/mandates (181)** have no
+  endpoint yet → not shipped (flagged). **Adding a bank/UPI payout destination (180)** is the P-03 flagged gap
+  (tokenised `vaultRef`); withdrawal works against destinations already on file, so it shows a clear "add an
+  account — coming soon" state when none exist.
+
+### Threats considered (wallet / payouts)
+- **Money integrity:** every amount is bigint paise end-to-end (Law 2); the `withdrawable` guard uses BigInt (a
+  >2^53 balance is exact, tested). The balance shown is the server's reconciled truth — the client never computes it.
+- **Unauthorized withdrawal / fraud:** the payout is authorized **server-side** (balance, KYC, per-user limits,
+  destination ownership) — a patched client can't grant itself a withdrawal; a 403 is shown, never worked around.
+  Withdrawal is **not** offline-queued: money-out needs a live server decision and an immediate, unambiguous outcome.
+- **Replay / double-spend:** the payout POST carries a per-request Idempotency-Key (Law 3), so a retried/duplicated
+  request can't pay out twice.
+- **IDOR:** transaction/payout detail reads are owner-scoped server-side — a guessed id returns nothing that isn't
+  yours. Lists are the caller's own, keyset-paged (bounded; no scraping via offset).
+- **PII:** payout destinations are shown masked (last-4 + IFSC, or the VPA) — never a full account number; raw
+  account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
+- **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
+
 ## Listing photos + voice + manage (`core/voice` + `features/listings`, roadmap P-05)
 
 Sell faster. **Create listing** (screen 10) now picks the product from the catalogue (real `productId`/`categoryId`/
@@ -209,11 +245,11 @@ Hardening still owed before GA (roadmap P-30): TLS pinning, root/integrity attes
 
 ## Verification
 
-- `pnpm --filter @krishi-verse/mobile test` → **91 unit tests green** (session reducer, offline queue, helpers,
+- `pnpm --filter @krishi-verse/mobile test` → **101 unit tests green** (session reducer, offline queue, helpers,
   feature flags, SHA-256 FIPS vectors, base64, media-mime, cache policies, SWR cache engine, sync transitions,
-  payment money/status, quiet-hours, deep-link routing, notification presenters, STT locale map) — run offline via
-  ts-jest scoped to `src/core/__tests__`. `@krishi-verse/sdk-js` 7/7 still green (now with payments/payouts/kyc/
-  bankAccounts/notifications/listings-owner resources).
+  payment money/status, quiet-hours, deep-link routing, notification presenters, STT locale map, wallet txn
+  presenters + withdrawal BigInt guard) — run offline via ts-jest scoped to `src/core/__tests__`.
+  `@krishi-verse/sdk-js` 7/7 still green (payments/payouts/kyc/bankAccounts/notifications/listings-owner resources).
 - Screens are thin (guide §3): every API call lives in a `features/<area>/*.api.ts` data layer (farmer
   dashboard, orders, wallet, listings, catalogue) — no screen calls `apiClient` directly. All user-facing strings
   are i18n keys in hi/en/gu (no literals). `.eslintrc.js` (eslint-config-expo) gates lint in CI.

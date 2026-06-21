@@ -15,7 +15,10 @@ Legend: ✅ built this release · 🟡 partial · ⬜ scaffolded (folder exists,
 - ✅ 09 home, 10 create-listing (photos + voice), 11 listing-preview→publish, 12 my-listings, 112 my-listing-detail
   (Edit/Repost/Boost actions), 113 edit-price (optimistic `version`), 116 repost (via `?repostFrom`)
 - ✅ tabs: orders, wallet, profile (farmer)
-- 🟡 114 boost (flagged `listing_boost` OFF — real wallet-debit path pending), 115 analytics (no API yet)
+- ✅ wallet vertical (P-06): 19 wallet-home (hub), 20 add-money, 21 transactions, 70 withdraw, 71 txn-detail,
+  59 payout-history → `src/features/wallet` (behind `wallet`/`payments_addmoney` flags)
+- 🟡 114 boost (flagged `listing_boost` OFF — real wallet-debit path pending), 115 analytics (no API yet),
+  58 earnings / 180 UPI-mgmt / 181 autopay / 182 spending-insights (no endpoint yet — flagged)
 - ⬜ tips/crop-hub (101–104, 125 AI chat), schemes (105–109), mandi detail/alerts/history (110–111),
   weather (117–118), edit-profile/farm/bank/docs (119–124) → `src/features/farmer-home`, `farmer-*` folders.
 

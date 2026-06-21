@@ -1,0 +1,75 @@
+// apps/mobile/src/features/wallet/txn.ts · PURE presenters + guards for the wallet vertical (transactions,
+// payout history, withdraw). No React, no native imports (SDK/ui types are `import type` → erased), so this is
+// unit-tested under ts-jest. Money is bigint minor-unit strings end-to-end (Law 2) — comparisons use BigInt,
+// never a float. Direction/tone are derived ONLY from server fields (status/purpose); the client invents nothing.
+import type { PaymentSummary, PayoutSummary } from '@krishi-verse/sdk-js';
+import type { PillTone } from '@krishi-verse/ui-native';
+import { paymentOutcome } from '../../core/payments/money';
+
+export type TxnKind = 'payment' | 'payout';
+export type MoneyTone = 'positive' | 'negative' | 'default';
+
+/** A unified, presentational view of one money movement (a payment or a payout). */
+export interface TxnView {
+  id: string;
+  kind: TxnKind;
+  amountMinor: string;
+  status: string;
+  /** Semantic chip color for the status. */
+  tone: PillTone;
+  /** Sign/color of the amount: credit (+, green), debit (−, red), or neutral. */
+  moneyTone: MoneyTone;
+  purpose?: string;
+  createdAt?: string;
+}
+
+/** Map a server money-status to a status-chip tone (terminal-success/failed/pending). */
+export function statusTone(status?: string | null): PillTone {
+  const o = paymentOutcome(status);
+  return o === 'success' ? 'success' : o === 'failed' ? 'danger' : 'warning';
+}
+
+/** i18n key SUFFIX for the status label — the screen renders t(`wallet.status.${suffix}`). */
+export function statusLabelKey(status?: string | null): 'success' | 'failed' | 'pending' {
+  return paymentOutcome(status); // 'success' | 'failed' | 'pending'
+}
+
+/** i18n key SUFFIX for a transaction's title — screen renders t(`wallet.txnTitle.${suffix}`). Derived only from
+ * server fields (kind + purpose); unknown purposes fall back to the generic per-kind label. */
+export function txnTitleKey(txn: { kind: TxnKind; purpose?: string }): string {
+  if (txn.kind === 'payout') return 'withdrawal';
+  if (txn.purpose === 'wallet_recharge') return 'recharge';
+  return 'payment';
+}
+
+/** A payment is money the user paid IN via the gateway. A wallet recharge credits the wallet (positive); any
+ * other purpose (e.g. a direct order payment) is shown neutral — we never assert it touched the wallet balance. */
+export function presentPayment(p: PaymentSummary): TxnView {
+  return {
+    id: p.id, kind: 'payment', amountMinor: p.amountMinor ?? '0', status: p.status ?? 'pending',
+    tone: statusTone(p.status), moneyTone: p.purpose === 'wallet_recharge' ? 'positive' : 'default',
+    purpose: p.purpose, createdAt: p.createdAt,
+  };
+}
+
+/** A payout is always money OUT of the wallet (a withdrawal/settlement to a bank account) → debit (negative). */
+export function presentPayout(p: PayoutSummary): TxnView {
+  return {
+    id: p.id, kind: 'payout', amountMinor: p.amountMinor ?? '0', status: p.status ?? 'pending',
+    tone: statusTone(p.status), moneyTone: 'negative', purpose: p.purpose, createdAt: p.createdAt,
+  };
+}
+
+export interface WithdrawCheck { ok: boolean; reason?: 'invalid' | 'exceeds' }
+
+/** Client-side pre-check for a withdrawal (UX only — the SERVER re-validates balance, KYC, limits, and is the
+ * authority). `amountMinor` may be null when the typed rupee value didn't parse. Pure BigInt math (Law 2):
+ * amount must be a positive integer ≤ the reconciled balance. */
+export function withdrawable(balanceMinor: string, amountMinor: string | null): WithdrawCheck {
+  if (!amountMinor) return { ok: false, reason: 'invalid' };
+  let amt: bigint, bal: bigint;
+  try { amt = BigInt(amountMinor); bal = BigInt(balanceMinor); } catch { return { ok: false, reason: 'invalid' }; }
+  if (amt <= 0n) return { ok: false, reason: 'invalid' };
+  if (amt > bal) return { ok: false, reason: 'exceeds' };
+  return { ok: true };
+}
