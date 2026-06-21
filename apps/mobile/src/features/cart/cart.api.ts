@@ -6,6 +6,7 @@
 import type { Cart, CheckoutResult } from '@krishi-verse/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
+import { track, EVENTS } from '../../core/observability';
 
 const EMPTY: Cart = { items: [], subtotalMinor: '0' };
 
@@ -29,6 +30,8 @@ export async function clearCart(): Promise<Cart> {
 }
 
 /** Place the order: convert the cart into orders (idempotent). Throws on a real error so checkout can show it. */
-export function placeOrder(input: { deliveryAddressId?: string; couponCode?: string }): Promise<CheckoutResult> {
-  return apiClient().checkout.checkout(input, newId());
+export async function placeOrder(input: { deliveryAddressId?: string; couponCode?: string }): Promise<CheckoutResult> {
+  const result = await apiClient().checkout.checkout(input, newId());
+  track(EVENTS.checkoutSuccess); // funnel (consent-gated, no PII) — §6
+  return result;
 }

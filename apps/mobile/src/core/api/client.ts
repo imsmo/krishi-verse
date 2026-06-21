@@ -6,6 +6,12 @@
 import { createClient, KrishiVerseClient } from '@krishi-verse/sdk-js';
 import { config } from '../config';
 import { integrityHeaders } from '../security/integrity';
+import { correlationHeaders } from '../observability';
+
+/** Per-request PII-free headers: device-integrity risk signal (§4) + correlation id (§6). Merged best-effort. */
+async function authedHeaders(): Promise<Record<string, string>> {
+  return { ...correlationHeaders(), ...(await integrityHeaders()) };
+}
 
 let _accessTokenGetter: () => string | undefined = () => undefined;
 
@@ -24,8 +30,8 @@ export function apiClient(): KrishiVerseClient {
       tenantSlug: config.tenantSlug,
       timeoutMs: config.requestTimeoutMs,
       userAgent: config.userAgent,
-      // Attach the device-integrity risk signal (PII-free) on every authenticated request; the server scores it.
-      getHeaders: integrityHeaders,
+      // Attach PII-free device-integrity + correlation-id headers on every authenticated request.
+      getHeaders: authedHeaders,
     });
   }
   return _client;

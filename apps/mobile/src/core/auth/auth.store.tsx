@@ -11,6 +11,7 @@ import { sessionReducer, initialSession, needsRefresh, type SessionState } from 
 import { tokenStore } from './token-store';
 import { apiClient, anonClient, registerAccessTokenGetter } from '../api/client';
 import { setCacheScope, clearCacheScope } from '../offline/scope';
+import { setCrashUser, track, EVENTS } from '../observability';
 import { i18n } from '../i18n/i18n';
 
 interface AuthApi {
@@ -62,11 +63,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async signIn(tokens) {
       const now = Date.now();
       await tokenStore.saveTokens(tokens, now);
+      track(EVENTS.loginSuccess); // funnel (consent-gated, no PII) — §6
       dispatch({ type: 'SIGNED_IN', tokens, nowMs: now });
     },
     async signOut() {
       await tokenStore.clearTokens();
       await clearCacheScope();        // wipe this user's cached reads so the next user can't see them
+      setCrashUser(null);             // clear the crash user context (no PII lingers)
       dispatch({ type: 'SIGNED_OUT' });
     },
     async selectRole(role) {
@@ -82,6 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const profile: UserProfile = await apiClient().auth.me();
         setCacheScope(profile.id);    // scope the read-cache to this user (anti-IDOR across accounts)
+        setCrashUser(profile.id);     // crash/analytics user context = id ONLY (no phone/name/email) — §4/§6
         dispatch({ type: 'PROFILE_LOADED', profile });
       } catch { /* degrade-never-die: the greeting falls back to a default */ }
     },

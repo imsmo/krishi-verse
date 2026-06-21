@@ -35,6 +35,10 @@ export const config = Object.freeze({
   iosStoreUrl: extra.iosStoreUrl ?? process.env.EXPO_PUBLIC_IOS_STORE_URL ?? undefined,
   privacyUrl: extra.privacyUrl ?? process.env.EXPO_PUBLIC_PRIVACY_URL ?? undefined,
   termsUrl: extra.termsUrl ?? process.env.EXPO_PUBLIC_TERMS_URL ?? undefined,
+  /** Crash-reporter DSN (public client key, not a secret). Observability is a no-op when unset (dev/sandbox). */
+  sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN ?? undefined,
+  /** Whether funnel analytics is built into this build (still gated by per-user consent at runtime). */
+  analyticsEnabled: (process.env.EXPO_PUBLIC_ANALYTICS_ENABLED ?? 'false') === 'true',
   requestTimeoutMs: 12000, // mobile networks are slow; bound every call (Law 12)
   userAgent: 'kv-mobile',
 });

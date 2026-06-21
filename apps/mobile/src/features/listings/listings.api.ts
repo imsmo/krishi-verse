@@ -11,6 +11,7 @@ import { cache } from '../../core/offline/sqlite.db';
 import { currentScope } from '../../core/offline/scope';
 import { POLICY } from '../../core/offline/cache-policies';
 import { newId } from '../../core/util/ids';
+import { track, EVENTS } from '../../core/observability';
 
 export type { CreateListingInput };
 
@@ -59,6 +60,7 @@ export async function createListing(input: CreateListingInput): Promise<{ id?: s
   try {
     const { id } = await apiClient().listings.create(body, idempotencyKey);
     await cache.invalidate(currentScope(), 'listings.mine'); // new listing should appear on next read
+    track(EVENTS.listingCreateSuccess); // funnel (consent-gated, no PII) — §6
     return { id, queued: false };
   } catch (e: unknown) {
     const status = (e as { status?: number })?.status ?? 0;

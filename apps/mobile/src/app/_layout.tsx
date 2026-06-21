@@ -17,12 +17,15 @@ import { hydrateFlags } from '../core/flags/hydrate';
 import { startSyncEngine } from '../core/offline/sync.engine';
 import { useConnectivity } from '../core/connectivity/connectivity';
 import { useTranslation } from '../core/i18n/useTranslation';
+import { initObservability, rotateCorrelationId, flushAnalytics } from '../core/observability';
 import '../core/offline/handlers'; // register offline replay handlers (media.upload, listing.create)
 import '../core/config'; // fail-closed env validation at boot
 
 function ConnectivityBanner() {
   const online = useConnectivity();
   const { t } = useTranslation();
+  // On reconnect, flush the offline-buffered analytics (best-effort; §6). Fresh correlation id per online window.
+  useEffect(() => { if (online) { rotateCorrelationId(); void flushAnalytics(); } }, [online]);
   return <OfflineBanner visible={!online} message={t('common.offline')} />;
 }
 
@@ -39,6 +42,7 @@ export default function RootLayout() {
   const onLayout = useCallback(() => { /* hook point for SplashScreen.hideAsync once ready */ }, []);
   // Boot: hydrate remote flags (best-effort), then start the sync engine (replays queued writes on reconnect).
   useEffect(() => {
+    initObservability(); // crash + analytics providers (no-op without a DSN; never breaks boot) — §6
     void hydrateFlags();
     const stop = startSyncEngine();
     return stop;

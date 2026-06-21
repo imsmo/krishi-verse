@@ -116,6 +116,32 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
   account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
 - **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
 
+## Observability + crash + analytics (`core/observability`, roadmap P-31 — P0 GA gate)
+
+Wave 11 — crash reporting, funnel analytics, correlation ids, and the redaction that makes them DPDP-safe. New
+`core/observability` (PURE, unit-tested): **redact** (the deep PII/secret scrubber every outbound payload passes
+through — a key denylist plus bearer/JWT/phone/Aadhaar/PAN/email/account patterns, bounded + cycle-safe),
+**correlation** (a PII-free `x-correlation-id` trace tag attached to every request via the SDK `getHeaders` hook,
+rotated per online window), **analytics** (consent-gated, PII-scrubbed `buildEvent`, a bounded offline ring buffer
+that flushes on reconnect, a typed EVENT catalog), **crash** (a provider port + `sanitizeEvent` redaction +
+`setCrashUser` (id only, no PII) + a `forceCrash` DoD hook; no-op default), and **slo** (crash-free ≥99.5% +
+login/listing/checkout targets). Boot calls `initObservability()` (no-op without a DSN); key funnels emit at the
+real call sites (login / listing-create / checkout success). The Sentry + analytics providers are installed by the
+release bootstrap (CI/EAS) with redaction as beforeSend; the SLO dashboards + alerts live server-side.
+
+### Threats considered (observability — DoD "no PII in any payload")
+- **No PII leaves the device.** `redactPII` runs on every analytics prop, crash context, breadcrumb, and free-text
+  message: denylisted keys (token/authorization/otp/aadhaar/pan/account/phone/email/…) are dropped, and value
+  patterns (bearer/JWT/phone/Aadhaar/PAN/email/long-digit) are masked — exhaustively unit-tested, cycle-safe,
+  depth/breadth-bounded. The crash user context is the **user id only** (no name/phone/email); cleared on sign-out.
+- **Consent + offline.** Analytics is off until the user consents; events buffer (bounded ring) and flush on
+  reconnect — never blocking the UI, never growing unbounded (perf §5).
+- **Correlation, not identity.** The correlation id is a random trace tag (no device id / phone); it ties a client
+  action to its server log line without leaking who the user is. Reserved request headers can't be overridden by it.
+- **Degrade-never-die (Law 12).** Reporting never crashes the app (every capture is try/wrapped); observability
+  init is a no-op without a DSN so dev/tests/the offline sandbox stay quiet. Tokens are never logged (token-store
+  is SecureStore-only; the redactor is the backstop if anything is ever passed through).
+
 ## Security hardening pass (`core/security`, roadmap P-30 — P0 GA gate)
 
 Wave 11 — the security hardening pass + threat-model sign-off (see **`THREAT_MODEL.md`** for the full §4 checklist
