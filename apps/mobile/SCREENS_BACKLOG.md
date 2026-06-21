@@ -25,9 +25,11 @@ Legend: ✅ built this release · 🟡 partial · ⬜ scaffolded (folder exists,
 - ⬜ tips/crop-hub (101–104, 125 AI chat), schemes (105–109), mandi detail/alerts/history (110–111),
   weather (117–118), edit-profile/farm/bank/docs (119–124) → `src/features/farmer-home`, `farmer-*` folders.
 
-## Buyer (≈19) — ⬜  `src/features/buyer-browse`, `buyer-checkout`, `offers`
-- buyer home, browse, listing detail, saved listings/sellers (126–127), cart/checkout, order track (131),
-  make-offer, reviews, profile, KYC.
+## Buyer (≈19) — 🟡 (browse vertical built; P-08)  `src/features/buyer`, later `buyer-checkout`, `offers`
+- ✅ browse vertical (P-08): 13 home, 67 search-results, 68 filters, 14 listing-detail, 100 seller-profile,
+  126/127/128 saved (listings/searches/sellers) → `src/app/(buyer)/*` + `src/features/buyer` (behind `buyer_app`).
+  Saves are on-device; detail gallery + full seller profile flagged (no public media-URL/seller-profile endpoint).
+- ⬜ cart/checkout, order track (131, shares features/orders), make-offer, buyer reviews, profile, KYC.
 
 ## Worker / labour (≈25) — ⬜  `src/features/labour-worker`, `labour-farmer`
 - job offers (141), browse/my jobs, active job, claim/dispute, earnings, withdraw, insurance, skills, profile;

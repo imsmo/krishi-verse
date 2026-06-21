@@ -116,6 +116,38 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
   account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
 - **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
 
+## Buyer browse + search + listing detail (`features/buyer`, roadmap P-08)
+
+The customer purchase loop begins. A new `(buyer)` tab group (Home / Search / Saved), auth-gated + behind the
+`buyer_app` flag. **Browse/search** run on the real anonymous public catalogue (`listings.browse`, keyset/cursor)
+through the SWR cache, so a repeat search is instant and works on 3G/offline (DoD: <2s via cache). A shared
+`BrowseList` does pull-to-refresh + infinite scroll; **filters** (sale type / organic / price range / sort) are
+built by the PURE `search-query` (rupees→paise via BigInt, Law 2; empties dropped). **Listing detail** shows the
+price, qty, organic/promoted, and a seller link. **Saves** (listings / sellers / searches) are persisted
+**on-device** (user-scoped) and survive restarts; the saved screen has Listings/Searches/Sellers sub-tabs and a
+saved search re-applies its filters. Pure logic (`search-query`, `saved-set`) is unit-tested.
+
+### Flagged backend gaps (built real where the endpoint exists; did NOT fake the rest)
+- **No public media URLs** in the listing read-model yet, so the detail "gallery" is a neutral placeholder, not a
+  fake image (the create-listing media pipeline exists; the public read-model exposure is pending).
+- **No server saved/wishlist or saved-search endpoint**, so saves are on-device (real persistence, just not yet
+  synced/cross-device) — they'll move to a server wishlist when it lands.
+- **No public seller-profile endpoint** (name/bio/their listings); the seller screen shows the **real** rating
+  summary (`reviews.summary`) + follow toggle and flags the rest. Browse has no `sellerUserId` filter yet.
+- **OpenSearch** powers search server-side; the app calls the same `listings` browse contract, so this is
+  transparent to the client.
+
+### Threats considered (buyer browse / saves)
+- **Scraping the catalogue:** browse is anonymous + public by design, but the server enforces per-IP/-device rate
+  limits + bot defenses; the client bounds page size (keyset, limit ≤ 20), debounces search (350ms), and never
+  hammers — it must not be the catalogue's DoS vector. No offset pagination.
+- **IDOR:** a listing/seller id from a param is just passed to the server, which returns only visibility-gated
+  public data; saved data is on-device and scoped to the signed-in user (`currentScope()`), so one account can't
+  read another's saves.
+- **Money:** prices are bigint minor strings (Law 2); price-range filters convert via BigInt, never a float.
+- **Storage:** saves are non-secret and go through AsyncStorage (never SecureStore); no token/PII is persisted.
+- **Kill-switch:** the `buyer_app` flag disables the whole vertical remotely without a release.
+
 ## Farmer orders + delivery + PoD (`features/orders` + `features/reviews`, roadmap P-07)
 
 Fulfilment. The orders tab (56/22) has a **Selling/Buying** switch → keyset-paged, SWR-cached lists; tap → **order
@@ -278,12 +310,12 @@ Hardening still owed before GA (roadmap P-30): TLS pinning, root/integrity attes
 
 ## Verification
 
-- `pnpm --filter @krishi-verse/mobile test` → **113 unit tests green** (session reducer, offline queue, helpers,
+- `pnpm --filter @krishi-verse/mobile test` → **124 unit tests green** (session reducer, offline queue, helpers,
   feature flags, SHA-256 FIPS vectors, base64, media-mime, cache policies, SWR cache engine, sync transitions,
   payment money/status, quiet-hours, deep-link routing, notification presenters, STT locale map, wallet txn
-  presenters + withdrawal BigInt guard, order-status action map + PoD-OTP + tracking steps) — run offline via
-  ts-jest scoped to `src/core/__tests__`. `@krishi-verse/sdk-js` 7/7 still green (payments/payouts/kyc/bankAccounts/
-  notifications/listings-owner/orders/shipments/reviews resources).
+  presenters + withdrawal BigInt guard, order-status action map + PoD-OTP + tracking steps, buyer search-query +
+  saved-set) — run offline via ts-jest scoped to `src/core/__tests__`. `@krishi-verse/sdk-js` 7/7 still green
+  (payments/payouts/kyc/bankAccounts/notifications/listings/orders/shipments/reviews resources).
 - Screens are thin (guide §3): every API call lives in a `features/<area>/*.api.ts` data layer (farmer
   dashboard, orders, wallet, listings, catalogue) — no screen calls `apiClient` directly. All user-facing strings
   are i18n keys in hi/en/gu (no literals). `.eslintrc.js` (eslint-config-expo) gates lint in CI.
