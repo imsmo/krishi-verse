@@ -221,6 +221,26 @@ export interface DbtTransfer {
   instalmentNo: number | null; creditedOn: string; pfmsRef: string | null; createdAt?: string;
 }
 
+// --- support tickets (P-22 help/complaint) ---
+export type TicketSeverity = 'P0' | 'P1' | 'P2' | 'P3';
+export type TicketStatus = 'open' | 'pending_customer' | 'pending_internal' | 'escalated' | 'resolved' | 'closed' | 'reopened';
+/** The caller's OWN support ticket. SLA due-times are server-set from severity; the app shows them read-only.
+ * `csatScore` is the caller's satisfaction rating once resolved. No money here. */
+export interface SupportTicket {
+  id: string; ticketNo: string; requesterUserId: string | null; channel: string; categoryId: string | null;
+  severity: TicketSeverity; subject: string | null; status: TicketStatus; assigneeUserId: string | null;
+  conversationId: string | null; slaFirstResponseDue: string | null; slaResolutionDue: string | null;
+  firstRespondedAt: string | null; resolvedAt: string | null; csatScore: number | null; createdAt?: string;
+}
+
+// --- land parcels (P-22 farm details) ---
+/** A land parcel the farmer owns/farms. `area` is a decimal STRING in `areaUnit` (e.g. acre) — not money. */
+export interface LandParcel {
+  id: string; ownerUserId: string; regionId: string | null; surveyNo: string | null; bhulekhRef: string | null;
+  area: string; areaUnit: string; irrigationTypeId: string | null; boundaryGeojson: Record<string, unknown> | null;
+  verificationStatus: string; isTenantFarmed: boolean; createdAt?: string;
+}
+
 // --- tenancy + tenant-admin-lite (P-17) — money is bigint minor STRINGS (Law 2) ---
 /** A subscription plan (read-only catalogue). All *Minor are bigint minor strings. */
 export interface Plan {

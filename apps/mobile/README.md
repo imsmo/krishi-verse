@@ -116,6 +116,37 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
   account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
 - **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
 
+## Farmer profile / farm / bank / docs + help (`features/profile`, roadmap P-22)
+
+Wave 8 — the farmer's account vertical, behind `farmer_profile` (default OFF, kill-switch). The **profile** tab
+(61) gains links to: **edit** (119, PATCH /users/me — only changed fields sent), **farm** (120, list + register
+land parcels, area is a decimal string not money), **bank** (121, FLAG_SECURE — masked payout destinations +
+add a UPI VPA), **documents** (122, FLAG_SECURE — KYC docs + status), **help** (123, the caller's support tickets
+with status + SLA read-out + CSAT on resolved), and **complaint** (124, open a ticket — server sets the SLA clock
+from severity). New SDK: `users.me`/`updateMe`, `support` (open/myTickets/get/csat), `parcels` (mine/get/register).
+Screens are thin (read → `profile.api` → ui-native; zero direct `apiClient()` in `src/app`); pure logic unit-tested.
+
+### Flagged backend gaps (built real where the endpoint exists; did NOT fake the rest — DoD honesty)
+- **Profile read is minimal** (`users/me` returns name + locale). The PATCH accepts name/gender/dob/language/email/
+  photo; edit-profile edits name/language/email (pre-filled) — gender/dob aren't shown because the read doesn't
+  expose them (flagged), they'd write if added to the form.
+- **Bank add = UPI only on mobile.** `bank-accounts` requires a `vaultRef`; a raw account number must be tokenized
+  by a server-side vault step **not exposed to mobile**, so a full bank account is added with an agent (flagged).
+  A UPI VPA is a public payment address (not a secret), so it's its own vaultRef — UPI add works on mobile now.
+- **SLA is server-owned.** Due-times come from severity server-side; the app shows them read-only and computes a
+  display-only met/due/breached read-out (`resolutionSlaState`). The app never sets or decides the SLA (Law 11).
+
+### Threats considered (profile / bank / documents / support)
+- **PII / DPDP.** The app never holds a raw account number or Aadhaar/PAN — bank destinations show last-4/IFSC or
+  the VPA (`bankLabel`), documents show the masked doc-no + status; the **bank + documents screens set FLAG_SECURE**
+  (no screenshots/recording). Email/VPA validators are bounded (no ReDoS).
+- **Idempotency / ownership (Law 3, IDOR).** Register-parcel and open-ticket carry per-request Idempotency-Keys;
+  profile, parcels, and tickets are the caller's own, resolved server-side from the token (box=mine) — a guessed id
+  returns nothing that isn't yours. The server re-validates every write (zod .strict) and owns the ticket state
+  machine + KYC verification + parcel verification — the app reflects, never decides (Law 11).
+- **Degrade-never-die (Law 12) + kill-switch.** Every read tolerates failure with an EmptyState + retry; writes
+  surface a precise inline error; the `farmer_profile` flag disables the whole vertical without an app release.
+
 ## Govt schemes (`features/schemes` + SDK `schemes`, roadmap P-21)
 
 Wave 8 — the farmer's government-schemes vertical, behind `schemes_govt` (default OFF, kill-switch). **Schemes**

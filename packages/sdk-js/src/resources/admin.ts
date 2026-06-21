@@ -45,6 +45,14 @@ export class DisputesResource {
 
 export class UsersResource {
   constructor(private readonly http: HttpClient) {}
+  /** The signed-in caller's own profile (server resolves from the token — no id, no IDOR). */
+  async me(signal?: AbortSignal): Promise<UserProfile> {
+    return (await this.http.request<UserProfile>('GET', 'users/me', { signal })).data;
+  }
+  /** Update the caller's own profile (PATCH /users/me). PII-minimal: name/gender/dob/language/email/photo. */
+  async updateMe(patch: { fullName?: string; gender?: 'male' | 'female' | 'other' | 'undisclosed'; dob?: string; languageCode?: string; email?: string; photoMediaId?: string }): Promise<UserProfile> {
+    return (await this.http.request<UserProfile>('PATCH', 'users/me', { body: patch })).data;
+  }
   /** Read a member of the tenant (tenant-scoped server-side; 404 for a non-member). Needs identity.report. */
   async get(id: string, signal?: AbortSignal): Promise<UserProfile> {
     return (await this.http.request<UserProfile>('GET', `users/${encodeURIComponent(id)}`, { signal })).data;

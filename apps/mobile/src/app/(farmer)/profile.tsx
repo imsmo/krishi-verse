@@ -15,8 +15,17 @@ export default function Profile() {
   const { t, lang } = useTranslation();
   const { state, setLanguage, signOut } = useAuth();
   const kycEnabled = useFlag('kyc');
+  const profileOn = useFlag('farmer_profile');
 
   const onSignOut = async () => { await signOut(); router.replace('/(auth)/welcome'); };
+
+  const LINKS: Array<{ key: string; route: string; label: string }> = [
+    { key: 'edit', route: '/(farmer)/profile/edit', label: t('profile.editProfile') },
+    { key: 'farm', route: '/(farmer)/profile/farm', label: t('profile.farmDetails') },
+    { key: 'bank', route: '/(farmer)/profile/bank', label: t('profile.bankAccounts') },
+    { key: 'docs', route: '/(farmer)/profile/documents', label: t('profile.documents') },
+    { key: 'help', route: '/(farmer)/profile/help', label: t('profile.help') },
+  ];
 
   return (
     <ScreenScaffold title={t('tabs.profile')}>
@@ -37,7 +46,15 @@ export default function Profile() {
         })}
       </View>
 
-      {kycEnabled ? (
+      {profileOn ? (
+        <View style={{ marginTop: space[6], gap: space[2] }}>
+          {LINKS.map((l) => (
+            <Card key={l.key} onPress={() => router.push(l.route as never)} accessibilityLabel={l.label}>
+              <Text style={styles.link}>{l.label} →</Text>
+            </Card>
+          ))}
+        </View>
+      ) : kycEnabled ? (
         <View style={{ marginTop: space[6] }}>
           <Card onPress={() => router.push('/(farmer)/kyc')} accessibilityLabel={t('profile.kyc')}>
             <Text style={styles.link}>{t('profile.kyc')} →</Text>

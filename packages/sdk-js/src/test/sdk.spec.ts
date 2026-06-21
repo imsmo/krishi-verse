@@ -237,4 +237,48 @@ describe('HttpClient via resources', () => {
     expect(typeof list[0].amountMinor).toBe('string');
     expect(list[0].amountMinor).toBe('600000');
   });
+
+  it('users.me GETs /v1/users/me and updateMe PATCHes it', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'u1', displayName: 'Ram', roles: ['farmer'], locale: 'hi' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const me = await c.users.me();
+    expect(calls[0].url).toBe('https://api.test/v1/users/me');
+    expect(me.displayName).toBe('Ram');
+    await c.users.updateMe({ fullName: 'Ram Kumar', email: 'ram@x.com' });
+    expect(calls[1].url).toBe('https://api.test/v1/users/me');
+    expect(calls[1].init.method).toBe('PATCH');
+  });
+
+  it('support.open POSTs /v1/support/tickets with an idempotency key + channel=app', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'tk1', ticketNo: 'T-1', requesterUserId: 'u1', channel: 'app', categoryId: null, severity: 'P2', subject: 'help', status: 'open', assigneeUserId: null, conversationId: null, slaFirstResponseDue: null, slaResolutionDue: '2026-06-22T00:00:00Z', firstRespondedAt: null, resolvedAt: null, csatScore: null } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const tk = await c.support.open({ subject: 'help', severity: 'P2' }, 'idem-tk-1');
+    expect(calls[0].url).toBe('https://api.test/v1/support/tickets');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-tk-1');
+    expect(tk.status).toBe('open');
+  });
+
+  it('support.myTickets GETs box=mine; submitCsat POSTs the score', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n === 1
+      ? ({ body: { data: [{ id: 'tk1', ticketNo: 'T-1', requesterUserId: 'u1', channel: 'app', categoryId: null, severity: 'P2', subject: 's', status: 'resolved', assigneeUserId: null, conversationId: null, slaFirstResponseDue: null, slaResolutionDue: null, firstRespondedAt: null, resolvedAt: '2026-06-21', csatScore: null }], meta: { nextCursor: null } } })
+      : ({ body: { data: { id: 'tk1', ticketNo: 'T-1', requesterUserId: 'u1', channel: 'app', categoryId: null, severity: 'P2', subject: 's', status: 'resolved', assigneeUserId: null, conversationId: null, slaFirstResponseDue: null, slaResolutionDue: null, firstRespondedAt: null, resolvedAt: '2026-06-21', csatScore: 5 } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const page = await c.support.myTickets();
+    expect(calls[0].url).toBe('https://api.test/v1/support/tickets?box=mine&limit=50');
+    const rated = await c.support.submitCsat('tk1', 5);
+    expect(calls[1].url).toBe('https://api.test/v1/support/tickets/tk1/csat');
+    expect(rated.csatScore).toBe(5);
+  });
+
+  it('parcels.register POSTs /v1/land/parcels with an idempotency key + areaValue string', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'p1', ownerUserId: 'u1', regionId: null, surveyNo: '12/3', bhulekhRef: null, area: '2.5000', areaUnit: 'acre', irrigationTypeId: null, boundaryGeojson: null, verificationStatus: 'pending', isTenantFarmed: false } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const p = await c.parcels.register({ areaValue: '2.5', surveyNo: '12/3' }, 'idem-parcel-1');
+    expect(calls[0].url).toBe('https://api.test/v1/land/parcels');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-parcel-1');
+    expect(typeof p.area).toBe('string');
+    expect(p.verificationStatus).toBe('pending');
+  });
 });

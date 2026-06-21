@@ -91,6 +91,12 @@ export default function FarmerTabsLayout() {
       <Tabs.Screen name="schemes/status" options={{ href: null }} />
       <Tabs.Screen name="schemes/docs" options={{ href: null }} />
       <Tabs.Screen name="schemes/mine" options={{ href: null }} />
+      <Tabs.Screen name="profile/edit" options={{ href: null }} />
+      <Tabs.Screen name="profile/farm" options={{ href: null }} />
+      <Tabs.Screen name="profile/bank" options={{ href: null }} />
+      <Tabs.Screen name="profile/documents" options={{ href: null }} />
+      <Tabs.Screen name="profile/help" options={{ href: null }} />
+      <Tabs.Screen name="profile/complaint" options={{ href: null }} />
     </Tabs>
   );
 }
