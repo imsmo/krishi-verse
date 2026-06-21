@@ -4,7 +4,7 @@
 // → EmptyState + retry. NOTE: the public read-model carries no media URLs yet, so the gallery is a neutral
 // placeholder (flagged) rather than a fake image.
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { ListingCard } from '@krishi-verse/sdk-js';
 import { Button, Card, EmptyState, MoneyText, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
@@ -12,14 +12,17 @@ import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getPublicListing } from '../../../features/buyer/browse.api';
 import { getSavedListings, toggleSavedListing } from '../../../features/buyer/saved.api';
+import { addToCart } from '../../../features/cart/cart.api';
 
 export default function BuyerListingDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('buyer_app');
+  const canBuy = useFlag('buyer_checkout');
   const [listing, setListing] = useState<ListingCard | null>(null);
   const [saved, setSaved] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
 
@@ -40,11 +43,26 @@ export default function BuyerListingDetail() {
     const next = await toggleSavedListing(listing);
     setSaved(next.some((x) => x.id === listing.id));
   };
+  const onAddToCart = async () => {
+    if (!listing) return;
+    setAdding(true);
+    try {
+      const ok = await addToCart(listing.id, Math.min(1, listing.quantityAvailable) || 1);
+      Alert.alert(t(ok ? 'cart.added' : 'cart.addFailed'));
+    } finally { setAdding(false); }
+  };
+
+  const footer = listing ? (
+    <View style={styles.footer}>
+      {canBuy && listing.quantityAvailable > 0 ? <Button title={t('cart.addToCart')} onPress={onAddToCart} loading={adding} /> : null}
+      <Button title={t(saved ? 'buyer.saved' : 'buyer.save')} variant="outline" onPress={onToggleSave} />
+    </View>
+  ) : undefined;
 
   return (
     <ScreenScaffold
       title={listing?.title ?? ' '}
-      footer={listing ? <Button title={t(saved ? 'buyer.saved' : 'buyer.save')} variant={saved ? 'outline' : 'primary'} onPress={onToggleSave} /> : undefined}
+      footer={footer}
     >
       {loading ? <SkeletonCard lines={6} /> : !listing || failed ? (
         <EmptyState title={t('buyer.detail.unavailable')} actionLabel={t('common.retry')} onAction={load} />
@@ -77,4 +95,5 @@ const styles = StyleSheet.create({
   title: { flex: 1, fontFamily: font.display, fontSize: font.size.xl, fontWeight: font.weight.bold, color: color.ink800 },
   qty: { fontFamily: font.body, fontSize: font.size.md, color: color.ink500, marginTop: space[1] },
   pills: { flexDirection: 'row', gap: space[2], marginTop: space[3], flexWrap: 'wrap' },
+  footer: { gap: space[2] },
 });

@@ -25,11 +25,15 @@ Legend: ✅ built this release · 🟡 partial · ⬜ scaffolded (folder exists,
 - ⬜ tips/crop-hub (101–104, 125 AI chat), schemes (105–109), mandi detail/alerts/history (110–111),
   weather (117–118), edit-profile/farm/bank/docs (119–124) → `src/features/farmer-home`, `farmer-*` folders.
 
-## Buyer (≈19) — 🟡 (browse vertical built; P-08)  `src/features/buyer`, later `buyer-checkout`, `offers`
+## Buyer (≈19) — 🟢 (browse + purchase loop built; P-08/P-09)  `src/features/buyer`, `cart`, `addresses`
 - ✅ browse vertical (P-08): 13 home, 67 search-results, 68 filters, 14 listing-detail, 100 seller-profile,
   126/127/128 saved (listings/searches/sellers) → `src/app/(buyer)/*` + `src/features/buyer` (behind `buyer_app`).
-  Saves are on-device; detail gallery + full seller profile flagged (no public media-URL/seller-profile endpoint).
-- ⬜ cart/checkout, order track (131, shares features/orders), make-offer, buyer reviews, profile, KYC.
+  Saves are on-device; detail gallery + full seller profile flagged.
+- ✅ purchase loop (P-09): 96 cart, 15 checkout, 129/134 addresses, 22/69 buyer-orders, 23 detail, 131 track,
+  132 profile, 133 kyc-status → `src/features/cart` + `src/features/addresses` (behind `buyer_checkout`; SDK
+  cart/checkout/addresses; reuses features/orders + features/kyc). Idempotent checkout, server-side coupon/totals,
+  gateway pay (escrow server-side). Totals-preview + wallet-pay(130) folded/flagged; buyer review/report deferred.
+- ⬜ make-offer, buyer reviews/report from detail.
 
 ## Worker / labour (≈25) — ⬜  `src/features/labour-worker`, `labour-farmer`
 - job offers (141), browse/my jobs, active job, claim/dispute, earnings, withdraw, insurance, skills, profile;

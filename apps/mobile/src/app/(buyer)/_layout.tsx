@@ -33,11 +33,18 @@ export default function BuyerTabsLayout() {
     >
       <Tabs.Screen name="home" options={{ title: t('tabs.home'), tabBarIcon: ({ focused }) => <Icon glyph="🏠" focused={focused} /> }} />
       <Tabs.Screen name="search" options={{ title: t('buyer.tabs.search'), tabBarIcon: ({ focused }) => <Icon glyph="🔍" focused={focused} /> }} />
-      <Tabs.Screen name="saved" options={{ title: t('buyer.tabs.saved'), tabBarIcon: ({ focused }) => <Icon glyph="♥" focused={focused} /> }} />
+      <Tabs.Screen name="cart" options={{ title: t('cart.title'), tabBarIcon: ({ focused }) => <Icon glyph="🛒" focused={focused} /> }} />
+      <Tabs.Screen name="orders" options={{ title: t('tabs.orders'), tabBarIcon: ({ focused }) => <Icon glyph="📦" focused={focused} /> }} />
+      <Tabs.Screen name="profile" options={{ title: t('tabs.profile'), tabBarIcon: ({ focused }) => <Icon glyph="👤" focused={focused} /> }} />
       {/* hidden stack routes */}
+      <Tabs.Screen name="saved" options={{ href: null }} />
       <Tabs.Screen name="filters" options={{ href: null }} />
       <Tabs.Screen name="listings/[id]" options={{ href: null }} />
       <Tabs.Screen name="seller/[id]" options={{ href: null }} />
+      <Tabs.Screen name="checkout" options={{ href: null }} />
+      <Tabs.Screen name="addresses" options={{ href: null }} />
+      <Tabs.Screen name="orders/[id]" options={{ href: null }} />
+      <Tabs.Screen name="orders/track" options={{ href: null }} />
     </Tabs>
   );
 }

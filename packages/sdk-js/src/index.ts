@@ -9,4 +9,5 @@ export type { Page, ListingCard, ListingQuery, ProductCard, TraceProvenance, Aut
   MediaKind, MediaUploadTicket, MediaConfirmResult, MediaDownloadLink,
   PaymentPurpose, PaymentIntent, PaymentSummary, PayoutSummary, BankAccount, KycStatus, KycDocument,
   NotificationItem, NotificationPreference, QuietHours,
-  OrderListItem, OrderItemLine, OrderDetail, Shipment, ReviewSummary } from './types';
+  OrderListItem, OrderItemLine, OrderDetail, Shipment, ReviewSummary,
+  CartItem, Cart, CheckoutResult, Address } from './types';

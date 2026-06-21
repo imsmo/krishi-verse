@@ -23,6 +23,18 @@ export async function addMoney(amountMinor: string, prefill?: { name?: string; c
   return { outcome: final, paymentId: intent.paymentId };
 }
 
+/** Pay for a placed order via the gateway (purpose 'direct_order', referencing the order). Same REAL path as
+ * add-money: createIntent (idempotent) → Razorpay checkout → poll our authoritative status. Escrow is held
+ * SERVER-SIDE on capture (the client never moves money — Law 11). `amountMinor` is paise (Law 2). */
+export async function payForOrder(orderId: string, amountMinor: string, prefill?: { name?: string; contact?: string }): Promise<AddMoneyResult> {
+  const client = apiClient();
+  const intent = await client.payments.createIntent({ purpose: 'direct_order', amountMinor, referenceType: 'order', referenceId: orderId }, newId());
+  const checkout = await openCheckout({ gatewayOrderId: intent.gatewayOrderId, amountMinor, description: 'Order payment', prefill });
+  if (!checkout.ok) return { outcome: checkout.cancelled ? 'pending' : 'failed', paymentId: intent.paymentId };
+  const final = await pollPaymentStatus(intent.paymentId);
+  return { outcome: final, paymentId: intent.paymentId };
+}
+
 /** Poll GET /payments/:id until terminal or attempts exhausted. Network errors don't throw — they keep the
  * outcome 'pending' (the wallet reconciles once the webhook lands). */
 export async function pollPaymentStatus(paymentId: string, attempts = 5, delayMs = 1500): Promise<PaymentOutcome> {

@@ -73,6 +73,23 @@ export interface Shipment {
 // --- reviews (module 5) ---
 export interface ReviewSummary { averageStars: number; count: number; }
 
+// --- cart + checkout (module 3) — money is bigint minor-unit STRINGS (Law 2) ---
+export interface CartItem {
+  listingId: string; title: string | null; quantity: number; unitPriceMinor: string; lineTotalMinor: string;
+  priceChanged: boolean; available: number; purchasable: boolean;
+}
+export interface Cart { items: CartItem[]; subtotalMinor: string; }
+/** Checkout converts the cart into one order per seller (+ a group if multi-seller). The authoritative totals
+ * (charges/discount/tax) live on each created order — read them back via orders.get. */
+export interface CheckoutResult { orders: Array<{ id: string; orderNo: string; totalMinor: string; status: string }>; checkoutGroupId: string | null; }
+
+// --- addresses (module 1, identity) — the buyer's delivery address book ---
+export interface Address {
+  id: string; line1: string; line2?: string | null; village?: string | null; regionId?: string | null;
+  pincode?: string | null; countryCode?: string; contactName?: string | null; contactPhone?: string | null;
+  lat?: number | null; lng?: number | null; labelId?: string | null; isDefault: boolean;
+}
+
 // --- media (core/media) ---
 export type MediaKind = 'image' | 'video' | 'audio' | 'document';
 /** Presigned PUT ticket: upload the raw bytes to `uploadUrl` (S3, NOT the API host), then confirm. */

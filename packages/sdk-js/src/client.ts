@@ -8,11 +8,12 @@ import { TraceabilityResource } from './resources/traceability';
 import { AuthResource } from './resources/auth';
 import { MediaResource } from './resources/media';
 import { PaymentsResource, PayoutsResource } from './resources/payments';
-import { KycResource, BankAccountsResource } from './resources/identity';
+import { KycResource, BankAccountsResource, AddressesResource } from './resources/identity';
 import { NotificationsResource } from './resources/notifications';
 import { OrdersResource } from './resources/orders';
 import { ShipmentsResource } from './resources/logistics';
 import { ReviewsResource } from './resources/reviews';
+import { CartResource, CheckoutResource } from './resources/commerce';
 
 export class KrishiVerseClient {
   private readonly http: HttpClient;
@@ -29,6 +30,9 @@ export class KrishiVerseClient {
   readonly orders: OrdersResource;
   readonly shipments: ShipmentsResource;
   readonly reviews: ReviewsResource;
+  readonly addresses: AddressesResource;
+  readonly cart: CartResource;
+  readonly checkout: CheckoutResource;
 
   constructor(config: SdkConfig) {
     this.http = new HttpClient(resolveConfig(config));
@@ -45,6 +49,9 @@ export class KrishiVerseClient {
     this.orders = new OrdersResource(this.http);
     this.shipments = new ShipmentsResource(this.http);
     this.reviews = new ReviewsResource(this.http);
+    this.addresses = new AddressesResource(this.http);
+    this.cart = new CartResource(this.http);
+    this.checkout = new CheckoutResource(this.http);
   }
   /** Escape hatch for endpoints without a dedicated resource method yet. Same envelope + resilience. */
   request<T>(method: HttpMethod, path: string, opts?: RequestOptions): Promise<Envelope<T>> {

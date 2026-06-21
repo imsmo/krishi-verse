@@ -3,7 +3,7 @@
 // Bank accounts store a gateway-tokenised vaultRef + last-4/IFSC only — never a raw account number. Both POSTs
 // require an Idempotency-Key (Law 3). KYC is gated server-side by the `kyc` flag.
 import { HttpClient } from '../http';
-import { KycDocument, BankAccount } from '../types';
+import { KycDocument, BankAccount, Address } from '../types';
 
 export class KycResource {
   constructor(private readonly http: HttpClient) {}
@@ -26,5 +26,23 @@ export class BankAccountsResource {
    * the gateway — never sent here in the clear). */
   async add(input: { accountKind: 'bank' | 'upi'; vaultRef: string; upiId?: string; accountLast4?: string; ifsc?: string; holderName?: string; isPrimary?: boolean }, idempotencyKey: string): Promise<BankAccount> {
     return (await this.http.request<BankAccount>('POST', 'bank-accounts', { idempotencyKey, body: input })).data;
+  }
+}
+
+/** The buyer's delivery address book (owner-scoped server-side). Used by checkout. Contact phone/name are PII —
+ * stored server-side, shown back to the owner only. */
+export class AddressesResource {
+  constructor(private readonly http: HttpClient) {}
+  async list(signal?: AbortSignal): Promise<Address[]> {
+    return (await this.http.request<Address[]>('GET', 'addresses', { signal })).data;
+  }
+  async create(input: { line1: string; line2?: string; village?: string; regionId?: string; pincode?: string; countryCode?: string; contactName?: string; contactPhone?: string; lat?: number; lng?: number; labelId?: string; isDefault?: boolean }): Promise<Address> {
+    return (await this.http.request<Address>('POST', 'addresses', { body: input })).data;
+  }
+  async update(id: string, patch: Partial<{ line1: string; line2: string; village: string; pincode: string; contactName: string; contactPhone: string; isDefault: boolean }>): Promise<Address> {
+    return (await this.http.request<Address>('PATCH', `addresses/${encodeURIComponent(id)}`, { body: patch })).data;
+  }
+  async remove(id: string): Promise<{ ok: boolean }> {
+    return (await this.http.request<{ ok: boolean }>('DELETE', `addresses/${encodeURIComponent(id)}`)).data;
   }
 }

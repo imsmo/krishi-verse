@@ -116,6 +116,45 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
   account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
 - **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
 
+## Buyer cart → checkout → order (`features/cart` + `features/addresses`, roadmap P-09)
+
+The purchase loop. Add-to-cart from a listing → **cart** (96) reads the SERVER's live cart (prices/availability
+recomputed, Law 2 `MoneyText`), steps quantity within stock, and shows blockers via the pure `cart-math`
+(`canCheckout`/`cartBlockers`). **Checkout** (15) picks a delivery address from the **address book** (129/134:
+list/add/delete), takes an optional **coupon**, and **places the order** — a real, idempotent (Law 3) cart→orders
+conversion; the authoritative delivery/tax/discount/commission totals are computed **server-side** and shown on
+the resulting order (we never compute them client-side). If online payments are on, it then pays the primary order
+via the gateway (`payForOrder` → `direct_order` intent → Razorpay → poll); **escrow is held server-side** on
+capture — the app never moves money (Law 11). FLAG_SECURE on checkout. Buyer **orders** list (22/69) + **detail**
+(23) + **tracking** (131) reuse the shared `features/orders` + `order-status`; a **profile** tab shows KYC status
+(133, shared `features/kyc`) + sign-out. Behind `buyer_checkout` (+ `buyer_app`). New SDK: `cart`, `checkout`,
+`addresses` resources. Pure `cart-math` is unit-tested.
+
+### Flagged backend gaps (built real where the endpoint exists; did NOT fake the rest)
+- **No checkout totals-preview endpoint:** totals are computed during the checkout transaction, so the checkout
+  screen shows the cart subtotal + an honest "final totals shown on your order" note rather than a faked preview;
+  the real breakdown is read back on the order (P-07 detail).
+- **Payment method (130):** online (gateway) is the real, wired path; **pay-from-wallet for an order** has no
+  wallet-debit endpoint, so it's folded into checkout (online) and wallet-pay is deferred, not faked.
+- **Buyer review/report** from the order detail are deferred to a follow-up (the shared screens exist for farmers);
+  buyer order detail ships cancel/complete/track.
+
+### Threats considered (cart / checkout / pay)
+- **Idempotent checkout:** the cart→orders POST carries an Idempotency-Key (Law 3); a retried/double-tapped
+  "Place order" can't create duplicate orders. Checkout is online (not queued) — it needs live stock/price/coupon
+  validation and an immediate result.
+- **Server is the authority on money:** line totals, the subtotal, charges, tax, and the **coupon discount** are
+  all computed + redeemed SERVER-SIDE (the coupon is redeemed atomically in the checkout tx). A patched client
+  can't grant itself a discount or a price; the app only displays what the server returns. All amounts are bigint
+  paise (Law 2).
+- **Escrow / no client money movement:** payment capture + escrow hold happen server-side via the signed webhook;
+  the app only opens the gateway sheet and polls status (Law 11). FLAG_SECURE covers the checkout surface.
+- **IDOR / PII:** the cart and addresses are owner-scoped server-side; an address id from a param is re-checked.
+  Contact name/phone are PII held server-side and shown only to the owner; never logged.
+- **Stock/price races:** `cart-math` blocks checkout on unavailable/insufficient items and surfaces price changes;
+  the server re-validates at checkout (a 409 → "review and retry", a 422 → "coupon invalid"), never worked around.
+- **Kill-switch:** the `buyer_checkout` flag disables cart/checkout/place+pay remotely without a release.
+
 ## Buyer browse + search + listing detail (`features/buyer`, roadmap P-08)
 
 The customer purchase loop begins. A new `(buyer)` tab group (Home / Search / Saved), auth-gated + behind the
@@ -310,12 +349,13 @@ Hardening still owed before GA (roadmap P-30): TLS pinning, root/integrity attes
 
 ## Verification
 
-- `pnpm --filter @krishi-verse/mobile test` → **124 unit tests green** (session reducer, offline queue, helpers,
+- `pnpm --filter @krishi-verse/mobile test` → **130 unit tests green** (session reducer, offline queue, helpers,
   feature flags, SHA-256 FIPS vectors, base64, media-mime, cache policies, SWR cache engine, sync transitions,
   payment money/status, quiet-hours, deep-link routing, notification presenters, STT locale map, wallet txn
   presenters + withdrawal BigInt guard, order-status action map + PoD-OTP + tracking steps, buyer search-query +
-  saved-set) — run offline via ts-jest scoped to `src/core/__tests__`. `@krishi-verse/sdk-js` 7/7 still green
-  (payments/payouts/kyc/bankAccounts/notifications/listings/orders/shipments/reviews resources).
+  saved-set, cart-math + address format) — run offline via ts-jest scoped to `src/core/__tests__`.
+  `@krishi-verse/sdk-js` 7/7 still green (payments/payouts/kyc/bankAccounts/notifications/listings/orders/shipments/
+  reviews/cart/checkout/addresses resources).
 - Screens are thin (guide §3): every API call lives in a `features/<area>/*.api.ts` data layer (farmer
   dashboard, orders, wallet, listings, catalogue) — no screen calls `apiClient` directly. All user-facing strings
   are i18n keys in hi/en/gu (no literals). `.eslintrc.js` (eslint-config-expo) gates lint in CI.
