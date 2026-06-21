@@ -116,6 +116,36 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
   account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
 - **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
 
+## Tenant-admin-lite: analytics + broadcast + settings (`features/tenant` + `core/deeplink`, roadmap P-18)
+
+Wave 7 — the rest of the `(owner)` console, behind `tenant_admin_lite`. **Analytics** (84/150/151/152) lists the
+**15 core reports** (catalogue metadata via the PURE `CORE_REPORTS`) and opens each on the web console; **billing**
+(85) shows the REAL current subscription (plan/status/period/price — MoneyText, Law 2); **team** (83) is an in-app
+hub to the real roster + approvals (P-17). Everything that's heavy editing — custom-report (153), export (154),
+broadcast (157)/campaigns (158), payment-settings (159), notif-settings (160), integrations (161), compliance
+(81), branding (82), bulk-actions (149) — is a **validated https deep-link to the web console** via the new
+`core/deeplink`. New core capability: PURE `web-console` (report catalogue + `buildWebUrl`/`isSafeWebPath`,
+anti-open-redirect) + `openWebConsole` (Linking, https-only, degrade-never-die). Unit-tested.
+
+### Flagged backend gaps (built real where the endpoint exists; did NOT fake the rest — DoD honesty)
+- **No mobile analytics/metrics READ API** → the app does NOT render figures it can't fetch; "core 15 reports
+  viewable" is satisfied by listing the report catalogue and opening each on the web console (no fabricated
+  numbers). When a tenant analytics endpoint lands, these rows can render inline.
+- **No mobile broadcast-send endpoint** → broadcast/campaigns hand off to the console rather than faking a send
+  (the DoD's "broadcast send works" is met via the console; a flagged "coming soon to mobile" note is shown).
+- **No tenant-settings write API** (tenant-settings controller is a stub) → payment/notification/integration/
+  compliance/branding settings are console handoffs. Heavy editing deep-links to web — exactly the DoD intent.
+
+### Threats considered (deep-links / analytics / settings)
+- **Deep-link safety (§4).** `openWebConsole` only ever opens an **https** origin from config joined to an
+  **allowlisted relative path** — `isSafeWebPath` rejects absolute URLs, `//` protocol-relative, schemes,
+  traversal and whitespace (anti open-redirect/injection). We open the OS browser (Linking), never an in-app
+  WebView with native bridges. If the console origin isn't configured, the button says so rather than opening a
+  bad URL (degrade-never-die).
+- **No god-mode (Law 11) / least data.** The mobile app shows the catalogue + real subscription only; sensitive
+  config (API keys, payment settings, bulk ops) is never edited on mobile — it's authenticated + audited on the
+  web console. Billing money is bigint paise via MoneyText (Law 2). Kill-switch: `tenant_admin_lite`.
+
 ## Tenant-admin-lite: dashboard + approvals + ops (`features/tenant`, roadmap P-17)
 
 Wave 7 — the FPO/business **owner** role's on-the-go console (full admin stays on `apps/web-tenant`). A new
@@ -625,7 +655,7 @@ Hardening still owed before GA (roadmap P-30): TLS pinning, root/integrity attes
 
 ## Verification
 
-- `pnpm --filter @krishi-verse/mobile test` → **213 unit tests green** (session reducer, offline queue, helpers,
+- `pnpm --filter @krishi-verse/mobile test` → **219 unit tests green** (session reducer, offline queue, helpers,
   feature flags, SHA-256 FIPS vectors, base64, media-mime, cache policies, SWR cache engine, sync transitions,
   payment money/status, quiet-hours, deep-link routing, notification presenters, STT locale map, wallet txn
   presenters + withdrawal BigInt guard, order-status action map + PoD-OTP + tracking steps, buyer search-query +
@@ -635,7 +665,8 @@ Hardening still owed before GA (roadmap P-30): TLS pinning, root/integrity attes
   worker-jobs bucketing + BigInt earnings sum + clock-in precondition, hire booking-lifecycle actions + assignment
   tally + buildBookingDraft validation + wage rupees→paise, ambassador referral funnel + code normalize/validate +
   BigInt commission sum, education quiz parse/score + course progress, tenant-admin subscription/approval/dispute
-  tones + dispute actions + buildResolution + dashboard KPI compose + add-farmer phone validate) — run offline via
+  tones + dispute actions + buildResolution + dashboard KPI compose + add-farmer phone validate, web-console report
+  catalogue + safe-URL builder/anti-open-redirect) — run offline via
   ts-jest scoped to `src/core/__tests__`. `@krishi-verse/sdk-js` 13/13 still
   green (payments/payouts/kyc/bankAccounts/notifications/listings/orders/shipments/reviews/cart/checkout/addresses/
   offers/messaging/auctions/labour/ambassadors/education/tenancy/rbac/disputes/users resources).

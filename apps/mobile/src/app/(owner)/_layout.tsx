@@ -43,6 +43,19 @@ export default function OwnerTabsLayout() {
       <Tabs.Screen name="dispute/[id]" options={{ href: null }} />
       <Tabs.Screen name="listings" options={{ href: null }} />
       <Tabs.Screen name="payouts" options={{ href: null }} />
+      <Tabs.Screen name="analytics" options={{ href: null }} />
+      <Tabs.Screen name="custom-report" options={{ href: null }} />
+      <Tabs.Screen name="export" options={{ href: null }} />
+      <Tabs.Screen name="broadcast" options={{ href: null }} />
+      <Tabs.Screen name="campaigns" options={{ href: null }} />
+      <Tabs.Screen name="payment-settings" options={{ href: null }} />
+      <Tabs.Screen name="notif-settings" options={{ href: null }} />
+      <Tabs.Screen name="integrations" options={{ href: null }} />
+      <Tabs.Screen name="compliance" options={{ href: null }} />
+      <Tabs.Screen name="branding" options={{ href: null }} />
+      <Tabs.Screen name="billing" options={{ href: null }} />
+      <Tabs.Screen name="team" options={{ href: null }} />
+      <Tabs.Screen name="bulk-actions" options={{ href: null }} />
     </Tabs>
   );
 }

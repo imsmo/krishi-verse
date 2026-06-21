@@ -54,8 +54,13 @@ export default function OwnerDashboard() {
           </View>
 
           <View style={styles.actions}>
+            <Button title={t('owner.analytics.title')} variant="outline" onPress={() => router.push('/(owner)/analytics')} />
             <Button title={t('owner.tabs.listings')} variant="outline" onPress={() => router.push('/(owner)/listings')} />
             <Button title={t('owner.tabs.payouts')} variant="outline" onPress={() => router.push('/(owner)/payouts')} />
+            <Button title={t('owner.broadcast.title')} variant="outline" onPress={() => router.push('/(owner)/broadcast')} />
+            <Button title={t('owner.billing.title')} variant="outline" onPress={() => router.push('/(owner)/billing')} />
+            <Button title={t('owner.team.title')} variant="outline" onPress={() => router.push('/(owner)/team')} />
+            <Button title={t('owner.settings.title')} variant="outline" onPress={() => router.push('/(owner)/payment-settings')} />
           </View>
           <Text style={styles.lite}>{t('owner.liteNote')}</Text>
         </>
