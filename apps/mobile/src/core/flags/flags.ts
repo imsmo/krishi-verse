@@ -13,7 +13,8 @@ export type FlagKey =
   | 'orders_fulfilment' // order lifecycle actions + PoD + track + review + report (P-07) — OFF until verified
   | 'buyer_checkout'    // buyer cart → checkout → place+pay order (P-09) — OFF until verified
   | 'offers_chat'       // offers negotiation + chat + masked call (P-10) — OFF until verified
-  | 'auctions'          // auction discovery + bidding (EMD) + create (P-11) — OFF until verified
+  | 'auctions'          // auction discovery + bidding (EMD) + create (P-11) — OFF
+  | 'mandi_weather'     // mandi prices + price alerts + weather advisories (P-19) — OFF until verified
   | 'worker_active_job' // worker active-job: attendance geofence + earnings + withdraw + reviews (P-13) — OFF
   | 'labour_hire'       // farmer/employer hire: browse workers + post booking + lifecycle (P-14) — OFF
   | 'kyc'               // KYC doc submit/status (P-03) — OFF until staging-verified
@@ -34,6 +35,7 @@ const DEFAULTS: Record<FlagKey, boolean> = {
   buyer_checkout: false,
   offers_chat: false,
   auctions: false,
+  mandi_weather: false,
   worker_active_job: false,
   labour_hire: false,
   kyc: false,

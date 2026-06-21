@@ -192,6 +192,23 @@ export interface Subscription {
 }
 /** A role assignment (the tenant's roster + approval queue). Pending = not yet approved (approvedAt null). */
 export interface RoleAssignment { id: string; userId: string; roleId?: string; roleCode: string; kycStatus: string; isActive: boolean; approvedAt: string | null; }
+// --- market-intel (mandi prices) + weather (P-19) — money is bigint minor STRINGS (Law 2) ---
+/** A mandi (market yard). lat/lng for map/nearest; no PII. */
+export interface Mandi { id: string; defaultName: string; regionId: string | null; mandiCode: string | null; lat: number | null; lng: number | null; isActive: boolean; }
+/** A daily mandi price row. min/max/modal are bigint minor STRINGS per `unitCode` (e.g. per quintal). */
+export interface MandiPrice {
+  id: string; mandiId: string | null; regionId: string | null; productId: string; gradeOptionId: string | null; priceDate: string;
+  minMinor: string | null; maxMinor: string | null; modalMinor: string; unitCode: string; arrivalsQty: number | null; source: string | null;
+}
+/** A price prediction band (p10/p50/p90 bigint minor). */
+export interface PricePrediction { productId: string; regionId: string | null; gradeOptionId: string | null; targetDate: string; p10Minor: string; p50Minor: string; p90Minor: string; confidence: number | null; modelVersion: string | null; createdAt?: string; }
+/** The live pulse for a (product, region): the latest price, the prediction band, and recent history. */
+export interface MandiPulse { latest: MandiPrice | null; band: PricePrediction | null; history: MandiPrice[]; }
+/** The caller's price alert (threshold subscription). thresholdMinor is bigint minor. */
+export interface PriceAlert { id: string; productId: string; regionId: string | null; direction: 'above' | 'below'; thresholdMinor: string; isActive: boolean; createdAt?: string; }
+/** A regional weather advisory (read-only ingested reference data). `advisoryTextKey` is an i18n key. */
+export interface WeatherAlert { id: string; regionId: string; alertTypeId: string | null; severity: string; validFrom: string | null; validTo: string | null; advisoryTextKey: string; payload?: Record<string, unknown> | null; source: string | null; createdAt?: string; }
+
 /** A dispute (moderation view for a tenant with dispute.resolve). resolutionAmountMinor is bigint minor. */
 export interface Dispute {
   id: string; orderId: string; raisedBy: string; againstUser: string | null; reasonId: string | null; description: string | null;

@@ -116,6 +116,40 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
   account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
 - **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
 
+## Mandi prices + weather (`features/market` + SDK `market`/`weather`, roadmap P-19)
+
+Wave 8 — the farmer's market-intelligence vertical, behind `mandi_weather` (default OFF, kill-switch). **Mandi
+prices** (52) browses market yards near the farmer's region; **mandi detail** (53) shows recent price rows
+(modal/min/max per unit — bigint paise via MoneyText, Law 2); **history** (111) is the keyset price series with a
+latest-vs-previous trend (PURE `historyTrendPct`, BigInt). Tapping a price row opens **price alerts** (110) with a
+create form — direction (above/below) + threshold ₹→paise via BigInt — assembled by the PURE `buildAlertDraft` and
+created idempotently (Law 3); existing alerts list with an activate/deactivate toggle. **Weather** (54) lists
+regional advisories for the farmer's region (severity pill, validity window via PURE `isAdvisoryActive`), with a
+**detail** (117) and **settings** (118) that points at the saved address + notification prefs. New SDK resources:
+`market` (mandis/getMandi/prices/pulse/predictions + own price alerts) and `weather` (regional advisories). Screens
+are thin (read → `market.api` → ui-native; zero direct `apiClient()` in `src/app`); pure logic unit-tested.
+
+### Flagged backend gaps (built real where the endpoint exists; did NOT fake the rest — DoD honesty)
+- **Weather = regional advisories, not a live forecast.** There's no geocoder/forecast endpoint, so "weather by
+  location" resolves the farmer's **default saved address `regionId`** and fetches the ingested regional
+  advisories (read-only). When a forecast endpoint lands, the same screens can render it.
+- **No commodity name on the price read-model.** `market/prices` carries product/grade by **id** only — we show
+  grade ref + unit + date and never fabricate a crop name; a catalogue-name join is a later enhancement.
+- **Alert delivery is a server push (P-04).** The app only **subscribes** to a threshold; the server is the
+  authority on prices, predictions, and on firing the push when a price crosses (the app can't and doesn't decide).
+
+### Threats considered (prices / alerts / weather)
+- **Money integrity (Law 2).** All prices/thresholds are bigint **minor-unit strings** end-to-end —
+  `priceChangePct`/`historyTrendPct` compute the % with BigInt (no float drift on large paise), and only the final
+  display percentage is a number. Thresholds go ₹→paise via BigInt; never a float.
+- **Idempotency / no client authority (Law 3, Law 11).** Alert create sends a per-request Idempotency-Key, so a
+  retried POST can't create duplicate subscriptions. The client never decides whether a threshold is crossed or
+  what a price is — it renders server reference data and subscribes; a patched client gains nothing.
+- **IDOR / enumeration.** Price-alert lists are the **caller's own**, keyset-paged (no offset scraping); a guessed
+  alert id activates/deactivates nothing that isn't yours (owner-scoped server-side).
+- **Degrade-never-die (Law 12) + kill-switch.** Every read tolerates failure with an EmptyState + retry (no crash,
+  no fabricated data); the `mandi_weather` flag disables the whole vertical remotely without an app release.
+
 ## Tenant-admin-lite: analytics + broadcast + settings (`features/tenant` + `core/deeplink`, roadmap P-18)
 
 Wave 7 — the rest of the `(owner)` console, behind `tenant_admin_lite`. **Analytics** (84/150/151/152) lists the

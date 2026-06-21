@@ -146,4 +146,37 @@ describe('HttpClient via resources', () => {
     expect(typeof d.resolutionAmountMinor).toBe('string');
     expect(d.resolutionAmountMinor).toBe('50000');
   });
+
+  it('market.pulse GETs /v1/market/pulse and returns bigint-minor money as strings', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: {
+      latest: { id: 'mp1', mandiId: 'm1', productId: 'p1', regionId: 'r1', minMinor: '90000', maxMinor: '110000', modalMinor: '100000', unitCode: 'qtl', priceDate: '2026-06-20' },
+      band: { productId: 'p1', regionId: 'r1', p10Minor: '95000', p50Minor: '100000', p90Minor: '105000', forDate: '2026-06-21' },
+      history: [],
+    } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const pulse = await c.market.pulse('p1', 'r1');
+    expect(calls[0].url).toBe('https://api.test/v1/market/pulse?productId=p1&regionId=r1');
+    expect(calls[0].init.method).toBe('GET');
+    expect(typeof pulse.latest.modalMinor).toBe('string');
+    expect(pulse.band.p50Minor).toBe('100000');
+  });
+
+  it('market.createAlert POSTs /v1/market/alerts with an idempotency key + bigint-minor threshold', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'al1', productId: 'p1', regionId: 'r1', direction: 'above', thresholdMinor: '12000000', isActive: true } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const a = await c.market.createAlert({ productId: 'p1', regionId: 'r1', direction: 'above', thresholdMinor: '12000000' }, 'idem-alert-1');
+    expect(calls[0].url).toBe('https://api.test/v1/market/alerts');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-alert-1');
+    expect(typeof a.thresholdMinor).toBe('string');
+    expect(a.isActive).toBe(true);
+  });
+
+  it('weather.alerts GETs /v1/land/weather-alerts for a region', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: [{ id: 'w1', regionId: 'r1', severity: 'severe', validFrom: '2026-06-20T00:00:00Z', validTo: '2026-06-22T00:00:00Z', advisoryTextKey: 'weather.adv.heat' }] } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const list = await c.weather.alerts('r1', { activeOnly: true });
+    expect(calls[0].url).toBe('https://api.test/v1/land/weather-alerts?regionId=r1&activeOnly=true&limit=50');
+    expect(list[0].severity).toBe('severe');
+  });
 });

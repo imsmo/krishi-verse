@@ -71,6 +71,13 @@ export default function FarmerTabsLayout() {
       <Tabs.Screen name="hire/book" options={{ href: null }} />
       <Tabs.Screen name="hire/sent" options={{ href: null }} />
       <Tabs.Screen name="hire/booking/[id]" options={{ href: null }} />
+      <Tabs.Screen name="mandi/index" options={{ href: null }} />
+      <Tabs.Screen name="mandi/[id]" options={{ href: null }} />
+      <Tabs.Screen name="mandi/history" options={{ href: null }} />
+      <Tabs.Screen name="mandi/alerts" options={{ href: null }} />
+      <Tabs.Screen name="weather/index" options={{ href: null }} />
+      <Tabs.Screen name="weather/[id]" options={{ href: null }} />
+      <Tabs.Screen name="weather/settings" options={{ href: null }} />
     </Tabs>
   );
 }
