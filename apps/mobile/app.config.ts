@@ -40,7 +40,10 @@ const config: ExpoConfig = {
   experiments: { typedRoutes: true },
   // Crash/source-map handling (§4/§6): release builds upload source maps PRIVATELY to the crash service and
   // STRIP them from the shipped artifact — configured in eas.json + the CI upload step, not here.
-  updates: { enabled: true }, // expo-updates (OTA for JS-only fixes; same flag discipline) — §8
+  // expo-updates (OTA for JS-only fixes; same flag discipline + rollback — §8). `url` is injected by
+  // `eas update:configure` (it carries the project id); we don't block boot on a check (fallback 0 → apply on the
+  // next cold start), and the runtime is keyed to appVersion so an OTA can only target a compatible binary.
+  updates: { enabled: true, checkAutomatically: 'ON_LOAD', fallbackToCacheTimeout: 0 },
   runtimeVersion: { policy: 'appVersion' },
   extra: {
     apiUrl: process.env.EXPO_PUBLIC_API_URL,

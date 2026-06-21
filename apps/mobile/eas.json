@@ -14,6 +14,14 @@
       "env": { "EXPO_PUBLIC_APP_ENV": "staging" },
       "android": { "buildType": "apk" }
     },
+    "beta": {
+      "channel": "beta",
+      "autoIncrement": true,
+      "env": { "EXPO_PUBLIC_APP_ENV": "production" },
+      "android": { "buildType": "app-bundle" },
+      "ios": {},
+      "_notes": "Closed/open testing track (Play internal->closed->open, TestFlight). Same release hardening as production; promoted to production once the beta cohort is crash-free >= 99.5%. OTA fixes go to the `beta` channel first."
+    },
     "production": {
       "channel": "production",
       "autoIncrement": true,
@@ -24,8 +32,12 @@
     }
   },
   "submit": {
+    "beta": {
+      "android": { "track": "internal", "_notes": "Internal -> closed -> open testing before promoting to production." },
+      "ios": {}
+    },
     "production": {
-      "android": { "track": "production", "rollout": 0.01, "_notes": "Staged rollout: start 1%, gate on crash-free-session >= 99.5%, then 10% -> 100% (guide §8). Halt/rollback by pausing the rollout or reverting the OTA channel." },
+      "android": { "track": "production", "rollout": 0.01, "releaseStatus": "inProgress", "_notes": "Staged rollout: start 1%, gate on crash-free-session >= 99.5%, then 10% -> 100% (guide §8). Halt/rollback by pausing the rollout or reverting the OTA channel (`eas update:rollback`)." },
       "ios": {}
     }
   }

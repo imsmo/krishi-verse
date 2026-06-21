@@ -19,6 +19,8 @@ export type FlagKey =
   | 'schemes_govt'      // govt schemes: browse + eligibility + apply + doc upload + status/DBT (P-21) — OFF until verified
   | 'farmer_profile'    // farmer profile/farm/bank/docs + help/complaint (support SLA) (P-22) — OFF until verified
   | 'system_screens'    // global search + settings + DPDP export/delete + change-phone + feedback (P-23) — OFF until verified
+  | 'ota_updates'       // expo-updates OTA check/fetch/reload on foreground (P-32) — OFF until verified
+  | 'release_gate'      // forced-update floor: block the app when current < min supported version (P-32) — OFF (kill-switch)
   | 'worker_active_job' // worker active-job: attendance geofence + earnings + withdraw + reviews (P-13) — OFF
   | 'labour_hire'       // farmer/employer hire: browse workers + post booking + lifecycle (P-14) — OFF
   | 'kyc'               // KYC doc submit/status (P-03) — OFF until staging-verified
@@ -44,6 +46,8 @@ const DEFAULTS: Record<FlagKey, boolean> = {
   schemes_govt: false,
   farmer_profile: false,
   system_screens: false,
+  ota_updates: false,
+  release_gate: false,
   worker_active_job: false,
   labour_hire: false,
   kyc: false,

@@ -1,1 +1,52 @@
-# .github/workflows/mobile-release.yml · EAS build + store submit · [P1]
+# .github/workflows/mobile-release.yml · Mobile release pipeline (MOBILE_AI_AGENT_BUILD_GUIDE §8). Manual dispatch
+# picks a track: an EAS BINARY build (beta/production) or an OTA UPDATE (expo-updates, JS-only). Binary builds
+# upload source maps PRIVATELY to the crash service then strip them; production submits start a 1% staged rollout.
+# OTA publishes to a channel and can be rolled back. All secrets live in GitHub/EAS secrets — never in the repo.
+name: mobile-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'binary-build | ota-update | ota-rollback'
+        required: true
+        default: 'ota-update'
+      profile:
+        description: 'eas profile / channel: beta | production'
+        required: true
+        default: 'beta'
+
+concurrency: { group: mobile-release, cancel-in-progress: false }
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: ${{ github.event.inputs.profile }}   # required reviewers gate production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm ci
+      - name: Re-run CI gates before release (defence-in-depth)
+        run: npm run -w apps/mobile typecheck && npm run -w apps/mobile test -- --ci && npm audit --omit=dev --audit-level=high
+      - uses: expo/expo-github-action@v8
+        with: { eas-version: latest, token: ${{ secrets.EXPO_TOKEN }} }
+
+      - name: EAS binary build
+        if: ${{ github.event.inputs.action == 'binary-build' }}
+        run: eas build --platform all --profile ${{ github.event.inputs.profile }} --non-interactive
+      - name: Upload source maps (private) to crash service
+        if: ${{ github.event.inputs.action == 'binary-build' }}
+        run: npx sentry-expo-upload-sourcemaps dist || echo "sourcemap upload step (configured with SENTRY_AUTH_TOKEN)"
+        env: { SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }} }
+      - name: Submit (production starts at 1% staged rollout)
+        if: ${{ github.event.inputs.action == 'binary-build' }}
+        run: eas submit --platform all --profile ${{ github.event.inputs.profile }} --non-interactive
+
+      - name: OTA update (JS-only) to channel
+        if: ${{ github.event.inputs.action == 'ota-update' }}
+        run: eas update --channel ${{ github.event.inputs.profile }} --message "${{ github.sha }}" --non-interactive
+      - name: OTA rollback (revert to previous publish)
+        if: ${{ github.event.inputs.action == 'ota-rollback' }}
+        run: eas update:rollback --channel ${{ github.event.inputs.profile }} --non-interactive

@@ -116,6 +116,36 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
   account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
 - **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
 
+## Release pipeline + store compliance (`core/release`, roadmap P-32 — P0 GA gate)
+
+Wave 11 — how a signed build reaches millions of low-end devices without breaking them. New `core/release` (PURE,
+unit-tested): **update-gate** (`compareVersions` semver + `decideUpdate` → `forced`/`recommended`/`none`, with a
+remotely-settable min/recommended floor via `setUpdateThresholds`/`effectiveMin`), **ota** (`shouldApplyOta` — apply
+a JS-only update only when the `ota_updates` flag is on, an update is available, and we're **not mid-critical-flow**;
+a port + no-throw default), and **ForcedUpdateGate** (wired at the app root: when the `release_gate` flag is on and
+the build is below the min, it blocks the whole app with an update-required screen + store link — a known-bad client
+can't keep calling the API). Two flags added (`ota_updates`, `release_gate`), both default OFF. Infra: `eas.json`
+(dev/preview/**beta**/production profiles + phased-rollout submit), `app.config.ts` updates block + `appVersion`
+runtime policy, two GitHub workflows (`mobile-ci.yml` gates: typecheck/lint/unit/audit/bundle-size/Maestro e2e;
+`mobile-release.yml`: binary-build / ota-update / ota-rollback), a real `scripts/check-bundle-size.mjs` budget gate,
+the **`.maestro/sell-buy-pay.yaml`** critical-path e2e, **`RELEASE.md`** (runbook: profiles, 1%→10%→100% rollout
+gated on crash-free ≥99.5%, OTA flag discipline, rollback rehearsal, forced-update floor), and **`STORE_COMPLIANCE.md`**
+(Play data-safety mapping, per-permission justifications, DPDP delete/export, privacy policy/age). The binary
+build/submit + OTA publish run on EAS/CI, not the offline sandbox; the framework-free decision logic is unit-tested here.
+
+### Threats considered (release / OTA / store)
+- **Forced-update floor.** A build below the remotely-set minimum (insecure/known-bad) is blocked at the root by
+  `ForcedUpdateGate` — it can't keep operating. Fail-open if no min is configured (dev) so we never brick on misconfig.
+- **OTA is a flag flip from off.** A bad JS bundle is disabled by turning `ota_updates` off remotely (no store
+  release); `eas update:rollback` republishes the previous bundle. OTA never reloads mid-checkout/pay/OTP
+  (`shouldApplyOta` gates on `isCriticalFlow`) and is pinned to a compatible binary via the `appVersion` runtime policy.
+- **No undeclared collection.** `STORE_COMPLIANCE.md` is kept in lockstep with `redactPII` + the data layers — the
+  data-safety form matches what the app actually sends. Permissions are feature-scoped, just-in-time, with in-app rationale.
+- **Hardened release artifact.** Production builds carry the P-30 hardening (Hermes, R8/ProGuard, cleartext off, TLS
+  pins); source maps upload privately then are stripped. The bundle-size gate catches a runaway dependency before ship.
+- **Degrade-never-die (Law 12).** `checkAndFetchOta` and the OTA provider never throw; the gate renders the app
+  untouched whenever it isn't actively forcing an update. Phased rollout halts automatically if crash-free dips below 99.5%.
+
 ## Observability + crash + analytics (`core/observability`, roadmap P-31 — P0 GA gate)
 
 Wave 11 — crash reporting, funnel analytics, correlation ids, and the redaction that makes them DPDP-safe. New

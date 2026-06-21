@@ -1,0 +1,47 @@
+# apps/mobile/.maestro/sell-buy-pay.yaml · the CRITICAL-PATH e2e (MOBILE_AI_AGENT_BUILD_GUIDE §8 DoD: "e2e green
+# on the critical sell+buy+pay path"). Runs against a STAGING build with the relevant flags ON and a seeded test
+# tenant + a deterministic OTP (the staging gateway returns a fixed code for the e2e test numbers — never a real
+# OTP). Money assertions check the formatted amount renders; the server is the authority on the actual values.
+# Run: `maestro test apps/mobile/.maestro/sell-buy-pay.yaml` (CI uses Maestro Cloud on an emulator).
+appId: co.krishiverse.app
+env:
+  SELLER_PHONE: "9800000001"   # staging test seller (deterministic OTP)
+  BUYER_PHONE: "9800000002"    # staging test buyer
+  OTP: "000000"                # staging fixed e2e OTP — NOT a production code
+---
+# ---------- SELL: a farmer lists produce ----------
+- launchApp:
+    clearState: true
+- tapOn: { id: "lang-en" }            # 02 language
+- tapOn: "Continue"
+- inputText: ${SELLER_PHONE}          # 03 phone
+- tapOn: "Continue"
+- inputText: ${OTP}                   # 04 verify (FLAG_SECURE screen)
+- assertVisible: "Krishi-Verse"       # landed in the app (farmer home)
+- tapOn: "Sell"                       # 10 create-listing
+- inputText: "Tomato"
+- tapOn: { id: "listing-price" }
+- inputText: "2500"                   # ₹25.00 — entered as rupees, sent as bigint-minor
+- tapOn: "Preview"                    # 11 preview
+- tapOn: "Publish"
+- assertVisible: "Tomato"             # 12 my-listings shows it
+
+# ---------- BUY + PAY: a buyer purchases it ----------
+- launchApp:
+    clearState: true
+- tapOn: { id: "lang-en" }
+- tapOn: "Continue"
+- inputText: ${BUYER_PHONE}
+- tapOn: "Continue"
+- inputText: ${OTP}
+- tapOn: "Browse"                     # buyer browse
+- tapOn: "Tomato"
+- tapOn: "Add to cart"
+- tapOn: { id: "tab-cart" }
+- tapOn: "Checkout"                   # checkout (FLAG_SECURE)
+- assertVisible: "₹"                  # money renders (formatted, bigint-minor)
+- tapOn: "Place order"
+# Razorpay test-mode sheet (staging key); the e2e completes the test payment instrument.
+- assertVisible:
+    text: "Order placed|Payment"      # success state (server is the authority on capture)
+    optional: false

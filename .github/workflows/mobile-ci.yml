@@ -1,0 +1,56 @@
+# .github/workflows/mobile-ci.yml · Mobile CI gates (MOBILE_AI_AGENT_BUILD_GUIDE §8/§9). MUST be green to merge:
+# typecheck, lint, unit tests, dependency audit, bundle-size budget, and the Maestro e2e on the critical
+# sell+buy+pay path. No secrets needed for the gate job (build/submit live in mobile-release.yml).
+name: mobile-ci
+
+on:
+  pull_request:
+    paths: ['apps/mobile/**', 'packages/**', '.github/workflows/mobile-ci.yml']
+  push:
+    branches: [main]
+    paths: ['apps/mobile/**', 'packages/**']
+
+concurrency:
+  group: mobile-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - name: Install (frozen lockfile)
+        run: npm ci
+      - name: Typecheck (mobile + sdk + ui-native)
+        run: npm run -w apps/mobile typecheck && npm run -w packages/sdk-js typecheck && npm run -w packages/ui-native typecheck
+      - name: Lint
+        run: npm run -w apps/mobile lint
+      - name: Unit tests (pure core + sdk)
+        run: npm run -w apps/mobile test -- --ci && npm run -w packages/sdk-js test -- --ci
+      - name: Dependency audit (production deps, fail on high+)
+        run: npm audit --omit=dev --audit-level=high
+      - name: Bundle-size budget (Hermes bytecode < 30 MB)
+        run: node apps/mobile/scripts/check-bundle-size.mjs
+
+  e2e:
+    # Critical-path e2e on the sell+buy+pay flow (Maestro). Runs on an Android emulator in CI.
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: gates
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm ci
+      - name: Build a dev-client APK for e2e (EAS local)
+        run: npx eas-cli build --platform android --profile development --local --output ./app-e2e.apk
+        env: { EXPO_PUBLIC_API_URL: ${{ secrets.E2E_API_URL }} }
+      - name: Run Maestro flows (sell + buy + pay)
+        uses: mobile-dev-inc/action-maestro-cloud@v1
+        with:
+          api-key: ${{ secrets.MAESTRO_API_KEY }}
+          app-file: ./app-e2e.apk
+          workspace: apps/mobile/.maestro

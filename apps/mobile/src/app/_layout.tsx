@@ -18,14 +18,22 @@ import { startSyncEngine } from '../core/offline/sync.engine';
 import { useConnectivity } from '../core/connectivity/connectivity';
 import { useTranslation } from '../core/i18n/useTranslation';
 import { initObservability, rotateCorrelationId, flushAnalytics } from '../core/observability';
+import { ForcedUpdateGate, checkAndFetchOta } from '../core/release';
+import { isEnabled } from '../core/flags/flags';
 import '../core/offline/handlers'; // register offline replay handlers (media.upload, listing.create)
 import '../core/config'; // fail-closed env validation at boot
 
 function ConnectivityBanner() {
   const online = useConnectivity();
   const { t } = useTranslation();
-  // On reconnect, flush the offline-buffered analytics (best-effort; §6). Fresh correlation id per online window.
-  useEffect(() => { if (online) { rotateCorrelationId(); void flushAnalytics(); } }, [online]);
+  // On reconnect: flush buffered analytics (§6), fresh correlation id, and check for an OTA update (flag-gated,
+  // never mid-critical-flow; staged for the next cold start — §8). All best-effort.
+  useEffect(() => {
+    if (!online) return;
+    rotateCorrelationId();
+    void flushAnalytics();
+    void checkAndFetchOta({ enabled: isEnabled('ota_updates'), isCriticalFlow: false });
+  }, [online]);
   return <OfflineBanner visible={!online} message={t('common.offline')} />;
 }
 
@@ -55,7 +63,9 @@ export default function RootLayout() {
         <StatusBar style="dark" />
         <AuthProvider>
           <ConnectivityBanner />
-          <Slot />
+          <ForcedUpdateGate>
+            <Slot />
+          </ForcedUpdateGate>
         </AuthProvider>
       </View>
     </SafeAreaProvider>
