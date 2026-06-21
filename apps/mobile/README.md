@@ -116,6 +116,48 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
   account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
 - **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
 
+## Tips + crop hub + AI assistant (`features/content` + SDK `resources`/`assistant`, roadmap P-20)
+
+Wave 8 — the farmer's knowledge surface, behind `tips_assistant` (default OFF, kill-switch). **Tips library** (55)
+browses approved curated tips (learning resources) with a text search + kind chips; **tip detail** (101) shows the
+body/asset and a bookmark toggle; **category** (102) browses by kind; **saved** (103) lists device-local bookmarks;
+**crop hub** (104) is a curated landing that groups tips by kind (PURE `groupByKind`) with quick entries to the AI
+assistant + voice search + saved tips. **AI chat** (125) lets the farmer ask — typed or by voice — and the server
+answers in their language; **voice search** (184) turns on-device STT into a query that filters the cached tips
+locally (ReDoS-safe `searchResources`). Reads go through the SWR cache so the library + hub work offline (DoD).
+New SDK resources: `resources` (education learning-resources, `box=browse` → approved only) and `assistant`
+(idempotent ask). Screens are thin (read → `content.api` → ui-native; zero direct `apiClient()` in `src/app`); pure
+logic unit-tested; reuses core/voice STT + the ui-native VoiceButton.
+
+### Flagged backend gaps (built real where the endpoint exists; did NOT fake the rest — DoD honesty)
+- **No farmer-facing AI endpoint yet.** The only AI surface today is the admin `ai/inferences` governance queue —
+  not a chat. We wire the **assumed** contract (`POST ai/assistant/messages`, idempotent) and the chat shows an
+  honest "assistant unavailable" message until it lands. The app **never fabricates an answer** — inference is a
+  server responsibility (Law 11). The DoD's "answers in 3 languages" is wired (the request carries hi/en/gu); the
+  replies appear once the endpoint is live.
+- **Tips = curated learning resources; "category" = KIND.** `education/resources` carries a topic by **id** only
+  (no public topic-name endpoint), so categories are the resource kinds (article/video/blog/post/audio); a topic-
+  name catalogue join is a later enhancement, never faked.
+- **No server text-search for tips** → voice/text search filters the **cached approved tips on-device** (so it
+  also works offline). When a search endpoint lands, the same screen can query it.
+- **Saved tips are device-local bookmarks** (AsyncStorage, scoped per user — one account can't read another's).
+  There's no server wishlist endpoint yet; cross-device sync awaits a backend (flagged, not faked).
+
+### Threats considered (tips / assistant / voice)
+- **Client is untrusted; server is the authority.** `box=browse` returns only approved resources (enforced
+  server-side) — a patched client can't pull another tenant's drafts. The assistant runs **no** inference on the
+  device; it only sends the question + language and renders what the server returns.
+- **Idempotency (Law 3).** Each assistant send carries a per-request Idempotency-Key, so a retried turn can't
+  double-post. Sends are guarded against double-fire client-side too (UX), but the server is the dedupe authority.
+- **Injection / ReDoS.** Local search treats the (possibly spoken) query as a **literal** lowercase substring —
+  no regex is built from user input. Query + message lengths are bounded (bounded requests, perf §5).
+- **PII / privacy.** Saved bookmarks store only `{id,title,kind}` (no PII); they're per-user scoped and cleared on
+  sign-out with the rest of the user scope. Voice uses the same on-device STT as Speak-to-Sell (no transcript is
+  sent anywhere except, for the assistant, as the question the farmer chose to ask).
+- **Degrade-never-die (Law 12) + kill-switch.** Every read tolerates failure with an EmptyState + retry (cached
+  tips still render offline); the assistant degrades to an honest message; the `tips_assistant` flag disables the
+  whole vertical remotely without an app release.
+
 ## Mandi prices + weather (`features/market` + SDK `market`/`weather`, roadmap P-19)
 
 Wave 8 — the farmer's market-intelligence vertical, behind `mandi_weather` (default OFF, kill-switch). **Mandi

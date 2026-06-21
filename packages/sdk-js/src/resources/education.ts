@@ -3,7 +3,7 @@
 // lesson PROGRESS (seconds watched + quiz score + completed). Enrollments/progress are the caller's OWN (server
 // resolves the learner — no IDOR). Money is bigint minor strings (Law 2). Gated server-side by the `education` flag.
 import { HttpClient } from '../http';
-import { Course, CourseLesson, Enrollment, LessonProgress, Page } from '../types';
+import { Course, CourseLesson, Enrollment, LessonProgress, LearningResource, ResourceKind, Page } from '../types';
 
 export class CoursesResource {
   constructor(private readonly http: HttpClient) {}
@@ -42,5 +42,16 @@ export class EnrollmentsResource {
    * enrollment's overall progress + completion (the client never sets progressPct directly). */
   async markProgress(enrollmentId: string, lessonId: string, input: { secondsWatched?: number; quizScore?: number | null; completed?: boolean }): Promise<LessonProgress> {
     return (await this.http.request<LessonProgress>('POST', `education/enrollments/${encodeURIComponent(enrollmentId)}/lessons/${encodeURIComponent(lessonId)}/progress`, { body: input })).data;
+  }
+}
+
+/** Curated learning resources / tips (read surface for P-20 tips + crop hub). `box=browse` returns only APPROVED
+ * resources (server-enforced — the app can't request another tenant's drafts). There is NO get-by-id endpoint, so
+ * a detail screen re-reads the list and finds the row. Keyset; never offset. */
+export class ResourcesResource {
+  constructor(private readonly http: HttpClient) {}
+  async list(params: { kind?: ResourceKind; topicId?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<LearningResource>> {
+    const r = await this.http.request<LearningResource[]>('GET', 'education/resources', { query: { box: 'browse', kind: params.kind, topicId: params.topicId, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
 }

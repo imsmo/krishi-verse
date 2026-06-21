@@ -19,4 +19,5 @@ export type { Page, ListingCard, ListingQuery, ProductCard, TraceProvenance, Aut
   AmbassadorProfile, Referral, AmbassadorEarning, CommissionPlan,
   Course, CourseLesson, Enrollment, LessonProgress,
   Plan, Subscription, RoleAssignment, Dispute,
-  Mandi, MandiPrice, PricePrediction, PriceAlert, MandiPulse, WeatherAlert } from './types';
+  Mandi, MandiPrice, PricePrediction, PriceAlert, MandiPulse, WeatherAlert,
+  LearningResource, ResourceKind, AssistantReply } from './types';

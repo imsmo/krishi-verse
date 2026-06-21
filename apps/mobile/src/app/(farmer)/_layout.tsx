@@ -78,6 +78,13 @@ export default function FarmerTabsLayout() {
       <Tabs.Screen name="weather/index" options={{ href: null }} />
       <Tabs.Screen name="weather/[id]" options={{ href: null }} />
       <Tabs.Screen name="weather/settings" options={{ href: null }} />
+      <Tabs.Screen name="tips/index" options={{ href: null }} />
+      <Tabs.Screen name="tips/[id]" options={{ href: null }} />
+      <Tabs.Screen name="tips/category" options={{ href: null }} />
+      <Tabs.Screen name="tips/saved" options={{ href: null }} />
+      <Tabs.Screen name="crop-hub" options={{ href: null }} />
+      <Tabs.Screen name="assistant" options={{ href: null }} />
+      <Tabs.Screen name="voice-search" options={{ href: null }} />
     </Tabs>
   );
 }

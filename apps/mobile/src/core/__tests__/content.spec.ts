@@ -1,0 +1,107 @@
+// Unit tests for the PURE tips/crop-hub/assistant/voice logic (features/content/content). No React/native deps
+// (SDK/ui types are type-only). Covers local search (ReDoS-safe), kind grouping/labels, saved-tips set math, and
+// assistant input validation. The server stays the authority on which resources exist + on AI answers.
+import {
+  RESOURCE_KINDS, kindLabelKey, kindTone, normalizeQuery, matchesQuery, searchResources,
+  groupByKind, tipSnapshot, isSaved, toggleSaved, buildAssistantDraft, appendTurn, type TipSnapshot, type ChatTurn,
+} from '../../features/content/content';
+import type { LearningResource } from '@krishi-verse/sdk-js';
+
+const res = (over: Partial<LearningResource>): LearningResource => ({
+  id: 'r1', channelId: null, ownerUserId: 'u1', kind: 'article', title: 'Tomato care',
+  externalUrl: null, mediaId: null, topicId: null, languageCode: null, body: 'Water daily', status: 'approved', ...over,
+});
+
+describe('kindLabelKey / kindTone', () => {
+  it('maps known kinds and falls back', () => {
+    expect(kindLabelKey('video')).toBe('content.kind.video');
+    expect(kindLabelKey('weird')).toBe('content.kind.other');
+    expect(kindTone('video')).toBe('info');
+    expect(kindTone('audio')).toBe('accent');
+    expect(kindTone('article')).toBe('success');
+    expect(kindTone('post')).toBe('neutral');
+  });
+});
+
+describe('normalizeQuery', () => {
+  it('trims, collapses whitespace, lowercases, caps length', () => {
+    expect(normalizeQuery('  Hello   World ')).toBe('hello world');
+    expect(normalizeQuery(null)).toBe('');
+    expect(normalizeQuery('x'.repeat(200)).length).toBe(120);
+  });
+});
+
+describe('matchesQuery / searchResources', () => {
+  it('matches title or body, case-insensitive; empty query matches all', () => {
+    expect(matchesQuery(res({ title: 'Tomato' }), 'tom')).toBe(true);
+    expect(matchesQuery(res({ title: 'Wheat', body: 'irrigation' }), 'IRRIG')).toBe(true);
+    expect(matchesQuery(res({ title: 'Wheat', body: null }), 'rice')).toBe(false);
+    expect(matchesQuery(res({}), '')).toBe(true);
+  });
+  it('filters a list, preserving order; empty query returns all', () => {
+    const list = [res({ id: 'a', title: 'Rice' }), res({ id: 'b', title: 'Tomato' })];
+    expect(searchResources(list, 'rice').map((r) => r.id)).toEqual(['a']);
+    expect(searchResources(list, '').length).toBe(2);
+  });
+  it('treats user input as a literal (no regex injection / ReDoS)', () => {
+    expect(matchesQuery(res({ title: 'a.b' }), '.*')).toBe(false);
+  });
+});
+
+describe('groupByKind', () => {
+  it('groups into ordered sections, dropping empty kinds', () => {
+    const list = [res({ id: 'a', kind: 'video' }), res({ id: 'b', kind: 'article' }), res({ id: 'c', kind: 'video' })];
+    const secs = groupByKind(list);
+    expect(secs.map((s) => s.kind)).toEqual(['article', 'video']); // RESOURCE_KINDS order, empties dropped
+    expect(secs.find((s) => s.kind === 'video')!.items.length).toBe(2);
+  });
+  it('RESOURCE_KINDS is the canonical order', () => {
+    expect(RESOURCE_KINDS[0]).toBe('article');
+  });
+});
+
+describe('saved-tips set math', () => {
+  const snap = (id: string): TipSnapshot => ({ id, title: `t${id}`, kind: 'article', savedAt: 1 });
+  it('tipSnapshot captures a minimal record', () => {
+    expect(tipSnapshot(res({ id: 'x', title: 'Y', kind: 'blog' }), 99)).toEqual({ id: 'x', title: 'Y', kind: 'blog', savedAt: 99 });
+  });
+  it('toggle adds (newest first) then removes; isSaved reflects it', () => {
+    let saved: TipSnapshot[] = [];
+    saved = toggleSaved(saved, snap('a'));
+    expect(isSaved(saved, 'a')).toBe(true);
+    saved = toggleSaved(saved, snap('b'));
+    expect(saved.map((s) => s.id)).toEqual(['b', 'a']);
+    saved = toggleSaved(saved, snap('a'));
+    expect(isSaved(saved, 'a')).toBe(false);
+  });
+  it('caps the list', () => {
+    let saved: TipSnapshot[] = [];
+    for (let i = 0; i < 5; i++) saved = toggleSaved(saved, snap(`s${i}`), 3);
+    expect(saved.length).toBe(3);
+  });
+});
+
+describe('buildAssistantDraft', () => {
+  it('assembles a valid payload (trimmed) in a launch language', () => {
+    const d = buildAssistantDraft({ text: '  How to treat blight? ', lang: 'hi', sessionId: 's1' });
+    expect(d.ok).toBe(true);
+    expect(d.input).toEqual({ message: 'How to treat blight?', languageCode: 'hi', sessionId: 's1' });
+  });
+  it('rejects empty message and non-launch language', () => {
+    expect(buildAssistantDraft({ text: '   ', lang: 'en' }).reason).toBe('empty');
+    expect(buildAssistantDraft({ text: 'hi', lang: 'fr' }).reason).toBe('lang');
+  });
+  it('defaults sessionId to undefined when absent', () => {
+    expect(buildAssistantDraft({ text: 'q', lang: 'gu' }).input?.sessionId).toBeUndefined();
+  });
+});
+
+describe('appendTurn', () => {
+  const turn = (id: string): ChatTurn => ({ id, role: 'user', text: id, at: 1 });
+  it('appends and bounds the transcript', () => {
+    let t: ChatTurn[] = [];
+    for (let i = 0; i < 5; i++) t = appendTurn(t, turn(`t${i}`), 3);
+    expect(t.length).toBe(3);
+    expect(t.map((x) => x.id)).toEqual(['t2', 't3', 't4']);
+  });
+});

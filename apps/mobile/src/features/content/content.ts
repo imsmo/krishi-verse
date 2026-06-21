@@ -1,0 +1,88 @@
+// apps/mobile/src/features/content/content.ts · PURE tips + crop-hub + AI-assistant + voice-search logic for P-20.
+// No React/native (SDK/ui types are `import type` → erased) → unit-tested. The SERVER is the authority on which
+// resources exist (box=browse returns only APPROVED) and on AI answers; these helpers only drive the UI: local
+// text search (ReDoS-safe plain includes), kind grouping/labels, saved-tips set math, and assistant input
+// validation. Saved tips are DEVICE-LOCAL bookmarks (no server endpoint yet — flagged); we keep tiny snapshots.
+import type { PillTone } from '@krishi-verse/ui-native';
+import type { LearningResource, ResourceKind } from '@krishi-verse/sdk-js';
+
+/** The resource kinds we surface, in display order (a "category" is a kind — there's no topic-name endpoint). */
+export const RESOURCE_KINDS: ResourceKind[] = ['article', 'video', 'blog', 'post', 'audio'];
+
+/** i18n key for a kind label (falls back to the raw kind if unknown). */
+export function kindLabelKey(kind: string): string {
+  return RESOURCE_KINDS.includes(kind as ResourceKind) ? `content.kind.${kind}` : 'content.kind.other';
+}
+/** A subtle tone per kind for the category chip / pill. */
+export function kindTone(kind: string): PillTone {
+  switch (kind) {
+    case 'video': return 'info';
+    case 'audio': return 'accent';
+    case 'article': case 'blog': return 'success';
+    default: return 'neutral';
+  }
+}
+
+/** Normalize a free-text / spoken query: trim, collapse whitespace, lowercase, cap length (bounded; no ReDoS). */
+export function normalizeQuery(raw: string | null | undefined): string {
+  return (raw ?? '').replace(/\s+/g, ' ').trim().toLowerCase().slice(0, 120);
+}
+
+/** Does a resource match a query? Plain case-insensitive substring over title + body (no regex on user input).
+ * An empty query matches everything (so the library shows all). Works on cached resources → offline search. */
+export function matchesQuery(r: Pick<LearningResource, 'title' | 'body'>, query: string): boolean {
+  const q = normalizeQuery(query);
+  if (!q) return true;
+  const hay = `${r.title ?? ''} ${r.body ?? ''}`.toLowerCase();
+  return hay.includes(q);
+}
+
+/** Filter a resource list by a query (pure; stable order preserved). */
+export function searchResources<T extends Pick<LearningResource, 'title' | 'body'>>(items: T[], query: string): T[] {
+  const q = normalizeQuery(query);
+  if (!q) return items;
+  return items.filter((r) => matchesQuery(r, q));
+}
+
+export interface KindSection<T> { kind: ResourceKind; items: T[] }
+/** Group resources into ordered sections by kind (crop-hub). Empty kinds are dropped. */
+export function groupByKind<T extends Pick<LearningResource, 'kind'>>(items: T[]): KindSection<T>[] {
+  return RESOURCE_KINDS
+    .map((kind) => ({ kind, items: items.filter((r) => r.kind === kind) }))
+    .filter((s) => s.items.length > 0);
+}
+
+// --- saved tips (device-local bookmarks) ---
+export interface TipSnapshot { id: string; title: string; kind: ResourceKind; savedAt: number }
+/** Build a minimal snapshot to persist (so the saved screen renders offline without a fetch). */
+export function tipSnapshot(r: Pick<LearningResource, 'id' | 'title' | 'kind'>, now: number = Date.now()): TipSnapshot {
+  return { id: r.id, title: r.title, kind: r.kind, savedAt: now };
+}
+export function isSaved(saved: Pick<TipSnapshot, 'id'>[], id: string): boolean {
+  return saved.some((s) => s.id === id);
+}
+/** Toggle a snapshot in the saved list (dedupe by id; newest first; capped). Pure. */
+export function toggleSaved(saved: TipSnapshot[], snap: TipSnapshot, max = 300): TipSnapshot[] {
+  const exists = saved.some((s) => s.id === snap.id);
+  if (exists) return saved.filter((s) => s.id !== snap.id);
+  return [snap, ...saved.filter((s) => s.id !== snap.id)].slice(0, max);
+}
+
+// --- AI assistant input ---
+export type AssistantLang = 'hi' | 'en' | 'gu';
+export interface AssistantDraft { ok: boolean; input?: { message: string; languageCode: AssistantLang; sessionId?: string }; reason?: 'empty' | 'lang' }
+/** Validate + assemble an assistant message payload. Empty/whitespace is rejected; lang must be a launch language
+ * (the server re-validates). Trims + caps the message length (bounded request). */
+export function buildAssistantDraft(form: { text?: string; lang?: string; sessionId?: string | null }): AssistantDraft {
+  const message = (form.text ?? '').replace(/\s+/g, ' ').trim().slice(0, 2000);
+  if (!message) return { ok: false, reason: 'empty' };
+  if (form.lang !== 'hi' && form.lang !== 'en' && form.lang !== 'gu') return { ok: false, reason: 'lang' };
+  return { ok: true, input: { message, languageCode: form.lang, sessionId: form.sessionId ?? undefined } };
+}
+
+export type ChatRole = 'user' | 'assistant';
+export interface ChatTurn { id: string; role: ChatRole; text: string; at: number }
+/** Append a turn to a transcript (immutable). Bounds the in-memory transcript (perf §5). */
+export function appendTurn(turns: ChatTurn[], turn: ChatTurn, max = 200): ChatTurn[] {
+  return [...turns, turn].slice(-max);
+}

@@ -179,4 +179,24 @@ describe('HttpClient via resources', () => {
     expect(calls[0].url).toBe('https://api.test/v1/land/weather-alerts?regionId=r1&activeOnly=true&limit=50');
     expect(list[0].severity).toBe('severe');
   });
+
+  it('resources.list GETs /v1/education/resources with box=browse (approved only)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: [{ id: 'res1', channelId: null, ownerUserId: 'u1', kind: 'article', title: 'Drip irrigation', externalUrl: null, mediaId: null, topicId: null, languageCode: 'hi', body: 'Save water', status: 'approved' }], meta: { nextCursor: 'c2' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const page = await c.resources.list({ kind: 'article' });
+    expect(calls[0].url).toBe('https://api.test/v1/education/resources?box=browse&kind=article&limit=50');
+    expect(calls[0].init.method).toBe('GET');
+    expect(page.items[0].kind).toBe('article');
+    expect(page.nextCursor).toBe('c2');
+  });
+
+  it('assistant.ask POSTs /v1/ai/assistant/messages with an idempotency key + language', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { reply: 'Use neem oil.', sessionId: 'sess1' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const r = await c.assistant.ask({ message: 'pest on tomato?', languageCode: 'hi' }, 'idem-ai-1');
+    expect(calls[0].url).toBe('https://api.test/v1/ai/assistant/messages');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-ai-1');
+    expect(r.sessionId).toBe('sess1');
+  });
 });

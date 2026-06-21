@@ -178,6 +178,22 @@ export interface Enrollment {
 /** Per-lesson progress within an enrollment. */
 export interface LessonProgress { lessonId: string; completedAt: string | null; secondsWatched: number; quizScore: number | null; }
 
+// --- learning resources / tips (creator-content; P-20 tips + crop hub) ---
+/** A curated learning resource (tip / article / video / blog / post / audio). `box=browse` returns only
+ * APPROVED resources (server-enforced). `body` is inline text; `externalUrl`/`mediaId` is the asset. `topicId`
+ * is a catalogue topic id (no public name endpoint yet). Read-only for the app. */
+export type ResourceKind = 'video' | 'blog' | 'post' | 'audio' | 'article';
+export interface LearningResource {
+  id: string; channelId: string | null; ownerUserId: string; kind: ResourceKind; title: string;
+  externalUrl: string | null; mediaId: string | null; topicId: string | null; languageCode: string | null;
+  body: string | null; status: string; reviewedBy?: string | null; reviewedAt?: string | null; createdAt?: string;
+}
+
+// --- AI assistant (P-20 AI-chat) — ASSUMED contract; no farmer-facing endpoint is live yet (flagged) ---
+/** One turn of the assistant's reply. `sessionId` threads a conversation; `citations` are optional source links
+ * the server attaches (the app renders only what the server returns — never fabricates an answer). */
+export interface AssistantReply { reply: string; sessionId: string; citations?: Array<{ title: string; url?: string }>; }
+
 // --- tenancy + tenant-admin-lite (P-17) — money is bigint minor STRINGS (Law 2) ---
 /** A subscription plan (read-only catalogue). All *Minor are bigint minor strings. */
 export interface Plan {
