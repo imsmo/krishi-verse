@@ -6,6 +6,7 @@
 // Kafka outbox) is a one-line change here — no module rewrites.
 import { Global, Module } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
+import Redis from 'ioredis';
 
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
@@ -37,6 +38,11 @@ import { InProcessWalletClient } from './wallet/wallet.client.inprocess';
 import { LedgerRepository } from './wallet/ledger.repository';
 import { ReconciliationService } from './wallet/reconciliation.service';
 import { PromMetrics } from './observability/metrics.prom';
+import { AppConfig } from './config/app-config';
+import { FlagsService } from './feature-flags/flags.service';
+import { REALTIME_PUBLISHER, NoopRealtimePublisher } from './realtime/realtime-publisher';
+import { RedisRealtimePublisher } from './realtime/realtime-publisher.redis';
+import { RealtimeFanoutRegistrar } from './realtime/realtime.registrar';
 
 import { AuthGuard } from './auth/auth.guard';
 import { PermissionsGuard } from './auth/permissions.guard';
@@ -63,6 +69,19 @@ import { MetricsController } from './observability/metrics.controller';
     LedgerRepository, InProcessWalletClient, { provide: WALLET_SERVICE, useExisting: InProcessWalletClient },
     ReconciliationService,
     OutboxHandlerRegistry, { provide: OUTBOX_HANDLER_REGISTRY, useExisting: OutboxHandlerRegistry },
+    // realtime fan-out: bridge selected outbox events → Redis Pub/Sub for the realtime-gateway pods.
+    // Redis-backed when REDIS_URL is set, else a no-op (Law 12: the platform runs fine without live fan-out).
+    // Uses a DEDICATED pub connection (pub/sub must not share the cache client). Gated by `realtime_fanout`.
+    {
+      provide: REALTIME_PUBLISHER,
+      useFactory: (config: AppConfig, resilience: ResilienceService) => {
+        const url = config.redis.url;
+        if (!url) return new NoopRealtimePublisher();
+        return new RedisRealtimePublisher(new Redis(url, { maxRetriesPerRequest: 2, lazyConnect: false }), resilience);
+      },
+      inject: [AppConfig, ResilienceService],
+    },
+    RealtimeFanoutRegistrar,
     AuthGuard, PermissionsGuard,
     TenantResolver, TenantContextMiddleware, RequestIdMiddleware,
     // auth + RBAC platform services (used by the identity module's auth flow)
