@@ -281,4 +281,33 @@ describe('HttpClient via resources', () => {
     expect(typeof p.area).toBe('string');
     expect(p.verificationStatus).toBe('pending');
   });
+
+  it('privacy.requestDataExport POSTs /v1/privacy/export-requests with an idempotency key', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'req1', kind: 'export', status: 'pending' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const r = await c.privacy.requestDataExport('idem-exp-1');
+    expect(calls[0].url).toBe('https://api.test/v1/privacy/export-requests');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-exp-1');
+    expect(r.kind).toBe('export');
+  });
+
+  it('privacy.requestAccountDeletion POSTs /v1/privacy/deletion-requests (idempotent)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'req2', kind: 'deletion', status: 'pending' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const r = await c.privacy.requestAccountDeletion({ reason: 'moving on' }, 'idem-del-1');
+    expect(calls[0].url).toBe('https://api.test/v1/privacy/deletion-requests');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-del-1');
+    expect(r.kind).toBe('deletion');
+  });
+
+  it('privacy.startPhoneChange POSTs /v1/auth/change-phone/start with an idempotency key', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { ok: true } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const r = await c.privacy.startPhoneChange('+919812345678', 'idem-ph-1');
+    expect(calls[0].url).toBe('https://api.test/v1/auth/change-phone/start');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-ph-1');
+    expect(r.ok).toBe(true);
+  });
 });

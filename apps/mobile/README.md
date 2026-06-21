@@ -116,6 +116,40 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
   account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
 - **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
 
+## Global search + settings + system screens (`features/system` + `(system)` group, roadmap P-23)
+
+Wave 9 — the cross-cutting `(system)` route group (14 screens). **Global search** (183) fans out across the public
+listings catalogue + the caller's own orders (both roles) and merges client-side (debounced; tap → listing/order).
+**Settings** (75) is a hub to **language** (187), **privacy** (178 → **data-download** 179 / **account-delete** 177),
+**permissions** (185, rationale + open OS settings), **feedback** (195, opens a real support ticket), **tutorial**
+(186), and **about** (196). **change-phone** (176) is an OTP-verified two-step flow. The global fallbacks —
+**offline** (188), **server-error** (189), **app-update** (190, config-driven forced-update floor) — plus language/
+about/tutorial/permissions render unconditionally so they always work. New SDK `privacy` resource (export/deletion/
+change-phone); config gains app-version + min-version + store/legal URLs. Search + DPDP + change-phone + feedback are
+gated on `system_screens`. Pure logic (search merge, semver, delete-confirmation) unit-tested.
+
+### Flagged backend gaps (built real where the endpoint exists; did NOT fake the rest — DoD honesty)
+- **No dedicated search endpoint** → global search fans out over existing reads (`listings.browse` + `orders.list`)
+  and merges client-side; the server enforces visibility + ownership on each underlying call.
+- **DPDP export/deletion + change-phone endpoints aren't live** (only `consents` exists today). The SDK wires the
+  assumed contracts (idempotent) and the screens **degrade to an honest "being rolled out" message** — the app
+  never builds an export file, never deletes the account locally, never owns the OTP (server is the data
+  controller, Law 11). When the endpoints land, the same screens light up.
+- **Forced-update is config-driven** (`minSupportedVersion`); store/privacy/terms links hide if their URL is unset.
+
+### Threats considered (search / DPDP / fallbacks)
+- **Client is untrusted; server is the authority.** Search reads are visibility/ownership-scoped server-side; a
+  patched client merging results sees nothing it couldn't already read. DPDP requests + phone-change are
+  authorized + executed server-side; the app only submits + reflects status.
+- **Idempotency (Law 3) + accidental-action guards.** Export/deletion/phone-change/feedback carry per-request
+  Idempotency-Keys; account-delete requires a typed confirmation word before the button enables.
+- **Injection / ReDoS.** Search matching is a plain lowercase substring (no regex from user input); query length
+  is bounded; the server re-validates everything.
+- **Deep-link / link safety.** Every external link (privacy/terms/store) is opened only if it's an **https** URL;
+  otherwise the screen says it isn't configured rather than opening a bad URL.
+- **Degrade-never-die (Law 12) + kill-switch.** The offline + server-error screens ARE the global fallbacks; every
+  data-backed screen tolerates failure; the `system_screens` flag disables the backed flows without an app release.
+
 ## Farmer profile / farm / bank / docs + help (`features/profile`, roadmap P-22)
 
 Wave 8 — the farmer's account vertical, behind `farmer_profile` (default OFF, kill-switch). The **profile** tab

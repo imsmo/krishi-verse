@@ -18,6 +18,7 @@ export type FlagKey =
   | 'tips_assistant'    // tips library + crop hub + AI assistant + voice search (P-20) — OFF until verified
   | 'schemes_govt'      // govt schemes: browse + eligibility + apply + doc upload + status/DBT (P-21) — OFF until verified
   | 'farmer_profile'    // farmer profile/farm/bank/docs + help/complaint (support SLA) (P-22) — OFF until verified
+  | 'system_screens'    // global search + settings + DPDP export/delete + change-phone + feedback (P-23) — OFF until verified
   | 'worker_active_job' // worker active-job: attendance geofence + earnings + withdraw + reviews (P-13) — OFF
   | 'labour_hire'       // farmer/employer hire: browse workers + post booking + lifecycle (P-14) — OFF
   | 'kyc'               // KYC doc submit/status (P-03) — OFF until staging-verified
@@ -42,6 +43,7 @@ const DEFAULTS: Record<FlagKey, boolean> = {
   tips_assistant: false,
   schemes_govt: false,
   farmer_profile: false,
+  system_screens: false,
   worker_active_job: false,
   labour_hire: false,
   kyc: false,

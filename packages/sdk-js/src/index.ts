@@ -22,4 +22,4 @@ export type { Page, ListingCard, ListingQuery, ProductCard, TraceProvenance, Aut
   Mandi, MandiPrice, PricePrediction, PriceAlert, MandiPulse, WeatherAlert,
   LearningResource, ResourceKind, AssistantReply,
   Scheme, SchemeAuthority, EligibilityResult, ApplicationStatus, SchemeApplication, DbtTransfer,
-  SupportTicket, TicketSeverity, TicketStatus, LandParcel } from './types';
+  SupportTicket, TicketSeverity, TicketStatus, LandParcel, PrivacyRequest } from './types';

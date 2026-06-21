@@ -233,6 +233,11 @@ export interface SupportTicket {
   firstRespondedAt: string | null; resolvedAt: string | null; csatScore: number | null; createdAt?: string;
 }
 
+// --- DPDP privacy (P-23 data-download / account-delete / change-phone) — ASSUMED contracts (endpoints not live) ---
+/** A data-subject request (export or erasure). `status` is server-driven (pending→processing→ready/done). The app
+ * only submits + reflects status — it never produces the export itself (the server compiles it; Law 11). */
+export interface PrivacyRequest { id: string; kind: 'export' | 'deletion'; status: string; requestedAt?: string; readyAt?: string; downloadUrl?: string | null; }
+
 // --- land parcels (P-22 farm details) ---
 /** A land parcel the farmer owns/farms. `area` is a decimal STRING in `areaUnit` (e.g. acre) — not money. */
 export interface LandParcel {

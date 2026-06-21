@@ -27,6 +27,7 @@ import { AssistantResource } from './resources/assistant';
 import { SchemesResource } from './resources/schemes';
 import { SupportResource } from './resources/support';
 import { ParcelsResource } from './resources/parcels';
+import { PrivacyResource } from './resources/privacy';
 
 export class KrishiVerseClient {
   private readonly http: HttpClient;
@@ -65,6 +66,7 @@ export class KrishiVerseClient {
   readonly schemes: SchemesResource;
   readonly support: SupportResource;
   readonly parcels: ParcelsResource;
+  readonly privacy: PrivacyResource;
 
   constructor(config: SdkConfig) {
     this.http = new HttpClient(resolveConfig(config));
@@ -103,6 +105,7 @@ export class KrishiVerseClient {
     this.schemes = new SchemesResource(this.http);
     this.support = new SupportResource(this.http);
     this.parcels = new ParcelsResource(this.http);
+    this.privacy = new PrivacyResource(this.http);
   }
   /** Escape hatch for endpoints without a dedicated resource method yet. Same envelope + resilience. */
   request<T>(method: HttpMethod, path: string, opts?: RequestOptions): Promise<Envelope<T>> {

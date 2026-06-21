@@ -4,7 +4,7 @@
 // the client bundle — only the public API origin and the default tenant slug.
 import Constants from 'expo-constants';
 
-interface RawExtra { apiUrl?: string; tenantSlug?: string; appEnv?: string; razorpayKeyId?: string; tenantConsoleUrl?: string }
+interface RawExtra { apiUrl?: string; tenantSlug?: string; appEnv?: string; razorpayKeyId?: string; tenantConsoleUrl?: string; appVersion?: string; minSupportedVersion?: string; androidStoreUrl?: string; iosStoreUrl?: string; privacyUrl?: string; termsUrl?: string }
 const extra = ((Constants.expoConfig?.extra ?? {}) as RawExtra);
 
 const apiUrl = extra.apiUrl ?? process.env.EXPO_PUBLIC_API_URL;
@@ -26,6 +26,15 @@ export const config = Object.freeze({
    * (P-18). Public, https. Optional — if unset, the handoff buttons explain the console isn't configured rather
    * than opening a bad URL. */
   tenantConsoleUrl: extra.tenantConsoleUrl ?? process.env.EXPO_PUBLIC_TENANT_CONSOLE_URL ?? undefined,
+  /** App version + the server/store-driven minimum supported version (forced-update floor, §8). Both optional;
+   * the app-update screen only forces an update when both are set AND current < min. Public, non-secret. */
+  appVersion: extra.appVersion ?? process.env.EXPO_PUBLIC_APP_VERSION ?? '0.0.0',
+  minSupportedVersion: extra.minSupportedVersion ?? process.env.EXPO_PUBLIC_MIN_VERSION ?? undefined,
+  /** Public store + legal URLs (https). Optional — screens that link to them hide the link if unset. */
+  androidStoreUrl: extra.androidStoreUrl ?? process.env.EXPO_PUBLIC_ANDROID_STORE_URL ?? undefined,
+  iosStoreUrl: extra.iosStoreUrl ?? process.env.EXPO_PUBLIC_IOS_STORE_URL ?? undefined,
+  privacyUrl: extra.privacyUrl ?? process.env.EXPO_PUBLIC_PRIVACY_URL ?? undefined,
+  termsUrl: extra.termsUrl ?? process.env.EXPO_PUBLIC_TERMS_URL ?? undefined,
   requestTimeoutMs: 12000, // mobile networks are slow; bound every call (Law 12)
   userAgent: 'kv-mobile',
 });

@@ -16,6 +16,7 @@ export default function Profile() {
   const { state, setLanguage, signOut } = useAuth();
   const kycEnabled = useFlag('kyc');
   const profileOn = useFlag('farmer_profile');
+  const systemOn = useFlag('system_screens');
 
   const onSignOut = async () => { await signOut(); router.replace('/(auth)/welcome'); };
 
@@ -58,6 +59,14 @@ export default function Profile() {
         <View style={{ marginTop: space[6] }}>
           <Card onPress={() => router.push('/(farmer)/kyc')} accessibilityLabel={t('profile.kyc')}>
             <Text style={styles.link}>{t('profile.kyc')} →</Text>
+          </Card>
+        </View>
+      ) : null}
+
+      {systemOn ? (
+        <View style={{ marginTop: space[6] }}>
+          <Card onPress={() => router.push('/(system)/settings')} accessibilityLabel={t('system.settings.title')}>
+            <Text style={styles.link}>{t('system.settings.title')} →</Text>
           </Card>
         </View>
       ) : null}
