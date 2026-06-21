@@ -8,11 +8,13 @@ import { useRouter } from 'expo-router';
 import { Button, Card, Input, OtpInput, EmptyState, ScreenScaffold, color, font, space } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
+import { useSecureScreen } from '../../core/security';
 import { startPhoneChange, confirmPhoneChange } from '../../features/system/system.api';
 
 const PHONE_RE = /^[6-9]\d{9}$/; // India 10-digit mobile (server re-validates + normalizes to E.164)
 
 export default function ChangePhone() {
+  useSecureScreen(); // OTP on screen — block screenshots/recording (§4)
   const { t } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('system_screens');

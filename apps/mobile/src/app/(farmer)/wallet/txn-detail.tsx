@@ -10,8 +10,10 @@ import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getPayment, getPayout } from '../../../features/wallet/wallet.api';
 import { presentPayment, presentPayout, statusLabelKey, txnTitleKey, type TxnView } from '../../../features/wallet/txn';
+import { useSecureScreen } from '../../../core/security';
 
 export default function TxnDetail() {
+  useSecureScreen(); // transaction detail (amounts) on screen — FLAG_SECURE (§4)
   const { id, kind } = useLocalSearchParams<{ id: string; kind: string }>();
   const { t, lang } = useTranslation();
   const enabled = useFlag('wallet');

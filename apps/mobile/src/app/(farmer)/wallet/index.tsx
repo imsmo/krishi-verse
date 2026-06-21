@@ -10,8 +10,10 @@ import { Button, Card, MoneyText, ScreenScaffold, color, font, space } from '@kr
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { walletBalance } from '../../../features/wallet/wallet.api';
+import { useSecureScreen } from '../../../core/security';
 
 export default function Wallet() {
+  useSecureScreen(); // wallet balance on screen — FLAG_SECURE (§4)
   const { t, lang } = useTranslation();
   const router = useRouter();
   const addMoneyEnabled = useFlag('payments_addmoney');

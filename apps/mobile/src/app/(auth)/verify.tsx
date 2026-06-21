@@ -11,8 +11,10 @@ import { useTranslation } from '../../core/i18n/useTranslation';
 import { verifyOtp, requestOtp, resendSecondsRemaining } from '../../core/auth/otp.flow';
 import { newId } from '../../core/util/ids';
 import { useAuth } from '../../core/auth/auth.store';
+import { useSecureScreen } from '../../core/security';
 
 export default function VerifyScreen() {
+  useSecureScreen(); // OTP on screen — block screenshots/recording (§4)
   const router = useRouter();
   const { t } = useTranslation();
   const { signIn } = useAuth();

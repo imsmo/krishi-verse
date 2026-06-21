@@ -5,6 +5,7 @@
 // X-Tenant-Slug. `anonClient()` is the tokenless client used only for the OTP login flow.
 import { createClient, KrishiVerseClient } from '@krishi-verse/sdk-js';
 import { config } from '../config';
+import { integrityHeaders } from '../security/integrity';
 
 let _accessTokenGetter: () => string | undefined = () => undefined;
 
@@ -23,6 +24,8 @@ export function apiClient(): KrishiVerseClient {
       tenantSlug: config.tenantSlug,
       timeoutMs: config.requestTimeoutMs,
       userAgent: config.userAgent,
+      // Attach the device-integrity risk signal (PII-free) on every authenticated request; the server scores it.
+      getHeaders: integrityHeaders,
     });
   }
   return _client;

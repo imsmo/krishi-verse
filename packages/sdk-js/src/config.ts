@@ -17,14 +17,19 @@ export interface SdkConfig {
   retries?: number;
   /** Identifies the caller in logs/analytics (no PII). */
   userAgent?: string;
+  /** Optional per-request extra headers (e.g. a mobile device-integrity risk signal). Reserved headers
+   * (authorization, idempotency-key, x-tenant-slug, content-type) are NEVER overridable by these — the SDK
+   * applies them first then the reserved ones win. Must carry NO secrets/PII. Async so it can attest lazily. */
+  getHeaders?: () => Record<string, string> | Promise<Record<string, string>>;
   /** Injectable fetch (tests / non-global-fetch runtimes). Defaults to globalThis.fetch. */
   fetchImpl?: typeof fetch;
 }
 
-export interface ResolvedConfig extends Required<Omit<SdkConfig, 'getToken' | 'tenantSlug' | 'userAgent' | 'fetchImpl'>> {
+export interface ResolvedConfig extends Required<Omit<SdkConfig, 'getToken' | 'tenantSlug' | 'userAgent' | 'getHeaders' | 'fetchImpl'>> {
   getToken?: SdkConfig['getToken'];
   tenantSlug?: string;
   userAgent?: string;
+  getHeaders?: SdkConfig['getHeaders'];
   fetchImpl: typeof fetch;
 }
 
@@ -40,6 +45,7 @@ export function resolveConfig(c: SdkConfig): ResolvedConfig {
     getToken: c.getToken,
     tenantSlug: c.tenantSlug,
     userAgent: c.userAgent,
+    getHeaders: c.getHeaders,
     fetchImpl,
   };
 }

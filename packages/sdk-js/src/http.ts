@@ -71,6 +71,18 @@ export class HttpClient {
 
   private async headers(method: HttpMethod, opts: RequestOptions): Promise<Record<string, string>> {
     const h: Record<string, string> = { accept: 'application/json' };
+    // Caller-supplied extra headers (e.g. a device-integrity risk signal) are applied FIRST so the reserved
+    // headers below always win — a caller can never override auth/idempotency/tenant/content-type.
+    if (this.config.getHeaders) {
+      try {
+        const extra = await this.config.getHeaders();
+        for (const [k, v] of Object.entries(extra)) {
+          const key = k.toLowerCase();
+          if (key === 'authorization' || key === 'idempotency-key' || key === 'x-tenant-slug' || key === 'content-type' || key === 'accept') continue;
+          if (typeof v === 'string') h[key] = v;
+        }
+      } catch { /* extra headers are best-effort; never block a request (degrade) */ }
+    }
     if (opts.body !== undefined) h['content-type'] = 'application/json';
     if (this.config.tenantSlug) h['x-tenant-slug'] = this.config.tenantSlug;
     if (this.config.userAgent) h['user-agent'] = this.config.userAgent;

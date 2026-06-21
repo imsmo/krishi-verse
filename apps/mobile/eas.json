@@ -1,1 +1,32 @@
-{ "_doc": "apps/mobile/eas.json · build profiles, <30MB budget · [P1]" }
+{
+  "_doc": "apps/mobile/eas.json · EAS build/submit profiles (P-30 release hardening, guide §8). production = release-hardened (Hermes + R8/ProGuard + shrink + cleartext-off via app.config's expo-build-properties), source maps uploaded PRIVATELY to the crash service + stripped from the artifact, APK/AAB under the <30MB budget. Staged rollout 1%->10%->100% with crash-rate gates is configured on the submit/rollout side. Secrets (signing keys, store creds, Sentry auth) live in EAS secrets - NEVER in the repo or the bundle.",
+  "cli": { "version": ">= 5.0.0", "appVersionSource": "remote" },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": { "EXPO_PUBLIC_APP_ENV": "development" },
+      "android": { "buildType": "apk", "gradleCommand": ":app:assembleDebug" }
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview",
+      "env": { "EXPO_PUBLIC_APP_ENV": "staging" },
+      "android": { "buildType": "apk" }
+    },
+    "production": {
+      "channel": "production",
+      "autoIncrement": true,
+      "env": { "EXPO_PUBLIC_APP_ENV": "production" },
+      "android": { "buildType": "app-bundle" },
+      "ios": {},
+      "_notes": "Release hardening lives in app.config expo-build-properties (Hermes/R8/ProGuard/shrink/cleartext-off). CI uploads source maps to the crash service then they are NOT shipped. Dev menu disabled in release. Dependency audit must be clean to promote."
+    }
+  },
+  "submit": {
+    "production": {
+      "android": { "track": "production", "rollout": 0.01, "_notes": "Staged rollout: start 1%, gate on crash-free-session >= 99.5%, then 10% -> 100% (guide §8). Halt/rollback by pausing the rollout or reverting the OTA channel." },
+      "ios": {}
+    }
+  }
+}

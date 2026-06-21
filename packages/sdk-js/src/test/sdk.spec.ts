@@ -310,4 +310,24 @@ describe('HttpClient via resources', () => {
     expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-ph-1');
     expect(r.ok).toBe(true);
   });
+
+  it('getHeaders injects extra headers but can NEVER override reserved ones (auth/idempotency/tenant)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { ok: true } } }));
+    const c = createClient({
+      ...base, fetchImpl: fn, getToken: () => 'real-tok', tenantSlug: 'acme',
+      getHeaders: async () => ({ 'x-device-integrity': 'posture=unknown;root=0;emu=0', authorization: 'Bearer SPOOF', 'idempotency-key': 'spoof', 'x-tenant-slug': 'evil' }),
+    });
+    await c.schemes.submitApplication('app1', 'real-idem');
+    const h = calls[0].init.headers as Record<string, string>;
+    expect(h['x-device-integrity']).toBe('posture=unknown;root=0;emu=0'); // extra header applied
+    expect(h.authorization).toBe('Bearer real-tok');                       // reserved: real token wins
+    expect(h['idempotency-key']).toBe('real-idem');                        // reserved: real key wins
+    expect(h['x-tenant-slug']).toBe('acme');                               // reserved: real tenant wins
+  });
+
+  it('a throwing getHeaders never blocks the request (degrade)', async () => {
+    const { fn } = fakeFetch(() => ({ body: { data: [] } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok', getHeaders: async () => { throw new Error('attest failed'); } });
+    await expect(c.schemes.list()).resolves.toEqual([]);
+  });
 });

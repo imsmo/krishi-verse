@@ -9,8 +9,10 @@ import { useFlag } from '../../../core/flags/useFlag';
 import { listPayments } from '../../../features/wallet/wallet.api';
 import { presentPayment, statusLabelKey, txnTitleKey } from '../../../features/wallet/txn';
 import { TxnList } from '../../../features/wallet/components/TxnList';
+import { useSecureScreen } from '../../../core/security';
 
 export default function Transactions() {
+  useSecureScreen(); // transaction amounts on screen — FLAG_SECURE (§4)
   const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('wallet');

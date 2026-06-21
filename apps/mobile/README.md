@@ -116,6 +116,33 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
   account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
 - **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
 
+## Security hardening pass (`core/security`, roadmap P-30 — P0 GA gate)
+
+Wave 11 — the security hardening pass + threat-model sign-off (see **`THREAT_MODEL.md`** for the full §4 checklist
+and per-flow analysis). New `core/security` (PURE, unit-tested): **pinning** (TLS pin-set validator + a `pinConfigReady`
+CI gate so an empty/short pin set fails the build), **integrity** (a PII-free device-integrity risk signal header,
+`x-device-integrity`, attached to every authed call via a new SDK `getHeaders` hook; a native provider port whose
+default honestly reports `unknown` and never claims the device is clean), **deeplink-guard** (inbound scheme+route
+allowlist — money flows are NOT link-reachable — rejecting traversal/foreign schemes), and **clipboard-policy**
+(OTP/token/bank/PII never copyable). The SDK `getHeaders` hook can **never override** the reserved headers
+(authorization / idempotency-key / x-tenant-slug) — pinned by a test. FLAG_SECURE now covers **17** sensitive
+screens. Release hardening is config-driven: `app.config.ts` (Hermes, R8/ProGuard + resource-shrink, cleartext
+OFF, TLS pins) + `eas.json` (production profile, private source-map upload, staged rollout).
+
+### Threats considered (the hardening itself)
+- **Client is untrusted (Law 11).** None of this is the last line of defence — every decision is server-enforced.
+  The integrity header is a **signal the server scores**, not a claim it trusts; a patched client that lies
+  "clean" gains nothing. Pinning/obfuscation/attestation raise attacker cost; they don't replace server checks.
+- **Reserved-header spoofing.** A malicious `getHeaders` (or a future caller) cannot overwrite auth/idempotency/
+  tenant — the SDK applies extra headers first then the reserved ones win (regression-tested).
+- **Deep-link abuse.** Inbound links can only land on allowlisted read routes; pay/withdraw/checkout/delete are
+  unreachable by link and require the in-app flow + auth + confirm; ids in params are treated as untrusted (the
+  destination re-checks ownership server-side — IDOR).
+- **Screen capture / clipboard / PII.** 17 sensitive screens block screenshots/recording (FLAG_SECURE); nothing
+  sensitive is ever copied to the clipboard (audited: zero Clipboard usage); no raw Aadhaar/PAN/bank on device.
+- **Degrade-never-die (Law 12).** A failing attestation/extra-header provider never blocks a request; pinning
+  failure is a native reject (not a JS bypass). Offline-sandbox caveat: native enforcement + `npm audit` run in CI.
+
 ## Global search + settings + system screens (`features/system` + `(system)` group, roadmap P-23)
 
 Wave 9 — the cross-cutting `(system)` route group (14 screens). **Global search** (183) fans out across the public
