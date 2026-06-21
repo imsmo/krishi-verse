@@ -116,6 +116,39 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
   account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
 - **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
 
+## Village ambassador: home + referral-led farmer onboarding (`features/ambassador`, roadmap P-15)
+
+Wave 6 — the acquisition agent. A new `(ambassador)` tab group (Home / Farmers / Earnings) behind `ambassador_app`.
+**Home** (86) shows the ambassador's profile status + an acquisition **funnel** (invited→signed-up→activated→
+rewarded from the PURE `referralFunnel`). **Onboard a farmer** (88) creates a **referral CODE** (validated client-
+side against the server's `^[A-Z0-9]{4,20}$`, idempotent — Law 3) → **complete** (91) shows the code to share; the
+farmer self-signs-up and claims it, and **commission attribution is recorded SERVER-SIDE** (the DoD). **Farmers**
+(87) lists the ambassador's referrals with their funnel status; **Earnings** shows accrued commission (a **BigInt**
+sum, Law 2) with an unpaid total. New SDK: `ambassadors` resource (myProfile / myEarnings / plans / createReferral
+/ claimReferral / listReferrals). Pure `referral-flow` logic unit-tested.
+
+### Flagged backend gaps (built the real attribution path; did NOT fake the rest)
+- **No ambassador-assisted "create the farmer's account from scanned docs" endpoint.** Account creation is the
+  farmer's own self-service OTP + KYC (admin user-create is back-office, Law 11). So **onboard-scan (89)** and
+  **onboard-verify (90)** explain the farmer's own next steps rather than POSTing a fabricated create-account call;
+  the real, attributable mechanism is the referral code (create → claim → server-recorded).
+- **No assisted listing/order on-behalf endpoint.** **help-listing (162)** and **help-order (163)** are step-by-
+  step guides the ambassador walks the farmer through on the farmer's OWN login — the app never impersonates.
+- **No visit-log endpoint.** **visit-log (164)** captures a real GPS fix (`core/location`, JIT permission, degrade)
+  and shows it, but surfaces "saving coming soon" instead of POSTing to a non-existent endpoint.
+- **Enroll / activate / payout are back-office (ambassador.manage).** The app never enrolls an ambassador, activates
+  a referral, or moves commission — those stay server-side (Law 11).
+
+### Threats considered (ambassador / referral / attribution)
+- **Attribution is server-owned.** The app only creates/claims codes + reads its own referrals; the server records
+  who-onboarded-whom and accrues commission on activation. A patched client can't credit itself — claim is the
+  referee's own authenticated call, self-referral is rejected server-side.
+- **No client money movement (Law 11).** Commission is bigint paise (Law 2) summed with BigInt; payout is a
+  back-office/server action. Earnings are read-only in the app.
+- **PII-minimisation.** The ambassador profile and referrals expose no farmer name/phone — only codes + funnel
+  status. Location is read once (no continuous polling) and never logged. IDs are server-scoped to the caller (no
+  IDOR — `me`/own-referrals only). Idempotency-Key on create (Law 3). Kill-switch: `ambassador_app`.
+
 ## Farmer-side labour booking / hire (`features/labour`, roadmap P-14)
 
 Wave 5 — the EMPLOYER side of the labour marketplace. From the farmer Home (when `labour_hire` is on) a **Hire**
@@ -527,7 +560,7 @@ Hardening still owed before GA (roadmap P-30): TLS pinning, root/integrity attes
 
 ## Verification
 
-- `pnpm --filter @krishi-verse/mobile test` → **185 unit tests green** (session reducer, offline queue, helpers,
+- `pnpm --filter @krishi-verse/mobile test` → **194 unit tests green** (session reducer, offline queue, helpers,
   feature flags, SHA-256 FIPS vectors, base64, media-mime, cache policies, SWR cache engine, sync transitions,
   payment money/status, quiet-hours, deep-link routing, notification presenters, STT locale map, wallet txn
   presenters + withdrawal BigInt guard, order-status action map + PoD-OTP + tracking steps, buyer search-query +
@@ -535,9 +568,10 @@ Hardening still owed before GA (roadmap P-30): TLS pinning, root/integrity attes
   validation/outbid, labour booking/assignment tones + assignment actions + 18+ canAcceptWork gate +
   rupees→wage-minor + buildWorkerPatch + isJobOpen, geofence haversine/clock-in-100m-eligibility/distance-parts,
   worker-jobs bucketing + BigInt earnings sum + clock-in precondition, hire booking-lifecycle actions + assignment
-  tally + buildBookingDraft validation + wage rupees→paise) — run offline via ts-jest scoped to `src/core/__tests__`. `@krishi-verse/sdk-js` 7/7 still
+  tally + buildBookingDraft validation + wage rupees→paise, ambassador referral funnel + code normalize/validate +
+  BigInt commission sum) — run offline via ts-jest scoped to `src/core/__tests__`. `@krishi-verse/sdk-js` 9/9 still
   green (payments/payouts/kyc/bankAccounts/notifications/listings/orders/shipments/reviews/cart/checkout/addresses/
-  offers/messaging/auctions resources).
+  offers/messaging/auctions/labour/ambassadors resources).
 - Screens are thin (guide §3): every API call lives in a `features/<area>/*.api.ts` data layer (farmer
   dashboard, orders, wallet, listings, catalogue) — no screen calls `apiClient` directly. All user-facing strings
   are i18n keys in hi/en/gu (no literals). `.eslintrc.js` (eslint-config-expo) gates lint in CI.

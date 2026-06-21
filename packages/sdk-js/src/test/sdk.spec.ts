@@ -84,4 +84,24 @@ describe('HttpClient via resources', () => {
     expect((calls[0].init.headers as Record<string, string>).authorization).toBeUndefined();
     expect(prov.qrToken).toBe('QR1');
   });
+
+  it('ambassadors.createReferral POSTs /v1/ambassadors/referrals with an idempotency key', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'r1', referrerUserId: 'u1', refereeUserId: null, code: 'RAMESH24', status: 'invited', createdAt: '2026-01-01' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const r = await c.ambassadors.createReferral('RAMESH24', 'idem-amb-1');
+    expect(calls[0].url).toBe('https://api.test/v1/ambassadors/referrals');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-amb-1');
+    expect(r.code).toBe('RAMESH24');
+    expect(r.status).toBe('invited');
+  });
+
+  it('ambassadors.myEarnings unwraps the page and keeps money a string', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: [{ id: 'e1', ambassadorId: 'a1', eventCode: 'referral_activated', referenceType: null, referenceId: null, amountMinor: '250000', payoutId: null, createdAt: '2026-01-01' }], meta: { nextCursor: null } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const page = await c.ambassadors.myEarnings({ unpaidOnly: true });
+    expect(calls[0].url).toBe('https://api.test/v1/ambassadors/me/earnings?unpaidOnly=true&limit=50');
+    expect(page.items[0].amountMinor).toBe('250000');
+    expect(typeof page.items[0].amountMinor).toBe('string');
+  });
 });

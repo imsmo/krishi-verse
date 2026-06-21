@@ -18,6 +18,7 @@ import { OffersResource } from './resources/offers';
 import { ConversationsResource, MaskedCallsResource } from './resources/messaging';
 import { AuctionsResource } from './resources/auctions';
 import { LabourResource } from './resources/labour';
+import { AmbassadorsResource } from './resources/ambassadors';
 
 export class KrishiVerseClient {
   private readonly http: HttpClient;
@@ -42,6 +43,7 @@ export class KrishiVerseClient {
   readonly maskedCalls: MaskedCallsResource;
   readonly auctions: AuctionsResource;
   readonly labour: LabourResource;
+  readonly ambassadors: AmbassadorsResource;
 
   constructor(config: SdkConfig) {
     this.http = new HttpClient(resolveConfig(config));
@@ -66,6 +68,7 @@ export class KrishiVerseClient {
     this.maskedCalls = new MaskedCallsResource(this.http);
     this.auctions = new AuctionsResource(this.http);
     this.labour = new LabourResource(this.http);
+    this.ambassadors = new AmbassadorsResource(this.http);
   }
   /** Escape hatch for endpoints without a dedicated resource method yet. Same envelope + resilience. */
   request<T>(method: HttpMethod, path: string, opts?: RequestOptions): Promise<Envelope<T>> {

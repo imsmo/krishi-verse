@@ -18,7 +18,8 @@ export type FlagKey =
   | 'labour_hire'       // farmer/employer hire: browse workers + post booking + lifecycle (P-14) — OFF
   | 'kyc'               // KYC doc submit/status (P-03) — OFF until staging-verified
   | 'notifications'     // push + in-app notification center (P-04) — OFF until staging-verified
-  | 'buyer_app' | 'worker_app' | 'trader_app' | 'ambassador_app' | 'tenant_admin_lite'; // future verticals — OFF
+  | 'ambassador_app'    // village ambassador: home + referral-led farmer onboarding + earnings (P-15) — OFF
+  | 'buyer_app' | 'worker_app' | 'trader_app' | 'tenant_admin_lite'; // future verticals — OFF
 
 // Defaults: OFF unless the vertical is built AND verified. Flip a future vertical's default to true only when it
 // ships; production can still kill any of these via remote config.

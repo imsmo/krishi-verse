@@ -143,6 +143,20 @@ export interface LabourBooking {
 /** A worker's assignment to a booking (the "job offer"). The worker accepts/rejects within the booking's window. */
 export interface LabourAssignment { id: string; bookingId: string; workerId: string; status: string; wageMinor: string; acceptedAt: string | null; createdAt?: string; }
 
+// --- ambassadors (module 7 — village acquisition agents) — money is bigint minor STRINGS (Law 2) ---
+/** The caller's own ambassador profile (PII-minimised: no name/phone). monthlyStipendMinor is bigint minor. */
+export interface AmbassadorProfile {
+  id: string; userId: string; clusterRegionIds: string[]; tierId: string | null; mentorAmbassadorId: string | null;
+  trainingCompletedAt: string | null; kioskEnabled: boolean; aepsEnabled: boolean; monthlyStipendMinor: string;
+  lastActivityAt: string | null; isActive: boolean; createdAt?: string;
+}
+/** A referral the ambassador created/owns. status: invited→signed_up→activated→rewarded (server-enforced). */
+export interface Referral { id: string; referrerUserId: string; refereeUserId: string | null; code: string; status: string; createdAt?: string; }
+/** A commission/stipend earning accrued to the ambassador (server-computed). amountMinor is bigint minor. */
+export interface AmbassadorEarning { id: string; ambassadorId: string; eventCode: string; referenceType: string | null; referenceId: string | null; amountMinor: string; payoutId: string | null; createdAt?: string; }
+/** A commission plan (read-only catalogue for display). */
+export interface CommissionPlan { id: string; code: string; name?: string; [k: string]: unknown; }
+
 // --- media (core/media) ---
 export type MediaKind = 'image' | 'video' | 'audio' | 'document';
 /** Presigned PUT ticket: upload the raw bytes to `uploadUrl` (S3, NOT the API host), then confirm. */
