@@ -15,6 +15,14 @@ export interface AdminEnv {
   ADMIN_REQUIRE_HARDWARE_KEY: boolean; // require amr=hwk (FIDO2 at login)
   ADMIN_STEP_UP_MAX_AGE_SEC: number;   // sensitive ops require a re-auth this recent
   DATABASE_POOL_MAX: number;
+  WALLET_GRPC_ADDR: string;            // wallet-service gRPC endpoint — the ONLY money writer (Law 2/9)
+  WALLET_S2S_TOKEN: string;            // service-to-service bearer for the wallet call (never logged)
+  WALLET_GRPC_TIMEOUT_MS: number;      // hard deadline on every wallet RPC (resilience, Law 12)
+  IMPERSONATION_ENABLED: boolean;      // kill-switch (Law 10) — default OFF; act-as is refused unless explicitly on
+  IMPERSONATION_TOKEN_SECRET: string;  // DEDICATED signing key for act-as tokens (NOT the admin/user secret)
+  IMPERSONATION_TOKEN_ISSUER: string;
+  IMPERSONATION_TOKEN_AUDIENCE: string;
+  IMPERSONATION_MAX_TTL_SEC: number;   // hard upper bound on a grant's lifetime (time-box)
 }
 
 function num(v: unknown, d: number): number { const n = Number(v); return Number.isFinite(n) ? n : d; }
@@ -36,6 +44,14 @@ export class AdminConfig {
       ADMIN_REQUIRE_HARDWARE_KEY: bool(raw.ADMIN_REQUIRE_HARDWARE_KEY, raw.NODE_ENV === 'production'),
       ADMIN_STEP_UP_MAX_AGE_SEC: num(raw.ADMIN_STEP_UP_MAX_AGE_SEC, 900),   // 15 min
       DATABASE_POOL_MAX: num(raw.DATABASE_ADMIN_POOL_MAX, 10),
+      WALLET_GRPC_ADDR: String(raw.WALLET_GRPC_ADDR ?? ''),
+      WALLET_S2S_TOKEN: String(raw.WALLET_S2S_TOKEN ?? ''),
+      WALLET_GRPC_TIMEOUT_MS: num(raw.WALLET_GRPC_TIMEOUT_MS, 4000),
+      IMPERSONATION_ENABLED: bool(raw.IMPERSONATION_ENABLED, false),   // Law 10: default OFF
+      IMPERSONATION_TOKEN_SECRET: String(raw.IMPERSONATION_TOKEN_SECRET ?? ''),
+      IMPERSONATION_TOKEN_ISSUER: String(raw.IMPERSONATION_TOKEN_ISSUER ?? 'krishi-verse-impersonation'),
+      IMPERSONATION_TOKEN_AUDIENCE: String(raw.IMPERSONATION_TOKEN_AUDIENCE ?? 'krishi-verse-api'),
+      IMPERSONATION_MAX_TTL_SEC: num(raw.IMPERSONATION_MAX_TTL_SEC, 1800),   // 30 min hard cap
     };
     this.assertProductionSecurity();
   }
@@ -49,10 +65,14 @@ export class AdminConfig {
     if (this.env.ADMIN_IP_ALLOWLIST.length === 0) problems.push('ADMIN_IP_ALLOWLIST must be set (god-mode is IP-restricted)');
     if (!this.env.ADMIN_REQUIRE_HARDWARE_KEY) problems.push('ADMIN_REQUIRE_HARDWARE_KEY must be true in production');
     if (!this.env.DATABASE_ADMIN_URL) problems.push('DATABASE_ADMIN_URL must be set');
+    // If impersonation is enabled in prod, its dedicated signing key must be strong (act-as is the riskiest control).
+    if (this.env.IMPERSONATION_ENABLED && weak(this.env.IMPERSONATION_TOKEN_SECRET)) problems.push('IMPERSONATION_TOKEN_SECRET (unique random >=32 chars) is required when IMPERSONATION_ENABLED');
     if (problems.length) throw new Error(`FATAL: insecure admin-api config -> ${problems.join('; ')}`);
   }
 
   get isProd() { return this.env.NODE_ENV === 'production'; }
   get jwt() { return { secret: this.env.ADMIN_JWT_SECRET, issuer: this.env.ADMIN_JWT_ISSUER, audience: this.env.ADMIN_JWT_AUDIENCE }; }
+  get wallet() { return { addr: this.env.WALLET_GRPC_ADDR, token: this.env.WALLET_S2S_TOKEN, timeoutMs: this.env.WALLET_GRPC_TIMEOUT_MS }; }
+  get impersonation() { return { enabled: this.env.IMPERSONATION_ENABLED, secret: this.env.IMPERSONATION_TOKEN_SECRET, issuer: this.env.IMPERSONATION_TOKEN_ISSUER, audience: this.env.IMPERSONATION_TOKEN_AUDIENCE, maxTtlSec: this.env.IMPERSONATION_MAX_TTL_SEC }; }
 }
 export const ADMIN_CONFIG = Symbol('ADMIN_CONFIG');

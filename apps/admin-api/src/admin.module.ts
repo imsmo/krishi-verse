@@ -7,9 +7,23 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AdminCoreModule } from './core/admin-core.module';
 import { IpAllowlistMiddleware } from './core/auth/ip-allowlist.middleware';
 import { AiModelsOpsModule } from './modules/ai-models-ops/ai-models-ops.module';
+import { TenantOpsModule } from './modules/tenant-ops/tenant-ops.module';
+import { ReconMonitorModule } from './modules/recon-monitor/recon-monitor.module';
+import { ComplianceOpsModule } from './modules/compliance-ops/compliance-ops.module';
+import { BillingOpsModule } from './modules/billing-ops/billing-ops.module';
+import { FlagsOpsModule } from './modules/flags-ops/flags-ops.module';
+import { PlansOpsModule } from './modules/plans-ops/plans-ops.module';
+import { ImpersonationModule } from './modules/impersonation/impersonation.module';
+import { SupportOversightModule } from './modules/support-oversight/support-oversight.module';
+import { PlatformReportsModule } from './modules/platform-reports/platform-reports.module';
+import { ProvidersOpsModule } from './modules/providers-ops/providers-ops.module';
+import { AnnouncementsModule } from './modules/announcements/announcements.module';
+import { GlobalCatalogueOpsModule } from './modules/global-catalogue-ops/global-catalogue-ops.module';
+import { SchemesRegistryOpsModule } from './modules/schemes-registry-ops/schemes-registry-ops.module';
+import { CellsOpsModule } from './modules/cells-ops/cells-ops.module';
 
 @Module({
-  imports: [AdminCoreModule, AiModelsOpsModule],
+  imports: [AdminCoreModule, AiModelsOpsModule, TenantOpsModule, ReconMonitorModule, ComplianceOpsModule, BillingOpsModule, FlagsOpsModule, PlansOpsModule, ImpersonationModule, SupportOversightModule, PlatformReportsModule, ProvidersOpsModule, AnnouncementsModule, GlobalCatalogueOpsModule, SchemesRegistryOpsModule, CellsOpsModule],
 })
 export class AdminModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

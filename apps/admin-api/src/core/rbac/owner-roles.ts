@@ -9,14 +9,69 @@ import { Reflector } from '@nestjs/core';
 export const OwnerPermissions = {
   AiModelManage: 'ai.model.manage',     // register/promote/retire models + tune thresholds
   AiModelRead: 'ai.model.read',         // browse the registry + fairness reports
+  TenantManage: 'tenant.manage',        // approve/suspend/archive tenants + limit overrides (consequential)
+  TenantRead: 'tenant.read',            // search tenants + read scorecards
+  ReconManage: 'recon.manage',          // open/resolve mismatch investigations + FREEZE wallet accounts
+  ReconRead: 'recon.read',              // wallet reconciliation dashboard + run/investigation reads
+  ComplianceManage: 'compliance.manage',// work DSRs, approve exports, manage retention, run breach console
+  ComplianceRead: 'compliance.read',    // audit-log explorer + DSR/export/breach/retention reads
+  BillingManage: 'billing.manage',      // SaaS invoice transitions + dunning + MANUAL money adjustments (via wallet-service)
+  BillingRead: 'billing.read',          // revenue dashboard + invoice/adjustment/dunning reads
+  FlagsManage: 'flags.manage',          // create/enable/disable flags + percent rollout + targeting + KILL-SWITCH (Law 10)
+  FlagsRead: 'flags.read',              // flag registry + change-history reads
+  PlansManage: 'plans.manage',          // SaaS plan catalogue: create/version/publish/archive + features + limits + pricing
+  PlansRead: 'plans.read',              // plan catalogue + feature/limit + change-history reads
+  ImpersonationGrant: 'impersonation.grant', // start/end/revoke a READ-ONLY act-as session (highest sensitivity)
+  ImpersonationRead: 'impersonation.read',   // impersonation grant + action history reads (audit)
+  SupportOversightRead: 'support.oversight.read',     // cross-tenant ticket + SLA-breach + tenant-health reads
+  SupportOversightManage: 'support.oversight.manage', // escalate a ticket (raise severity / status / reassign)
+  ReportsRead: 'reports.read',          // read-only exec dashboards (MRR/ARR/GMV/active-tenants/active-users)
+  ProvidersManage: 'providers.manage',  // enable/disable an integration provider platform-wide (Law 12 degrade)
+  ProvidersRead: 'providers.read',      // provider registry + credential-ref health reads (no secrets)
+  AnnouncementsManage: 'announcements.manage', // author/schedule/publish/expire platform-wide announcements
+  AnnouncementsRead: 'announcements.read',     // announcement list + change-history reads
+  CatalogueManage: 'catalogue.manage',  // platform master taxonomy: lookup vocabularies + category tree (create/edit/move/activate)
+  CatalogueRead: 'catalogue.read',      // taxonomy registry (types/values/categories) + change-history reads
+  SchemesRegistryManage: 'schemes.registry.manage', // govt-scheme master: authorities + schemes (create/edit/version/activate)
+  SchemesRegistryRead: 'schemes.registry.read',     // scheme/authority registry + change-history + window calendar reads
+  CellsManage: 'cells.manage',  // shard/cell routing directory: register cells/shards, status lifecycle, tenant placement/move (Law 8/12)
+  CellsRead: 'cells.read',      // cell/shard map + tenant-placement + residency + change-history reads (no DSN secrets)
 } as const;
 export type OwnerPermission = (typeof OwnerPermissions)[keyof typeof OwnerPermissions];
 
-// role code → permissions. '*' = god mode (everything).
+// role code → permissions. '*' = god mode (everything). These are PLATFORM roles only — they can NEVER be
+// granted to a tenant user (Law 11); the tenant DB's role_permissions has no row for any of these codes.
 const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.freeze({
-  super_admin:       ['*'],
-  platform_ai_ops:   [OwnerPermissions.AiModelManage, OwnerPermissions.AiModelRead],
-  platform_ai_auditor: [OwnerPermissions.AiModelRead],
+  super_admin:            ['*'],
+  platform_ai_ops:        [OwnerPermissions.AiModelManage, OwnerPermissions.AiModelRead],
+  platform_ai_auditor:    [OwnerPermissions.AiModelRead],
+  platform_tenant_ops:    [OwnerPermissions.TenantManage, OwnerPermissions.TenantRead],
+  platform_tenant_viewer: [OwnerPermissions.TenantRead],
+  platform_recon_ops:     [OwnerPermissions.ReconManage, OwnerPermissions.ReconRead],
+  platform_recon_viewer:  [OwnerPermissions.ReconRead],
+  platform_compliance_ops:    [OwnerPermissions.ComplianceManage, OwnerPermissions.ComplianceRead],
+  platform_compliance_viewer: [OwnerPermissions.ComplianceRead],   // DPO / auditor read-only
+  platform_billing_ops:       [OwnerPermissions.BillingManage, OwnerPermissions.BillingRead],
+  platform_billing_viewer:    [OwnerPermissions.BillingRead],      // finance / revenue analyst read-only
+  platform_flags_ops:         [OwnerPermissions.FlagsManage, OwnerPermissions.FlagsRead],
+  platform_flags_viewer:      [OwnerPermissions.FlagsRead],        // SRE / release manager read-only
+  platform_plans_ops:         [OwnerPermissions.PlansManage, OwnerPermissions.PlansRead],
+  platform_plans_viewer:      [OwnerPermissions.PlansRead],        // pricing / product analyst read-only
+  platform_support_impersonator: [OwnerPermissions.ImpersonationGrant, OwnerPermissions.ImpersonationRead],
+  platform_impersonation_auditor: [OwnerPermissions.ImpersonationRead],   // read-only audit of act-as sessions
+  platform_support_oversight: [OwnerPermissions.SupportOversightManage, OwnerPermissions.SupportOversightRead],
+  platform_support_oversight_viewer: [OwnerPermissions.SupportOversightRead],   // NOC / support-lead read-only
+  platform_reports_viewer: [OwnerPermissions.ReportsRead],   // exec / finance / analyst — read-only dashboards
+  platform_providers_ops: [OwnerPermissions.ProvidersManage, OwnerPermissions.ProvidersRead],
+  platform_providers_viewer: [OwnerPermissions.ProvidersRead],   // integrations / SRE — read-only
+  platform_announcements_ops: [OwnerPermissions.AnnouncementsManage, OwnerPermissions.AnnouncementsRead],
+  platform_announcements_viewer: [OwnerPermissions.AnnouncementsRead],   // comms / marketing — read-only
+  platform_catalogue_ops: [OwnerPermissions.CatalogueManage, OwnerPermissions.CatalogueRead],
+  platform_catalogue_viewer: [OwnerPermissions.CatalogueRead],   // catalogue / data-governance analyst — read-only
+  platform_schemes_ops: [OwnerPermissions.SchemesRegistryManage, OwnerPermissions.SchemesRegistryRead],
+  platform_schemes_viewer: [OwnerPermissions.SchemesRegistryRead],   // govt-programs / policy analyst — read-only
+  platform_cells_ops: [OwnerPermissions.CellsManage, OwnerPermissions.CellsRead],
+  platform_cells_viewer: [OwnerPermissions.CellsRead],   // infra / SRE — read-only topology view
 });
 
 /** Flatten a token's roles to a permission set against the static owner catalog (unknown roles grant nothing). */
