@@ -2,7 +2,7 @@
 // (guide §3). Reads degrade-never-die (null/empty). Register is idempotent (Law 3). Respond (accept/decline) is an
 // online transition that throws so the screen shows the precise outcome (409 window-expired / 403 not-allowed) —
 // the server enforces the accept/decline window + the 18+ gate. Money is bigint minor strings (Law 2).
-import type { WorkerProfile, LabourBooking, LabourAssignment, WorkerPrefsInput } from '@krishi-verse/sdk-js';
+import type { WorkerProfile, LabourBooking, LabourAssignment, WorkerPrefsInput, ReviewSummary } from '@krishi-verse/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 
@@ -35,4 +35,18 @@ export async function getOffer(id: string): Promise<LabourAssignment | null> {
 /** Accept/decline an offer within the server-enforced window. Throws on a real error. */
 export function respondOffer(id: string, decision: 'accept' | 'reject'): Promise<LabourAssignment> {
   return apiClient().labour.respondAssignment(id, decision);
+}
+
+// ---- P-13: active-job / earnings / reviews (reads over the SAME labour + reviews contracts) ----
+
+/** All of the caller's assignments (every status) for the My-Jobs view; categorized client-side. Keyset-paged;
+ * degrades to an empty page. */
+export async function myJobs(cursor?: string): Promise<OffersPage> {
+  try { return await apiClient().labour.listAssignments({ box: 'mine', cursor }); } catch { return { items: [], nextCursor: null }; }
+}
+
+/** Worker rating summary (real, best-effort): the generic reviews summary keyed to the worker's own user id. The
+ * server resolves the aggregate; degrades to null when reviews are off or none exist. */
+export async function workerRating(userId: string): Promise<ReviewSummary | null> {
+  try { return await apiClient().reviews.summary({ targetUserId: userId }); } catch { return null; }
 }

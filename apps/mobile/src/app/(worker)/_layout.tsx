@@ -36,6 +36,13 @@ export default function WorkerTabsLayout() {
       <Tabs.Screen name="profile" options={{ title: t('tabs.profile'), tabBarIcon: ({ focused }) => <Icon glyph="👤" focused={focused} /> }} />
       <Tabs.Screen name="jobs/[id]" options={{ href: null }} />
       <Tabs.Screen name="offers/[id]" options={{ href: null }} />
+      <Tabs.Screen name="my-jobs" options={{ href: null }} />
+      <Tabs.Screen name="active-job/[id]" options={{ href: null }} />
+      <Tabs.Screen name="payment-received/[id]" options={{ href: null }} />
+      <Tabs.Screen name="earnings" options={{ href: null }} />
+      <Tabs.Screen name="withdraw" options={{ href: null }} />
+      <Tabs.Screen name="reviews" options={{ href: null }} />
+      <Tabs.Screen name="insurance" options={{ href: null }} />
     </Tabs>
   );
 }

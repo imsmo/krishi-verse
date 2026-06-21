@@ -116,6 +116,41 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
   account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
 - **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
 
+## Worker active job: geo-attendance + earnings + reviews (`features/labour` + `core/location`, roadmap P-13)
+
+Wave 5 — the worker's active engagement. From Home (when `worker_active_job` is on) the worker reaches **My Jobs**
+(32, assignments bucketed Upcoming / Paid / Closed via the PURE `categorizeAssignments`), an **Active Job** (33)
+with **geo-fenced clock-in**, **Payment received** (34), **Earnings** (35, a BigInt sum of paid wages — Law 2),
+**Withdraw** (41, reusing the wallet payout path), and **My Reviews** (40, reputation). The DoD centrepiece is the
+**clock-in geofence**: new `core/location` ships PURE `haversineMeters` / `clockInEligibility` (within **100 m**,
+usable GPS accuracy) plus a resilient one-shot `getCurrentFix` over expo-location (permission JIT, timeout-bounded,
+degrade-never-die). The withdraw screen is `FLAG_SECURE`. Behind `worker_active_job`. No new SDK — everything reads
+over the existing `labour` (assignments/bookings), `payments`/`payouts` (wallet), and `reviews` contracts.
+
+### Flagged backend gaps (real geofence + reads built; NOT faked)
+- **No attendance/clock-in endpoint, and the booking read-model omits farm lat/lng.** So the geofence is computed
+  for real (the honest, unit-tested invariant) and, on a pass, the UI says "you're at the farm — attendance
+  recording is coming soon" instead of POSTing to a non-existent endpoint or inventing coordinates. `farmOf()`
+  reads the coords defensively so the fence lights up the instant the contract adds them.
+- **Wages are employer-initiated** (the labour service settles completed→paid via a wallet transfer); the worker
+  side reflects `paid` status + sums earnings. There is no worker-triggered EOD payout in the app (Law 11).
+- **No insurance/PMSBY** in the fintech module → Insurance (39/145/146) is an honest "coming soon", not a fake
+  policy/claim flow. **Earnings total** sums the loaded keyset page (no server aggregate endpoint yet) and shows a
+  "+ more" hint when older pages remain. **Worker reviews** use the generic reviews summary keyed to the worker's
+  user id + the profile's own bookings/no-show counters (no labour-specific review endpoint yet).
+
+### Threats considered (attendance / wage / location)
+- **Geofence is UX, the server is the authority.** A rooted device can spoof GPS, so `clockInEligibility` only
+  gates an honest worker's UI; a real attendance write must re-verify the fix server-side. The fence fails closed
+  (NaN/∞ → Infinity → "too far") and rejects low-accuracy fixes so a vague fix can't sneak past the 100 m gate.
+- **No client money movement (Law 11).** Earnings are bigint paise summed with BigInt (never a float); the worker
+  never moves money — wage settlement is the server's. Withdraw is a REAL, idempotent payout (Law 3) the SERVER
+  authorizes (balance/KYC/limits); a 403/409 shows a precise message, never worked around.
+- **Permissions & privacy.** Location is requested just-in-time with rationale, read once (no continuous polling —
+  battery/data on low-end Android), and never logged. The withdraw screen is `FLAG_SECURE`; bank destinations are
+  shown masked (last-4 / VPA only). IDs from params are re-checked server-side (IDOR); lists are keyset-bounded.
+- **Kill-switch.** `worker_active_job` disables the whole active-job/earnings/attendance surface without a release.
+
 ## Worker app: onboarding + jobs (`features/labour`, roadmap P-12)
 
 Wave 5 — the labour-marketplace differentiator. A `worker` role (added to the role switcher, home `/(worker)/home`)
@@ -455,13 +490,14 @@ Hardening still owed before GA (roadmap P-30): TLS pinning, root/integrity attes
 
 ## Verification
 
-- `pnpm --filter @krishi-verse/mobile test` → **157 unit tests green** (session reducer, offline queue, helpers,
+- `pnpm --filter @krishi-verse/mobile test` → **175 unit tests green** (session reducer, offline queue, helpers,
   feature flags, SHA-256 FIPS vectors, base64, media-mime, cache policies, SWR cache engine, sync transitions,
   payment money/status, quiet-hours, deep-link routing, notification presenters, STT locale map, wallet txn
   presenters + withdrawal BigInt guard, order-status action map + PoD-OTP + tracking steps, buyer search-query +
   saved-set, cart-math + address format, offer-status + chat message-view, auction current-price/min-next/bid
   validation/outbid, labour booking/assignment tones + assignment actions + 18+ canAcceptWork gate +
-  rupees→wage-minor + buildWorkerPatch + isJobOpen) — run offline via ts-jest scoped to `src/core/__tests__`. `@krishi-verse/sdk-js` 7/7 still
+  rupees→wage-minor + buildWorkerPatch + isJobOpen, geofence haversine/clock-in-100m-eligibility/distance-parts,
+  worker-jobs bucketing + BigInt earnings sum + clock-in precondition) — run offline via ts-jest scoped to `src/core/__tests__`. `@krishi-verse/sdk-js` 7/7 still
   green (payments/payouts/kyc/bankAccounts/notifications/listings/orders/shipments/reviews/cart/checkout/addresses/
   offers/messaging/auctions resources).
 - Screens are thin (guide §3): every API call lives in a `features/<area>/*.api.ts` data layer (farmer

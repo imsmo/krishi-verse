@@ -14,6 +14,7 @@ export type FlagKey =
   | 'buyer_checkout'    // buyer cart → checkout → place+pay order (P-09) — OFF until verified
   | 'offers_chat'       // offers negotiation + chat + masked call (P-10) — OFF until verified
   | 'auctions'          // auction discovery + bidding (EMD) + create (P-11) — OFF until verified
+  | 'worker_active_job' // worker active-job: attendance geofence + earnings + withdraw + reviews (P-13) — OFF
   | 'kyc'               // KYC doc submit/status (P-03) — OFF until staging-verified
   | 'notifications'     // push + in-app notification center (P-04) — OFF until staging-verified
   | 'buyer_app' | 'worker_app' | 'trader_app' | 'ambassador_app' | 'tenant_admin_lite'; // future verticals — OFF
@@ -30,6 +31,7 @@ const DEFAULTS: Record<FlagKey, boolean> = {
   buyer_checkout: false,
   offers_chat: false,
   auctions: false,
+  worker_active_job: false,
   kyc: false,
   notifications: false,
   buyer_app: false,

@@ -16,6 +16,7 @@ export default function WorkerHome() {
   const { t } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('worker_app');
+  const activeJob = useFlag('worker_active_job');
   const [worker, setWorker] = useState<WorkerProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -44,6 +45,14 @@ export default function WorkerHome() {
           <View style={styles.actions}>
             <Button title={t('worker.tabs.offers')} onPress={() => router.push('/(worker)/offers')} />
             <Button title={t('worker.tabs.jobs')} variant="outline" onPress={() => router.push('/(worker)/jobs')} />
+            {activeJob ? (
+              <>
+                <Button title={t('worker.myJobs.title')} variant="outline" onPress={() => router.push('/(worker)/my-jobs')} />
+                <Button title={t('worker.earnings.title')} variant="outline" onPress={() => router.push('/(worker)/earnings')} />
+                <Button title={t('worker.reviews.title')} variant="outline" onPress={() => router.push('/(worker)/reviews')} />
+                <Button title={t('worker.insurance.title')} variant="outline" onPress={() => router.push('/(worker)/insurance')} />
+              </>
+            ) : null}
           </View>
         </>
       )}
