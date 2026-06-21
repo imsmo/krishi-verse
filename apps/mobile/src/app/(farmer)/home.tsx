@@ -17,6 +17,7 @@ export default function FarmerHome() {
   const { t, lang } = useTranslation();
   const { state, loadProfile } = useAuth();
   const notifOn = useFlag('notifications');
+  const hireOn = useFlag('labour_hire');
   const [listingCount, setListingCount] = useState<number | null>(null);
   const [mandi, setMandi] = useState<MandiRow[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -65,6 +66,13 @@ export default function FarmerHome() {
             <MoneyText minor={'0'} langCode={lang} size="2xl" />
           </Card>
         </View>
+
+        {hireOn ? (
+          <Card style={styles.tile} onPress={() => router.push('/(farmer)/hire/bookings')} accessibilityLabel={t('hire.title')}>
+            <Text style={styles.tileLabel}>{t('hire.title')}</Text>
+            <Text style={styles.tileValue}>👷</Text>
+          </Card>
+        ) : null}
 
         {mandi && mandi.length > 0 ? (
           <View>

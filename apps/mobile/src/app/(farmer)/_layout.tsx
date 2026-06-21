@@ -65,6 +65,12 @@ export default function FarmerTabsLayout() {
       <Tabs.Screen name="notifications/index" options={{ href: null }} />
       <Tabs.Screen name="notifications/[id]" options={{ href: null }} />
       <Tabs.Screen name="notifications/settings" options={{ href: null }} />
+      <Tabs.Screen name="hire/bookings" options={{ href: null }} />
+      <Tabs.Screen name="hire/workers" options={{ href: null }} />
+      <Tabs.Screen name="hire/worker/[id]" options={{ href: null }} />
+      <Tabs.Screen name="hire/book" options={{ href: null }} />
+      <Tabs.Screen name="hire/sent" options={{ href: null }} />
+      <Tabs.Screen name="hire/booking/[id]" options={{ href: null }} />
     </Tabs>
   );
 }

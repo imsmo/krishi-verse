@@ -15,6 +15,7 @@ export type FlagKey =
   | 'offers_chat'       // offers negotiation + chat + masked call (P-10) — OFF until verified
   | 'auctions'          // auction discovery + bidding (EMD) + create (P-11) — OFF until verified
   | 'worker_active_job' // worker active-job: attendance geofence + earnings + withdraw + reviews (P-13) — OFF
+  | 'labour_hire'       // farmer/employer hire: browse workers + post booking + lifecycle (P-14) — OFF
   | 'kyc'               // KYC doc submit/status (P-03) — OFF until staging-verified
   | 'notifications'     // push + in-app notification center (P-04) — OFF until staging-verified
   | 'buyer_app' | 'worker_app' | 'trader_app' | 'ambassador_app' | 'tenant_admin_lite'; // future verticals — OFF
@@ -32,6 +33,7 @@ const DEFAULTS: Record<FlagKey, boolean> = {
   offers_chat: false,
   auctions: false,
   worker_active_job: false,
+  labour_hire: false,
   kyc: false,
   notifications: false,
   buyer_app: false,

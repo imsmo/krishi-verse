@@ -116,6 +116,43 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
   account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
 - **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
 
+## Farmer-side labour booking / hire (`features/labour`, roadmap P-14)
+
+Wave 5 — the EMPLOYER side of the labour marketplace. From the farmer Home (when `labour_hire` is on) a **Hire**
+tile opens **My Bookings** (50); from there the farmer can **Browse Workers** (42) with an inline **filter** (43,
+region + verified-only), open a PII-minimised **worker profile** (25), and **post a booking** (26 + steps
+44/45/62/46/63 + confirm 27) — headcount, dates, wage (₹→paise via BigInt, Law 2), wage-kind, women-only, **farm
+GPS via `core/location`**, respond-by — validated by the PURE `buildBookingDraft` and POSTed as a REAL idempotent
+`createBooking`. **Booking detail** (51) shows an assignment tally (**accepted 48 / awaiting / declined 49**) and
+the employer **lifecycle actions** for the current status: assign workers → **start → complete → pay wages** (or
+cancel). Every action is a REAL transition the SERVER authorizes/validates; **pay settles wages server-side** (the
+app never moves money — Law 11). New SDK: employer methods on the `labour` resource
+(`listWorkers`/`getWorker`/`createBooking`/`assignWorker`/`start`/`complete`/`cancel`/`payWages`/`bookingAssignments`)
++ `CreateBookingInput`. Behind `labour_hire`. Pure `booking-flow` logic unit-tested.
+
+### Flagged backend gaps (built real where the endpoint exists; did NOT fake the rest)
+- **No mobile lookups READ endpoint for the work-type / skill / region / skill-level taxonomy.** `createBooking`
+  needs those ids, but there's no way to populate pickers from real data — so the booking form collects the real
+  fields and `buildBookingDraft` **flags the `taxonomy` group** (entered manually, with a clear "catalogue coming
+  soon" note) rather than inventing ids. The submit is the real endpoint; it succeeds once valid ids are supplied
+  (and the server still rejects a sub-floor wage — 422).
+- **Wage floor is server-owned:** `min_wage` is never client-supplied; the offered wage is checked against the
+  statutory floor server-side. The client surfaces the 422 as a precise "raise your wage" message.
+- **Assign-from-marketplace:** browsing workers carries an `assignBookingId` so a worker profile can be assigned
+  to an open booking (real `assignWorker`); the server re-checks ownership, the 18+ gate, headcount + floor.
+
+### Threats considered (hire / booking lifecycle / wage)
+- **Server is the authority on every transition.** assign/start/complete/cancel/pay are owner-or-admin server-side
+  (start needs ≥1 accepted worker; pay needs `completed`); a 403/409/422 shows a friendly message, never worked
+  around. The client's `bookingLifecycleActions` only decides which buttons to show.
+- **No client money movement (Law 11).** Wages are bigint paise (Law 2); `payWages` only signals the server, which
+  performs the employer→worker wallet transfer. The rupee→paise conversion + all sums use BigInt, never a float.
+- **Idempotency (Law 3).** create / assign / pay carry an Idempotency-Key so a double-tap can't double-post,
+  double-assign, or double-pay.
+- **IDOR / PII-min.** booking + worker ids from params are re-checked server-side; the worker pool is
+  PII-minimised (anonymised id + region/rating/availability — never name/phone). Lists are keyset-bounded.
+- **Kill-switch.** `labour_hire` disables the whole employer hire surface without a release.
+
 ## Worker active job: geo-attendance + earnings + reviews (`features/labour` + `core/location`, roadmap P-13)
 
 Wave 5 — the worker's active engagement. From Home (when `worker_active_job` is on) the worker reaches **My Jobs**
@@ -490,14 +527,15 @@ Hardening still owed before GA (roadmap P-30): TLS pinning, root/integrity attes
 
 ## Verification
 
-- `pnpm --filter @krishi-verse/mobile test` → **175 unit tests green** (session reducer, offline queue, helpers,
+- `pnpm --filter @krishi-verse/mobile test` → **185 unit tests green** (session reducer, offline queue, helpers,
   feature flags, SHA-256 FIPS vectors, base64, media-mime, cache policies, SWR cache engine, sync transitions,
   payment money/status, quiet-hours, deep-link routing, notification presenters, STT locale map, wallet txn
   presenters + withdrawal BigInt guard, order-status action map + PoD-OTP + tracking steps, buyer search-query +
   saved-set, cart-math + address format, offer-status + chat message-view, auction current-price/min-next/bid
   validation/outbid, labour booking/assignment tones + assignment actions + 18+ canAcceptWork gate +
   rupees→wage-minor + buildWorkerPatch + isJobOpen, geofence haversine/clock-in-100m-eligibility/distance-parts,
-  worker-jobs bucketing + BigInt earnings sum + clock-in precondition) — run offline via ts-jest scoped to `src/core/__tests__`. `@krishi-verse/sdk-js` 7/7 still
+  worker-jobs bucketing + BigInt earnings sum + clock-in precondition, hire booking-lifecycle actions + assignment
+  tally + buildBookingDraft validation + wage rupees→paise) — run offline via ts-jest scoped to `src/core/__tests__`. `@krishi-verse/sdk-js` 7/7 still
   green (payments/payouts/kyc/bankAccounts/notifications/listings/orders/shipments/reviews/cart/checkout/addresses/
   offers/messaging/auctions resources).
 - Screens are thin (guide §3): every API call lives in a `features/<area>/*.api.ts` data layer (farmer

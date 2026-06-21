@@ -13,6 +13,17 @@ export interface WorkerPrefsInput {
   emergencyContactName?: string; emergencyContactPhone?: string; eshramNo?: string;
 }
 
+/** Employer "post a booking" payload (P-14). The server snapshots the statutory min-wage from (regionId,
+ * skillLevel, wageKind, startDate) and REJECTS a wageOffered below it (422) — min_wage is never client-supplied.
+ * Money is bigint minor strings (Law 2). */
+export interface CreateBookingInput {
+  demandTypeCode: string; taskSkillId: string; regionId: string;
+  skillLevel: 'unskilled' | 'semi_skilled' | 'skilled' | 'highly_skilled';
+  workersNeeded: number; startDate: string; endDate: string; dailyHours?: number;
+  wageKind?: 'per_day' | 'per_hour' | 'per_task'; wageOfferedMinor: string;
+  womenOnly?: boolean; farmLat: number; farmLng: number; respondByHours?: number;
+}
+
 export class LabourResource {
   constructor(private readonly http: HttpClient) {}
 
@@ -50,5 +61,43 @@ export class LabourResource {
   /** Accept or reject an assignment (the caller's own). The server enforces the booking's respond-by window. */
   async respondAssignment(id: string, decision: 'accept' | 'reject', voiceConsentMediaId?: string): Promise<LabourAssignment> {
     return (await this.http.request<LabourAssignment>('POST', `labour/assignments/${encodeURIComponent(id)}/respond`, { body: { decision, voiceConsentMediaId } })).data;
+  }
+
+  // --- employer / hire side (P-14). All authorized server-side by worker.book; owner-or-admin per booking. ---
+
+  /** Browse the worker pool (employer). PII-minimised — no name/phone, only region/rating/availability. Keyset. */
+  async listWorkers(params: { villageRegionId?: string; ageVerified?: boolean; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<WorkerProfile>> {
+    const r = await this.http.request<WorkerProfile[]>('GET', 'labour/workers', { query: { villageRegionId: params.villageRegionId, ageVerified: params.ageVerified, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  async getWorker(id: string, signal?: AbortSignal): Promise<WorkerProfile> {
+    return (await this.http.request<WorkerProfile>('GET', `labour/workers/${encodeURIComponent(id)}`, { signal })).data;
+  }
+
+  /** Post a booking (the offered wage must clear the server's statutory floor). Idempotent (Law 3). */
+  async createBooking(input: CreateBookingInput, idempotencyKey: string): Promise<LabourBooking> {
+    return (await this.http.request<LabourBooking>('POST', 'labour/bookings', { idempotencyKey, body: input })).data;
+  }
+  /** Assign a worker to an OPEN booking (per-worker wage optional, still floor-checked). Idempotent. */
+  async assignWorker(bookingId: string, input: { workerId: string; wageMinor?: string }, idempotencyKey: string): Promise<LabourAssignment> {
+    return (await this.http.request<LabourAssignment>('POST', `labour/bookings/${encodeURIComponent(bookingId)}/assignments`, { idempotencyKey, body: input })).data;
+  }
+  async startBooking(bookingId: string): Promise<LabourBooking> {
+    return (await this.http.request<LabourBooking>('POST', `labour/bookings/${encodeURIComponent(bookingId)}/start`, {})).data;
+  }
+  async completeBooking(bookingId: string): Promise<LabourBooking> {
+    return (await this.http.request<LabourBooking>('POST', `labour/bookings/${encodeURIComponent(bookingId)}/complete`, {})).data;
+  }
+  async cancelBooking(bookingId: string, reason?: string): Promise<LabourBooking> {
+    return (await this.http.request<LabourBooking>('POST', `labour/bookings/${encodeURIComponent(bookingId)}/cancel`, { body: { reason } })).data;
+  }
+  /** Settle wages on a COMPLETED booking — server moves money (the app never does, Law 11). Idempotent. */
+  async payWages(bookingId: string, idempotencyKey: string): Promise<LabourBooking & { totalPaidMinor?: string; workersPaid?: number }> {
+    return (await this.http.request<LabourBooking & { totalPaidMinor?: string; workersPaid?: number }>('POST', `labour/bookings/${encodeURIComponent(bookingId)}/pay`, { idempotencyKey })).data;
+  }
+  /** Assignments for a booking the caller owns (the employer's view: who accepted/declined). Keyset. */
+  async bookingAssignments(bookingId: string, params: { status?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<LabourAssignment>> {
+    const r = await this.http.request<LabourAssignment[]>('GET', 'labour/assignments', { query: { box: 'booking', bookingId, status: params.status, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
 }

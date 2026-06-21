@@ -6,7 +6,7 @@ export type { HttpMethod, RequestOptions, Envelope } from './http';
 export type { CreateListingInput } from './resources/listings';
 export type { OrderRole } from './resources/orders';
 export type { OfferBox } from './resources/offers';
-export type { WorkerPrefsInput } from './resources/labour';
+export type { WorkerPrefsInput, CreateBookingInput } from './resources/labour';
 export type { Page, ListingCard, ListingQuery, ProductCard, TraceProvenance, AuthTokens, UserProfile,
   MediaKind, MediaUploadTicket, MediaConfirmResult, MediaDownloadLink,
   PaymentPurpose, PaymentIntent, PaymentSummary, PayoutSummary, BankAccount, KycStatus, KycDocument,
