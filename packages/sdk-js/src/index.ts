@@ -12,4 +12,5 @@ export type { Page, ListingCard, ListingQuery, ProductCard, TraceProvenance, Aut
   NotificationItem, NotificationPreference, QuietHours,
   OrderListItem, OrderItemLine, OrderDetail, Shipment, ReviewSummary,
   CartItem, Cart, CheckoutResult, Address,
-  ListingOffer, Conversation, ConversationContext, Message, MaskedCall } from './types';
+  ListingOffer, Conversation, ConversationContext, Message, MaskedCall,
+  Auction, AuctionKind, BidHistoryItem, PlaceBidResult } from './types';

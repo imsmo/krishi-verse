@@ -112,6 +112,19 @@ export interface Message {
  * is ever returned to the client. */
 export interface MaskedCall { id: string; callerUserId: string; calleeUserId: string; contextType: string | null; contextId: string | null; durationSecs?: number | null; createdAt?: string; }
 
+// --- auctions (module 3) — money is bigint minor-unit STRINGS (Law 2); EMD held/refunded server-side ---
+export type AuctionKind = 'english_open' | 'sealed';
+export interface Auction {
+  auctionId: string; listingId: string; kind: string; status: string;
+  startPriceMinor: string; reservePriceMinor: string | null; minIncrementMinor: string;
+  startsAt: string; endsAt: string; winningBidId: string | null; createdAt?: string;
+}
+/** One bid in the history. `amountMinor` is null when a sealed auction masks another bidder's amount
+ * (server-side) until close — a bidder always sees their own. */
+export interface BidHistoryItem { id: string; bidderUserId: string; amountMinor: string | null; createdAt?: string; }
+/** Result of placing a bid. `extended` = the soft-close auto-extended the end time. */
+export interface PlaceBidResult { bidId: string; auctionId: string; amountMinor: string; extended: boolean; endsAt: string; }
+
 // --- media (core/media) ---
 export type MediaKind = 'image' | 'video' | 'audio' | 'document';
 /** Presigned PUT ticket: upload the raw bytes to `uploadUrl` (S3, NOT the API host), then confirm. */

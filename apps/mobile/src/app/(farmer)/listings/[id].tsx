@@ -15,6 +15,7 @@ export default function ListingDetail() {
   const { t, lang } = useTranslation();
   const router = useRouter();
   const boostOn = useFlag('listing_boost');
+  const auctionsOn = useFlag('auctions');
   const [listing, setListing] = useState<ListingCard | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -49,6 +50,7 @@ export default function ListingDetail() {
             <Button title={t('listings.edit')} onPress={() => router.push({ pathname: '/(farmer)/listings/edit', params: { id: listing.id } })} />
             <Button title={t('listings.repost')} variant="outline" onPress={() => router.push({ pathname: '/(farmer)/listings/new', params: { repostFrom: listing.id } })} />
             {boostOn ? <Button title={t('listings.boost')} variant="outline" onPress={onBoost} /> : null}
+            {auctionsOn ? <Button title={t('listings.auction')} variant="outline" onPress={() => router.push({ pathname: '/(farmer)/create-auction', params: { listingId: listing.id } })} /> : null}
           </View>
         </>
       )}

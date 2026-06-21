@@ -20,6 +20,7 @@ export default function BuyerProfile() {
   const enabled = useFlag('buyer_app');
   const kycEnabled = useFlag('kyc');
   const offersChat = useFlag('offers_chat');
+  const auctionsOn = useFlag('auctions');
   const [kyc, setKyc] = useState<KycDocument[] | null>(null);
 
   const load = useCallback(async () => { if (kycEnabled) setKyc(await listKyc()); }, [kycEnabled]);
@@ -45,6 +46,7 @@ export default function BuyerProfile() {
         <Pressable onPress={() => router.push('/(buyer)/addresses')} style={styles.link} accessibilityRole="button"><Text style={styles.linkText}>{t('address.title')}</Text></Pressable>
         {offersChat ? <Pressable onPress={() => router.push('/(buyer)/offers')} style={styles.link} accessibilityRole="button"><Text style={styles.linkText}>{t('offer.title')}</Text></Pressable> : null}
         {offersChat ? <Pressable onPress={() => router.push('/(buyer)/chats')} style={styles.link} accessibilityRole="button"><Text style={styles.linkText}>{t('chat.title')}</Text></Pressable> : null}
+        {auctionsOn ? <Pressable onPress={() => router.push('/(buyer)/auctions')} style={styles.link} accessibilityRole="button"><Text style={styles.linkText}>{t('auction.title')}</Text></Pressable> : null}
       </View>
 
       <View style={{ marginTop: space[5] }}>

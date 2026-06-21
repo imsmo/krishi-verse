@@ -116,6 +116,41 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
   account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
 - **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
 
+## Auction discovery + bidding + live (`features/auctions`, roadmap P-11)
+
+Wave 4. Browse **auctions** (Live/Ended), open the **detail** which **polls every 4s** (watch-live; degrades to
+pull-to-refresh), and **place a bid** — the bid holds an **EMD (earnest-money deposit) on the bidder's wallet
+SERVER-SIDE**, and the loser's EMD is refunded + the winner→settlement run entirely server-side (the app never
+moves money — Law 11). Current price + minimum-next-bid come from the PURE `auction-status` helpers (bigint, Law 2);
+an **outbid banner** (193) reflects when you're no longer the top bidder (the authoritative nudge is the P-04
+push). Bid history (194) is shown, with sealed-auction amounts masked server-side. Sellers **create an auction**
+(64) from a listing (start price + increment + duration). New SDK: `auctions`. Behind `auctions` (+ `buyer_app`
+for the browse side, `farmer_app` for create). Pure logic unit-tested.
+
+### Flagged backend gaps (built real where the endpoint exists; did NOT fake the rest)
+- **EMD amount isn't in the read model:** the auction read shape exposes start/reserve/increment but not the EMD,
+  so we show a clear "a refundable deposit is held" note rather than a fabricated number; the hold/refund are real
+  and server-side. The wallet (P-06) reflects the hold/refund.
+- **No cross-auction "my-bids" (18) endpoint:** the bid history is per-auction, so the detail marks your own bids
+  ("You") inline; a standalone my-bids list across auctions awaits a server read-model (flagged, not faked).
+- **Live is poll-based** (4s), not a socket — the DoD allows poll-or-socket; a websocket upgrade is a later
+  optimization. Product title on the detail is fetched via the public listing read (the auction read has no title).
+
+### Threats considered (auctions / EMD / bidding)
+- **Server is the authority on every bid:** the legality of a bid (highest, increment, EMD availability, timing)
+  and the EMD hold are enforced server-side; the client's `validateBidRupees` is UX-only. A rejected bid (409/422)
+  shows "someone bid higher — refresh", never worked around. Winner declaration + EMD refund are server jobs.
+- **No client money movement (Law 11):** placing a bid only calls the endpoint; the EMD hold + loser refund +
+  winner settlement happen server-side. Amounts are bigint paise end-to-end (Law 2); the rupee→paise + comparisons
+  use BigInt, never a float.
+- **Idempotency:** create-auction + place-bid carry an Idempotency-Key (Law 3) — a retried bid can't double-hold
+  EMD or place two bids.
+- **Sealed-bid privacy:** other bidders' amounts are masked **server-side** until close; the client renders the
+  null amount as "Sealed" — it never receives the hidden value.
+- **IDOR / scraping:** auction + bid ids from params are re-checked server-side; lists are keyset-bounded; bidding
+  is rate-limited at the edge and the poll interval is bounded (4s) so the app isn't an auction-sniping vector.
+- **Kill-switch:** the `auctions` flag disables discovery + bidding + create without a release.
+
 ## Offers + chat + masked call (`features/offers` + `features/messaging`, roadmap P-10)
 
 Negotiate and talk without leaking a phone number. From a listing the buyer can **Make an offer** (99 →
@@ -385,13 +420,14 @@ Hardening still owed before GA (roadmap P-30): TLS pinning, root/integrity attes
 
 ## Verification
 
-- `pnpm --filter @krishi-verse/mobile test` → **138 unit tests green** (session reducer, offline queue, helpers,
+- `pnpm --filter @krishi-verse/mobile test` → **150 unit tests green** (session reducer, offline queue, helpers,
   feature flags, SHA-256 FIPS vectors, base64, media-mime, cache policies, SWR cache engine, sync transitions,
   payment money/status, quiet-hours, deep-link routing, notification presenters, STT locale map, wallet txn
   presenters + withdrawal BigInt guard, order-status action map + PoD-OTP + tracking steps, buyer search-query +
-  saved-set, cart-math + address format, offer-status + chat message-view) — run offline via ts-jest scoped to
-  `src/core/__tests__`. `@krishi-verse/sdk-js` 7/7 still green (payments/payouts/kyc/bankAccounts/notifications/
-  listings/orders/shipments/reviews/cart/checkout/addresses/offers/messaging resources).
+  saved-set, cart-math + address format, offer-status + chat message-view, auction current-price/min-next/bid
+  validation/outbid) — run offline via ts-jest scoped to `src/core/__tests__`. `@krishi-verse/sdk-js` 7/7 still
+  green (payments/payouts/kyc/bankAccounts/notifications/listings/orders/shipments/reviews/cart/checkout/addresses/
+  offers/messaging/auctions resources).
 - Screens are thin (guide §3): every API call lives in a `features/<area>/*.api.ts` data layer (farmer
   dashboard, orders, wallet, listings, catalogue) — no screen calls `apiClient` directly. All user-facing strings
   are i18n keys in hi/en/gu (no literals). `.eslintrc.js` (eslint-config-expo) gates lint in CI.

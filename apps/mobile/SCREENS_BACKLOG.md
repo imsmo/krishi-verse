@@ -43,9 +43,15 @@ Legend: ✅ built this release · 🟡 partial · ⬜ scaffolded (folder exists,
 - job offers (141), browse/my jobs, active job, claim/dispute, earnings, withdraw, insurance, skills, profile;
   farmer-side booking flow (book worker steps, booking detail).
 
-## Vyapari / trader (subset of buyer + auctions ≈5) — ⬜  `src/features/auctions`, `vyapari-home`
-- auction list/detail, place-bid, my-bids, outbid alert, create-auction, market dashboard, requirements inbox,
-  supplier shortlist.
+## Auctions (P-11) — 🟢  `src/features/auctions` (behind `auctions`)
+- ✅ 16 auction-detail (+65 watch-live 4s poll, 66 ended, 193 outbid banner, 194 bid history), 17 place-bid (EMD
+  held server-side), 64 create-auction (seller, from a listing) → `(buyer)/auctions/*` + `(farmer)/create-auction`.
+  SDK `auctions`. Flagged: EMD amount not in read model (shown as note); 18 my-bids cross-auction (no endpoint,
+  own bids marked inline); live = poll not socket.
+
+## Vyapari / trader (subset of buyer + auctions ≈5) — 🟡 (auctions shared via P-11)  `src/features/auctions`, `vyapari-home`
+- ✅ auctions reuse P-11 (`src/features/auctions`). ⬜ market dashboard, requirements inbox, supplier shortlist,
+  vyapari-home.
 
 ## FPO / Business owner — tenant-admin-lite (≈28 tenant screens) — ⬜  `src/features/tenant-admin-lite`
 - tenant dashboard, today's orders, approvals queue, dispute detail (156), commissions, reports, branding,

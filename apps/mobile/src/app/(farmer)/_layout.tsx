@@ -50,6 +50,7 @@ export default function FarmerTabsLayout() {
       <Tabs.Screen name="listings/[id]" options={{ href: null }} />
       <Tabs.Screen name="listings/preview" options={{ href: null }} />
       <Tabs.Screen name="listings/edit" options={{ href: null }} />
+      <Tabs.Screen name="create-auction" options={{ href: null }} />
       <Tabs.Screen name="wallet/add-money" options={{ href: null }} />
       <Tabs.Screen name="wallet/withdraw" options={{ href: null }} />
       <Tabs.Screen name="wallet/transactions" options={{ href: null }} />
