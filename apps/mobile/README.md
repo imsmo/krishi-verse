@@ -116,6 +116,41 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
   account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
 - **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
 
+## Worker app: onboarding + jobs (`features/labour`, roadmap P-12)
+
+Wave 5 — the labour-marketplace differentiator. A `worker` role (added to the role switcher, home `/(worker)/home`)
+with its own tab group: **Home** (29), **Jobs** (30/31), **Offers** (141/142) and **Profile** (38/36/136/139).
+A worker **registers a profile** (availability: travel radius, stay-away tolerance, min-wage expectation in paise
+via BigInt, emergency contact) — the onboarding target is **<10 min**. They **browse open bookings** (`box=open`,
+a real marketplace read) and view a **read-only job detail**. Work arrives as **employer-initiated assignments**:
+the **offer detail** shows the wage on the table + the **respond-by window**, and — only when the worker is
+**18+ verified** — an **accept / decline** control; the 4-hour accept/decline window and the hard 18+ Aadhaar gate
+are **enforced server-side** (the client's `canAcceptWork` + window text are UX-only). New SDK: `labour`
+(`registerWorker`/`myWorker`/`updateWorker`/`listBookings`/`getBooking`/`listAssignments`/`getAssignment`/`respondAssignment`).
+Behind `worker_app` (the mobile vertical) over the server-side `labour` module flag. Pure `labour-status` logic
+unit-tested.
+
+### Flagged backend gaps (built real where the endpoint exists; did NOT fake the rest)
+- **No worker-"apply" endpoint (140):** jobs are employer→worker assignments, so the job detail is read-only with a
+  clear note ("work is offered to you by the employer; accepted offers appear in Offers") rather than a fake apply
+  button. Browsing open bookings is real.
+- **No skills field in the worker DTO (37/137):** the "add skill / skills" UX is flagged "coming soon" instead of
+  posting to a non-existent field.
+- **Ambassador-led onboarding + 18+ Aadhaar:** `ageVerified18` is server-set out-of-band via KYC (P-03); the accept
+  control stays hidden until the server reports the worker verified — the app never self-asserts age.
+
+### Threats considered (worker / labour / 18+)
+- **Hard 18+ gate is server-owned:** the app cannot accept work for an unverified worker — `canAcceptWork` only
+  hides the control; the server rejects an accept from a non-verified or under-18 worker (Aadhaar KYC is authority).
+- **4-hour respond window is server-enforced:** the client shows "respond before it closes", but a late
+  accept/decline (409/422) shows "this offer's window has expired" — never worked around client-side.
+- **No client money movement (Law 11):** wages are bigint paise (Law 2); the worker never moves money — wage
+  settlement on completion is a server job. `respondAssignment` only signals accept/decline.
+- **Idempotency:** register + respond carry an Idempotency-Key (Law 3) — a retried accept can't double-book.
+- **IDOR / enumeration:** booking + assignment ids from params are re-checked server-side; lists are keyset-bounded
+  (`box=open` / `box=mine`). Emergency-contact + min-wage are the worker's own; no other worker's PII is exposed.
+- **Kill-switch:** the `worker_app` flag disables the whole worker vertical without a release.
+
 ## Auction discovery + bidding + live (`features/auctions`, roadmap P-11)
 
 Wave 4. Browse **auctions** (Live/Ended), open the **detail** which **polls every 4s** (watch-live; degrades to
@@ -420,12 +455,13 @@ Hardening still owed before GA (roadmap P-30): TLS pinning, root/integrity attes
 
 ## Verification
 
-- `pnpm --filter @krishi-verse/mobile test` → **150 unit tests green** (session reducer, offline queue, helpers,
+- `pnpm --filter @krishi-verse/mobile test` → **157 unit tests green** (session reducer, offline queue, helpers,
   feature flags, SHA-256 FIPS vectors, base64, media-mime, cache policies, SWR cache engine, sync transitions,
   payment money/status, quiet-hours, deep-link routing, notification presenters, STT locale map, wallet txn
   presenters + withdrawal BigInt guard, order-status action map + PoD-OTP + tracking steps, buyer search-query +
   saved-set, cart-math + address format, offer-status + chat message-view, auction current-price/min-next/bid
-  validation/outbid) — run offline via ts-jest scoped to `src/core/__tests__`. `@krishi-verse/sdk-js` 7/7 still
+  validation/outbid, labour booking/assignment tones + assignment actions + 18+ canAcceptWork gate +
+  rupees→wage-minor + buildWorkerPatch + isJobOpen) — run offline via ts-jest scoped to `src/core/__tests__`. `@krishi-verse/sdk-js` 7/7 still
   green (payments/payouts/kyc/bankAccounts/notifications/listings/orders/shipments/reviews/cart/checkout/addresses/
   offers/messaging/auctions resources).
 - Screens are thin (guide §3): every API call lives in a `features/<area>/*.api.ts` data layer (farmer

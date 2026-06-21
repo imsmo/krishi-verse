@@ -39,9 +39,12 @@ Legend: ✅ built this release · 🟡 partial · ⬜ scaffolded (folder exists,
   incoming-offers UI flagged.
 - ⬜ buyer reviews/report from detail; seller incoming-offers UI (farmer).
 
-## Worker / labour (≈25) — ⬜  `src/features/labour-worker`, `labour-farmer`
-- job offers (141), browse/my jobs, active job, claim/dispute, earnings, withdraw, insurance, skills, profile;
-  farmer-side booking flow (book worker steps, booking detail).
+## Worker / labour (≈25) — 🟡 (onboarding + jobs built; P-12)  `src/features/labour` (behind `worker_app`)
+- ✅ P-12 `(worker)` group: worker-home (29), browse-jobs (30) + read-only job-detail (31), job-offer accept/decline
+  (141/142) gated on **18+ verified** + server 4h window, register/edit-availability profile (38/36/136) + KYC
+  status (139). SDK `labour`; PURE `labour-status` tested.
+- ⬜ apply (140 — no endpoint, employer-initiated), add-skill/skills (37/137 — no DTO field), work-history (138),
+  active job + geo-attendance + wage payout + insurance (P-13), farmer-side booking flow (P-14).
 
 ## Auctions (P-11) — 🟢  `src/features/auctions` (behind `auctions`)
 - ✅ 16 auction-detail (+65 watch-live 4s poll, 66 ended, 193 outbid banner, 194 bid history), 17 place-bid (EMD

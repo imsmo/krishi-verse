@@ -2,13 +2,14 @@
 // of selectable roles, the mapping from a server permission/role string to an app role, and which home route a
 // role lands on. Pure data + helpers (testable). The SERVER is the authority on what a user may actually do —
 // these roles only drive navigation + which dashboard to show.
-export type AppRole = 'farmer' | 'buyer' | 'trader' | 'owner' | 'ambassador';
+export type AppRole = 'farmer' | 'buyer' | 'worker' | 'trader' | 'owner' | 'ambassador';
 
 export interface RoleDef { role: AppRole; i18nKey: string; descKey: string; homeRoute: string; }
 
 export const ROLES: readonly RoleDef[] = Object.freeze([
   { role: 'farmer', i18nKey: 'role.farmer', descKey: 'role.farmer.desc', homeRoute: '/(farmer)/home' },
   { role: 'buyer', i18nKey: 'role.buyer', descKey: 'role.buyer.desc', homeRoute: '/(buyer)/home' },
+  { role: 'worker', i18nKey: 'role.worker', descKey: 'role.worker.desc', homeRoute: '/(worker)/home' },
   { role: 'trader', i18nKey: 'role.trader', descKey: 'role.trader.desc', homeRoute: '/(trader)/home' },
   { role: 'owner', i18nKey: 'role.owner', descKey: 'role.owner.desc', homeRoute: '/(owner)/home' },
   { role: 'ambassador', i18nKey: 'role.ambassador', descKey: 'role.ambassador.desc', homeRoute: '/(ambassador)/home' },

@@ -1,0 +1,41 @@
+// apps/mobile/src/app/(worker)/_layout.tsx · the worker role's bottom-tab navigator (Home / Jobs / Offers /
+// Profile). Mirrors the (farmer)/(buyer) layouts: auth-gated (anonymous → onboarding; the server re-enforces on
+// every call) and behind the `worker_app` kill-switch flag (Law 10). Detail routes are hidden from the tab bar.
+import React from 'react';
+import { Redirect, Tabs } from 'expo-router';
+import { Text, View } from 'react-native';
+import { color, font, EmptyState } from '@krishi-verse/ui-native';
+import { useAuth } from '../../core/auth/auth.store';
+import { useTranslation } from '../../core/i18n/useTranslation';
+import { useFlag } from '../../core/flags/useFlag';
+
+function Icon({ glyph, focused }: { glyph: string; focused: boolean }) {
+  return <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }} accessibilityElementsHidden importantForAccessibility="no">{glyph}</Text>;
+}
+
+export default function WorkerTabsLayout() {
+  const { state } = useAuth();
+  const { t } = useTranslation();
+  const workerOn = useFlag('worker_app');
+  if (state.status === 'anonymous') return <Redirect href="/(auth)/welcome" />;
+  if (!workerOn) return <View style={{ flex: 1, backgroundColor: color.page, justifyContent: 'center' }}><EmptyState title={t('common.unavailable')} /></View>;
+
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: color.primary600,
+        tabBarInactiveTintColor: color.ink400,
+        tabBarStyle: { backgroundColor: color.card, borderTopColor: color.ink100, height: 64, paddingBottom: 8, paddingTop: 6 },
+        tabBarLabelStyle: { fontFamily: font.body, fontSize: font.size.xs, fontWeight: font.weight.semibold },
+      }}
+    >
+      <Tabs.Screen name="home" options={{ title: t('tabs.home'), tabBarIcon: ({ focused }) => <Icon glyph="🏠" focused={focused} /> }} />
+      <Tabs.Screen name="jobs" options={{ title: t('worker.tabs.jobs'), tabBarIcon: ({ focused }) => <Icon glyph="🌾" focused={focused} /> }} />
+      <Tabs.Screen name="offers" options={{ title: t('worker.tabs.offers'), tabBarIcon: ({ focused }) => <Icon glyph="📨" focused={focused} /> }} />
+      <Tabs.Screen name="profile" options={{ title: t('tabs.profile'), tabBarIcon: ({ focused }) => <Icon glyph="👤" focused={focused} /> }} />
+      <Tabs.Screen name="jobs/[id]" options={{ href: null }} />
+      <Tabs.Screen name="offers/[id]" options={{ href: null }} />
+    </Tabs>
+  );
+}

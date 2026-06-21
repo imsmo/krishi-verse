@@ -125,6 +125,24 @@ export interface BidHistoryItem { id: string; bidderUserId: string; amountMinor:
 /** Result of placing a bid. `extended` = the soft-close auto-extended the end time. */
 export interface PlaceBidResult { bidId: string; auctionId: string; amountMinor: string; extended: boolean; endsAt: string; }
 
+// --- labour (module 6) — money is bigint minor-unit STRINGS (Law 2) ---
+/** A worker's self-managed profile. `ageVerified18` is set out-of-band (KYC/admin) — NOT client-settable; the
+ * server hard-gates accepting work on it. */
+export interface WorkerProfile {
+  id: string; userId: string; ageVerified18: boolean; villageRegionId: string | null; travelKm: number | null;
+  stayAwayOk: string | null; minWageExpectationMinor: string | null; autoAcceptAboveMinor: string | null;
+  hasSmartphone: boolean | null; ratingAvg: number | null; bookingsCompleted: number | null; noShowCount: number | null; createdAt?: string;
+}
+/** A labour booking (a job). Workers browse `box=open`; the employer owns `box=mine`. `respondBy` is the
+ * accept/decline window deadline (server-enforced). */
+export interface LabourBooking {
+  id: string; bookingNo: string; employerUserId: string; demandTypeId: string | null; taskSkillId: string | null;
+  workersNeeded: number; startDate: string; endDate: string | null; wageKind: string; wageOfferedMinor: string;
+  minWageMinor: string; currencyCode: string; womenOnly: boolean; status: string; respondBy: string | null; version?: number; createdAt?: string;
+}
+/** A worker's assignment to a booking (the "job offer"). The worker accepts/rejects within the booking's window. */
+export interface LabourAssignment { id: string; bookingId: string; workerId: string; status: string; wageMinor: string; acceptedAt: string | null; createdAt?: string; }
+
 // --- media (core/media) ---
 export type MediaKind = 'image' | 'video' | 'audio' | 'document';
 /** Presigned PUT ticket: upload the raw bytes to `uploadUrl` (S3, NOT the API host), then confirm. */
