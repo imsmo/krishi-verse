@@ -17,6 +17,9 @@ Legend: ✅ built this release · 🟡 partial · ⬜ scaffolded (folder exists,
 - ✅ tabs: orders, wallet, profile (farmer)
 - ✅ wallet vertical (P-06): 19 wallet-home (hub), 20 add-money, 21 transactions, 70 withdraw, 71 txn-detail,
   59 payout-history → `src/features/wallet` (behind `wallet`/`payments_addmoney` flags)
+- ✅ orders+delivery vertical (P-07): 56/22 orders (Selling/Buying), 57/23 order-detail (lifecycle action bar),
+  PoD (OTP+photo), 131 order-track (Timeline), 24 review, 135 report-order → `src/features/orders` +
+  `src/features/reviews` (behind `orders_fulfilment` flag; SDK orders/shipments/reviews resources)
 - 🟡 114 boost (flagged `listing_boost` OFF — real wallet-debit path pending), 115 analytics (no API yet),
   58 earnings / 180 UPI-mgmt / 181 autopay / 182 spending-insights (no endpoint yet — flagged)
 - ⬜ tips/crop-hub (101–104, 125 AI chat), schemes (105–109), mandi detail/alerts/history (110–111),

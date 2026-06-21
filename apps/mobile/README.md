@@ -116,6 +116,39 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
   account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
 - **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
 
+## Farmer orders + delivery + PoD (`features/orders` + `features/reviews`, roadmap P-07)
+
+Fulfilment. The orders tab (56/22) has a **Selling/Buying** switch → keyset-paged, SWR-cached lists; tap → **order
+detail** (57/23) with the money breakdown (Law 2 `MoneyText`), line items, status, and an **action bar built from
+the PURE `nextActions(status, role)`** state map. Sellers drive the lifecycle — confirm → packed → ready →
+(record delivery) → complete — each a real, idempotent transition (the SERVER state machine is the authority;
+a 409 "already moved" / 403 "not allowed" is shown, never worked around). **Proof of delivery** (PRD DoD): the PoD
+screen captures the buyer's **OTP + a delivery photo** (core/media compress+upload) and calls
+`POST /shipments/:id/deliver` — the OTP is verified server-side (hash compare); `FLAG_SECURE` is on. **Track** (131)
+renders a shipment progress `Timeline` from the pure `trackingSteps`. **Review** (24) posts 1–5 stars after
+completion (target resolved server-side, anti-IDOR). **Report** (135) files a dispute. New SDK resources: `orders`,
+`shipments`, `reviews`. Mutating actions are behind the `orders_fulfilment` flag (OFF); viewing always works.
+
+### Flagged backend gaps (built real where the endpoint exists; did NOT fake the rest)
+- **PoD requires a shipment assigned to the caller** (`shipments?box=mine&orderId=`). For self-pickup orders with no
+  shipment, the PoD screen says so honestly — handover then completes via the order lifecycle, not a faked OTP.
+- **Push-driven <30s status reflection** (DoD) rides on P-04 notifications (flagged); today the list/detail refresh
+  on focus + pull-to-refresh. **Payout-on-completion** is the server's OrderCompleted→settlement handler (real,
+  module 4) — the app just triggers `complete`; it never moves money itself (Law 11).
+
+### Threats considered (orders / PoD / reviews)
+- **Server is the authority on every transition:** the app offers actions via `nextActions` for UX only; a patched
+  client calling `confirm`/`deliver` out of turn is rejected by the entity state machine + RLS. No client privilege.
+- **PoD integrity:** the OTP is issued server-side to the buyer and verified server-side (we send the raw code; the
+  server hashes + compares) — the seller can't self-certify delivery. PoD photos upload to S3 (EXIF-stripped, scanned)
+  and are referenced by `mediaId` only. The OTP screen is `FLAG_SECURE`.
+- **Replay / double-fire:** every lifecycle POST + PoD + review carries an Idempotency-Key (Law 3). Transitions are
+  online (not offline-queued) precisely because blind replay of a stale state change is wrong — they need live state.
+- **IDOR:** order/shipment reads are ownership-scoped server-side; a guessed id returns nothing that isn't yours.
+  Reviews never accept a client-supplied target — it's derived from the verified completed order.
+- **Money:** all amounts are bigint minor strings end-to-end (Law 2); the app reads totals, never computes settlement.
+- **Kill-switch:** `orders_fulfilment` disables all mutating actions + PoD/track/review/report without a release.
+
 ## Listing photos + voice + manage (`core/voice` + `features/listings`, roadmap P-05)
 
 Sell faster. **Create listing** (screen 10) now picks the product from the catalogue (real `productId`/`categoryId`/
@@ -245,11 +278,12 @@ Hardening still owed before GA (roadmap P-30): TLS pinning, root/integrity attes
 
 ## Verification
 
-- `pnpm --filter @krishi-verse/mobile test` → **101 unit tests green** (session reducer, offline queue, helpers,
+- `pnpm --filter @krishi-verse/mobile test` → **113 unit tests green** (session reducer, offline queue, helpers,
   feature flags, SHA-256 FIPS vectors, base64, media-mime, cache policies, SWR cache engine, sync transitions,
   payment money/status, quiet-hours, deep-link routing, notification presenters, STT locale map, wallet txn
-  presenters + withdrawal BigInt guard) — run offline via ts-jest scoped to `src/core/__tests__`.
-  `@krishi-verse/sdk-js` 7/7 still green (payments/payouts/kyc/bankAccounts/notifications/listings-owner resources).
+  presenters + withdrawal BigInt guard, order-status action map + PoD-OTP + tracking steps) — run offline via
+  ts-jest scoped to `src/core/__tests__`. `@krishi-verse/sdk-js` 7/7 still green (payments/payouts/kyc/bankAccounts/
+  notifications/listings-owner/orders/shipments/reviews resources).
 - Screens are thin (guide §3): every API call lives in a `features/<area>/*.api.ts` data layer (farmer
   dashboard, orders, wallet, listings, catalogue) — no screen calls `apiClient` directly. All user-facing strings
   are i18n keys in hi/en/gu (no literals). `.eslintrc.js` (eslint-config-expo) gates lint in CI.

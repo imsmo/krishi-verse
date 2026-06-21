@@ -10,6 +10,7 @@ export type FlagKey =
   | 'listing_boost'     // paid boost via wallet — OFF until payments land
   | 'payments_addmoney' // wallet add-money via Razorpay (P-03) — OFF until staging-verified
   | 'wallet'            // wallet vertical: transactions/withdraw/payout-history/detail (P-06) — OFF until verified
+  | 'orders_fulfilment' // order lifecycle actions + PoD + track + review + report (P-07) — OFF until verified
   | 'kyc'               // KYC doc submit/status (P-03) — OFF until staging-verified
   | 'notifications'     // push + in-app notification center (P-04) — OFF until staging-verified
   | 'buyer_app' | 'worker_app' | 'trader_app' | 'ambassador_app' | 'tenant_admin_lite'; // future verticals — OFF
@@ -22,6 +23,7 @@ const DEFAULTS: Record<FlagKey, boolean> = {
   listing_boost: false,
   payments_addmoney: false,
   wallet: false,
+  orders_fulfilment: false,
   kyc: false,
   notifications: false,
   buyer_app: false,

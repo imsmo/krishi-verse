@@ -55,6 +55,11 @@ export default function FarmerTabsLayout() {
       <Tabs.Screen name="wallet/transactions" options={{ href: null }} />
       <Tabs.Screen name="wallet/payouts" options={{ href: null }} />
       <Tabs.Screen name="wallet/txn-detail" options={{ href: null }} />
+      <Tabs.Screen name="orders/[id]" options={{ href: null }} />
+      <Tabs.Screen name="orders/pod" options={{ href: null }} />
+      <Tabs.Screen name="orders/track" options={{ href: null }} />
+      <Tabs.Screen name="orders/review" options={{ href: null }} />
+      <Tabs.Screen name="orders/report" options={{ href: null }} />
       <Tabs.Screen name="kyc/index" options={{ href: null }} />
       <Tabs.Screen name="notifications/index" options={{ href: null }} />
       <Tabs.Screen name="notifications/[id]" options={{ href: null }} />

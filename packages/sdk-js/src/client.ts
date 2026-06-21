@@ -10,6 +10,9 @@ import { MediaResource } from './resources/media';
 import { PaymentsResource, PayoutsResource } from './resources/payments';
 import { KycResource, BankAccountsResource } from './resources/identity';
 import { NotificationsResource } from './resources/notifications';
+import { OrdersResource } from './resources/orders';
+import { ShipmentsResource } from './resources/logistics';
+import { ReviewsResource } from './resources/reviews';
 
 export class KrishiVerseClient {
   private readonly http: HttpClient;
@@ -23,6 +26,9 @@ export class KrishiVerseClient {
   readonly kyc: KycResource;
   readonly bankAccounts: BankAccountsResource;
   readonly notifications: NotificationsResource;
+  readonly orders: OrdersResource;
+  readonly shipments: ShipmentsResource;
+  readonly reviews: ReviewsResource;
 
   constructor(config: SdkConfig) {
     this.http = new HttpClient(resolveConfig(config));
@@ -36,6 +42,9 @@ export class KrishiVerseClient {
     this.kyc = new KycResource(this.http);
     this.bankAccounts = new BankAccountsResource(this.http);
     this.notifications = new NotificationsResource(this.http);
+    this.orders = new OrdersResource(this.http);
+    this.shipments = new ShipmentsResource(this.http);
+    this.reviews = new ReviewsResource(this.http);
   }
   /** Escape hatch for endpoints without a dedicated resource method yet. Same envelope + resilience. */
   request<T>(method: HttpMethod, path: string, opts?: RequestOptions): Promise<Envelope<T>> {

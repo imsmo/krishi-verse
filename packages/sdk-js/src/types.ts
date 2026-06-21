@@ -47,6 +47,32 @@ export interface NotificationItem {
 export interface NotificationPreference { eventCode: string; channel: string; isEnabled: boolean; }
 export interface QuietHours { starts: string; ends: string; timezone: string; }
 
+// --- orders (module 5) — money is bigint minor-unit STRINGS (Law 2) ---
+/** One row in the buyer/seller order timeline (CQRS read-model). `counterparty` is the other party's userId. */
+export interface OrderListItem { id: string; orderNo: string; status: string; totalMinor: string; counterparty: string | null; createdAt?: string; }
+/** A line item on an order — snake_case mirrors the order_items read row; money fields are bigint strings. */
+export interface OrderItemLine {
+  listing_id: string; product_id: string | null; title_snapshot: string; quantity: number; delivered_quantity: number | null;
+  unit_code: string; unit_price_minor: string; line_total_minor: string; gst_rate_pct: number | null; batch_id: string | null;
+}
+/** Full order detail (server-serialized). Every *Minor is a bigint string (Law 2). */
+export interface OrderDetail {
+  id: string; orderNo: string; status: string; source: string; buyerUserId: string; sellerUserId: string; currencyCode: string;
+  subtotalMinor: string; deliveryFeeMinor: string; discountMinor: string; taxMinor: string; commissionMinor: string; totalMinor: string;
+  acceptanceDeadline?: string | null; qualityWindowEnds?: string | null; createdAt?: string; completedAt?: string | null;
+  items: OrderItemLine[];
+}
+
+// --- logistics (module 5) — shipment + proof-of-delivery ---
+export interface Shipment {
+  id: string; orderId: string; status: string; partnerId?: string | null; vehicleId?: string | null; riderUserId?: string | null;
+  awbNo?: string | null; scheduledPickupAt?: string | null; pickedUpAt?: string | null; deliveredAt?: string | null;
+  podMediaId?: string | null; requiresOtp: boolean; chargeMinor?: string | null;
+}
+
+// --- reviews (module 5) ---
+export interface ReviewSummary { averageStars: number; count: number; }
+
 // --- media (core/media) ---
 export type MediaKind = 'image' | 'video' | 'audio' | 'document';
 /** Presigned PUT ticket: upload the raw bytes to `uploadUrl` (S3, NOT the API host), then confirm. */
