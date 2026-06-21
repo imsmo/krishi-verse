@@ -13,6 +13,7 @@ import { useFlag } from '../../../core/flags/useFlag';
 import { getPublicListing } from '../../../features/buyer/browse.api';
 import { getSavedListings, toggleSavedListing } from '../../../features/buyer/saved.api';
 import { addToCart } from '../../../features/cart/cart.api';
+import { openDirect } from '../../../features/messaging/messaging.api';
 
 export default function BuyerListingDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -20,6 +21,7 @@ export default function BuyerListingDetail() {
   const router = useRouter();
   const enabled = useFlag('buyer_app');
   const canBuy = useFlag('buyer_checkout');
+  const canOffer = useFlag('offers_chat');
   const [listing, setListing] = useState<ListingCard | null>(null);
   const [saved, setSaved] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -52,6 +54,13 @@ export default function BuyerListingDetail() {
     } finally { setAdding(false); }
   };
 
+  const onChat = async (sellerUserId: string) => {
+    try {
+      const convo = await openDirect(sellerUserId, listing?.id);
+      router.push({ pathname: '/(buyer)/chat/[id]', params: { id: convo.id, peerId: sellerUserId } });
+    } catch { Alert.alert(t('chat.openFailed')); }
+  };
+
   const footer = listing ? (
     <View style={styles.footer}>
       {canBuy && listing.quantityAvailable > 0 ? <Button title={t('cart.addToCart')} onPress={onAddToCart} loading={adding} /> : null}
@@ -81,6 +90,12 @@ export default function BuyerListingDetail() {
               {listing.boosted ? <StatusPill label={t('buyer.promoted')} tone="accent" /> : null}
             </View>
           </Card>
+          {canOffer ? (
+            <View style={styles.negotiate}>
+              <View style={{ flex: 1 }}><Button title={t('offer.make')} variant="outline" onPress={() => router.push({ pathname: '/(buyer)/make-offer', params: { listingId: listing.id } })} /></View>
+              <View style={{ flex: 1 }}><Button title={t('chat.withSeller')} variant="outline" onPress={() => onChat(listing.sellerUserId)} /></View>
+            </View>
+          ) : null}
           <Button title={t('buyer.viewSeller')} variant="ghost" onPress={() => router.push({ pathname: '/(buyer)/seller/[id]', params: { id: listing.sellerUserId } })} />
         </>
       )}
@@ -96,4 +111,5 @@ const styles = StyleSheet.create({
   qty: { fontFamily: font.body, fontSize: font.size.md, color: color.ink500, marginTop: space[1] },
   pills: { flexDirection: 'row', gap: space[2], marginTop: space[3], flexWrap: 'wrap' },
   footer: { gap: space[2] },
+  negotiate: { flexDirection: 'row', gap: space[2], marginBottom: space[2] },
 });

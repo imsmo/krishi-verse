@@ -45,6 +45,11 @@ export default function BuyerTabsLayout() {
       <Tabs.Screen name="addresses" options={{ href: null }} />
       <Tabs.Screen name="orders/[id]" options={{ href: null }} />
       <Tabs.Screen name="orders/track" options={{ href: null }} />
+      <Tabs.Screen name="make-offer" options={{ href: null }} />
+      <Tabs.Screen name="offers" options={{ href: null }} />
+      <Tabs.Screen name="offers/[id]" options={{ href: null }} />
+      <Tabs.Screen name="chats" options={{ href: null }} />
+      <Tabs.Screen name="chat/[id]" options={{ href: null }} />
     </Tabs>
   );
 }

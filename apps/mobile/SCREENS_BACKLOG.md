@@ -33,7 +33,11 @@ Legend: ✅ built this release · 🟡 partial · ⬜ scaffolded (folder exists,
   132 profile, 133 kyc-status → `src/features/cart` + `src/features/addresses` (behind `buyer_checkout`; SDK
   cart/checkout/addresses; reuses features/orders + features/kyc). Idempotent checkout, server-side coupon/totals,
   gateway pay (escrow server-side). Totals-preview + wallet-pay(130) folded/flagged; buyer review/report deferred.
-- ⬜ make-offer, buyer reviews/report from detail.
+- ✅ offers + chat (P-10): 99 make-offer, offers list/detail (accept→order/counter/reject), 97 chats, 98 chat
+  thread (text+image, 5s poll), masked-call launch → `src/features/offers` + `src/features/messaging` (behind
+  `offers_chat`; SDK offers/conversations/maskedCalls). Chat polls (no socket); inline image thumbnail + seller
+  incoming-offers UI flagged.
+- ⬜ buyer reviews/report from detail; seller incoming-offers UI (farmer).
 
 ## Worker / labour (≈25) — ⬜  `src/features/labour-worker`, `labour-farmer`
 - job offers (141), browse/my jobs, active job, claim/dispute, earnings, withdraw, insurance, skills, profile;

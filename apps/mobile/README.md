@@ -116,6 +116,42 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
   account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
 - **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
 
+## Offers + chat + masked call (`features/offers` + `features/messaging`, roadmap P-10)
+
+Negotiate and talk without leaking a phone number. From a listing the buyer can **Make an offer** (99 →
+`offers.make`, per-unit price in paise via BigInt, Law 2) or **Chat with seller** (opens a `direct` conversation).
+The **offer detail** shows the price on the table + status and — while negotiable — **accept / counter / reject**;
+**accept converts the offer into an order SERVER-SIDE** (`convertedOrderId`) and we route to it (DoD: offer
+accepted → order created). **Chat** (98) lists messages keyset-paged, **polls every 5s** while focused
+(realtime-ish), and sends **text or an image** (core/media compress + presigned upload → `attachmentMediaId`; bytes
+never touch the API). A **masked-call** button bridges the two real numbers SERVER-SIDE — **no phone number is ever
+returned to the client**. The pure `offer-status` + `message-view` are unit-tested. New SDK: `offers`,
+`conversations`, `maskedCalls`. Behind `offers_chat` (+ `buyer_app`).
+
+### Flagged backend gaps (built real where the endpoint exists; did NOT fake the rest)
+- **Chat is poll-based, not socket:** the API exposes keyset message reads, so the thread polls every 5s (the DoD
+  allows poll-or-socket); a websocket upgrade is a later optimization.
+- **Inline media thumbnails:** sending an image is real (upload → `attachmentMediaId`), but rendering the thumbnail
+  inline needs the media download-link wiring, so an image message shows a "📷 Photo" chip for now (flagged).
+- **Seller-side incoming offers** (accept/counter from the farmer) reuse the same shared `features/offers` + the
+  real `box=incoming` endpoint; the farmer UI for it is a follow-up. The buyer can accept a seller's counter today,
+  which exercises the full accept→order path.
+
+### Threats considered (offers / chat / masked call)
+- **No PII leak:** masked calls bridge the two numbers server-side via the telephony provider; the API returns a
+  call record with **no phone number** ever. Chat carries no numbers; the UI shows "number hidden" on the call CTA.
+- **Server is the authority on negotiation:** offer transitions (accept/counter/reject) + who may act (buyer vs the
+  listing's seller) are enforced server-side; an out-of-turn tap gets 403/409, shown friendly, never bypassed.
+  Accept→order creation + escrow are entirely server-side (the app never moves money — Law 11).
+- **IDOR:** conversations are membership-gated server-side (a non-participant gets 404, not another's thread);
+  offer/conversation/message ids from params are re-checked by the server.
+- **Idempotency:** make-offer, open-conversation, post-message, and initiate-call all carry an Idempotency-Key
+  (Law 3) — a double-tap can't double-send or double-bridge.
+- **Untrusted attachments:** images upload to S3 (EXIF-stripped, malware-scanned) and are referenced by id; the
+  client sends no bytes through the API. Messages can be flagged for moderation server-side (shown as a marker).
+- **Money:** offer prices are bigint paise end-to-end (Law 2); the rupee→paise helper uses BigInt, never a float.
+- **Kill-switch:** the `offers_chat` flag disables offers + chat + calls without a release.
+
 ## Buyer cart → checkout → order (`features/cart` + `features/addresses`, roadmap P-09)
 
 The purchase loop. Add-to-cart from a listing → **cart** (96) reads the SERVER's live cart (prices/availability
@@ -349,13 +385,13 @@ Hardening still owed before GA (roadmap P-30): TLS pinning, root/integrity attes
 
 ## Verification
 
-- `pnpm --filter @krishi-verse/mobile test` → **130 unit tests green** (session reducer, offline queue, helpers,
+- `pnpm --filter @krishi-verse/mobile test` → **138 unit tests green** (session reducer, offline queue, helpers,
   feature flags, SHA-256 FIPS vectors, base64, media-mime, cache policies, SWR cache engine, sync transitions,
   payment money/status, quiet-hours, deep-link routing, notification presenters, STT locale map, wallet txn
   presenters + withdrawal BigInt guard, order-status action map + PoD-OTP + tracking steps, buyer search-query +
-  saved-set, cart-math + address format) — run offline via ts-jest scoped to `src/core/__tests__`.
-  `@krishi-verse/sdk-js` 7/7 still green (payments/payouts/kyc/bankAccounts/notifications/listings/orders/shipments/
-  reviews/cart/checkout/addresses resources).
+  saved-set, cart-math + address format, offer-status + chat message-view) — run offline via ts-jest scoped to
+  `src/core/__tests__`. `@krishi-verse/sdk-js` 7/7 still green (payments/payouts/kyc/bankAccounts/notifications/
+  listings/orders/shipments/reviews/cart/checkout/addresses/offers/messaging resources).
 - Screens are thin (guide §3): every API call lives in a `features/<area>/*.api.ts` data layer (farmer
   dashboard, orders, wallet, listings, catalogue) — no screen calls `apiClient` directly. All user-facing strings
   are i18n keys in hi/en/gu (no literals). `.eslintrc.js` (eslint-config-expo) gates lint in CI.

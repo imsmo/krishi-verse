@@ -12,6 +12,7 @@ export type FlagKey =
   | 'wallet'            // wallet vertical: transactions/withdraw/payout-history/detail (P-06) — OFF until verified
   | 'orders_fulfilment' // order lifecycle actions + PoD + track + review + report (P-07) — OFF until verified
   | 'buyer_checkout'    // buyer cart → checkout → place+pay order (P-09) — OFF until verified
+  | 'offers_chat'       // offers negotiation + chat + masked call (P-10) — OFF until verified
   | 'kyc'               // KYC doc submit/status (P-03) — OFF until staging-verified
   | 'notifications'     // push + in-app notification center (P-04) — OFF until staging-verified
   | 'buyer_app' | 'worker_app' | 'trader_app' | 'ambassador_app' | 'tenant_admin_lite'; // future verticals — OFF
@@ -26,6 +27,7 @@ const DEFAULTS: Record<FlagKey, boolean> = {
   wallet: false,
   orders_fulfilment: false,
   buyer_checkout: false,
+  offers_chat: false,
   kyc: false,
   notifications: false,
   buyer_app: false,

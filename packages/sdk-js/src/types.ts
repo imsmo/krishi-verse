@@ -90,6 +90,28 @@ export interface Address {
   lat?: number | null; lng?: number | null; labelId?: string | null; isDefault: boolean;
 }
 
+// --- offers (module 3) — negotiation; money is bigint minor-unit STRINGS (Law 2) ---
+/** A listing offer. `quantity` is a decimal string (up to 3 dp); prices are bigint minor-unit strings.
+ * `convertedOrderId` is set once an accept turns the offer into an order. */
+export interface ListingOffer {
+  offerId: string; listingId: string; buyerUserId: string; quantity: string;
+  offeredPriceMinor: string; counterPriceMinor: string | null; round: number; status: string;
+  expiresAt?: string | null; convertedOrderId?: string | null; createdAt?: string;
+}
+
+// --- messaging (communication) ---
+export type ConversationContext = 'order' | 'requirement' | 'dispute' | 'booking' | 'direct' | 'support_ticket';
+export interface Conversation { id: string; contextType: string; contextId: string | null; isLocked: boolean; createdAt?: string; }
+/** A chat message. Exactly one of body/voiceMediaId/attachmentMediaId carries the content; media are referenced
+ * by id only (the bytes live in S3). NO raw PII. */
+export interface Message {
+  id: string; conversationId: string; senderUserId: string; body: string | null;
+  voiceMediaId: string | null; attachmentMediaId: string | null; isAiGenerated: boolean; isFlagged: boolean; createdAt?: string;
+}
+/** A privacy-proxy (masked) call record — the provider bridges the two real numbers SERVER-SIDE; NO phone number
+ * is ever returned to the client. */
+export interface MaskedCall { id: string; callerUserId: string; calleeUserId: string; contextType: string | null; contextId: string | null; durationSecs?: number | null; createdAt?: string; }
+
 // --- media (core/media) ---
 export type MediaKind = 'image' | 'video' | 'audio' | 'document';
 /** Presigned PUT ticket: upload the raw bytes to `uploadUrl` (S3, NOT the API host), then confirm. */
