@@ -16,6 +16,7 @@ export type FlagKey =
   | 'auctions'          // auction discovery + bidding (EMD) + create (P-11) — OFF
   | 'mandi_weather'     // mandi prices + price alerts + weather advisories (P-19) — OFF until verified
   | 'tips_assistant'    // tips library + crop hub + AI assistant + voice search (P-20) — OFF until verified
+  | 'schemes_govt'      // govt schemes: browse + eligibility + apply + doc upload + status/DBT (P-21) — OFF until verified
   | 'worker_active_job' // worker active-job: attendance geofence + earnings + withdraw + reviews (P-13) — OFF
   | 'labour_hire'       // farmer/employer hire: browse workers + post booking + lifecycle (P-14) — OFF
   | 'kyc'               // KYC doc submit/status (P-03) — OFF until staging-verified
@@ -38,6 +39,7 @@ const DEFAULTS: Record<FlagKey, boolean> = {
   auctions: false,
   mandi_weather: false,
   tips_assistant: false,
+  schemes_govt: false,
   worker_active_job: false,
   labour_hire: false,
   kyc: false,

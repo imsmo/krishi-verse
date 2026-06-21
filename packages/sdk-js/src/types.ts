@@ -194,6 +194,33 @@ export interface LearningResource {
  * the server attaches (the app renders only what the server returns — never fabricates an answer). */
 export interface AssistantReply { reply: string; sessionId: string; citations?: Array<{ title: string; url?: string }>; }
 
+// --- govt schemes (module — global scheme catalogue + the caller's applications + DBT) — money bigint STRINGS (Law 2) ---
+/** A government scheme (GLOBAL catalogue). `benefitSummary`/`eligibilityRules` are opaque JSON the app renders/
+ * evaluates server-side; `requiredDocTypeIds` lists doc types to attach; `processingFeeMinor` is bigint minor. */
+export interface Scheme {
+  id: string; code: string; name: string; authorityId: string; categoryId: string;
+  benefitSummary: Record<string, unknown>; eligibilityRules: Record<string, unknown>; requiredDocTypeIds: string[];
+  applicationWindow: Record<string, unknown> | null; applicableRegionIds: string[]; processingFeeMinor: string;
+  version: number; isActive: boolean; createdAt?: string;
+}
+export interface SchemeAuthority { id: string; name: string; level: string; regionId: string | null; }
+/** The deterministic, explainable eligibility result (PRD right-to-explanation): server-evaluated. */
+export interface EligibilityResult { eligible: boolean; reasons: string[]; }
+export type ApplicationStatus = 'draft' | 'submitted' | 'under_verification' | 'clarification_needed' | 'approved' | 'rejected' | 'disbursed' | 'closed' | 'appealed';
+/** The caller's OWN scheme application (server resolves the applicant — no IDOR). `formData` is the submitted
+ * answers (incl. attached document refs); `eligibilityCheck` is the stored result at apply time. */
+export interface SchemeApplication {
+  id: string; schemeId: string; schemeVersion: number; applicantUserId: string; assistedBy: string | null;
+  status: ApplicationStatus; formData: Record<string, unknown>; govtAppRef: string | null;
+  eligibilityCheck: Record<string, unknown> | null; submittedAt: string | null; decidedAt: string | null;
+  rejectionReason: string | null; createdAt?: string;
+}
+/** An observed PFMS/DBT credit against an application. `amountMinor` is bigint minor (Law 2). Read-only for the app. */
+export interface DbtTransfer {
+  id: string; applicationId: string | null; userId: string; schemeId: string; amountMinor: string;
+  instalmentNo: number | null; creditedOn: string; pfmsRef: string | null; createdAt?: string;
+}
+
 // --- tenancy + tenant-admin-lite (P-17) — money is bigint minor STRINGS (Law 2) ---
 /** A subscription plan (read-only catalogue). All *Minor are bigint minor strings. */
 export interface Plan {

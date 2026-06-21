@@ -116,6 +116,41 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
   account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
 - **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
 
+## Govt schemes (`features/schemes` + SDK `schemes`, roadmap P-21)
+
+Wave 8 — the farmer's government-schemes vertical, behind `schemes_govt` (default OFF, kill-switch). **Schemes**
+(60) browses the global scheme catalogue (cached → offline); **detail** (105) shows the benefits, processing fee
+(bigint paise via MoneyText, Law 2) and required-doc count, plus an **explainable eligibility check** — the farmer
+enters their attributes and the server returns `{eligible, reasons[]}` (every blocking reason shown, PRD right-to-
+explanation). **Apply** (106) uploads each required document via the P-01 media pipeline, takes consent, then
+applies (idempotent draft) + submits — FLAG_SECURE while shown. **Status** (107) tracks the application state +
+observed DBT/PFMS credits (MoneyText) with resubmit/appeal when the status allows. **Docs** (108, FLAG_SECURE)
+views the attached documents; **my-schemes** (109) lists the caller's applications (keyset). New SDK `schemes`
+resource. Screens are thin (read → `schemes.api` → ui-native; zero direct `apiClient()` in `src/app`); pure logic
+unit-tested.
+
+### Flagged backend gaps (built real where the endpoint exists; did NOT fake the rest — DoD honesty)
+- **Eligibility attributes are entered by the farmer.** There's no profile/parcel endpoint exposing landholding/
+  gender/age, so the eligibility screen collects them (the server evaluates + explains). Auto-fill from the
+  profile/land records is a later enhancement.
+- **No doc-type-name endpoint** (`requiredDocTypeIds` are UUIDs) → documents are labelled "Document N", never a
+  faked name. **No separate doc-attach endpoint** → uploaded document mediaIds are carried in the application's
+  `formData.documents` at apply time (apply is a single create with formData).
+- **DBT credits are observed** server-recorded amounts (the officer/PFMS records them); the app reads them
+  read-only and never moves scheme money (Law 11).
+
+### Threats considered (eligibility / apply / documents / DBT)
+- **Client is untrusted; server is the authority.** Eligibility is evaluated server-side; the app only renders the
+  result. Apply/submit/resubmit/appeal are authorized + state-machine-checked server-side (Law 5/11) — a patched
+  client that forces a transition gets a 4xx, shown gracefully. Applications + DBT reads are owner-scoped (no IDOR).
+- **Idempotency (Law 3).** Apply and submit each send a per-request Idempotency-Key, so a retried create/submit
+  can't duplicate an application or double-submit.
+- **PII / documents (DPDP).** Identity documents are uploaded through the media pipeline (EXIF dropped, downscaled)
+  and referenced by mediaId only; the apply + docs screens set **FLAG_SECURE** (no screenshots/recording). Document
+  files open via short-lived presigned URLs, never a raw object path. Money is bigint paise via MoneyText (Law 2).
+- **Degrade-never-die (Law 12) + kill-switch.** The catalogue reads from the SWR cache when offline; every read
+  tolerates failure with an EmptyState + retry; the `schemes_govt` flag disables the vertical without an app release.
+
 ## Tips + crop hub + AI assistant (`features/content` + SDK `resources`/`assistant`, roadmap P-20)
 
 Wave 8 — the farmer's knowledge surface, behind `tips_assistant` (default OFF, kill-switch). **Tips library** (55)

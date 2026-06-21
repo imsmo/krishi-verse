@@ -1,0 +1,50 @@
+// @krishi-verse/sdk-js · govt schemes resource. Read surface: browse the GLOBAL scheme catalogue + a scheme's
+// detail (benefit/eligibility rules/required docs), check eligibility (server-evaluated, explainable). Write
+// surface: apply (idempotent — Law 3), submit/resubmit/appeal the caller's OWN application. Reads of applications
+// + DBT credits are owner-scoped server-side (no IDOR). Money is bigint minor strings (Law 2). Gated server-side
+// by the `schemes` flag.
+import { HttpClient } from '../http';
+import { Scheme, SchemeAuthority, EligibilityResult, SchemeApplication, DbtTransfer, Page } from '../types';
+
+export class SchemesResource {
+  constructor(private readonly http: HttpClient) {}
+
+  /** Browse the scheme catalogue (optionally by category; active-only by default). */
+  async list(params: { categoryId?: string; activeOnly?: boolean } = {}, signal?: AbortSignal): Promise<Scheme[]> {
+    return (await this.http.request<Scheme[]>('GET', 'schemes', { query: { categoryId: params.categoryId, activeOnly: params.activeOnly }, signal })).data;
+  }
+  async get(id: string, signal?: AbortSignal): Promise<Scheme> {
+    return (await this.http.request<Scheme>('GET', `schemes/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  async authorities(level?: string, signal?: AbortSignal): Promise<SchemeAuthority[]> {
+    return (await this.http.request<SchemeAuthority[]>('GET', 'schemes/authorities', { query: { level }, signal })).data;
+  }
+  /** Explainable eligibility check (the server evaluates the applicant's attributes against the rules). */
+  async checkEligibility(id: string, input: { roles?: string[]; landholdingAcres?: number; gender?: 'male' | 'female' | 'other'; age?: number }, signal?: AbortSignal): Promise<EligibilityResult> {
+    return (await this.http.request<EligibilityResult>('POST', `schemes/${encodeURIComponent(id)}/eligibility`, { body: input, signal })).data;
+  }
+
+  // --- the caller's own applications ---
+  /** Apply (creates a draft). `formData` carries the answers + attached document refs. Idempotent (Law 3). */
+  async apply(input: { schemeId: string; formData?: Record<string, unknown>; assistedBy?: string }, idempotencyKey: string): Promise<SchemeApplication> {
+    return (await this.http.request<SchemeApplication>('POST', 'schemes/applications', { idempotencyKey, body: { schemeId: input.schemeId, formData: input.formData ?? {}, assistedBy: input.assistedBy } })).data;
+  }
+  /** List the caller's own applications (box=mine), keyset. */
+  async myApplications(params: { status?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<SchemeApplication>> {
+    const r = await this.http.request<SchemeApplication[]>('GET', 'schemes/applications', { query: { box: 'mine', status: params.status, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  async getApplication(id: string, signal?: AbortSignal): Promise<SchemeApplication> {
+    return (await this.http.request<SchemeApplication>('GET', `schemes/applications/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  /** Submit a draft for verification. Idempotent (Law 3). */
+  async submitApplication(id: string, idempotencyKey: string): Promise<SchemeApplication> {
+    return (await this.http.request<SchemeApplication>('POST', `schemes/applications/${encodeURIComponent(id)}/submit`, { idempotencyKey })).data;
+  }
+  async resubmit(id: string): Promise<SchemeApplication> { return (await this.http.request<SchemeApplication>('POST', `schemes/applications/${encodeURIComponent(id)}/resubmit`, {})).data; }
+  async appeal(id: string): Promise<SchemeApplication> { return (await this.http.request<SchemeApplication>('POST', `schemes/applications/${encodeURIComponent(id)}/appeal`, {})).data; }
+  /** Observed DBT/PFMS credits for an application (owner-scoped). Money is bigint minor (Law 2). */
+  async dbtTransfers(id: string, signal?: AbortSignal): Promise<DbtTransfer[]> {
+    return (await this.http.request<DbtTransfer[]>('GET', `schemes/applications/${encodeURIComponent(id)}/dbt`, { signal })).data;
+  }
+}

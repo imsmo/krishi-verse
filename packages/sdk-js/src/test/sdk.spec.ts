@@ -199,4 +199,42 @@ describe('HttpClient via resources', () => {
     expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-ai-1');
     expect(r.sessionId).toBe('sess1');
   });
+
+  it('schemes.list GETs /v1/schemes and returns processingFee as a bigint-minor string', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: [{ id: 's1', code: 'PM-KISAN', name: 'PM Kisan', authorityId: 'a1', categoryId: 'c1', benefitSummary: {}, eligibilityRules: {}, requiredDocTypeIds: ['d1'], applicationWindow: null, applicableRegionIds: [], processingFeeMinor: '0', version: 1, isActive: true }] } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const list = await c.schemes.list({ activeOnly: true });
+    expect(calls[0].url).toBe('https://api.test/v1/schemes?activeOnly=true');
+    expect(typeof list[0].processingFeeMinor).toBe('string');
+    expect(list[0].requiredDocTypeIds).toEqual(['d1']);
+  });
+
+  it('schemes.checkEligibility POSTs /v1/schemes/:id/eligibility and returns explainable reasons', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { eligible: false, reasons: ['minimum age 18'] } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const r = await c.schemes.checkEligibility('s1', { age: 16 });
+    expect(calls[0].url).toBe('https://api.test/v1/schemes/s1/eligibility');
+    expect(calls[0].init.method).toBe('POST');
+    expect(r.eligible).toBe(false);
+    expect(r.reasons[0]).toContain('age');
+  });
+
+  it('schemes.apply POSTs /v1/schemes/applications with an idempotency key', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'app1', schemeId: 's1', schemeVersion: 1, applicantUserId: 'u1', assistedBy: null, status: 'draft', formData: { documents: [] }, govtAppRef: null, eligibilityCheck: null, submittedAt: null, decidedAt: null, rejectionReason: null } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const app = await c.schemes.apply({ schemeId: 's1', formData: { documents: [] } }, 'idem-apply-1');
+    expect(calls[0].url).toBe('https://api.test/v1/schemes/applications');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-apply-1');
+    expect(app.status).toBe('draft');
+  });
+
+  it('schemes.dbtTransfers GETs the application DBT credits as bigint-minor strings', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: [{ id: 'dbt1', applicationId: 'app1', userId: 'u1', schemeId: 's1', amountMinor: '600000', instalmentNo: 1, creditedOn: '2026-04-01', pfmsRef: 'PFMS123' }] } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const list = await c.schemes.dbtTransfers('app1');
+    expect(calls[0].url).toBe('https://api.test/v1/schemes/applications/app1/dbt');
+    expect(typeof list[0].amountMinor).toBe('string');
+    expect(list[0].amountMinor).toBe('600000');
+  });
 });

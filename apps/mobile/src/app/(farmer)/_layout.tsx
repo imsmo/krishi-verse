@@ -85,6 +85,12 @@ export default function FarmerTabsLayout() {
       <Tabs.Screen name="crop-hub" options={{ href: null }} />
       <Tabs.Screen name="assistant" options={{ href: null }} />
       <Tabs.Screen name="voice-search" options={{ href: null }} />
+      <Tabs.Screen name="schemes/index" options={{ href: null }} />
+      <Tabs.Screen name="schemes/[id]" options={{ href: null }} />
+      <Tabs.Screen name="schemes/apply" options={{ href: null }} />
+      <Tabs.Screen name="schemes/status" options={{ href: null }} />
+      <Tabs.Screen name="schemes/docs" options={{ href: null }} />
+      <Tabs.Screen name="schemes/mine" options={{ href: null }} />
     </Tabs>
   );
 }
