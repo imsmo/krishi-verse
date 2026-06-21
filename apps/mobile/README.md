@@ -116,6 +116,41 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
   account numbers/tokens are never on the client. `FLAG_SECURE` blocks screenshots/recording on the money screens.
 - **Kill-switch:** the `wallet` flag disables the whole vertical remotely without an app release.
 
+## Tenant-admin-lite: dashboard + approvals + ops (`features/tenant`, roadmap P-17)
+
+Wave 7 — the FPO/business **owner** role's on-the-go console (full admin stays on `apps/web-tenant`). A new
+`(owner)` tab group behind `tenant_admin_lite`: **Dashboard** (08, KPIs composed from real lists — active farmers
+/ pending approvals / open disputes via the PURE `dashboardKpis`), **Farmers** (76 roster, 77 detail, 78 admin-add
+a farmer), **Approvals** (147 pending role-assignments → 148 approve — the DoD's "approve a farmer", real
+`rbac/assignments/:id/approve`), **Disputes** (155 moderation queue → 156 review/escalate/**resolve** with a
+resolution picker + partial-refund amount in ₹→paise via BigInt — Law 2), **Apply/Pending** (06/07 subscription),
+plus **Listings** (79) + **Payouts** (80) monitoring. New SDK: `tenancy`, `rbac`, `disputes`, `users` resources +
+`kyc.review`. Pure `tenant-admin` logic unit-tested.
+
+### Law 11 — NO god-mode in the app (the headline constraint)
+Every action is authorized **server-side against the tenant admin's OWN permissions** (identity.report /
+identity.approve / dispute.resolve), tenant-scoped — the app never grants itself a capability and a 403 shows a
+friendly "not allowed". Refunds/reversals on a dispute resolution and any paid-plan charge move money
+**server-side** — the app never moves money. Heavy/destructive admin (tenant config, role catalogue, mass ops)
+is deliberately NOT here; it lives on the web console.
+
+### Flagged backend gaps (built real where the endpoint exists; did NOT fake the rest)
+- **No tenant KPI/metrics endpoint** → the dashboard composes counts from the real lists it already fetched, never
+  a fabricated metric.
+- **No mobile users-list endpoint** → the farmers roster is built from `rbac/assignments` (role memberships);
+  farmer-detail is the tenant-scoped `users/:id` (Report perm, 404 for a non-member — anti-IDOR).
+- **Payouts/listings monitoring** reuse the caller-scoped `payouts.list` / `listings.browse` (tenant-scoped
+  server-side); a tenant-wide finance view is a web-console concern.
+
+### Threats considered (tenant-admin-lite)
+- **Server is the authority; tenant-scoped, no god-mode (Law 11).** approve / resolve / add-farmer / kyc-review
+  are all permission-gated + re-checked server-side; ids from params are re-verified (IDOR). add-farmer + apply
+  carry an Idempotency-Key (Law 3).
+- **PII-minimisation (DPDP).** Rosters/approvals expose anonymised member ids + role/KYC status, never raw
+  name/phone; the member detail is a masked view. No raw Aadhaar/PAN is ever shown.
+- **Money correctness.** Dispute resolution + payouts are bigint paise via MoneyText/BigInt (Law 2); the app
+  signals, the server settles. Kill-switch: `tenant_admin_lite`.
+
 ## Ambassador earnings + training (`features/ambassador` + `features/education`, roadmap P-16)
 
 Wave 6 — the ambassador's money + upskilling, behind `ambassador_training`. **Commissions** (92) is the full
@@ -590,7 +625,7 @@ Hardening still owed before GA (roadmap P-30): TLS pinning, root/integrity attes
 
 ## Verification
 
-- `pnpm --filter @krishi-verse/mobile test` → **204 unit tests green** (session reducer, offline queue, helpers,
+- `pnpm --filter @krishi-verse/mobile test` → **213 unit tests green** (session reducer, offline queue, helpers,
   feature flags, SHA-256 FIPS vectors, base64, media-mime, cache policies, SWR cache engine, sync transitions,
   payment money/status, quiet-hours, deep-link routing, notification presenters, STT locale map, wallet txn
   presenters + withdrawal BigInt guard, order-status action map + PoD-OTP + tracking steps, buyer search-query +
@@ -599,10 +634,11 @@ Hardening still owed before GA (roadmap P-30): TLS pinning, root/integrity attes
   rupees→wage-minor + buildWorkerPatch + isJobOpen, geofence haversine/clock-in-100m-eligibility/distance-parts,
   worker-jobs bucketing + BigInt earnings sum + clock-in precondition, hire booking-lifecycle actions + assignment
   tally + buildBookingDraft validation + wage rupees→paise, ambassador referral funnel + code normalize/validate +
-  BigInt commission sum, education quiz parse/score + course progress) — run offline via ts-jest scoped to
-  `src/core/__tests__`. `@krishi-verse/sdk-js` 11/11 still
+  BigInt commission sum, education quiz parse/score + course progress, tenant-admin subscription/approval/dispute
+  tones + dispute actions + buildResolution + dashboard KPI compose + add-farmer phone validate) — run offline via
+  ts-jest scoped to `src/core/__tests__`. `@krishi-verse/sdk-js` 13/13 still
   green (payments/payouts/kyc/bankAccounts/notifications/listings/orders/shipments/reviews/cart/checkout/addresses/
-  offers/messaging/auctions/labour/ambassadors/education resources).
+  offers/messaging/auctions/labour/ambassadors/education/tenancy/rbac/disputes/users resources).
 - Screens are thin (guide §3): every API call lives in a `features/<area>/*.api.ts` data layer (farmer
   dashboard, orders, wallet, listings, catalogue) — no screen calls `apiClient` directly. All user-facing strings
   are i18n keys in hi/en/gu (no literals). `.eslintrc.js` (eslint-config-expo) gates lint in CI.

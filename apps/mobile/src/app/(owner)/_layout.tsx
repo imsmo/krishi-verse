@@ -1,0 +1,48 @@
+// apps/mobile/src/app/(owner)/_layout.tsx · the tenant-owner (FPO/business) role's bottom-tab navigator —
+// tenant-admin-LITE: monitoring + approvals on the go (heavy admin stays on apps/web-tenant). Mirrors the other
+// role layouts: auth-gated + behind the `tenant_admin_lite` kill-switch flag (Law 10). Law 11: NO god-mode here —
+// every action is authorized SERVER-SIDE against the tenant admin's own permissions. Detail/sub routes hidden.
+import React from 'react';
+import { Redirect, Tabs } from 'expo-router';
+import { Text, View } from 'react-native';
+import { color, font, EmptyState } from '@krishi-verse/ui-native';
+import { useAuth } from '../../core/auth/auth.store';
+import { useTranslation } from '../../core/i18n/useTranslation';
+import { useFlag } from '../../core/flags/useFlag';
+
+function Icon({ glyph, focused }: { glyph: string; focused: boolean }) {
+  return <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }} accessibilityElementsHidden importantForAccessibility="no">{glyph}</Text>;
+}
+
+export default function OwnerTabsLayout() {
+  const { state } = useAuth();
+  const { t } = useTranslation();
+  const on = useFlag('tenant_admin_lite');
+  if (state.status === 'anonymous') return <Redirect href="/(auth)/welcome" />;
+  if (!on) return <View style={{ flex: 1, backgroundColor: color.page, justifyContent: 'center' }}><EmptyState title={t('common.unavailable')} /></View>;
+
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: color.primary600,
+        tabBarInactiveTintColor: color.ink400,
+        tabBarStyle: { backgroundColor: color.card, borderTopColor: color.ink100, height: 64, paddingBottom: 8, paddingTop: 6 },
+        tabBarLabelStyle: { fontFamily: font.body, fontSize: font.size.xs, fontWeight: font.weight.semibold },
+      }}
+    >
+      <Tabs.Screen name="home" options={{ title: t('owner.tabs.dashboard'), tabBarIcon: ({ focused }) => <Icon glyph="📊" focused={focused} /> }} />
+      <Tabs.Screen name="farmers" options={{ title: t('owner.tabs.farmers'), tabBarIcon: ({ focused }) => <Icon glyph="🧑‍🌾" focused={focused} /> }} />
+      <Tabs.Screen name="approvals" options={{ title: t('owner.tabs.approvals'), tabBarIcon: ({ focused }) => <Icon glyph="✅" focused={focused} /> }} />
+      <Tabs.Screen name="disputes" options={{ title: t('owner.tabs.disputes'), tabBarIcon: ({ focused }) => <Icon glyph="⚖️" focused={focused} /> }} />
+      <Tabs.Screen name="apply" options={{ href: null }} />
+      <Tabs.Screen name="pending" options={{ href: null }} />
+      <Tabs.Screen name="farmer/[id]" options={{ href: null }} />
+      <Tabs.Screen name="add-farmer" options={{ href: null }} />
+      <Tabs.Screen name="approve/[id]" options={{ href: null }} />
+      <Tabs.Screen name="dispute/[id]" options={{ href: null }} />
+      <Tabs.Screen name="listings" options={{ href: null }} />
+      <Tabs.Screen name="payouts" options={{ href: null }} />
+    </Tabs>
+  );
+}

@@ -123,4 +123,27 @@ describe('HttpClient via resources', () => {
     expect(calls[0].init.method).toBe('POST');
     expect(p.quizScore).toBe(80);
   });
+
+  it('rbac.assignments(pendingOnly) GETs the approval queue + approve POSTs', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n === 1
+      ? ({ body: { data: [{ id: 'utr1', userId: 'u1', roleCode: 'farmer', kycStatus: 'pending', isActive: false, approvedAt: null }] } })
+      : ({ body: { data: { ok: true } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const list = await c.rbac.assignments({ pendingOnly: true });
+    expect(calls[0].url).toBe('https://api.test/v1/rbac/assignments?pendingOnly=true');
+    expect(list[0].roleCode).toBe('farmer');
+    const r = await c.rbac.approveAssignment('utr1');
+    expect(calls[1].url).toBe('https://api.test/v1/rbac/assignments/utr1/approve');
+    expect(calls[1].init.method).toBe('POST');
+    expect(r.ok).toBe(true);
+  });
+
+  it('disputes.resolve POSTs bigint-minor amount as a string', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'd1', orderId: 'o1', raisedBy: 'r', againstUser: null, reasonId: null, description: null, status: 'resolved', sellerRespondBy: null, resolutionType: 'refund_partial', resolutionAmountMinor: '50000', resolvedBy: 'm', resolvedAt: '2026-01-02', slaDueAt: null } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const d = await c.disputes.resolve('d1', { resolutionType: 'refund_partial', resolutionAmountMinor: '50000' });
+    expect(calls[0].url).toBe('https://api.test/v1/disputes/d1/resolve');
+    expect(typeof d.resolutionAmountMinor).toBe('string');
+    expect(d.resolutionAmountMinor).toBe('50000');
+  });
 });

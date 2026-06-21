@@ -9,6 +9,8 @@ import { AuthResource } from './resources/auth';
 import { MediaResource } from './resources/media';
 import { PaymentsResource, PayoutsResource } from './resources/payments';
 import { KycResource, BankAccountsResource, AddressesResource } from './resources/identity';
+import { TenancyResource } from './resources/tenancy';
+import { RbacResource, DisputesResource, UsersResource } from './resources/admin';
 import { NotificationsResource } from './resources/notifications';
 import { OrdersResource } from './resources/orders';
 import { ShipmentsResource } from './resources/logistics';
@@ -47,6 +49,10 @@ export class KrishiVerseClient {
   readonly ambassadors: AmbassadorsResource;
   readonly courses: CoursesResource;
   readonly enrollments: EnrollmentsResource;
+  readonly tenancy: TenancyResource;
+  readonly rbac: RbacResource;
+  readonly disputes: DisputesResource;
+  readonly users: UsersResource;
 
   constructor(config: SdkConfig) {
     this.http = new HttpClient(resolveConfig(config));
@@ -74,6 +80,10 @@ export class KrishiVerseClient {
     this.ambassadors = new AmbassadorsResource(this.http);
     this.courses = new CoursesResource(this.http);
     this.enrollments = new EnrollmentsResource(this.http);
+    this.tenancy = new TenancyResource(this.http);
+    this.rbac = new RbacResource(this.http);
+    this.disputes = new DisputesResource(this.http);
+    this.users = new UsersResource(this.http);
   }
   /** Escape hatch for endpoints without a dedicated resource method yet. Same envelope + resilience. */
   request<T>(method: HttpMethod, path: string, opts?: RequestOptions): Promise<Envelope<T>> {

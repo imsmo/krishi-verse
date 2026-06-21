@@ -178,6 +178,27 @@ export interface Enrollment {
 /** Per-lesson progress within an enrollment. */
 export interface LessonProgress { lessonId: string; completedAt: string | null; secondsWatched: number; quizScore: number | null; }
 
+// --- tenancy + tenant-admin-lite (P-17) — money is bigint minor STRINGS (Law 2) ---
+/** A subscription plan (read-only catalogue). All *Minor are bigint minor strings. */
+export interface Plan {
+  id: string; code: string; version: number; defaultName: string; countryCode: string; currencyCode: string;
+  monthlyPriceMinor: string; annualPriceMinor: string; setupFeeMinor: string; isPublic: boolean; isActive: boolean;
+  limits: Record<string, string>; createdAt?: string;
+}
+/** The tenant's subscription (status drives apply/pending UX). */
+export interface Subscription {
+  id: string; tenantId: string; planId: string; status: string; billingCycle: string; priceMinor: string;
+  currencyCode: string; currentPeriodStart: string | null; currentPeriodEnd: string | null; cancelAtPeriodEnd: boolean; createdAt?: string;
+}
+/** A role assignment (the tenant's roster + approval queue). Pending = not yet approved (approvedAt null). */
+export interface RoleAssignment { id: string; userId: string; roleId?: string; roleCode: string; kycStatus: string; isActive: boolean; approvedAt: string | null; }
+/** A dispute (moderation view for a tenant with dispute.resolve). resolutionAmountMinor is bigint minor. */
+export interface Dispute {
+  id: string; orderId: string; raisedBy: string; againstUser: string | null; reasonId: string | null; description: string | null;
+  status: string; sellerRespondBy: string | null; resolutionType: string | null; resolutionAmountMinor: string | null;
+  resolvedBy: string | null; resolvedAt: string | null; slaDueAt: string | null; createdAt?: string;
+}
+
 // --- media (core/media) ---
 export type MediaKind = 'image' | 'video' | 'audio' | 'document';
 /** Presigned PUT ticket: upload the raw bytes to `uploadUrl` (S3, NOT the API host), then confirm. */

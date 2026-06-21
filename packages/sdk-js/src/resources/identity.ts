@@ -15,6 +15,11 @@ export class KycResource {
   async list(status?: string, signal?: AbortSignal): Promise<KycDocument[]> {
     return (await this.http.request<KycDocument[]>('GET', 'kyc', { query: { status }, signal })).data;
   }
+  /** Tenant-admin: review a member's KYC doc (approve/reject). Needs identity.approve — authorized SERVER-SIDE,
+   * tenant-scoped (NOT god-mode, Law 11). The reviewer never sees raw doc numbers (masked only). */
+  async review(id: string, input: { decision: 'verify' | 'reject'; reason?: string }): Promise<{ id: string; status: string }> {
+    return (await this.http.request<{ id: string; status: string }>('POST', `kyc/${encodeURIComponent(id)}/review`, { body: input })).data;
+  }
 }
 
 export class BankAccountsResource {
