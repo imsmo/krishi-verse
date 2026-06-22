@@ -6,6 +6,13 @@ export const TenancyEventType = {
   PlanChanged:        'tenancy.subscription_plan_changed',
   SubscriptionCancelled: 'tenancy.subscription_cancelled',
   SubscriptionExpired:   'tenancy.subscription_expired',
+  // self-serve (profile / onboarding / domains / settings)
+  TenantProfileUpdated:    'tenancy.tenant_profile_updated',
+  TenantOnboardingSubmitted: 'tenancy.tenant_onboarding_submitted',
+  TenantDomainAdded:       'tenancy.tenant_domain_added',
+  TenantDomainPrimaryChanged: 'tenancy.tenant_domain_primary_changed',
+  TenantDomainRemoved:     'tenancy.tenant_domain_removed',
+  TenantSettingChanged:    'tenancy.tenant_setting_changed',
 } as const;
 export type DomainEvent = { type: string; payload: Record<string, unknown> };
 
