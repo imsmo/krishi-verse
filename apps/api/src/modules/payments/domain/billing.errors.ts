@@ -7,3 +7,5 @@ export class NoSettlementLinesError extends AppError {
 }
 export class StatementNotFoundError extends NotFoundError { constructor() { super('Settlement statement not found'); } }
 export class InvoiceNotFoundError extends NotFoundError { constructor() { super('Trade invoice not found'); } }
+/** A trade invoice failed its domain invariants (totals/GST split malformed). */
+export class InvalidTradeInvoiceError extends AppError { constructor(message: string) { super('TRADE_INVOICE_INVALID', message, 422); } }

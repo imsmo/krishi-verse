@@ -53,6 +53,15 @@ export class SettlementLineRepository {
     return { grossMinor: BigInt(row.gross), commissionMinor: BigInt(row.commission), taxMinor: BigInt(row.tax), netMinor: BigInt(row.net), lineCount: row.n };
   }
 
+  /** Worker finder (cross-tenant; kv_relay): distinct (tenant, seller) with UN-statemented lines in [from, to). */
+  async findSellersWithOpenLines(tx: TxContext, from: string, to: string, limit: number): Promise<Array<{ tenantId: string; sellerUserId: string }>> {
+    const r = await tx.query<any>(
+      `SELECT DISTINCT tenant_id, seller_user_id FROM settlement_lines
+        WHERE statement_id IS NULL AND created_at >= $1::timestamptz AND created_at < $2::timestamptz
+        ORDER BY tenant_id, seller_user_id LIMIT $3`, [from, to, limit]);
+    return r.rows.map((x: any) => ({ tenantId: x.tenant_id, sellerUserId: x.seller_user_id }));
+  }
+
   /** Attach the generated statement to its lines (so they aren't double-counted next cycle). */
   async linkToStatement(tx: TxContext, tenantId: string, sellerUserId: string, from: string, to: string, statementId: string): Promise<number> {
     const r = await tx.query(

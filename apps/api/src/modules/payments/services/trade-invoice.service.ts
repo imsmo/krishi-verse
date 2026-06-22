@@ -9,6 +9,7 @@ import { METRICS, Metrics } from '../../../core/observability/metrics';
 import { TxContext } from '../../../core/database/unit-of-work';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { applyBps } from '../domain/commission-rule.entity';
+import { TradeInvoice } from '../domain/trade-invoice.entity';
 import { TaxRuleRepository } from '../repositories/tax-rule.repository';
 import { TradeInvoiceRepository, TradeInvoiceRow } from '../repositories/trade-invoice.repository';
 import { InvoiceNotFoundError } from '../domain/billing.errors';
@@ -36,8 +37,12 @@ export class TradeInvoiceService {
     const taxBreakup = { gstRateBps, taxableMinor: input.totalMinor.toString(), cgstMinor: cgst.toString(), sgstMinor: sgst.toString(), igstMinor: '0' };
 
     const invoiceNo = await this.invoices.nextNumber(tx, input.tenantId, String(new Date().getUTCFullYear()));
+    const id = uuidv7();
+    // domain guard: validate totals + GST split are internally consistent before persisting (fail closed)
+    TradeInvoice.create({ id, tenantId: input.tenantId, orderId: input.orderId, invoiceNo, sellerGstin: null, buyerGstin: null,
+      totalMinor: input.totalMinor, tax: { gstRateBps, taxableMinor: input.totalMinor, cgstMinor: cgst, sgstMinor: sgst, igstMinor: 0n } });
     await this.invoices.insertIfAbsent(tx, {
-      id: uuidv7(), tenantId: input.tenantId, orderId: input.orderId, invoiceNo,
+      id, tenantId: input.tenantId, orderId: input.orderId, invoiceNo,
       buyerUserId: input.buyerUserId, sellerUserId: input.sellerUserId, sellerGstin: null, buyerGstin: null,
       totalMinor: input.totalMinor, taxBreakup,
     });

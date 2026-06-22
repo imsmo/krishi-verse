@@ -11,3 +11,8 @@ export const PaymentPermissions = {
 export function canModeratePayment(ctx: RequestContext): boolean {
   return ctx.permissions.has('wallet.adjust') || ctx.permissions.has('payout.approve') || ctx.permissions.has('*');
 }
+
+/** Finance admin able to manage the tenant's OWN commission-rule overrides. Platform defaults stay god-mode. */
+export function canManageCommissionRules(ctx: RequestContext): boolean {
+  return ctx.permissions.has('payout.approve') || ctx.permissions.has('wallet.adjust') || ctx.permissions.has('*');
+}

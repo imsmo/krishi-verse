@@ -126,6 +126,24 @@ tenant document), setting `pdf_media_id`. Statement generation attaches its PDF 
 (a PDF failure never fails statement generation). Default OFF (no S3 write); when ON + S3 configured,
 clients fetch the PDF via the media download-url using `pdf_media_id`.
 
+## Invoicing domain + commission catalog (API-W3-07)
+The B2B-invoicing surface now has first-class, unit-tested domain value objects + a tenant-managed rule catalog:
+- **Domain value objects** (`domain/{trade-invoice,settlement-statement,charge-definition,tax-rule}.entity.ts`) —
+  pure, bigint-only, invariant-enforcing: `SettlementStatement` (net = gross − commission − tax, zero-sum),
+  `TradeInvoice` (GST split consistency: cgst+sgst+igst ≤ total, never IGST mixed with CGST/SGST),
+  `ChargeDefinition` (per-`calc_method` config validation), `TaxRule` (rate + CGST/SGST split sums + TDS
+  threshold). `TradeInvoiceService` now validates each generated invoice through `TradeInvoice.create()` before
+  persisting (fail closed); the settlement-statements job validates each generated statement through
+  `SettlementStatement.fromAggregate()`.
+- **Commission-rule catalog** — a tenant finance admin (`payout.approve`) manages its OWN commission OVERRIDES
+  via `POST/GET /v1/commission-rules` + `POST /v1/commission-rules/:id/deactivate` (`CommissionRuleService`).
+  Platform-default rules (`tenant_id NULL`) are **god-mode** (admin-api) — every write binds `ctx.tenantId`, and
+  a mutate against a platform row 404s (no privilege escalation, Law 11). These rules are CONFIG and move no money;
+  settlement resolves the most-specific effective rule at order time. Rates are bps; money is bigint minor units.
+- **Settlement-statements run** (`jobs/settlement-statements.job.ts`, worker) — finds every (tenant, seller) with
+  un-statemented `settlement_lines` in a cycle and generates one statement each via the (idempotent)
+  `SettlementStatementService.generate`; cross-tenant, bounded; NO money moves (payout is a separate flow).
+
 ## Deferred (flagged, not faked) — next wave, each its own session
 - **e-invoice IRN** (GSP integration) + **GSTIN capture** (KYC) — `irn`/`*_gstin` stay null until then.
 - **per_km delivery** (needs a resolved delivery distance) + a dedicated **logistics/3PL payout**

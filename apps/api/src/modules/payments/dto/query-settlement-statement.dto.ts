@@ -1,3 +1,7 @@
-// apps/api/src/modules/payments/dto/query-settlement-statement.dto.ts · list/filter query params (cursor pagination) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/payments/dto/query-settlement-statement.dto.ts · list a seller's settlement statements, keyset pagination.
+import { z } from 'zod';
+export const QuerySettlementStatementSchema = z.object({
+  cursor: z.string().max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+}).strict();
+export type QuerySettlementStatementDto = z.infer<typeof QuerySettlementStatementSchema>;

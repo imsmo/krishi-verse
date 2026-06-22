@@ -29,6 +29,8 @@ import { MediaModule } from '../../core/media/media.module';
 import { TradeInvoiceHandler } from './events/handlers/trade-invoice.handler';
 import { SettlementStatementsController } from './controllers/v1/settlement-statements.controller';
 import { InvoicesController } from './controllers/v1/invoices.controller';
+import { CommissionRulesController } from './controllers/v1/commission-rules.controller';
+import { CommissionRuleService } from './services/commission-rule.service';
 import { GatewayRegistry } from './gateway/gateway.registry';
 import { SandboxGateway } from './gateway/sandbox.gateway';
 import { RazorpayGateway } from './gateway/razorpay.gateway';
@@ -40,10 +42,11 @@ import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handl
 
 @Module({
   imports: [MediaModule],   // MediaService for rendered statement/invoice PDFs
-  controllers: [PaymentsController, PaymentWebhooksController, PayoutsController, SettlementStatementsController, InvoicesController],
+  controllers: [PaymentsController, PaymentWebhooksController, PayoutsController, SettlementStatementsController, InvoicesController, CommissionRulesController],
   providers: [
     PaymentService,
     PayoutService,
+    CommissionRuleService,
     DocumentPdfService,
     PaymentRepository,
     PayoutRepository,
