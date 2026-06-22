@@ -18,8 +18,10 @@ import { CouponService } from '../../promotions/services/coupon.service';
 import { UserMembershipService } from '../../memberships/services/user-membership.service';
 import { CartRepository } from '../repositories/cart.repository';
 import { OrderRepository } from '../repositories/order.repository';
+import { CheckoutGroupRepository } from '../repositories/checkout-group.repository';
 import { Order } from '../domain/order.entity';
 import { OrderItem } from '../domain/order-item.entity';
+import { CheckoutGroup } from '../domain/checkout-group.entity';
 import { DomainEvent } from '../domain/orders.events';
 import { CartEmptyError, CartNotFoundError, ListingNotPurchasableError, InsufficientListingStockError } from '../domain/orders.errors';
 import { CheckoutDto } from '../dto/create-order.dto';
@@ -39,6 +41,7 @@ export class CheckoutService {
     private readonly listings: ListingService,
     private readonly carts: CartRepository,
     private readonly orders: OrderRepository,
+    private readonly checkoutGroups: CheckoutGroupRepository,
     private readonly charges: ChargePricingService,
     private readonly coupons: CouponService,
     private readonly memberships: UserMembershipService,
@@ -73,11 +76,11 @@ export class CheckoutService {
               gstRatePct: null, hsnCode: null, batchId: null }));
           }
 
+          // multi-seller cart → one checkout GROUP (one payment spanning the per-seller sub-orders).
           const checkoutGroupId = bySeller.size > 1 ? uuidv7() : null;
           if (checkoutGroupId) {
             const total = [...bySeller.values()].reduce((s, g) => s + g.items.reduce((a, it) => a + it.props.lineTotalMinor, 0n), 0n);
-            await tx.query(`INSERT INTO checkout_groups (id, tenant_id, buyer_user_id, total_minor, currency_code) VALUES ($1,$2,$3,$4,'INR')`,
-              [checkoutGroupId, tenantId, buyerUserId, total.toString()]);
+            await this.checkoutGroups.insert(tx, CheckoutGroup.of({ id: checkoutGroupId, tenantId, buyerUserId, totalMinor: total, currencyCode: 'INR' }));
           }
 
           const created: Array<{ id: string; orderNo: string; totalMinor: string; status: string }> = [];

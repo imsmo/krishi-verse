@@ -30,8 +30,11 @@ import { ListingService } from '../../listings/services/listing.service';
 import { ChargePricingService } from '../../payments/services/charge-pricing.service';
 import { ChargeDefinitionRepository } from '../../payments/repositories/charge-definition.repository';
 import { CartRepository } from '../repositories/cart.repository';
+import { CartItemRepository } from '../repositories/cart-item.repository';
+import { CheckoutGroupRepository } from '../repositories/checkout-group.repository';
 import { OrderRepository } from '../repositories/order.repository';
 import { CartService } from '../services/cart.service';
+import { CartItemService } from '../services/cart-item.service';
 import { CheckoutService } from '../services/checkout.service';
 import { CouponService } from '../../promotions/services/coupon.service';
 import { PromotionRepository } from '../../promotions/repositories/promotion.repository';
@@ -81,13 +84,15 @@ run('checkout member benefits — platform fee override (integration, real Postg
     const wallet = new InProcessWalletClient(new LedgerRepository());
     const listings = new ListingService(uow, outbox, quota, idem, cache, metrics, new ListingRepository(replica as any), new PriceHistoryRepository(), new ListingAttributeRepository(), new ListingMediaRepository(), audit);
     const cartRepo = new CartRepository(replica as any);
-    carts = new CartService(uow, metrics, listings, cartRepo);
+    const cartItemRepo = new CartItemRepository(replica as any);
+    const checkoutGroupRepo = new CheckoutGroupRepository(replica as any);
+    carts = new CartService(uow, metrics, listings, cartRepo, new CartItemService(uow, metrics, listings, cartRepo, cartItemRepo));
     const couponSvc = new CouponService(uow, outbox, idem, metrics, audit, new PromotionRepository(replica as any), new CouponRepository(replica as any), new CouponRedemptionRepository(replica as any));
     const tierRepo = new MembershipTierRepository(replica as any);
     const membershipRepo = new UserMembershipRepository(replica as any);
     tiers = new MembershipTierService(uow, outbox, idem, metrics, audit, tierRepo);
     memberships = new UserMembershipService(uow, outbox, idem, metrics, wallet, audit, tierRepo, membershipRepo);
-    checkout = new CheckoutService(uow, outbox, quota, idem, metrics, flags, listings, cartRepo, new OrderRepository(replica as any),
+    checkout = new CheckoutService(uow, outbox, quota, idem, metrics, flags, listings, cartRepo, new OrderRepository(replica as any), checkoutGroupRepo,
       new ChargePricingService(new ChargeDefinitionRepository(replica as any)), couponSvc, memberships);
   }, 30000);
 

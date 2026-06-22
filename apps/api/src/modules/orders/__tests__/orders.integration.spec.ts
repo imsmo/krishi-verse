@@ -49,8 +49,11 @@ import { LedgerRepository } from '../../../core/wallet/ledger.repository';
 import { InProcessWalletClient } from '../../../core/wallet/wallet.client.inprocess';
 
 import { CartRepository } from '../repositories/cart.repository';
+import { CartItemRepository } from '../repositories/cart-item.repository';
+import { CheckoutGroupRepository } from '../repositories/checkout-group.repository';
 import { OrderRepository } from '../repositories/order.repository';
 import { CartService } from '../services/cart.service';
+import { CartItemService } from '../services/cart-item.service';
 import { CheckoutService } from '../services/checkout.service';
 import { OrderService, OrderActor } from '../services/order.service';
 
@@ -106,15 +109,17 @@ run('orders slice (integration, real Postgres + RLS)', () => {
       new ListingRepository(replica as any), new PriceHistoryRepository(), new ListingAttributeRepository(),
       new ListingMediaRepository(), audit);
     const cartRepo = new CartRepository(replica as any);
+    const cartItemRepo = new CartItemRepository(replica as any);
     const orderRepo = new OrderRepository(replica as any);
+    const checkoutGroupRepo = new CheckoutGroupRepository(replica as any);
 
-    carts = new CartService(uow, metrics, listings, cartRepo);
+    carts = new CartService(uow, metrics, listings, cartRepo, new CartItemService(uow, metrics, listings, cartRepo, cartItemRepo));
     const promoRepo = new PromotionRepository(replica as any);
     const couponRepo = new CouponRepository(replica as any);
     promotions = new PromotionService(uow, outbox, idem, metrics, audit, promoRepo);
     couponSvc = new CouponService(uow, outbox, idem, metrics, audit, promoRepo, couponRepo, new CouponRedemptionRepository(replica as any));
     const membershipSvc = new UserMembershipService(uow, outbox, idem, metrics, new InProcessWalletClient(new LedgerRepository()), audit, new MembershipTierRepository(replica as any), new UserMembershipRepository(replica as any));
-    checkout = new CheckoutService(uow, outbox, quota, idem, metrics, flags, listings, cartRepo, orderRepo,
+    checkout = new CheckoutService(uow, outbox, quota, idem, metrics, flags, listings, cartRepo, orderRepo, checkoutGroupRepo,
       new ChargePricingService(new ChargeDefinitionRepository(replica as any)), couponSvc, membershipSvc);
     orders = new OrderService(uow, outbox, metrics, audit, orderRepo);
 

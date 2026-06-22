@@ -1,3 +1,10 @@
-// apps/api/src/modules/orders/dto/query-cart-item.dto.ts · list/filter query params (cursor pagination) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/orders/dto/query-cart-item.dto.ts · zod .strict() list params for a cart's items.
+// The cart is always the caller's own active cart (resolved server-side) — no cart_id from the client
+// (anti-IDOR). Bounded limit; keyset cursor (never OFFSET).
+import { z } from 'zod';
+
+export const QueryCartItemsSchema = z.object({
+  cursor: z.string().max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+}).strict();
+export type QueryCartItemsDto = z.infer<typeof QueryCartItemsSchema>;

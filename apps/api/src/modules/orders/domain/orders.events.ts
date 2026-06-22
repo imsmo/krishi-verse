@@ -14,6 +14,7 @@ export const OrderEventType = {
   Disputed: 'orders.order_disputed',
   FromOfferCreated: 'orders.order_from_offer_created',   // an accepted offer became this order (→ offers links back)
   StatusChanged: 'orders.order_status_changed',
+  ItemDelivered: 'orders.order_item_delivered',          // a line's delivered quantity was recorded (partial fulfilment)
 } as const;
 export type OrderEventType = typeof OrderEventType[keyof typeof OrderEventType];
 export type DomainEvent = { type: string; payload: Record<string, unknown> };

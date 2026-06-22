@@ -14,11 +14,19 @@ import { CartsController } from './controllers/v1/carts.controller';
 import { CheckoutController } from './controllers/v1/checkout.controller';
 import { OrdersController } from './controllers/v1/orders.controller';
 import { CartService } from './services/cart.service';
+import { CartItemService } from './services/cart-item.service';
 import { CheckoutService } from './services/checkout.service';
+import { CheckoutGroupService } from './services/checkout-group.service';
 import { OrderService } from './services/order.service';
+import { OrderItemService } from './services/order-item.service';
 import { OrderTimelineReadModel } from './read-models/order-timeline.read-model';
+import { TenantOrderStatsReadModel } from './read-models/tenant-order-stats.read-model';
+import { OrdersPublisher } from './events/orders.publisher';
 import { CartRepository } from './repositories/cart.repository';
+import { CartItemRepository } from './repositories/cart-item.repository';
+import { CheckoutGroupRepository } from './repositories/checkout-group.repository';
 import { OrderRepository } from './repositories/order.repository';
+import { OrderItemRepository } from './repositories/order-item.repository';
 import { SellerConfirmTimeoutJob } from './jobs/seller-confirm-timeout.job';
 import { AutoCompleteQualityWindowJob } from './jobs/auto-complete-quality-window.job';
 import { AbandonedCartsJob } from './jobs/abandoned-carts.job';
@@ -33,8 +41,9 @@ import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handl
   imports: [ListingsModule, PaymentsModule, PromotionsModule, MembershipsModule],   // PaymentsModule: ChargePricingService; PromotionsModule: CouponService; MembershipsModule: member checkout benefits
   controllers: [CartsController, CheckoutController, OrdersController],
   providers: [
-    CartService, CheckoutService, OrderService, OrderTimelineReadModel,
-    CartRepository, OrderRepository,
+    CartService, CartItemService, CheckoutService, CheckoutGroupService, OrderService, OrderItemService,
+    OrderTimelineReadModel, TenantOrderStatsReadModel, OrdersPublisher,
+    CartRepository, CartItemRepository, CheckoutGroupRepository, OrderRepository, OrderItemRepository,
     SellerConfirmTimeoutJob, AutoCompleteQualityWindowJob, AbandonedCartsJob,
     PaymentSucceededHandler, OfferAcceptedHandler, QuoteAcceptedHandler, ShipmentDeliveredHandler, DisputeOpenedHandler, DisputeResolvedHandler,
   ],

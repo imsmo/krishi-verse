@@ -67,12 +67,35 @@ order (+ outbox, price snapshot, cart converted), checkout idempotency, lifecycl
 `db/migrations` + `db/seeds` (via `test/integration-global-setup.js`); the spec inserts only its
 own FK-ordered fixtures (`test/helpers/fixtures.ts`).
 
+## Cart / checkout-group / order-item sub-domain (API-W3-10)
+The per-item sub-domain is now built + consolidated (it complements the inlined checkout path):
+- **Cart items** — `CartItemRepository` is the canonical `cart_items` SQL (upsert/setQty/remove/clear/
+  itemsForUpdate/listByCart, bounded); `CartItemService` owns add/update/remove/clear/list (live-listing
+  validation + price snapshot). `CartService` now DELEGATES its item mutations to `CartItemService` (one
+  implementation) and keeps the composite priced `getCart` view. `cart_items` carries no `tenant_id` — it
+  is reachable only through the tenant-scoped, RLS-protected `carts` row (the cart is always resolved
+  server-side for the caller → anti-IDOR).
+- **Checkout groups** — `CheckoutGroupRepository` (insert in the caller's tx + tenant-scoped reads);
+  `CheckoutService` now writes the multi-seller group through it (`CheckoutGroup.of`) instead of inline
+  SQL. `CheckoutGroupService` exposes the read side: a group + its sub-orders, visible to the owning
+  buyer or a moderator (404 to others). `GET /v1/orders/checkout-groups[/:id]`.
+- **Order items** — `OrderItemRepository` (partition-pruned `order_items` reads via `uuid_v7_time`, Law 8)
+  + `OrderItemService`: list an order's frozen lines (buyer/seller/moderator, 404 otherwise) and the
+  SELLER records **delivered quantity** (partial fulfilment, PRD §9.6) — bounded to the ordered qty, in
+  one ACID tx, emitting `orders.order_item_delivered` via `OrdersPublisher` in the SAME tx (Law 4).
+  `GET /v1/orders/:id/items`, `POST /v1/orders/:id/items/:listingId/delivered` (needs `order.manage`).
+- **`OrdersPublisher`** — typed outbox façade (versioned, no PII) consolidating order event emission.
+  **`TenantOrderStatsReadModel`** — replica dashboard read: order counts by status + GMV
+  (delivered+completed); a moderator sees the whole tenant, a seller is scoped to their own orders.
+  `GET /v1/orders/stats`.
+  Tests: `orders-cart-completion.spec.ts` (SQL-contract + GMV math) + `orders-cart-completion.integration.spec.ts`
+  (real Postgres: item visibility 404, seller-only bounded delivery + event, checkout-group owner 404,
+  stats, cross-tenant RLS on `checkout_groups`).
+
 ## Deferred (flagged, not faked)
 The money path (`payments` + wallet-service) — orders already start in `payment_pending` and emit
 `orders.payment_required` when the `online_payments` flag is on; the `payment-succeeded` handler is
-the integration point that will call `order.markPaid()`. Similarly `shipment-delivered` (→
-`logistics`) and `dispute-resolved` (→ `disputes`) handlers, the `orders.publisher`, and
-`tenant-order-stats` analytics (Phase 2) are scaffolded stubs. The per-item
-`cart-item`/`order-item`/`checkout-group` repositories/services/DTOs are intentionally empty:
-items are owned by their **aggregate root** (cart/order), so all item SQL lives in
-`cart.repository`/`order.repository`.
+the integration point that calls `order.markPaid()`. `shipment-delivered` (→ `logistics`) and
+`dispute-resolved` (→ `disputes`) handlers are live. A downstream consumer of
+`orders.order_item_delivered` (auto-transition to `partially_fulfilled` / notify) lands with the
+events-and-jobs sweep (W4).

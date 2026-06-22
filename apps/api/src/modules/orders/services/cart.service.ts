@@ -5,7 +5,7 @@ import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { ListingService } from '../../listings/services/listing.service';
 import { CartRepository } from '../repositories/cart.repository';
-import { ListingNotPurchasableError, InsufficientListingStockError, CartNotFoundError } from '../domain/orders.errors';
+import { CartItemService } from './cart-item.service';
 import { AddToCartDto } from '../dto/create-cart-item.dto';
 
 @Injectable()
@@ -15,45 +15,15 @@ export class CartService {
     @Inject(METRICS) private readonly metrics: Metrics,
     private readonly listings: ListingService,
     private readonly carts: CartRepository,
+    private readonly items: CartItemService,
   ) {}
 
-  private async assertPurchasable(tenantId: string, listingId: string, qty: number) {
-    const l: any = await this.listings.getById(tenantId, listingId);
-    if (!l || l.status !== 'published') throw new ListingNotPurchasableError(listingId);
-    if (Number(l.quantityAvailable) < qty) throw new InsufficientListingStockError(listingId, qty, Number(l.quantityAvailable));
-    return l;
-  }
-
-  async addItem(tenantId: string, userId: string, dto: AddToCartDto) {
-    const l = await this.assertPurchasable(tenantId, dto.listingId, dto.quantity);
-    await this.uow.run(tenantId, async (tx) => {
-      const cartId = await this.carts.getOrCreateActiveId(tx, tenantId, userId);
-      await this.carts.upsertItem(tx, cartId, dto.listingId, dto.quantity, BigInt(l.priceMinor));
-    }, { userId });
-    this.metrics.inc('orders.cart_add', { tenant: tenantId });
-    return { ok: true };
-  }
-  async updateItem(tenantId: string, userId: string, listingId: string, quantity: number) {
-    await this.assertPurchasable(tenantId, listingId, quantity);
-    await this.uow.run(tenantId, async (tx) => {
-      const cartId = await this.carts.activeIdForUpdate(tx, tenantId, userId);
-      if (!cartId) throw new CartNotFoundError();
-      const n = await this.carts.setItemQty(tx, cartId, listingId, quantity);
-      if (n === 0) throw new CartNotFoundError();
-    }, { userId });
-    return { ok: true };
-  }
-  async removeItem(tenantId: string, userId: string, listingId: string) {
-    await this.uow.run(tenantId, async (tx) => {
-      const cartId = await this.carts.activeIdForUpdate(tx, tenantId, userId);
-      if (cartId) await this.carts.removeItem(tx, cartId, listingId);
-    }, { userId });
-    return { ok: true };
-  }
-  async clear(tenantId: string, userId: string) {
-    await this.uow.run(tenantId, async (tx) => { const id = await this.carts.activeIdForUpdate(tx, tenantId, userId); if (id) await this.carts.clear(tx, id); }, { userId });
-    return { ok: true };
-  }
+  // Item mutations are owned by CartItemService (single implementation). CartService keeps the composite
+  // priced cart view (getCart), which joins the live listing snapshot + price-drift flag.
+  addItem(tenantId: string, userId: string, dto: AddToCartDto) { return this.items.addItem(tenantId, userId, dto); }
+  updateItem(tenantId: string, userId: string, listingId: string, quantity: number) { return this.items.updateItem(tenantId, userId, listingId, quantity); }
+  removeItem(tenantId: string, userId: string, listingId: string) { return this.items.removeItem(tenantId, userId, listingId); }
+  clear(tenantId: string, userId: string) { return this.items.clear(tenantId, userId); }
   /** Cart view with the CURRENT listing snapshot + a price-drift flag. */
   async getCart(tenantId: string, userId: string) {
     return timed(this.metrics, 'orders.cart_get', { tenant: tenantId }, async () => {
