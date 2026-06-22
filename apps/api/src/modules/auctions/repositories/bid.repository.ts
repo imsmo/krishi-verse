@@ -39,6 +39,12 @@ export class BidRepository {
     return Number(r.rows[0]?.n ?? 0);
   }
 
+  /** The bidder who placed a given bid (e.g. the winning bid). Null if not found / cross-tenant. */
+  async bidderOfBid(tx: TxContext, tenantId: string, bidId: string): Promise<string | null> {
+    const r = await tx.query<{ bidder_user_id: string }>(`SELECT bidder_user_id FROM bids WHERE tenant_id=$1 AND id=$2`, [tenantId, bidId]);
+    return r.rows[0]?.bidder_user_id ?? null;
+  }
+
   /** Each distinct bidder's FIRST bid amount (drives the EMD amount to release at close). */
   async firstBidAmounts(tx: TxContext, tenantId: string, auctionId: string): Promise<BidderFirst[]> {
     const r = await tx.query(

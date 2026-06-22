@@ -18,6 +18,7 @@ import { DomainEvent, AuctionEventType } from '../domain/auctions.events';
 import { AuctionNotFoundError, SellerCannotBidError, AlreadyHighBidderError } from '../domain/auctions.errors';
 import { AuctionRepository } from '../repositories/auction.repository';
 import { BidRepository } from '../repositories/bid.repository';
+import { AuctionsPublisher } from '../events/auctions.publisher';
 
 @Injectable()
 export class BidService {
@@ -30,6 +31,7 @@ export class BidService {
     private readonly listings: ListingService,
     private readonly auctions: AuctionRepository,
     private readonly bids: BidRepository,
+    private readonly publisher: AuctionsPublisher,
   ) {}
 
   async placeBid(tenantId: string, bidderUserId: string, auctionId: string, idemKey: string, amountMinorStr: string, ip: string | null) {
@@ -68,6 +70,10 @@ export class BidService {
 
           const events: DomainEvent[] = [{ type: AuctionEventType.BidPlaced, payload: { auctionId, bidId, bidderUserId, amountMinor: sealed ? 'sealed' : amountMinor.toString() } }, ...a.pullEvents()];
           for (const e of events) await this.outbox.write(tx, { tenantId, aggregateType: 'auction', aggregateId: auctionId, eventType: e.type, payload: { v: 1, ...e.payload } });
+          // open-auction outbid: a strictly-higher bid displaced the previous high bidder → notify them
+          if (!sealed && high && high.bidderUserId !== bidderUserId && amountMinor > high.amountMinor) {
+            await this.publisher.outbid(tx, tenantId, auctionId, high.bidderUserId, amountMinor);
+          }
           this.metrics.inc('auctions.bid_placed', { tenant: tenantId, extended: String(extended) });
           return { bidId, auctionId, amountMinor: amountMinorStr, extended, endsAt: a.endsAt };
         }, { userId: bidderUserId })));

@@ -45,9 +45,33 @@ SQL contract (tenant_id everywhere, FOR UPDATE, version, SKIP LOCKED, keyset). I
 (`auctions.integration.spec.ts`, real Postgres + RLS): open → bids (EMD held once, seller blocked,
 too-low rejected) → close (winner + all EMD released) → cross-tenant RLS denial.
 
+## Watch-list + outbid notifications + EMD-release glue (API-W3-11)
+- **Watch-list** — `domain/auction-watcher.entity.ts` + `repositories/auction-watcher.repository.ts` +
+  `services/auction-watcher.service.ts`: a member watches/unwatches an auction (idempotent — composite
+  PK) and lists their own watched auctions. `auction_watchers` has no `tenant_id`; it is reachable only
+  through the tenant-scoped, RLS-protected `auctions` row (every read JOINs `auctions` + filters
+  `tenant_id`), and the auction is resolved within the tenant before a watch (a non-member → 404, no
+  enumeration). `POST/DELETE /v1/auctions/:id/watch`, `GET /v1/auctions/watching`. watch emits
+  `auctions.watch_started` (Law 4).
+- **Outbid notifications** — when a strictly-higher open-auction bid displaces the previous high bidder,
+  `BidService` emits `auctions.bidder_outbid` (via `AuctionsPublisher`) IN THE SAME bid tx → notifications
+  fan out to the outbid bidder. Sealed bids never emit it.
+- **Edit a scheduled auction** — `update-auction.dto` + `AuctionService.updateScheduled` (+ `Auction.editSchedule`):
+  seller/moderator may change reserve/min-increment/window WHILE scheduled (invariants re-validated,
+  optimistic-locked, audited, emits `auctions.auction_updated`). `PATCH /v1/auctions/:id`.
+- **EMD-release glue** — `releaseLosingEmd` + `jobs/release-losing-emd.job.ts` (worker, cross-tenant,
+  SKIP LOCKED, bounded) release LOSING bidders' EMD (hold → main) for recently-closed auctions while the
+  WINNER keeps their hold; the winner's hold is returned by `events/handlers/payment-succeeded.handler.ts`
+  when they pay (`payments.payment_succeeded`, referenceType `auction`). Both idempotent on the shared
+  `emd-release:<auction>:<bidder>` wallet key (decoupling release from the close tx is the scale path).
+  `AuctionsPublisher` is the typed outbox façade (versioned, no PII; sealed amounts never emitted).
+  Tests: `auction-watchers.spec.ts` (watcher VO + editSchedule invariants) +
+  `auction-watchers.integration.spec.ts` (watch idempotency + 404 for non-member, losers-only EMD release
+  + winner-keeps-hold, winner release on payment, cross-tenant RLS on `auction_watchers`).
+
 ## Deferred (flagged, not faked) — next wave
 - **Order creation from a won auction** — emitted as `auctions.auction_won`; the orders-side handler
   (create the winner's order at the winning price, source='auction') is the integration point.
 - **reverse / dutch** auction kinds (rejected at creation) + **bidder qualification** enforcement
-  (roles/regions/KYC in `bidder_qualification`) + **watchers**/notifications + a Redis live read-model.
-  English-open + sealed + the EMD/anti-snipe core are complete.
+  (roles/regions/KYC in `bidder_qualification`) + a Redis live read-model. English-open + sealed +
+  the EMD/anti-snipe + watch-list/outbid core are complete.

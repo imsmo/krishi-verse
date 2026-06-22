@@ -71,6 +71,22 @@ export class Auction {
     return 0n;
   }
 
+  /** Seller edits a SCHEDULED auction's terms (before it opens / any bids). Only safe knobs; identity,
+   *  status and the winner are never touched here. Invariants re-validated (reserve ≥ start, ends>starts). */
+  editSchedule(input: { reservePriceMinor?: bigint | null; minIncrementMinor?: bigint; startsAt?: Date; endsAt?: Date }): void {
+    if (this.props.status !== 'scheduled') throw new InvalidAuctionError('only a scheduled auction can be edited');
+    const startsAt = input.startsAt ?? this.props.startsAt;
+    const endsAt = input.endsAt ?? this.props.endsAt;
+    if (endsAt.getTime() <= startsAt.getTime()) throw new InvalidAuctionError('endsAt must be after startsAt');
+    if (input.reservePriceMinor != null && input.reservePriceMinor < this.props.startPriceMinor) throw new InvalidAuctionError('reserve cannot be below the start price');
+    if (input.minIncrementMinor != null && input.minIncrementMinor <= 0n) throw new InvalidAuctionError('min increment must be positive');
+    if (input.reservePriceMinor !== undefined) this.props.reservePriceMinor = input.reservePriceMinor;
+    if (input.minIncrementMinor !== undefined) this.props.minIncrementMinor = input.minIncrementMinor;
+    this.props.startsAt = startsAt;
+    this.props.endsAt = endsAt;
+    this.events.push({ type: AuctionEventType.Updated, payload: { auctionId: this.props.id } });
+  }
+
   open(): void { this.to('live', AuctionEventType.Opened); }
 
   /** Validate a bid against the rules (the service enforces seller/qualification/concurrency). */

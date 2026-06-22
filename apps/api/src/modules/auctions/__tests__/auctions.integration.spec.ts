@@ -36,6 +36,7 @@ import { AuctionRepository } from '../repositories/auction.repository';
 import { BidRepository } from '../repositories/bid.repository';
 import { AuctionService } from '../services/auction.service';
 import { BidService } from '../services/bid.service';
+import { AuctionsPublisher } from '../events/auctions.publisher';
 import { SellerCannotBidError, BidTooLowError } from '../domain/auctions.errors';
 
 const APP_URL = process.env.DATABASE_URL;
@@ -86,8 +87,9 @@ run('auctions slice (integration, real Postgres + RLS)', () => {
     const listings = new ListingService(uow, outbox, quota, idem, cache, metrics, new ListingRepository(replica as any), new PriceHistoryRepository(), new ListingAttributeRepository(), new ListingMediaRepository(), audit);
     const auctionRepo = new AuctionRepository(replica as any);
     const bidRepo = new BidRepository(replica as any);
+    const publisher = new AuctionsPublisher(outbox);
     auctions = new AuctionService(uow, outbox, idem, metrics, wallet, audit, listings, auctionRepo, bidRepo);
-    bidsSvc = new BidService(uow, outbox, idem, metrics, wallet, listings, auctionRepo, bidRepo);
+    bidsSvc = new BidService(uow, outbox, idem, metrics, wallet, listings, auctionRepo, bidRepo, publisher);
 
     // fund both bidders so EMD holds succeed
     await fund(bidder1, 1_000_000n); await fund(bidder2, 1_000_000n);

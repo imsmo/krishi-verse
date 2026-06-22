@@ -14,7 +14,8 @@ import { userMain, userHold } from '../../../core/wallet/account-codes';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { ListingService } from '../../listings/services/listing.service';
 import { Auction } from '../domain/auction.entity';
-import { DomainEvent } from '../domain/auctions.events';
+import { DomainEvent, AuctionEventType } from '../domain/auctions.events';
+import { UpdateAuctionDto } from '../dto/update-auction.dto';
 import { AuctionNotFoundError, AuctionForbiddenError, AuctionConcurrencyError, InvalidAuctionError } from '../domain/auctions.errors';
 import { AuctionRepository } from '../repositories/auction.repository';
 import { BidRepository } from '../repositories/bid.repository';
@@ -121,6 +122,47 @@ export class AuctionService {
       await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'auction.cancelled', entityType: 'auction', entityId: auctionId, newValue: {}, ip });
       await this.flush(tx, tenantId, auctionId, a.pullEvents());
     }, { userId: actor.userId });
+  }
+
+  /** Seller (or moderator) edits a SCHEDULED auction's terms (before it opens / any bids). */
+  async updateScheduled(tenantId: string, actor: AuctionActor, auctionId: string, dto: UpdateAuctionDto, ip: string | null) {
+    return this.uow.run(tenantId, async (tx) => {
+      const a = await this.repo.getForUpdate(tx, tenantId, auctionId);
+      if (!a) throw new AuctionNotFoundError(auctionId);
+      await this.assertSellerOrModerator(tenantId, a.listingId, actor);
+      a.editSchedule({
+        reservePriceMinor: dto.reservePriceMinor === undefined ? undefined : (dto.reservePriceMinor === null ? null : BigInt(dto.reservePriceMinor)),
+        minIncrementMinor: dto.minIncrementMinor ? BigInt(dto.minIncrementMinor) : undefined,
+        startsAt: dto.startsAt ? new Date(dto.startsAt) : undefined,
+        endsAt: dto.endsAt ? new Date(dto.endsAt) : undefined,
+      });
+      if (!(await this.repo.updateSchedule(tx, a))) throw new AuctionConcurrencyError(auctionId);
+      await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'auction.updated', entityType: 'auction', entityId: auctionId, newValue: { reservePriceMinor: dto.reservePriceMinor ?? null, endsAt: dto.endsAt ?? null }, ip });
+      await this.flush(tx, tenantId, auctionId, a.pullEvents());
+      return this.serialize(a.toProps());
+    }, { userId: actor.userId });
+  }
+
+  /** Release the EMD of LOSING bidders for a closed auction (the winner keeps their hold until they pay).
+   *  Idempotent on the shared `emd-release:` key — safe to re-run (worker backstop / scale-out path). */
+  async releaseLosingEmd(tenantId: string, auctionId: string): Promise<{ released: number }> {
+    return this.uow.run(tenantId, async (tx) => {
+      const a = await this.repo.getForUpdate(tx, tenantId, auctionId);
+      if (!a) return { released: 0 };
+      const p = a.toProps();
+      const winnerUserId = p.winningBidId ? await this.bids.bidderOfBid(tx, tenantId, p.winningBidId) : null;
+      let released = 0;
+      for (const f of await this.bids.firstBidAmounts(tx, tenantId, auctionId)) {
+        if (f.bidderUserId === winnerUserId) continue;               // winner keeps their hold (released on payment)
+        const emd = a.emdForBid(f.firstAmountMinor);
+        if (emd <= 0n) continue;
+        await this.wallet.post(tx, { tenantId, txnType: 'emd_hold', idempotencyKey: `emd-release:${auctionId}:${f.bidderUserId}`, referenceType: 'auction', referenceId: auctionId, initiatedBy: 'system',
+          legs: [ { account: userHold(f.bidderUserId), amountMinor: -emd }, { account: userMain(f.bidderUserId), amountMinor: emd } ] });
+        await this.outbox.write(tx, { tenantId, aggregateType: 'auction', aggregateId: auctionId, eventType: AuctionEventType.EmdReleased, payload: { v: 1, auctionId, bidderUserId: f.bidderUserId, amountMinor: emd.toString() } });
+        released++;
+      }
+      return { released };
+    }, { userId: 'system' });
   }
 
   async getById(tenantId: string, auctionId: string) {

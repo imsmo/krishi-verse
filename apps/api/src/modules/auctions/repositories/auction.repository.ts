@@ -60,6 +60,25 @@ export class AuctionRepository {
     return (r.rowCount ?? 0) > 0;
   }
 
+  /** Optimistic-locked edit of a SCHEDULED auction's terms (reserve/min-increment/window). */
+  async updateSchedule(tx: TxContext, a: Auction): Promise<boolean> {
+    const p = a.toProps();
+    const r = await tx.query(
+      `UPDATE auctions SET reserve_price_minor=$3, min_increment_minor=$4, starts_at=$5, ends_at=$6, version=version+1, updated_at=now()
+        WHERE id=$1 AND tenant_id=$2 AND version=$7 AND status='scheduled'`,
+      [p.id, p.tenantId, p.reservePriceMinor?.toString() ?? null, p.minIncrementMinor.toString(), p.startsAt, p.endsAt, p.version]);
+    return (r.rowCount ?? 0) > 0;
+  }
+
+  /** Worker finder for the EMD-release backstop: auctions closed within the recent window (cross-tenant,
+   *  SKIP LOCKED, bounded). EMD release is idempotent, so re-scanning a closed auction is harmless. */
+  async findRecentlyClosed(tx: TxContext, since: Date, limit: number): Promise<Auction[]> {
+    const r = await tx.query(
+      `SELECT ${COLS} FROM auctions WHERE status IN ('ended','settled','awaiting_approval','failed_reserve','cancelled')
+         AND updated_at >= $1 ORDER BY updated_at DESC LIMIT $2 FOR UPDATE SKIP LOCKED`, [since, limit]);
+    return r.rows.map(toDomain);
+  }
+
   async recordEvent(tx: TxContext, tenantId: string, auctionId: string, eventCode: string, meta: Record<string, unknown> = {}): Promise<void> {
     await tx.query(`INSERT INTO auction_events (tenant_id, auction_id, event_code, meta) VALUES ($1,$2,$3,$4::jsonb)`, [tenantId, auctionId, eventCode, JSON.stringify(meta)]);
   }
