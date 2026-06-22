@@ -8,6 +8,13 @@ The dynamic catalogue: the category taxonomy, typed attributes, and the product 
   the tenant's own storefront (`tenant_categories`).
 - **Attributes** — resolve the typed attributes (with options) that apply to a category,
   **including inherited ones from ancestor categories** (ltree `path @>`), for forms + search facets.
+- **EAV read engine** (API-W3-01) — standalone reads the storefront + listing-create consume:
+  an attribute's dropdown **options** (`GET /v1/attributes/options?attributeId=`), the raw
+  **category-attribute bindings** incl. inherited (`GET /v1/attributes/bindings?categoryId=`),
+  clonable **attribute templates** (`GET /v1/attribute-templates[/:code]`), and the global
+  **brands** picker (`GET /v1/brands[/:id]`). `AttributeTemplate.resolveItems()` validates the
+  master payload (malformed → 422, never 500); `CategoryAttribute.appliesWhen/conditionalRequired`
+  evaluate `{if/then}` conditionals (e.g. organic ⇒ cert fields required) — pure + unit-tested.
 - **Products** — browse/search (platform-master + the tenant's own), and create/update/deactivate
   the tenant's **own private** products with validated typed attribute values.
 - **Product batches** — regulated-input store inventory (expiry, FIFO consume, recalls), gated by

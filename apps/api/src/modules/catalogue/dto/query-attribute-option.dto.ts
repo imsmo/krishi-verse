@@ -1,3 +1,7 @@
-// apps/api/src/modules/catalogue/dto/query-attribute-option.dto.ts · list/filter query params (cursor pagination) · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// modules/catalogue/dto/query-attribute-option.dto.ts · list the dropdown options of one attribute (read).
+import { z } from 'zod';
+export const QueryAttributeOptionSchema = z.object({
+  attributeId: z.string().uuid(),
+  activeOnly: z.coerce.boolean().default(true),
+}).strict();
+export type QueryAttributeOptionDto = z.infer<typeof QueryAttributeOptionSchema>;

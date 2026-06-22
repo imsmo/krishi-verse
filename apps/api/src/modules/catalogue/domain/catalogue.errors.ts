@@ -8,3 +8,6 @@ export class InvalidBatchError extends DomainError { constructor(reason: string)
 export class InsufficientBatchQtyError extends DomainError { constructor(requested: number, available: number) { super('BATCH_INSUFFICIENT_QTY', `Requested ${requested} exceeds remaining ${available}`, 409, { requested, available }); } }
 export class ProductConcurrencyError extends DomainError { constructor(id: string) { super('PRODUCT_CONCURRENCY_CONFLICT', `Product ${id} was modified concurrently; retry`, 409); } }
 export class AttributeValidationError extends DomainError { constructor(attr: string, reason: string) { super('ATTRIBUTE_INVALID', `Attribute ${attr}: ${reason}`, 422, { attr }); } }
+export class BrandNotFoundError extends DomainError { constructor(id: string) { super('BRAND_NOT_FOUND', `Brand ${id} not found`, 404); } }
+export class AttributeTemplateNotFoundError extends DomainError { constructor(ref: string) { super('ATTRIBUTE_TEMPLATE_NOT_FOUND', `Attribute template ${ref} not found`, 404); } }
+export class AttributeTemplateInvalidError extends DomainError { constructor(code: string, reason: string) { super('ATTRIBUTE_TEMPLATE_INVALID', `Attribute template ${code}: ${reason}`, 422, { code }); } }
