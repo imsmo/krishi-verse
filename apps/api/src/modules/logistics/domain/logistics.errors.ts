@@ -23,3 +23,12 @@ export class InvalidPickupSlotError extends DomainError { constructor(message: s
 export class DuplicateVehicleRegError extends AppError { constructor(regNo: string) { super('VEHICLE_REG_EXISTS', `A vehicle with reg_no ${regNo} already exists for this partner`, 409, { regNo }); } }
 /** activate/deactivate (or a patch) is a no-op — the entity is already in the requested state. */
 export class FleetAlreadyInStateError extends AppError { constructor(kind: string) { super('FLEET_ALREADY_IN_STATE', `${kind} is already in the requested state`, 409, { kind }); } }
+
+// ---- zones / routes / cold-chain (serviceability + Village Run + reefer telemetry) ----
+export class DeliveryZoneNotFoundError extends NotFoundError { constructor(id: string) { super('Delivery zone not found'); (this as any).details = { id }; } }
+export class DeliveryRouteNotFoundError extends NotFoundError { constructor(id: string) { super('Delivery route not found'); (this as any).details = { id }; } }
+export class InvalidDeliveryZoneError extends DomainError { constructor(message: string) { super('DELIVERY_ZONE_INVALID', message, 422); } }
+export class InvalidDeliveryRouteError extends DomainError { constructor(message: string) { super('DELIVERY_ROUTE_INVALID', message, 422); } }
+export class InvalidColdChainReadingError extends DomainError { constructor(message: string) { super('COLD_CHAIN_READING_INVALID', message, 422); } }
+/** A referenced FK (charge_definition / vehicle / consolidation user) does not exist for this tenant. */
+export class UnknownZoneRouteReferenceError extends AppError { constructor(ref: string) { super('ZONE_ROUTE_REF_UNKNOWN', `referenced ${ref} does not exist`, 422, { ref }); } }

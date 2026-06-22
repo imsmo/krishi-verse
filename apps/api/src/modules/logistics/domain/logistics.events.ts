@@ -21,4 +21,12 @@ export const FleetEventType = {
   PickupSlotCreated:  'logistics.pickup_slot_created',
 } as const;
 
+// zones / routes / cold-chain (serviceability + Village Run + reefer telemetry)
+export const ZoneRouteEventType = {
+  DeliveryZoneCreated:  'logistics.delivery_zone_created',
+  DeliveryRouteCreated: 'logistics.delivery_route_created',
+  ColdChainBreach:      'logistics.cold_chain_breach',     // emitted by the breach-alert worker job
+  VillageRunDue:        'logistics.village_run_due',        // emitted by the village-run consolidation job
+} as const;
+
 export type DomainEvent = { type: string; payload: Record<string, unknown> };

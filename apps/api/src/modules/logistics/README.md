@@ -61,13 +61,41 @@ SAME tx (Laws 1/4). Carrier/vehicle writes require `logistics.manage`; pickup sl
 Lifecycle events: `logistics.partner_registered` / `logistics.vehicle_registered` /
 `logistics.pickup_slot_created`.
 
+## Zones, routes & cold-chain (API-W3-04)
+The ops-planning layer on top of the fleet. Backed by `0007` (`delivery_zones`, `delivery_routes`,
+`cold_chain_logs`).
+- **Delivery zones** (`domain/delivery-zone.entity.ts`) — a tenant's serviceability + charge zoning: a
+  set of 6-digit Indian PINs + geo `region_ids`, optionally linked to a `charge_definition_id` (payments
+  owns the charge; a bad FK surfaces as a typed 422). `servesPincode()` powers checkout serviceability.
+  Pincode/region lists are de-duped and bounded (≤5000/≤2000) in the domain AND the zod DTO.
+- **Delivery routes** (`domain/delivery-route.entity.ts`) — the signature **Saturday Village Run**: a
+  recurring consolidation route over a cluster of `village_region_ids`, optionally on a fixed weekday,
+  served by a vehicle and dropped at a `consolidation_user_id` (often an ambassador).
+- **Cold-chain logs** (`domain/cold-chain-log.entity.ts`) — **append-only** reefer/vaccine temperature
+  telemetry (DB REVOKEs UPDATE/DELETE; partitioned by `recorded_at`, bigserial id). `is_breach` is
+  computed at record time from the subject's allowed band and is immutable thereafter. Temperatures are
+  decimals, never money.
+
+Zone/route writes run in one ACID tx (UoW) with the outbox event + audit row in the SAME tx and require
+`logistics.manage`. Cold-chain readings are appended (one INSERT, no per-reading outbox — telemetry
+volume). Two worker jobs (apps/worker, system pool):
+- **cold-chain-breach-alerts** — scans new `is_breach` rows across tenants and emits one
+  `logistics.cold_chain_breach` per breach; dedup via an `ops_job_runs` `(recorded_at,id)` high-water-mark
+  so each breach alerts exactly once even across re-runs. Bounded per tick.
+- **village-run-consolidation** — once per calendar date, emits one `logistics.village_run_due` per active
+  route scheduled for today's weekday (→ notifications for the driver/consolidation point); idempotent per
+  date via an `ops_job_runs` date-guard.
+
 ## Endpoints
 Shipments: `POST /v1/shipments` (ops create) · `GET /v1/shipments?box=all|mine[&status=&orderId=]` ·
 `GET /v1/shipments/:id` · `POST /v1/shipments/:id/assign` · `…/schedule-pickup` · `…/picked-up` ·
 `…/in-transit` · `…/at-hub` · `…/out-for-delivery` · `…/deliver` (OTP) · `…/fail` · `…/cancel`.
 Fleet: `POST|GET /v1/logistics/partners` · `GET|PATCH /v1/logistics/partners/:id` · `…/:id/active` ·
 `POST|GET /v1/logistics/vehicles` · `GET|PATCH /v1/logistics/vehicles/:id` · `…/:id/active` ·
-`POST|GET /v1/logistics/pickup-slots` · `GET|PATCH /v1/logistics/pickup-slots/:id` · `…/:id/active`
+`POST|GET /v1/logistics/pickup-slots` · `GET|PATCH /v1/logistics/pickup-slots/:id` · `…/:id/active`.
+Zones/routes/cold-chain: `POST|GET /v1/logistics/zones` · `GET|PATCH /v1/logistics/zones/:id` · `…/:id/active` ·
+`POST|GET /v1/logistics/routes` · `GET|PATCH /v1/logistics/routes/:id` · `…/:id/active` ·
+`POST|GET /v1/logistics/cold-chain/readings`
 (all gated by the `logistics` flag; creates require an `Idempotency-Key`; lists are keyset/bounded).
 
 ## Tests
@@ -83,10 +111,19 @@ normalisation, weekday/window validation, idempotent activate/update). Fleet int
 tenant_id + outbox event, authorization throws without `logistics.manage`, duplicate reg-no → 409,
 seller-scoped slot reads, and tenant B cannot see tenant A's partner.
 
-## Deferred (flagged, not faked) — later logistics-ops wave
-- **Delivery zones, routes (Saturday Village Run), cold-chain logs** — scaffolded under this module but
-  NOT wired here; they are tenant ops-planning features for a dedicated wave. (Partners, vehicles, and
-  pickup slots are now live — see "Fleet registry" above.)
+## Tests (zones-routing)
+Unit (`zones-routing.spec.ts`): zone pincode/region validation + de-dupe + serviceability, route
+weekday/region validation, cold-chain breach computation + sensor-envelope guards. Integration
+(`zones-routing.integration.spec.ts`, real Postgres + RLS + jobs): zone persists with tenant_id + outbox
+event; cold-chain breach recorded and the worker alerts EXACTLY once across a re-run (watermark dedup);
+village-run job emits one due-event per scheduled route and is idempotent per date; tenant B cannot see
+tenant A's zone.
+
+## Fully built — no deferred sub-features
+The whole logistics module is now live: shipment spine, fleet registry (API-W3-03), and zones-routing +
+cold-chain (API-W3-04). The only remaining external touch-points are downstream consumers in OTHER modules
+(notifications relaying `logistics.delivery_otp_issued` / `cold_chain_breach` / `village_run_due`, and the
+payments COD reconciliation), which land with those modules — not here.
 - **Delivery-OTP SMS dispatch** — the OTP is generated + hashed here and emitted on
   `logistics.delivery_otp_issued`; the actual SMS send lands with the communication/notifications module.
 - **COD reconciliation** (cash collected → wallet) lands with the payments COD flow.
