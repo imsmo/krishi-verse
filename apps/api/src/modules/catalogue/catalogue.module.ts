@@ -12,12 +12,15 @@ import { BrandsController } from './controllers/v1/brands.controller';
 import { AttributeTemplatesController } from './controllers/v1/attribute-templates.controller';
 import { ProductsController } from './controllers/v1/products.controller';
 import { BatchesController } from './controllers/v1/batches.controller';
+import { CertificatesController } from './controllers/v1/certificates.controller';
 import { CategoryService } from './services/category.service';
 import { AttributeDefinitionService } from './services/attribute-definition.service';
 import { AttributeOptionService } from './services/attribute-option.service';
 import { AttributeTemplateService } from './services/attribute-template.service';
 import { CategoryAttributeService } from './services/category-attribute.service';
 import { BrandService } from './services/brand.service';
+import { CertificateService } from './services/certificate.service';
+import { RegulatedRuleService } from './services/regulated-rule.service';
 import { ProductService } from './services/product.service';
 import { ProductBatchService } from './services/product-batch.service';
 import { ProductSearchReadModel } from './read-models/product-search.read-model';
@@ -27,20 +30,22 @@ import { AttributeOptionRepository } from './repositories/attribute-option.repos
 import { AttributeTemplateRepository } from './repositories/attribute-template.repository';
 import { CategoryAttributeRepository } from './repositories/category-attribute.repository';
 import { BrandRepository } from './repositories/brand.repository';
+import { CertificateRepository } from './repositories/certificate.repository';
+import { RegulatedRuleRepository } from './repositories/regulated-rule.repository';
 import { ProductRepository } from './repositories/product.repository';
 import { ProductBatchRepository } from './repositories/product-batch.repository';
 
 @Module({
-  controllers: [CategoriesController, AttributesController, BrandsController, AttributeTemplatesController, ProductsController, BatchesController],
+  controllers: [CategoriesController, AttributesController, BrandsController, AttributeTemplatesController, CertificatesController, ProductsController, BatchesController],
   providers: [
     CategoryService, AttributeDefinitionService, AttributeOptionService, AttributeTemplateService, CategoryAttributeService, BrandService,
-    ProductService, ProductBatchService, ProductSearchReadModel,
+    CertificateService, RegulatedRuleService, ProductService, ProductBatchService, ProductSearchReadModel,
     CategoryRepository, AttributeDefinitionRepository, AttributeOptionRepository, AttributeTemplateRepository, CategoryAttributeRepository, BrandRepository,
-    ProductRepository, ProductBatchRepository,
+    CertificateRepository, RegulatedRuleRepository, ProductRepository, ProductBatchRepository,
     ProductBulkApplier,
   ],
   // public surface for other modules (Law 11): services only, never repositories
-  exports: [CategoryService, AttributeDefinitionService, AttributeOptionService, AttributeTemplateService, CategoryAttributeService, BrandService, ProductService, ProductSearchReadModel],
+  exports: [CategoryService, AttributeDefinitionService, AttributeOptionService, AttributeTemplateService, CategoryAttributeService, BrandService, CertificateService, RegulatedRuleService, ProductService, ProductSearchReadModel],
 })
 export class CatalogueModule implements OnModuleInit {
   constructor(

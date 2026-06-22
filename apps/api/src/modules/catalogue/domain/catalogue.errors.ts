@@ -11,3 +11,6 @@ export class AttributeValidationError extends DomainError { constructor(attr: st
 export class BrandNotFoundError extends DomainError { constructor(id: string) { super('BRAND_NOT_FOUND', `Brand ${id} not found`, 404); } }
 export class AttributeTemplateNotFoundError extends DomainError { constructor(ref: string) { super('ATTRIBUTE_TEMPLATE_NOT_FOUND', `Attribute template ${ref} not found`, 404); } }
 export class AttributeTemplateInvalidError extends DomainError { constructor(code: string, reason: string) { super('ATTRIBUTE_TEMPLATE_INVALID', `Attribute template ${code}: ${reason}`, 422, { code }); } }
+export class CertificateNotFoundError extends DomainError { constructor(id: string) { super('CERTIFICATE_NOT_FOUND', `Certificate ${id} not found`, 404); } }
+export class InvalidCertificateError extends DomainError { constructor(reason: string) { super('CERTIFICATE_INVALID', reason, 422); } }
+export class IllegalCertificateTransitionError extends DomainError { constructor(from: string, to: string) { super('CERTIFICATE_ILLEGAL_TRANSITION', `Certificate cannot move ${from} → ${to}`, 409, { from, to }); } }

@@ -57,6 +57,13 @@ export class ProductBatchService {
     return { ok: true };
   }
 
+  /** Worker-only: emit a catalogue.batch_expiring alert to the outbox (comm dedups/rate-limits downstream). */
+  async flagExpiring(tenantId: string, batchId: string, productId: string, expiryDate: string): Promise<void> {
+    await this.uow.run(tenantId, async (tx) => {
+      await this.outbox.write(tx, { tenantId, aggregateType: 'product_batch', aggregateId: batchId, eventType: 'catalogue.batch_expiring', payload: { v: 1, batchId, productId, expiryDate } });
+    }, { userId: 'system' });
+  }
+
   private async flush(tx: TxContext, tenantId: string, id: string, events: { type: string; payload: Record<string, unknown> }[]) {
     for (const e of events) await this.outbox.write(tx, { tenantId, aggregateType: 'product_batch', aggregateId: id, eventType: e.type, payload: { v: 1, ...e.payload } });
   }

@@ -19,6 +19,18 @@ The dynamic catalogue: the category taxonomy, typed attributes, and the product 
   the tenant's **own private** products with validated typed attribute values.
 - **Product batches** — regulated-input store inventory (expiry, FIFO consume, recalls), gated by
   the `product_batches` feature flag.
+- **Certificates** (API-W3-02) — organic/GI/lab certs attached to a product/farm/listing/tenant. A tenant
+  submits (status `pending`, idempotent), a moderator verifies/rejects (`certificate.verify`), and a worker job
+  expires verified certs past their validity window. State machine `pending→verified→expired|rejected` (Law 5);
+  proof is a `media_assets` id (never raw bytes); events to the outbox; audit on the decision.
+  `GET /v1/certificates`, `POST /v1/certificates` (Idempotency-Key), `POST /v1/certificates/:id/decision`.
+- **Regulated-input rules** (API-W3-02) — read resolver for `regulated_product_rules` (banned-state /
+  prescription / license / safety-label) applying to a product or its category branch, effective today, by region
+  — the listing-time compliance hook. `GET /v1/certificates/regulated-rules?productId=…&categoryId=…`. Rules are
+  GLOBAL master (written in apps/admin-api, Law 11) — read-only here.
+- **Worker jobs** — `certificate-expiry-alerts` (verified→expired past validity) and `batch-expiry-alerts`
+  (`catalogue.batch_expiring` reminders for in-stock batches expiring within 30 days); both claim across tenants
+  with `FOR UPDATE SKIP LOCKED`, bounded per tick, idempotent.
 
 ## Security properties (threats considered)
 - **Tenant isolation**: products are hybrid — `tenant_id NULL` = platform master (read-only here),

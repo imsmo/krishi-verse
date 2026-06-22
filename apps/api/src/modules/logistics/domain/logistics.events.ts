@@ -13,4 +13,12 @@ export const ShipmentEventType = {
   Returned:        'logistics.shipment_returned',
   Cancelled:       'logistics.shipment_cancelled',
 } as const;
+
+// fleet registry (partners / vehicles / pickup-slots) — master-data lifecycle events
+export const FleetEventType = {
+  PartnerRegistered:  'logistics.partner_registered',
+  VehicleRegistered:  'logistics.vehicle_registered',
+  PickupSlotCreated:  'logistics.pickup_slot_created',
+} as const;
+
 export type DomainEvent = { type: string; payload: Record<string, unknown> };

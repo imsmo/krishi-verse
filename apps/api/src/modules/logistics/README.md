@@ -41,10 +41,34 @@ Built to the `listings`/`orders` bar. Gated by the `logistics` feature flag (def
   the order-confirmed handler is idempotent on `existsForOrder`; delivery is single-shot (the entity
   state machine blocks re-delivery). Audit rows on deliver/fail/cancel.
 
+## Fleet registry (API-W3-03) — partners · vehicles · pickup slots
+The carrier/asset/pickup master-data a tenant manages so shipments can be assigned to a real carrier,
+vehicle, and seller pickup window. Backed by `0007` (`logistics_partners`, `vehicles`, `pickup_slots`).
+- **Logistics partners** (`domain/logistics-partner.entity.ts`) — a 3PL link, a tenant's own fleet, or
+  an individual rider (`partner_kind ∈ 3pl|tenant_fleet|rider`; a `rider` requires a `rider_user_id`).
+  **Hybrid-tenant**: rows with `tenant_id NULL` are **platform** 3PLs written in `apps/admin-api`
+  (Law 11) and are **read-only** here; a tenant's own partners carry its `tenant_id`.
+- **Vehicles** (`domain/vehicle.entity.ts`) — belong to a partner's fleet. `reg_no` is normalised
+  (upper-case, spaces/dots stripped) and is **unique per partner** — a duplicate plate surfaces as a
+  typed `VEHICLE_REG_EXISTS` (409). `capacity_kg` is a weight (numeric), never money. `is_refrigerated`
+  flags cold-chain capable assets.
+- **Pickup slots** (`domain/pickup-slot.entity.ts`) — a **seller's own** weekly pickup window
+  (`weekday 0–6`, `start_time < end_time`, 24h). Ownership IS the authorization: a seller only ever
+  sees/edits slots where `seller_user_id` = caller; no cross-seller visibility.
+
+Each create/update/activate runs in one ACID tx (UoW) and writes its outbox event + audit row in the
+SAME tx (Laws 1/4). Carrier/vehicle writes require `logistics.manage`; pickup slots are self-serve.
+Lifecycle events: `logistics.partner_registered` / `logistics.vehicle_registered` /
+`logistics.pickup_slot_created`.
+
 ## Endpoints
-`POST /v1/shipments` (ops create) · `GET /v1/shipments?box=all|mine[&status=&orderId=]` ·
+Shipments: `POST /v1/shipments` (ops create) · `GET /v1/shipments?box=all|mine[&status=&orderId=]` ·
 `GET /v1/shipments/:id` · `POST /v1/shipments/:id/assign` · `…/schedule-pickup` · `…/picked-up` ·
 `…/in-transit` · `…/at-hub` · `…/out-for-delivery` · `…/deliver` (OTP) · `…/fail` · `…/cancel`.
+Fleet: `POST|GET /v1/logistics/partners` · `GET|PATCH /v1/logistics/partners/:id` · `…/:id/active` ·
+`POST|GET /v1/logistics/vehicles` · `GET|PATCH /v1/logistics/vehicles/:id` · `…/:id/active` ·
+`POST|GET /v1/logistics/pickup-slots` · `GET|PATCH /v1/logistics/pickup-slots/:id` · `…/:id/active`
+(all gated by the `logistics` flag; creates require an `Idempotency-Key`; lists are keyset/bounded).
 
 ## Tests
 Unit (`shipment.service.spec.ts`): state machine + aggregate + OTP-gated delivery (match / wrong /
@@ -53,11 +77,16 @@ prune, FOR UPDATE, no version, keyset, tracking events). Integration (`logistics
 real Postgres + RLS + relay): order_confirmed → auto-shipment (idempotent) → assign/pickup/dispatch
 (OTP hashed) → wrong-OTP rejected → correct-OTP delivers → relay → order delivered → cross-tenant RLS.
 Orders unit (`carrier-delivery.spec.ts`): `recordCarrierDelivery` legal-edge walk + idempotency.
+Fleet unit (`fleet.spec.ts`): partner/vehicle/pickup-slot invariants (kind/rider rule, reg-no
+normalisation, weekday/window validation, idempotent activate/update). Fleet integration
+(`fleet.integration.spec.ts`, real Postgres + RLS): partner→vehicle→slot persist with the caller's
+tenant_id + outbox event, authorization throws without `logistics.manage`, duplicate reg-no → 409,
+seller-scoped slot reads, and tenant B cannot see tenant A's partner.
 
 ## Deferred (flagged, not faked) — later logistics-ops wave
-- **Delivery partners, vehicles, delivery zones, routes (Saturday Village Run), pickup slots, cold-chain
-  logs** — scaffolded under this module but NOT wired here; they are tenant master-data / ops-planning
-  features for a dedicated wave.
+- **Delivery zones, routes (Saturday Village Run), cold-chain logs** — scaffolded under this module but
+  NOT wired here; they are tenant ops-planning features for a dedicated wave. (Partners, vehicles, and
+  pickup slots are now live — see "Fleet registry" above.)
 - **Delivery-OTP SMS dispatch** — the OTP is generated + hashed here and emitted on
   `logistics.delivery_otp_issued`; the actual SMS send lands with the communication/notifications module.
 - **COD reconciliation** (cash collected → wallet) lands with the payments COD flow.

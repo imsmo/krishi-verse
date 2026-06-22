@@ -28,6 +28,17 @@ export class ProductBatchRepository {
     const r = await tx.query(`SELECT ${COLS} FROM product_batches WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL FOR UPDATE`, [id, tenantId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
+  /** Worker job: in-stock batches expiring within `withinDays` (or already expired), claimed across tenants. */
+  async findExpiringSoon(tx: TxContext, asOf: Date, withinDays: number, limit: number): Promise<Array<{ id: string; tenantId: string; productId: string; expiryDate: string }>> {
+    const r = await tx.query(
+      `SELECT id, tenant_id, product_id, expiry_date FROM product_batches
+        WHERE deleted_at IS NULL AND is_recalled = false AND qty_remaining > 0
+          AND expiry_date IS NOT NULL AND expiry_date <= ($1::date + ($2 || ' days')::interval)
+        ORDER BY expiry_date ASC LIMIT $3 FOR UPDATE SKIP LOCKED`,
+      [asOf.toISOString().slice(0, 10), withinDays, limit]);
+    return r.rows.map((x: any) => ({ id: x.id, tenantId: x.tenant_id, productId: x.product_id, expiryDate: String(x.expiry_date).slice(0, 10) }));
+  }
+
   async list(tenantId: string, opts: { productId?: string; includeExpired: boolean; limit: number }): Promise<ProductBatch[]> {
     const r = await this.replica.forTenant(tenantId).query(
       `SELECT ${COLS} FROM product_batches

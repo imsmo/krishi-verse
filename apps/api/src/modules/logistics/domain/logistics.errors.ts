@@ -11,3 +11,15 @@ export class DeliveryOtpNotIssuedError extends AppError { constructor() { super(
 export class InvalidShipmentError extends DomainError { constructor(message: string) { super('SHIPMENT_INVALID', message, 400); } }
 /** One shipment per order (idempotent creation). */
 export class ShipmentExistsError extends AppError { constructor(orderId: string) { super('SHIPMENT_EXISTS', 'A shipment already exists for this order', 409, { orderId }); } }
+
+// ---- fleet registry (partners / vehicles / pickup-slots) ----
+export class PartnerNotFoundError extends NotFoundError { constructor(id: string) { super('Logistics partner not found'); (this as any).details = { id }; } }
+export class VehicleNotFoundError extends NotFoundError { constructor(id: string) { super('Vehicle not found'); (this as any).details = { id }; } }
+export class PickupSlotNotFoundError extends NotFoundError { constructor(id: string) { super('Pickup slot not found'); (this as any).details = { id }; } }
+export class InvalidPartnerError extends DomainError { constructor(message: string) { super('PARTNER_INVALID', message, 422); } }
+export class InvalidVehicleError extends DomainError { constructor(message: string) { super('VEHICLE_INVALID', message, 422); } }
+export class InvalidPickupSlotError extends DomainError { constructor(message: string) { super('PICKUP_SLOT_INVALID', message, 422); } }
+/** UNIQUE(partner_id, reg_no) — a vehicle with this plate already exists for the partner. */
+export class DuplicateVehicleRegError extends AppError { constructor(regNo: string) { super('VEHICLE_REG_EXISTS', `A vehicle with reg_no ${regNo} already exists for this partner`, 409, { regNo }); } }
+/** activate/deactivate (or a patch) is a no-op — the entity is already in the requested state. */
+export class FleetAlreadyInStateError extends AppError { constructor(kind: string) { super('FLEET_ALREADY_IN_STATE', `${kind} is already in the requested state`, 409, { kind }); } }
