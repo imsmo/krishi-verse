@@ -21,3 +21,16 @@ export class RefundExceedsPaymentError extends DomainError {
 export class PaymentForbiddenError extends AppError {
   constructor(message = 'Not allowed on this payment') { super('PAYMENT_FORBIDDEN', message, 403); }
 }
+
+/** A batch row was not found in the caller's scope (404, never 403 — no enumeration). */
+export class PayoutBatchNotFoundError extends NotFoundError {
+  constructor(id: string) { super('Payout batch not found'); (this as any).details = { id }; }
+}
+/** The payout referenced by an async gateway callback could not be located (unknown gateway id). */
+export class PayoutNotFoundError extends NotFoundError {
+  constructor(ref: string) { super('Payout not found'); (this as any).details = { ref }; }
+}
+/** A payout webhook signature failed verification — treat as hostile, never trust the payload. */
+export class PayoutWebhookSignatureError extends AppError {
+  constructor() { super('PAYOUT_WEBHOOK_BAD_SIGNATURE', 'Invalid payout webhook signature', 401); }
+}

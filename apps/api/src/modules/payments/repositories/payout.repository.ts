@@ -67,8 +67,28 @@ export class PayoutRepository {
     return r.rows.map((x) => ({ id: x.id, tenantId: x.tenant_id }));
   }
 
+  /** Promote a labour booking's still-QUEUED payouts into the wage priority lane (lower number =
+   *  disbursed first). In-module table only (Law 11 — payments never reads labour's tables); scoped
+   *  to the tenant + booking reference. Idempotent: only lowers priority still above the lane.
+   *  Returns the number of payouts promoted. */
+  async promoteToWageLane(tx: TxContext, tenantId: string, bookingId: string, lanePriority: number): Promise<number> {
+    const r = await tx.query(
+      `UPDATE payouts SET priority=$3, updated_at=now()
+        WHERE tenant_id=$1 AND reference_type='labour_booking' AND reference_id=$2 AND status='queued' AND priority > $3`,
+      [tenantId, bookingId, lanePriority]);
+    return r.rowCount ?? 0;
+  }
+
   async getForUpdate(tx: TxContext, tenantId: string, id: string): Promise<Payout | null> {
     const r = await tx.query(`SELECT ${COLS} FROM payouts WHERE id=$1 AND tenant_id=$2 FOR UPDATE`, [id, tenantId]);
+    return r.rows[0] ? toDomain(r.rows[0]) : null;
+  }
+
+  /** Lock a payout by its gateway (RazorpayX) id within the signed-notes tenant — used by the async
+   *  payout webhook to confirm processing→success/reverse. tenant_id scoped (the webhook runs in the
+   *  signature-verified tenant context). */
+  async getByGatewayIdForUpdate(tx: TxContext, tenantId: string, gatewayPayoutId: string): Promise<Payout | null> {
+    const r = await tx.query(`SELECT ${COLS} FROM payouts WHERE gateway_payout_id=$1 AND tenant_id=$2 FOR UPDATE`, [gatewayPayoutId, tenantId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
 

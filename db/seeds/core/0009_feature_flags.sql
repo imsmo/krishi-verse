@@ -41,5 +41,6 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   ('ai_governance','AI governance: model registry (read) + inference audit log + human-in-the-loop review queue + content moderation reports — OFF until launch', false, 100, '{}'),
   ('search_indexing','OpenSearch projection: keep listings/products search indices in sync off the outbox — OFF = replica-backed search (kill switch; requires OPENSEARCH_URL)', false, 100, '{}'),
   ('bulk_import','Bulk CSV import: upload a CSV + apply it row-by-row through a registered applier (products/…) — OFF until launch', false, 100, '{}'),
-  ('realtime_fanout','Realtime fan-out: mirror selected outbox events (auction bids, order status, MCC) to Redis Pub/Sub for the realtime-gateway WebSocket pods — OFF = clients poll (kill switch; requires REDIS_URL)', false, 100, '{}')
+  ('realtime_fanout','Realtime fan-out: mirror selected outbox events (auction bids, order status, MCC) to Redis Pub/Sub for the realtime-gateway WebSocket pods — OFF = clients poll (kill switch; requires REDIS_URL)', false, 100, '{}'),
+  ('wage_priority_payout','Wage priority lane: on labour.wages_paid, promote a worker''s queued payouts into the fast wage lane so their bank disbursement jumps the bulk settlement queue — OFF = normal priority (kill switch)', false, 100, '{}')
 ON CONFLICT (key) DO NOTHING;

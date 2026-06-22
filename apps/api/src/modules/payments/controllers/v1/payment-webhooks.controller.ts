@@ -7,6 +7,7 @@ import { Controller, Headers, HttpCode, Param, Post, Req } from '@nestjs/common'
 import type { Request } from 'express';
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { PaymentService } from '../../services/payment.service';
+import { RazorpayPayoutWebhookHandler } from '../../events/handlers/razorpay-webhook.handler';
 
 // Razorpay sends 'x-razorpay-signature'; the sandbox uses 'x-webhook-signature'. Accept either.
 function signatureOf(req: Request): string {
@@ -16,7 +17,10 @@ function signatureOf(req: Request): string {
 
 @Controller({ path: 'payments/webhooks', version: '1' })
 export class PaymentWebhooksController {
-  constructor(private readonly payments: PaymentService) {}
+  constructor(
+    private readonly payments: PaymentService,
+    private readonly payoutWebhook: RazorpayPayoutWebhookHandler,
+  ) {}
 
   @Post(':provider')
   @HttpCode(200) // always 200 on accepted/ignored so the gateway doesn't infinitely retry; errors throw.
@@ -24,5 +28,15 @@ export class PaymentWebhooksController {
     const raw = req.rawBody ? req.rawBody.toString('utf8') : JSON.stringify(req.body ?? {});
     if (!raw) throw new BadRequestError('empty webhook body');
     return this.payments.handleWebhook(provider, raw, signatureOf(req)).then((data) => ({ data }));
+  }
+
+  /** Async PAYOUT callback (RazorpayX payout.processed/failed/reversed). Same trust model: HMAC over
+   *  the raw body, tenant from signed notes. Idempotent on the gateway event id. */
+  @Post(':provider/payouts')
+  @HttpCode(200)
+  handlePayout(@Param('provider') _provider: string, @Req() req: Request & { rawBody?: Buffer }) {
+    const raw = req.rawBody ? req.rawBody.toString('utf8') : JSON.stringify(req.body ?? {});
+    if (!raw) throw new BadRequestError('empty webhook body');
+    return this.payoutWebhook.ingest(raw, signatureOf(req)).then((data) => ({ data }));
   }
 }

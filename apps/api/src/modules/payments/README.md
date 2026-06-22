@@ -144,10 +144,45 @@ The B2B-invoicing surface now has first-class, unit-tested domain value objects 
   un-statemented `settlement_lines` in a cycle and generates one statement each via the (idempotent)
   `SettlementStatementService.generate`; cross-tenant, bounded; NO money moves (payout is a separate flow).
 
+## Batched payouts + async gateway confirmation + recon (API-W3-08)
+The money-OUT pipeline now has its batching, async-confirmation, and reconciliation glue:
+- **Payout batches** (`domain/payout-batch.entity.ts` + `payout-batch.state.ts`, `repositories/payout-batch.repository.ts`,
+  `services/payout-batch.service.ts`) — a `PayoutBatch` is a bookkeeping envelope for a disbursement RUN
+  (daily settlement run / weekly ambassador run / wage lane): `open → executing → executed` (or `failed`),
+  recording `total_minor` + `count`. `PayoutBatchService.runBatch(pool, …)` opens a batch, CLAIMS queued
+  payouts into it (`FOR UPDATE SKIP LOCKED`, lowest priority number first), then disburses each via
+  `PayoutService.execute` (the wallet boundary — the batch NEVER moves money itself, so one failing payout
+  can't poison the run). `payout_batches` is an operational table outside tenant RLS (like
+  `reconciliation_runs`) — runs are driven by the worker on a privileged connection and can span tenants.
+- **Wage priority lane** — labour wages should reach a worker's bank ahead of the bulk queue. The
+  `booking-clocked-out` handler consumes `labour.wages_paid` and, behind the `wage_priority_payout` flag
+  (default OFF, kill-switch), PROMOTES that booking's still-queued payouts into the wage lane
+  (`priority = WAGE_LANE_PRIORITY`). It touches ONLY payments' own `payouts` table (the booking id comes
+  from the event payload — never a cross-module table read, Law 11) and is idempotent. The
+  `wage-priority-lane` worker job then drains that lane first via a `wage_lane` batch.
+- **Async payout webhook** (`events/handlers/razorpay-webhook.handler.ts`, ingress
+  `POST /v1/payments/webhooks/:provider/payouts`) — closes the gap `PayoutService.execute` leaves when the
+  gateway returns asynchronously ('processing'). RazorpayX later POSTs a signed callback:
+  `payout.processed` → post the `payouts → gateway` ledger move + flip to `success` +
+  `payments.payout_succeeded`; `payout.failed/reversed` → REVERSE the reservation (`payouts → user main`,
+  funds returned) + `payments.payout_failed`. Same trust model as the payment webhook: unauthenticated,
+  HMAC over the raw body, tenant from the signature-verified `notes`. Idempotent on the gateway event id
+  AND the wallet idempotency keys (`payout-exec:` / `payout-reverse:`) — a replay can never double-move money.
+- **Monitoring + recon jobs** (worker, privileged pool) — `payout-queue-monitor` snapshots payouts stuck
+  'queued'/'processing' past SLA into `ops_job_runs` (an alert signal; moves nothing); `daily-gateway-recon`
+  runs once per UTC day (date-guarded in `ops_job_runs`) and records a `reconciliation_runs`
+  (`run_type='daily_gateway'`) row flagging payout/ledger drift (reservation_missing, settled_without_gateway,
+  stuck_processing) — complementing the whole-ledger zero-sum/internal-balance checks in `core/wallet`.
+- **`PaymentsPublisher`** — typed façade writing payout events to the outbox in the SAME tx (Law 4); payloads
+  carry only ids + minor-unit amounts (no PII/bank details). **`WalletBalanceReadModel`** — replica-served
+  (CQRS) withdrawable balance for the payout UI, anti-IDOR (one user can't read another's balance).
+  Tests: `payout-batch.spec.ts` (entity + state machine) + `payout-batch.integration.spec.ts`
+  (real Postgres: batch run + zero-sum ledger, wage-lane promotion flag-gated, async webhook
+  confirm + forged-signature rejection, cross-tenant RLS denial).
+
 ## Deferred (flagged, not faked) — next wave, each its own session
 - **e-invoice IRN** (GSP integration) + **GSTIN capture** (KYC) — `irn`/`*_gstin` stay null until then.
 - **per_km delivery** (needs a resolved delivery distance) + a dedicated **logistics/3PL payout**
   account (buyer delivery fee currently lands in platform fees).
 - **Wallet-service gRPC extraction** (Phase-3 scale trigger) + **hot-account striping** (platform
   escrow/fees `shard_no` to remove lock contention at billions of ops) — see `apps/wallet-service/README.md`.
-- **Payout async webhook** (RazorpayX `payout.processed/failed` → confirm processing→success/reverse).

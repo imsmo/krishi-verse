@@ -39,6 +39,12 @@ import { RazorpayXGateway } from './gateway/razorpayx.gateway';
 import { SandboxPayoutGateway } from './gateway/sandbox-payout.gateway';
 import { OrderCompletedHandler } from './events/handlers/order-completed.handler';
 import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handler';
+import { BookingClockedOutHandler } from './events/handlers/booking-clocked-out.handler';
+import { RazorpayPayoutWebhookHandler } from './events/handlers/razorpay-webhook.handler';
+import { PaymentsPublisher } from './events/payments.publisher';
+import { PayoutBatchRepository } from './repositories/payout-batch.repository';
+import { PayoutBatchService } from './services/payout-batch.service';
+import { WalletBalanceReadModel } from './read-models/wallet-balance.read-model';
 
 @Module({
   imports: [MediaModule],   // MediaService for rendered statement/invoice PDFs
@@ -63,6 +69,12 @@ import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handl
     OrderCompletedHandler,
     TradeInvoiceHandler,
     DisputeResolvedHandler,
+    BookingClockedOutHandler,
+    RazorpayPayoutWebhookHandler,
+    PaymentsPublisher,
+    PayoutBatchRepository,
+    PayoutBatchService,
+    WalletBalanceReadModel,
     {
       provide: GatewayRegistry,
       useFactory: (resilience: ResilienceService) => {
@@ -94,7 +106,7 @@ import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handl
       inject: [ResilienceService],
     },
   ],
-  exports: [PaymentService, PayoutService, ChargePricingService],
+  exports: [PaymentService, PayoutService, PayoutBatchService, ChargePricingService, WalletBalanceReadModel],
 })
 export class PaymentsModule implements OnModuleInit {
   constructor(
@@ -102,10 +114,12 @@ export class PaymentsModule implements OnModuleInit {
     private readonly orderCompleted: OrderCompletedHandler,
     private readonly tradeInvoice: TradeInvoiceHandler,
     private readonly disputeResolved: DisputeResolvedHandler,
+    private readonly bookingClockedOut: BookingClockedOutHandler,
   ) {}
   onModuleInit(): void {
     this.registry.register(this.orderCompleted);   // settlement split + settlement line
     this.registry.register(this.tradeInvoice);     // buyer GST invoice (fan-out to the same event)
     this.registry.register(this.disputeResolved);  // dispute refund: escrow → buyer wallet (flag dispute_refunds)
+    this.registry.register(this.bookingClockedOut); // labour.wages_paid → promote wage payouts (flag wage_priority_payout)
   }
 }
