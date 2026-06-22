@@ -4,6 +4,7 @@ export const ReviewEventType = {
   Edited:          'reviews.review_edited',
   SellerResponded: 'reviews.review_seller_responded',
   Moderated:       'reviews.review_moderated',
+  Prompt:          'reviews.review_prompt',   // worker nudge: rate the counterparty of a completed order/booking
 } as const;
 export type DomainEvent = { type: string; payload: Record<string, unknown> };
 

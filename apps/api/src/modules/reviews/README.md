@@ -62,3 +62,12 @@ cross-tenant RLS denial.
 - **Review prompts** (`jobs/review-prompts.job.ts`) need the notifications module.
 - **AI toxicity pre-moderation** — new reviews could route to `under_moderation` via an AI score; the
   status + moderation flow already support it.
+
+## Async glue (API-W4-01)
+- **`BookingCompletedHandler`** (`services.booking_completed`) — a completed SERVICE booking is a verified
+  transaction, so it records a `review_eligibility` row keyed on the booking id (the customer + provider travel
+  in the event — `ServiceBooking.complete` now carries them; no cross-module read, Law 11). Idempotent
+  (ON CONFLICT(order_id) DO NOTHING).
+- **`ReviewPromptsJob`** (worker) — nudges both parties of a recently-completed order/booking to rate the
+  counterparty via `reviews.review_prompt` (recipientUserIds fan-out). Gated by `review_eligibility.prompted_at`
+  (migration 0044) so a re-run never re-nudges; cross-tenant, SKIP LOCKED, bounded.

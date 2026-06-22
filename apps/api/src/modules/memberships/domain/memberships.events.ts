@@ -6,6 +6,7 @@ export const MembershipEventType = {
   Renewed:      'memberships.renewed',
   Cancelled:    'memberships.cancelled',
   Expired:      'memberships.expired',
+  PaymentConfirmed: 'memberships.payment_confirmed',   // a card/gateway payment for this subscription settled (payments.payment_succeeded, referenceType 'membership')
 } as const;
 export type DomainEvent = { type: string; payload: Record<string, unknown> };
 

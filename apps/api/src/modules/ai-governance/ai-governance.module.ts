@@ -24,10 +24,11 @@ import { AiModelRepository } from './repositories/ai-model.repository';
 import { AiInferenceRepository } from './repositories/ai-inference.repository';
 import { AiReviewRepository } from './repositories/ai-review.repository';
 import { ModerationReportRepository } from './repositories/moderation-report.repository';
+import { AiGovernancePublisher } from './events/ai-governance.publisher';
 
 @Module({
   controllers: [ModelsController, InferencesController, ReviewQueueController, ModerationController],
-  providers: [AiModelService, AiInferenceService, AiReviewService, ModerationService,
+  providers: [AiModelService, AiInferenceService, AiReviewService, ModerationService, AiGovernancePublisher,
     AiModelRepository, AiInferenceRepository, AiReviewRepository, ModerationReportRepository],
   exports: [AiInferenceService, AiReviewService, ModerationService],   // other modules use the service, never the repo
 })

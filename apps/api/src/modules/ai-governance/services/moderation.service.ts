@@ -5,8 +5,8 @@
 // (notify moderators once, not per duplicate). Money-free.
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
-import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
+import { AiGovernancePublisher } from '../events/ai-governance.publisher';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { ModerationReport } from '../domain/moderation-report.entity';
@@ -21,7 +21,7 @@ import { HandleReportDto } from '../dto/handle-moderation.dto';
 export class ModerationService {
   constructor(
     @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork,
-    @Inject(OUTBOX_WRITER) private readonly outbox: OutboxWriter,
+    private readonly publisher: AiGovernancePublisher,
     @Inject(METRICS) private readonly metrics: Metrics,
     private readonly audit: AuditWriter,
     private readonly reports: ModerationReportRepository,
@@ -74,6 +74,6 @@ export class ModerationService {
     return { items, nextCursor };
   }
   private async flush(tx: TxContext, tenantId: string, reportId: string, evts: DomainEvent[]): Promise<void> {
-    for (const e of evts) await this.outbox.write(tx, { tenantId, aggregateType: 'moderation_report', aggregateId: reportId, eventType: e.type, payload: { v: 1, ...e.payload } });
+    await this.publisher.publish(tx, tenantId, 'moderation_report', reportId, evts);
   }
 }

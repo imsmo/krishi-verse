@@ -48,6 +48,20 @@ export class UserMembership {
     this.events.push({ type: MembershipEventType.Renewed, payload: { membershipId: this.props.id, currentPeriodEnd: this.props.currentPeriodEnd?.toISOString() } });
   }
 
+  /** A gateway/card payment for this subscription settled (payments.payment_succeeded, referenceType
+   *  'membership'). Stamp the payment reference exactly once and ensure the member is live. IDEMPOTENT:
+   *  a relay re-delivery (or the wallet-debit path that already activated the subscription) finds the
+   *  paymentId already set and is a no-op — no event, no state thrash. Returns whether it confirmed now. */
+  confirmPayment(paymentId: string): boolean {
+    if (!paymentId) return false;
+    if (this.props.paymentId) return false;                       // already confirmed → idempotent no-op
+    if (this.props.status === 'cancelled' || this.props.status === 'expired') return false;   // a settled payment never resurrects a dead membership
+    this.props.paymentId = paymentId;
+    if (this.props.status === 'past_due') this.props.status = 'active';
+    this.events.push({ type: MembershipEventType.PaymentConfirmed, payload: { membershipId: this.props.id, userId: this.props.userId, paymentId } });
+    return true;
+  }
+
   cancel(): void {
     if (!isLive(this.props.status)) throw new MembershipNotLiveError(this.props.status);
     assertTransition(this.props.status, 'cancelled');

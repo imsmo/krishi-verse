@@ -1,10 +1,13 @@
 // modules/requirements/domain/requirements.events.ts · integration events (via outbox, Law 4).
 export const RequirementEventType = {
   Posted:           'requirements.requirement_posted',
+  Updated:          'requirements.requirement_updated',
   PartiallyMatched: 'requirements.requirement_partially_matched',
+  Matched:          'requirements.requirement_matched',    // a freshly-published listing matches this OPEN requirement → nudge the buyer
   Fulfilled:        'requirements.requirement_fulfilled',
   Expired:          'requirements.requirement_expired',
   Closed:           'requirements.requirement_closed',
+  ReminderDue:      'requirements.requirement_reminder',    // worker nudge: your OPEN requirement is approaching need_by
 } as const;
 export const ResponseEventType = {
   Submitted:   'requirements.response_submitted',

@@ -15,6 +15,7 @@ import { isAcceptingResponses } from '../domain/requirement.state';
 import { RequirementNotFoundError, RequirementForbiddenError } from '../domain/requirements.errors';
 import { RequirementRepository } from '../repositories/requirement.repository';
 import { CreateRequirementDto } from '../dto/create-requirement.dto';
+import { UpdateRequirementDto } from '../dto/update-requirement.dto';
 
 export interface RequirementActor { userId: string; canModerate: boolean; }
 
@@ -46,6 +47,33 @@ export class RequirementService {
           return this.serialize(p);
         }, { userId: buyerUserId });
       }));
+  }
+
+  /** Buyer edits their OPEN requirement (or a moderator edits it — audited). FOR UPDATE-locked; invariants
+   *  re-validated in the entity; emits requirements.requirement_updated (Law 4). */
+  async update(tenantId: string, actor: RequirementActor, id: string, dto: UpdateRequirementDto, ip: string | null) {
+    return timed(this.metrics, 'requirements.update', { tenant: tenantId }, () =>
+      this.uow.run(tenantId, async (tx) => {
+        const r = await this.repo.getForUpdate(tx, tenantId, id);
+        if (!r) throw new RequirementNotFoundError(id);
+        this.assertBuyerOrModerator(r, actor);
+        r.editDetails({
+          title: dto.title, quantity: dto.quantity, unitCode: dto.unitCode,
+          productId: dto.productId === undefined ? undefined : (dto.productId ?? null),
+          categoryId: dto.categoryId === undefined ? undefined : (dto.categoryId ?? null),
+          budgetMinMinor: dto.budgetMinMinor === undefined ? undefined : (dto.budgetMinMinor == null ? null : BigInt(dto.budgetMinMinor)),
+          budgetMaxMinor: dto.budgetMaxMinor === undefined ? undefined : (dto.budgetMaxMinor == null ? null : BigInt(dto.budgetMaxMinor)),
+          needBy: dto.needBy === undefined ? undefined : (dto.needBy ? new Date(`${dto.needBy}T00:00:00Z`) : null),
+          deliveryPincode: dto.deliveryPincode === undefined ? undefined : (dto.deliveryPincode ?? null),
+          isUrgent: dto.isUrgent,
+        });
+        await this.repo.update(tx, r);
+        if (actor.canModerate && r.buyerUserId !== actor.userId) {
+          await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'requirement.edited', entityType: 'requirement', entityId: id, newValue: { by: 'moderator' }, ip });
+        }
+        await this.flush(tx, tenantId, id, r.pullEvents());
+        return this.serialize(r.toProps());
+      }, { userId: actor.userId }));
   }
 
   /** Buyer withdraws their requirement (or a moderator closes it — audited). */

@@ -51,6 +51,26 @@ export class PromotionRepository {
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM promotions WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);
   }
+
+  // ---- worker-job finders (cross-tenant; kv_relay, BYPASSRLS). Bounded + SKIP LOCKED. ----
+  /** promo-budget-watch: ACTIVE promotions that have hit/exceeded their budget. */
+  async findBudgetExhausted(tx: TxContext, limit: number): Promise<Array<{ id: string; tenantId: string }>> {
+    const r = await tx.query(
+      `SELECT id, tenant_id FROM promotions
+        WHERE is_active = true AND budget_minor IS NOT NULL AND spent_minor >= budget_minor
+        ORDER BY id LIMIT $1 FOR UPDATE SKIP LOCKED`, [limit]);
+    return r.rows.map((x: any) => ({ id: x.id, tenantId: x.tenant_id }));
+  }
+  /** festival-campaign-scheduler: 'festival' promotions whose is_active disagrees with their
+   *  [starts_at, ends_at] window right now (need to be opened or closed). */
+  async findFestivalToggles(tx: TxContext, now: Date, limit: number): Promise<Array<{ id: string; tenantId: string }>> {
+    const r = await tx.query(
+      `SELECT id, tenant_id FROM promotions
+        WHERE promo_type = 'festival'
+          AND is_active <> ($1::timestamptz BETWEEN starts_at AND ends_at)
+        ORDER BY id LIMIT $2 FOR UPDATE SKIP LOCKED`, [now, limit]);
+    return r.rows.map((x: any) => ({ id: x.id, tenantId: x.tenant_id }));
+  }
 }
 
 /** Serialize the typed rules back to the stored jsonb shape (minor amounts as strings). */

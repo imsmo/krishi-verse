@@ -5,8 +5,8 @@
 // as overridden (audit of AI being corrected). Audit on every reviewer action. Money-free.
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
-import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
+import { AiGovernancePublisher } from '../events/ai-governance.publisher';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { AiReview } from '../domain/ai-review.entity';
@@ -22,7 +22,7 @@ import { ResolveReviewDto } from '../dto/resolve-ai-review.dto';
 export class AiReviewService {
   constructor(
     @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork,
-    @Inject(OUTBOX_WRITER) private readonly outbox: OutboxWriter,
+    private readonly publisher: AiGovernancePublisher,
     @Inject(METRICS) private readonly metrics: Metrics,
     private readonly audit: AuditWriter,
     private readonly reviews: AiReviewRepository,
@@ -94,6 +94,6 @@ export class AiReviewService {
     return { items, nextCursor };
   }
   private async flush(tx: TxContext, tenantId: string, reviewId: string, evts: DomainEvent[]): Promise<void> {
-    for (const e of evts) await this.outbox.write(tx, { tenantId, aggregateType: 'ai_review', aggregateId: reviewId, eventType: e.type, payload: { v: 1, ...e.payload } });
+    await this.publisher.publish(tx, tenantId, 'ai_review', reviewId, evts);
   }
 }

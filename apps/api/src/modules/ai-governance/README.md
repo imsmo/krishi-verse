@@ -76,3 +76,11 @@ runnable functions (`runDriftWatch` / `runFairnessAudit`) pending worker registr
 `tenant-isolation.spec.ts` (CI gate: tenant binding, FOR UPDATE, keyset, ON CONFLICT dedup),
 `ai-governance.integration.spec.ts` (real Postgres + 0029: model → low-confidence inference → review → claim →
 reject → override → moderation file + dedup → cross-tenant RLS denial; runs when `DATABASE_URL` is set).
+
+## Async glue (API-W4-01)
+- **`AiGovernancePublisher`** — a typed outbox façade (like auctions' `AuctionsPublisher`): one `publish(tx,
+  tenantId, aggregateType, aggregateId, events)` path that wraps every emit in the `{v:1,…}` envelope and asserts
+  the no-PII contract (IDs only; the inference row itself is never emitted — write-amplification at billions of
+  ops). The inference / review / moderation services now route their `flush()` through it instead of calling
+  `OutboxWriter` directly. Same event vocabulary (review_enqueued/resolved, moderation_filed/actioned, model
+  lifecycle), unchanged downstream.

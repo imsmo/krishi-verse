@@ -2,6 +2,7 @@
 // Pins: claim requires ai.review + transitions pending→in_review; double-claim → 409; resolve emits
 // AiReviewResolved + audits + (on reject) overrides the linked inference; missing item → 404.
 import { AiReviewService } from '../services/ai-review.service';
+import { AiGovernancePublisher } from '../events/ai-governance.publisher';
 import { AiReview } from '../domain/ai-review.entity';
 import { ReviewNotFoundError, ReviewAlreadyClaimedError, AiForbiddenError } from '../domain/ai-governance.errors';
 
@@ -17,7 +18,7 @@ function harness(opts: { review?: AiReview | null } = {}) {
   const audit = { write: jest.fn() };
   const reviews = { getForUpdate: jest.fn(async () => (opts.review === undefined ? review() : opts.review)), update: jest.fn(), insert: jest.fn(), getById: jest.fn(async () => opts.review ?? null), listFor: jest.fn() };
   const inferences = { subjectInTx: jest.fn(async () => ({ subjectType: 'listing', subjectId: 's1' })), markOverridden: jest.fn() };
-  const svc = new AiReviewService(uow as any, outbox as any, metrics as any, audit as any, reviews as any, inferences as any);
+  const svc = new AiReviewService(uow as any, new AiGovernancePublisher(outbox as any), metrics as any, audit as any, reviews as any, inferences as any);
   return { svc, outbox, audit, reviews, inferences };
 }
 const reviewer = { userId: 'ops1', canReview: true, canModerate: false };

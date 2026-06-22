@@ -75,6 +75,38 @@ export class PromotionService {
     return { items, nextCursor };
   }
 
+  // ---------- system (worker-job) lifecycle — no actor, called per-tenant by the worker jobs ----------
+  /** promo-budget-watch job: deactivate a promotion that has burned through its budget. Idempotent
+   *  (no-op if already inactive or not yet exhausted). Emits PromotionUpdated (+ BudgetExhausted if it
+   *  crossed exactly now). FOR UPDATE-locked. */
+  async deactivateExhausted(tenantId: string, id: string): Promise<{ deactivated: boolean }> {
+    return this.uow.run(tenantId, async (tx) => {
+      const promo = await this.repo.getForUpdate(tx, tenantId, id);
+      if (!promo || !promo.isActive || !promo.isBudgetExhausted()) return { deactivated: false };
+      promo.setActive(false);
+      await this.repo.update(tx, promo);
+      await this.flush(tx, tenantId, id, promo.pullEvents());
+      this.metrics.inc('promotions.budget_deactivated', { tenant: tenantId });
+      return { deactivated: true };
+    }, { userId: 'system' });
+  }
+
+  /** festival-campaign-scheduler job: align a (festival) promotion's is_active with its [starts_at,ends_at]
+   *  window — activate when it opens, pause when it closes. Idempotent (no-op when already aligned). */
+  async applyScheduleWindow(tenantId: string, id: string, now = new Date()): Promise<{ changed: boolean }> {
+    return this.uow.run(tenantId, async (tx) => {
+      const promo = await this.repo.getForUpdate(tx, tenantId, id);
+      if (!promo) return { changed: false };
+      const desired = promo.isWithinWindow(now) && !promo.isBudgetExhausted();
+      if (promo.isActive === desired) return { changed: false };
+      promo.setActive(desired);
+      await this.repo.update(tx, promo);
+      await this.flush(tx, tenantId, id, promo.pullEvents());
+      this.metrics.inc('promotions.schedule_toggled', { tenant: tenantId, active: String(desired) });
+      return { changed: true };
+    }, { userId: 'system' });
+  }
+
   private assertManager(actor: PromotionActor): void { if (!actor.canManage) throw new PromotionForbiddenError('requires promotion.manage'); }
   private serialize(p: Promotion) {
     const v = p.toProps();

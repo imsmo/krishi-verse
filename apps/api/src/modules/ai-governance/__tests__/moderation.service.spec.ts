@@ -2,6 +2,7 @@
 // Pins: any user files (no perm); first OPEN report emits ModerationFiled, duplicates are silent no-ops;
 // handle requires content.moderate + transitions + audits + emits.
 import { ModerationService } from '../services/moderation.service';
+import { AiGovernancePublisher } from '../events/ai-governance.publisher';
 import { ModerationReport } from '../domain/moderation-report.entity';
 import { ModerationReportNotFoundError, InvalidModerationError, AiForbiddenError } from '../domain/ai-governance.errors';
 
@@ -21,7 +22,7 @@ function harness(opts: { reasonId?: string | null; inserted?: boolean; openBefor
     getForUpdate: jest.fn(async () => (opts.report === undefined ? report() : opts.report)),
     getById: jest.fn(async () => opts.report ?? null), update: jest.fn(), listFor: jest.fn(),
   };
-  const svc = new ModerationService(uow as any, outbox as any, metrics as any, audit as any, reports as any);
+  const svc = new ModerationService(uow as any, new AiGovernancePublisher(outbox as any), metrics as any, audit as any, reports as any);
   return { svc, outbox, audit, reports };
 }
 const user = { userId: 'u1', canReview: false, canModerate: false };

@@ -66,3 +66,15 @@ accepted quote relays to an order (`source='requirement'`) and is idempotent.
   (nudge buyers when a fresh listing matches their open requirement) need the communication/notifications
   module; intentionally not registered yet.
 - **AI match scoring** — the `ai_match_score` column is reserved for an AI ranking service.
+
+## Async glue (API-W4-01)
+- **Buyer edit** — `UpdateRequirementSchema` (zod .strict) + `Requirement.editDetails` (OPEN/partially_matched only,
+  invariants re-validated, emits `requirements.requirement_updated`) + `PATCH /v1/requirements/:id` (buyer or moderator,
+  FOR UPDATE-locked, audited).
+- **`ListingPublishedHandler`** (`listing.published`) — on a new published listing, matches OPEN requirements by
+  product/category (the listing's matchable attrs travel in the event — no listings read, Law 11), excludes the
+  seller's own requirements, and emits `requirements.requirement_matched` per match (bounded LIMIT 50 → caps
+  write-amplification). Communication fans it out to the buyer.
+- **`MatchNotificationsJob`** (worker) — the periodic backstop: since Law 11 forbids reading listings, the
+  self-contained role is a need-by **reminder** for OPEN requirements (`requirements.requirement_reminder`),
+  gated by `reminded_at` (migration 0044) so a re-run never re-nudges. Cross-tenant, SKIP LOCKED, bounded.

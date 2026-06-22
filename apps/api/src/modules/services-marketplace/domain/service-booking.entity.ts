@@ -36,7 +36,9 @@ export class ServiceBooking {
   /** Customer confirms the service was rendered → completed (fee settled by the service in the same tx). */
   complete(): void {
     if (!isCompletable(this.props.status)) throw new BookingNotCompletableError(this.props.status);
-    this.transition('completed', ServicesEventType.BookingCompleted, { totalMinor: this.props.totalMinor.toString() });
+    // carry the parties on the event so the reviews module can record verified-service eligibility
+    // WITHOUT reading this module's tables (Law 11).
+    this.transition('completed', ServicesEventType.BookingCompleted, { totalMinor: this.props.totalMinor.toString(), customerUserId: this.props.customerUserId, providerUserId: this.props.providerUserId });
   }
   cancel(reason?: string): void { this.transition('cancelled', ServicesEventType.BookingCancelled, reason ? { reason } : {}); }
   toJSON() { const v = this.props; return { id: v.id, offeringId: v.offeringId, providerUserId: v.providerUserId, customerUserId: v.customerUserId, bookingNo: v.bookingNo,

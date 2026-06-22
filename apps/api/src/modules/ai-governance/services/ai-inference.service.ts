@@ -4,8 +4,8 @@
 // event (billions of ops); only ENQUEUEING a review emits AiReviewEnqueued. Money-free.
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
-import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempotency/idempotency.service';
+import { AiGovernancePublisher } from '../events/ai-governance.publisher';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { AiInference } from '../domain/ai-inference.entity';
@@ -32,7 +32,7 @@ function queueKindFor(subjectType: string, forced: boolean, belowThreshold: bool
 export class AiInferenceService {
   constructor(
     @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork,
-    @Inject(OUTBOX_WRITER) private readonly outbox: OutboxWriter,
+    private readonly publisher: AiGovernancePublisher,
     @Inject(IDEMPOTENCY_SERVICE) private readonly idem: IdempotencyService,
     @Inject(METRICS) private readonly metrics: Metrics,
     private readonly inferences: AiInferenceRepository,
@@ -98,6 +98,6 @@ export class AiInferenceService {
     return { items, nextCursor };
   }
   private async flush(tx: TxContext, tenantId: string, reviewId: string, evts: DomainEvent[]): Promise<void> {
-    for (const e of evts) await this.outbox.write(tx, { tenantId, aggregateType: 'ai_review', aggregateId: reviewId, eventType: e.type, payload: { v: 1, ...e.payload } });
+    await this.publisher.publish(tx, tenantId, 'ai_review', reviewId, evts);
   }
 }

@@ -66,3 +66,10 @@ expiry → cross-tenant RLS denial.
   buyer-side charges for a live member: `freeDelivery` zeroes the delivery fee and
   `platform_fee_bps_override` replaces the default buyer platform fee (e.g. 2.5% → 1%). Proven by
   `apps/api/src/modules/orders/__tests__/checkout-member-benefits.integration.spec.ts`.
+
+## Async glue (API-W4-01)
+- **`MembershipPaymentSucceededHandler`** (`payments.payment_succeeded`, referenceType `membership`) — the
+  card/gateway activation path: stamps the payment reference onto the membership and ensures it is live via
+  `UserMembership.confirmPayment`. Idempotent — a no-op once a paymentId is set (or the membership is dead), so a
+  relay re-delivery (or a subscription already activated by the synchronous wallet-debit path) changes nothing.
+  Registered in the module's OnModuleInit.

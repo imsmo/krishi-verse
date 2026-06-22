@@ -2,7 +2,7 @@
 // (validate→authorize→delegate). Post needs requirement.post + Idempotency-Key; quoting needs
 // requirement.quote + Idempotency-Key. Buyer-vs-seller authority is enforced in the services.
 // List/get of open requirements is public-within-tenant. Gated by the `requirements` flag.
-import { Controller, Get, Headers, Param, Post } from '@nestjs/common';
+import { Controller, Get, Headers, Param, Patch, Post } from '@nestjs/common';
 import { UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { Req } from '@nestjs/common';
@@ -16,6 +16,7 @@ import { BadRequestError } from '../../../../shared/errors/app-error';
 import { RequirementService } from '../../services/requirement.service';
 import { RequirementResponseService } from '../../services/requirement-response.service';
 import { CreateRequirementSchema, CreateRequirementDto } from '../../dto/create-requirement.dto';
+import { UpdateRequirementSchema, UpdateRequirementDto } from '../../dto/update-requirement.dto';
 import { CreateResponseSchema, CreateResponseDto } from '../../dto/create-requirement-response.dto';
 import { QueryRequirementsSchema, QueryRequirementsDto } from '../../dto/query-requirement.dto';
 import { QueryResponsesSchema, QueryResponsesDto } from '../../dto/query-requirement-response.dto';
@@ -45,6 +46,11 @@ export class RequirementsController {
 
   @Get(':id')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.requirements.getById(ctx.tenantId, id).then((data) => ({ data })); }
+
+  @Patch(':id') @RequirePermissions(RequirementPermissions.Post)
+  update(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(UpdateRequirementSchema) dto: UpdateRequirementDto) {
+    return this.requirements.update(ctx.tenantId, this.actor(ctx), id, dto, ipOf(r)).then((data) => ({ data }));
+  }
 
   @Post(':id/close')
   close(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) { return this.requirements.close(ctx.tenantId, this.actor(ctx), id, ipOf(r)).then((data) => ({ data })); }

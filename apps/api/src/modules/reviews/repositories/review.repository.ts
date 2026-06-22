@@ -41,6 +41,23 @@ export class ReviewRepository {
     return r.rows[0] ? { buyerUserId: r.rows[0].buyer_user_id, sellerUserId: r.rows[0].seller_user_id } : null;
   }
 
+  // ---- review prompts (worker job: reviews/jobs/review-prompts.job.ts) ----
+  /** Cross-tenant finder (kv_relay, BYPASSRLS): eligibility rows not yet nudged whose order/booking
+   *  completed within the window. Bounded + FOR UPDATE SKIP LOCKED so many workers are safe and one tick
+   *  never floods. Runs on the worker's privileged tx. */
+  async findDueForPrompt(tx: TxContext, since: Date, limit: number): Promise<Array<{ id: string; tenantId: string; orderId: string; buyerUserId: string; sellerUserId: string }>> {
+    const r = await tx.query(
+      `SELECT id, tenant_id, order_id, buyer_user_id, seller_user_id FROM review_eligibility
+        WHERE prompted_at IS NULL AND created_at >= $1
+        ORDER BY created_at LIMIT $2 FOR UPDATE SKIP LOCKED`, [since, limit]);
+    return r.rows.map((x: any) => ({ id: x.id, tenantId: x.tenant_id, orderId: x.order_id, buyerUserId: x.buyer_user_id, sellerUserId: x.seller_user_id }));
+  }
+  /** Stamp the rows the job just nudged (idempotency marker — they're never picked again). */
+  async markPrompted(tx: TxContext, ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+    await tx.query(`UPDATE review_eligibility SET prompted_at=now() WHERE id = ANY($1::uuid[])`, [ids]);
+  }
+
   // ---- reviews ----
   async insert(tx: TxContext, rv: Review): Promise<boolean> {
     const p = rv.toProps();

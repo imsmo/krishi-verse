@@ -2,6 +2,7 @@
 // Pins: record requires ai.review; below-threshold (or forced) → enqueues a review + emits AiReviewEnqueued in
 // the same tx; above-threshold → no review, no event; unknown model code → 404; override marks the inference.
 import { AiInferenceService } from '../services/ai-inference.service';
+import { AiGovernancePublisher } from '../events/ai-governance.publisher';
 import { AiModel } from '../domain/ai-model.entity';
 import { AiInference } from '../domain/ai-inference.entity';
 import { AiModelNotFoundError, AiForbiddenError, InferenceNotFoundError } from '../domain/ai-governance.errors';
@@ -21,7 +22,7 @@ function harness(opts: { model?: AiModel | null; existsReview?: boolean; inferen
   };
   const reviews = { existsForInference: jest.fn(async () => opts.existsReview ?? false), insert: jest.fn() };
   const models = { getServingByCode: jest.fn(async () => model) };
-  const svc = new AiInferenceService(uow as any, outbox as any, idem as any, metrics as any, inferences as any, reviews as any, models as any);
+  const svc = new AiInferenceService(uow as any, new AiGovernancePublisher(outbox as any), idem as any, metrics as any, inferences as any, reviews as any, models as any);
   return { svc, outbox, inferences, reviews, models };
 }
 const reviewer = { userId: 'ops1', canReview: true, canModerate: false };

@@ -21,7 +21,11 @@ INSERT INTO notification_events (code,default_name,priority,default_channels,use
  ('dispute.opened','A dispute was opened','important','["push","inapp"]',false,false),
  ('dispute.resolved','Dispute resolved','important','["push","sms","inapp"]',false,false),
  ('dispute.refunded','Refund issued','critical','["push","sms","inapp"]',false,false),
- ('chat.message_posted','New message','informational','["push","inapp"]',true,true)
+ ('chat.message_posted','New message','informational','["push","inapp"]',true,true),
+ -- Wave 4 engagement codes (mapped from module outbox events; see communication/events/notification-event-map.ts)
+ ('requirement.matched','A listing matches your requirement','informational','["push","inapp"]',true,true),
+ ('requirement.reminder','Your requirement is still open','informational','["push","inapp"]',true,true),
+ ('review.prompt','Rate your recent purchase','informational','["push","inapp"]',true,true)
 ON CONFLICT (code) DO NOTHING;
 
 INSERT INTO notification_templates (event_code,channel,language_code,tenant_id,subject,body,provider_template_ref,is_active) VALUES
@@ -46,5 +50,11 @@ INSERT INTO notification_templates (event_code,channel,language_code,tenant_id,s
  ('dispute.refunded','inapp','en',NULL,'Refund issued','A refund was issued to your wallet.',NULL,true),
  ('payment.success','inapp','en',NULL,'Payment received','We received your payment.',NULL,true),
  ('chat.message_posted','push','en',NULL,'New message','You have a new message.',NULL,true),
- ('chat.message_posted','inapp','en',NULL,'New message','You have a new message.',NULL,true)
+ ('chat.message_posted','inapp','en',NULL,'New message','You have a new message.',NULL,true),
+ ('requirement.matched','push','en',NULL,'New match','A new listing matches your requirement.',NULL,true),
+ ('requirement.matched','inapp','en',NULL,'New match','A new listing matches your requirement.',NULL,true),
+ ('requirement.reminder','push','en',NULL,'Still looking?','Your requirement is still open — sellers can quote.',NULL,true),
+ ('requirement.reminder','inapp','en',NULL,'Still looking?','Your requirement is still open — sellers can quote.',NULL,true),
+ ('review.prompt','push','en',NULL,'Rate your experience','How was your recent order? Leave a review.',NULL,true),
+ ('review.prompt','inapp','en',NULL,'Rate your experience','How was your recent order? Leave a review.',NULL,true)
 ON CONFLICT (event_code,channel,language_code,tenant_id) DO NOTHING;

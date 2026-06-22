@@ -108,6 +108,7 @@ export class CheckoutService {
             }
             const order = Order.place({ id: g.orderId, tenantId, orderNo: orderNo(g.orderId), checkoutGroupId, buyerUserId,
               sellerUserId, source: 'direct', currencyCode: 'INR', items: g.items, deliveryFeeMinor, platformFeeMinor, discountMinor,
+              couponCode: discountMinor > 0n ? (dto.couponCode ?? null) : null,
               deliveryMethodId: dto.deliveryMethodId ?? null, deliveryAddressId: dto.deliveryAddressId ?? null, requiresPayment, now: g.createdAt });
             await this.orders.insertGraph(tx, order, g.items);
             await this.quota.increment(tx, tenantId, QUOTA, 1);

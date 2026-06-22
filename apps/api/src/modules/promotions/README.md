@@ -62,3 +62,16 @@ incremented, idempotent per order) → per-user cap + budget both fail closed �
   the wallet boundary) — deferred; this build ships the discount engine.
 - **`festival-campaign-scheduler` / `promo-budget-watch` jobs** (auto start/stop, budget alerts) — budget
   is already enforced inline at redeem; the proactive jobs land with the worker wave.
+
+## Async glue (API-W4-01)
+- **`CouponRedemptionService`** — the decoupled redemption recorder. `recordFromOrder` is idempotent on the
+  `coupon_redemptions` UNIQUE(coupon_id, order_id): for the normal flow (checkout already redeemed synchronously
+  in its own tx) it no-ops; otherwise it records the redemption + bumps the coupon use + promo spend (the latter
+  via `recordSpend(…, {enforceBudget:false})` so it never throws inside the relay tx).
+- **`OrderCreatedHandler`** (`orders.order_created`) — when an order carried a coupon, calls the recorder. The
+  coupon code + applied discount + buyer travel IN the event (`Order.place` payload) so orders never imports
+  promotions' repo (Law 11). Backstop / decoupled — mirrors the auctions W3-11 idempotent-overlap pattern.
+- **Worker sweeps** — `PromoBudgetWatchJob` deactivates promotions that crossed budget; `FestivalCampaignSchedulerJob`
+  opens/closes `festival` promos on their [starts_at, ends_at] window. Both claim candidates cross-tenant
+  (FOR UPDATE SKIP LOCKED, bounded) then call `PromotionService.deactivateExhausted` / `applyScheduleWindow`
+  (own tx + outbox + audit), idempotent (already-aligned rows are never re-claimed).

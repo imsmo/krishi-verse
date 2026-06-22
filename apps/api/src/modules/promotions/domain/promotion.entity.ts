@@ -85,11 +85,21 @@ export class Promotion {
     return disc < 0n ? 0n : disc;
   }
 
-  /** Record promotional spend against the budget (fail CLOSED if it would exceed it). */
-  recordSpend(amountMinor: bigint): void {
+  /** Record promotional spend against the budget. By default fails CLOSED if it would exceed the budget
+   *  (the synchronous redeem path). `enforceBudget:false` is for the ASYNC backstop recorder: the discount
+   *  is already committed on the order, so accounting must reflect reality and MUST NOT throw inside the
+   *  relay tx — it still emits BudgetExhausted when it crosses so the budget-watch can deactivate. */
+  recordSpend(amountMinor: bigint, opts: { enforceBudget?: boolean } = {}): void {
     if (amountMinor <= 0n) return;
-    if (this.props.budgetMinor != null && this.props.spentMinor + amountMinor > this.props.budgetMinor) throw new PromotionBudgetExceededError();
+    const enforce = opts.enforceBudget !== false;
+    if (enforce && this.props.budgetMinor != null && this.props.spentMinor + amountMinor > this.props.budgetMinor) throw new PromotionBudgetExceededError();
     this.props.spentMinor += amountMinor;
     if (this.props.budgetMinor != null && this.props.spentMinor >= this.props.budgetMinor) this.events.push({ type: PromotionEventType.BudgetExhausted, payload: { promotionId: this.props.id } });
   }
+
+  /** Whether the promotion has burned through its budget (drives the budget-watch deactivation). */
+  isBudgetExhausted(): boolean { return this.props.budgetMinor != null && this.props.spentMinor >= this.props.budgetMinor; }
+
+  /** True iff the promotion's active window covers `now` (the festival-scheduler activation predicate). */
+  isWithinWindow(now: Date = new Date()): boolean { return now.getTime() >= this.props.startsAt.getTime() && now.getTime() <= this.props.endsAt.getTime(); }
 }

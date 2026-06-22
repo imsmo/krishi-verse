@@ -29,7 +29,7 @@ export class Order {
   static place(input: {
     id: string; tenantId: string; orderNo: string; checkoutGroupId: string | null; buyerUserId: string;
     sellerUserId: string; source: string; offerId?: string | null; requirementId?: string | null; currencyCode: string; items: OrderItem[];
-    deliveryFeeMinor?: bigint; platformFeeMinor?: bigint; discountMinor?: bigint; deliveryMethodId: string | null; deliveryAddressId: string | null;
+    deliveryFeeMinor?: bigint; platformFeeMinor?: bigint; discountMinor?: bigint; couponCode?: string | null; deliveryMethodId: string | null; deliveryAddressId: string | null;
     requiresPayment: boolean; now?: Date;
   }): Order {
     const now = input.now ?? new Date();
@@ -50,7 +50,13 @@ export class Order {
       acceptanceDeadline: new Date(now.getTime() + ACCEPTANCE_WINDOW_MS), qualityWindowEnds: null,
       cancelReasonId: null, cancelledBy: null, version: 1, createdAt: now, completedAt: null,
     });
-    o.events.push({ type: OrderEventType.Created, payload: { orderId: o.props.id, totalMinor: o.props.totalMinor.toString(), sellerUserId: o.props.sellerUserId } });
+    // buyerUserId + discount + couponCode travel so the promotions module can record/back-stop the
+    // coupon redemption from the event (decoupled — orders never imports promotions' repo; Law 11).
+    o.events.push({ type: OrderEventType.Created, payload: {
+      orderId: o.props.id, totalMinor: o.props.totalMinor.toString(), sellerUserId: o.props.sellerUserId,
+      buyerUserId: o.props.buyerUserId, discountMinor: o.props.discountMinor.toString(),
+      ...(input.couponCode ? { couponCode: input.couponCode } : {}),
+    } });
     if (input.requiresPayment) o.events.push({ type: OrderEventType.PaymentRequired, payload: { orderId: o.props.id, totalMinor: o.props.totalMinor.toString() } });
     return o;
   }
