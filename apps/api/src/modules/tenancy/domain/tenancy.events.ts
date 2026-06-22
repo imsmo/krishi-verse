@@ -13,6 +13,12 @@ export const TenancyEventType = {
   TenantDomainPrimaryChanged: 'tenancy.tenant_domain_primary_changed',
   TenantDomainRemoved:     'tenancy.tenant_domain_removed',
   TenantSettingChanged:    'tenancy.tenant_setting_changed',
+  // SaaS invoicing (the bill we raise TO a tenant) + dunning/usage alerts
+  SaasInvoiceIssued:       'tenancy.saas_invoice_issued',
+  SaasInvoicePaid:         'tenancy.saas_invoice_paid',
+  SaasInvoiceOverdue:      'tenancy.saas_invoice_overdue',
+  TrialEnding:             'tenancy.trial_ending',
+  UsageLimitAlert:         'tenancy.usage_limit_alert',
 } as const;
 export type DomainEvent = { type: string; payload: Record<string, unknown> };
 

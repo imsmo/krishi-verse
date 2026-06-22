@@ -33,3 +33,11 @@ export class UnknownSettingError extends NotFoundError { constructor(key: string
 export class InvalidSettingError extends DomainError { constructor(key: string, message: string) { super('TENANT_SETTING_INVALID', `${key}: ${message}`, 422, { key }); } }
 /** Only scope='tenant' settings are self-serve writable (platform/user-scoped keys refused — Law 11). */
 export class SettingNotTenantScopedError extends AppError { constructor(key: string, scope: string) { super('SETTING_NOT_TENANT_SCOPED', `Setting ${key} is ${scope}-scoped and not tenant-editable`, 403, { key, scope }); } }
+
+// ---- SaaS invoicing (the bill we raise TO a tenant) ----
+export class SaasInvoiceNotFoundError extends NotFoundError { constructor(id: string) { super('SaaS invoice not found'); (this as any).details = { id }; } }
+export class InvalidSaasInvoiceError extends DomainError { constructor(message: string) { super('SAAS_INVOICE_INVALID', message, 422); } }
+/** A payment was recorded against an invoice that isn't owing (e.g. draft/void). */
+export class SaasInvoiceNotPayableError extends AppError { constructor(status: string) { super('SAAS_INVOICE_NOT_PAYABLE', `Invoice is not payable (status: ${status})`, 409, { status }); } }
+/** One invoice per (subscription, billing period) — the renewal run already raised this one. */
+export class SaasInvoiceExistsError extends AppError { constructor(period: string) { super('SAAS_INVOICE_EXISTS', `A SaaS invoice already exists for period ${period}`, 409, { period }); } }

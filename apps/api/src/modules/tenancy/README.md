@@ -80,10 +80,36 @@ verified-before-primary, typed-setting + tenant-scope checks, read-only feature/
 integration (`tenant-self-serve.integration.spec.ts`, real Postgres + RLS): profile edit (status untouched)
 + outbox + audit, tenant-scoped setting upsert, **platform-scoped setting refused (Law 11)**, domain
 add→verify→primary, and tenant B cannot see tenant A's domain.
+SaaS-invoice unit (`saas-invoice.spec.ts`): invoice state machine + totals math (bigint), issue / recordPayment
+(full/partial/idempotent) / markOverdue. SaaS-invoice integration (`saas-invoice.integration.spec.ts`, real
+Postgres + RLS + relay): renewal run raises+issues one invoice (idempotent per period) + outbox event;
+`payment_succeeded` marks it paid and a re-delivery is a no-op; overdue sweep; cross-tenant RLS denial.
+
+## SaaS invoicing (API-W3-06) — the renewal/dunning glue
+The automated bill we raise TO a tenant for its subscription. Backed by `0002 saas_invoices` + the `0035`
+dunning columns; the `invoice_status` state machine (`domain/saas-invoice.state.ts`) mirrors the
+authoritative one in admin-api billing-ops (`draft → issued → paid|partially_paid|overdue|void`).
+- **Renewal run** (`jobs/renewal-invoices.job.ts`, worker) — finds active subscriptions at/before period
+  end and raises + issues ONE invoice each (line = the subscription's recorded `price_minor`, bigint minor
+  units). Gap-free `invoice_no` via `next_doc_number()`. Idempotent per (subscription, period) — a re-run
+  never double-bills.
+- **Payment glue** (`events/handlers/payment-succeeded.handler.ts`) — consumes
+  `payments.payment_succeeded` where `referenceType='saas_invoice'` and marks the invoice paid /
+  partially_paid via the state machine, inside the relay tx. Idempotent: a re-delivered event for an
+  already-paid invoice is a no-op.
+- **Dunning/usage worker jobs** — `trial-expiry` (nudge trialing subs nearing trial end →
+  `tenancy.trial_ending`), `usage-limit-alerts` (active sub ⋈ plan_limits ⋈ usage_counters ≥ 80% →
+  `tenancy.usage_limit_alert`, idempotent per day via an `ops_job_runs` date-guard), and an overdue sweep
+  (`SaasInvoiceService.markOverdue`).
+
+**NO money moves here** (Law 8/11): collection (moving funds), manual adjustments, write-offs (`void`), and
+dunning ESCALATION are god-mode and live in apps/admin-api `billing-ops` — which READS these invoices. This
+module only generates the bill and reflects the payment outcome. A tenant can READ its own invoices
+(`tenant.settings`); it cannot void/adjust them. Events: `saas_invoice_issued` / `saas_invoice_paid` /
+`saas_invoice_overdue`.
 
 ## Deferred (flagged, not faked) — later wave
-- **SaaS billing** — `saas_invoices` (invoice → collect → dunning), auto-renew, trials (`trialing` →
-  `active`), and usage-limit alert notifications. The subscription's `price_minor` is recorded but not
-  collected here; `renewal-invoices` / `trial-expiry` / `usage-limit-alerts` jobs are deferred stubs.
-- **God-mode tenant lifecycle** — approve/suspend/archive/terminate, feature grants, quota overrides, and
-  provisioning live in apps/admin-api `tenant-ops` (Law 11), not here.
+- **God-mode tenant lifecycle + billing collection** — approve/suspend/archive/terminate, feature grants,
+  quota overrides, invoice collection/void/adjustment, and dunning escalation live in apps/admin-api
+  `tenant-ops` / `billing-ops` (Law 11), not here.
+- **PDF rendering** of the SaaS invoice (`pdf_media_id`) lands with the media/PDF pipeline.

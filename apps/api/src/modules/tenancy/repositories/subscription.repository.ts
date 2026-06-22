@@ -67,6 +67,20 @@ export class SubscriptionRepository {
         ORDER BY current_period_end LIMIT $2 FOR UPDATE SKIP LOCKED`, [now, limit]);
     return r.rows.map(toDomain);
   }
+  /** Renewal-run finder (cross-tenant): ACTIVE, not cancel-at-period-end, whose period ends on/before `through`. */
+  async findDueToRenew(tx: TxContext, through: Date, limit: number): Promise<Subscription[]> {
+    const r = await tx.query(
+      `SELECT ${COLS} FROM subscriptions WHERE status='active' AND cancel_at_period_end = false AND current_period_end <= $1::date
+        ORDER BY current_period_end LIMIT $2`, [through, limit]);
+    return r.rows.map(toDomain);
+  }
+  /** Trial-expiry finder (cross-tenant): trialing subscriptions whose trial ends on/before `through`. */
+  async findTrialsEnding(tx: TxContext, through: Date, limit: number): Promise<Subscription[]> {
+    const r = await tx.query(
+      `SELECT ${COLS} FROM subscriptions WHERE status='trialing' AND current_period_end <= $1::date
+        ORDER BY current_period_end LIMIT $2`, [through, limit]);
+    return r.rows.map(toDomain);
+  }
   /** Current-month usage for the tenant (mirror of plan_limits codes) — the quota dashboard. */
   async readUsage(tenantId: string): Promise<Record<string, number>> {
     const r = await this.replica.forTenant(tenantId).query(

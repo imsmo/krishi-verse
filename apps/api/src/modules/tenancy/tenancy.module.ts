@@ -5,12 +5,14 @@
 // enforcement real. GET /subscriptions/current is the quota dashboard (limits + current usage). Gated by
 // the `tenancy` feature flag (default OFF).
 //
-// SCOPE: this build ships the plans + subscriptions spine (the quota foundation) AND the in-tenant SELF-SERVE
-// plane (API-W3-05): a tenant admin views/edits its OWN tenant profile, submits onboarding for review, manages
-// tenant-scoped settings + custom domains, and READS its feature overrides + usage. Tenant LIFECYCLE (status),
-// feature GRANTS, and provisioning are god-mode and live in apps/admin-api tenant-ops (Law 11) — NOT here. SaaS
-// BILLING (saas_invoices, dunning, auto-renew) remains deferred (its scaffolds are left unwired).
-import { Module } from '@nestjs/common';
+// SCOPE: plans + subscriptions spine (quota foundation), the in-tenant SELF-SERVE plane (API-W3-05: profile/
+// domains/settings + read-only features/usage), AND SaaS INVOICING (API-W3-06): the renewal billing run raises +
+// issues saas_invoices, payments.payment_succeeded marks them paid, and dunning/usage worker jobs nudge tenants.
+// COLLECTION / void / manual adjustment / dunning ESCALATION are god-mode and live in apps/admin-api billing-ops
+// (which READS these invoices) — Law 11. Tenant LIFECYCLE (status) + feature GRANTS likewise live in tenant-ops.
+import { Inject, Module, OnModuleInit } from '@nestjs/common';
+import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
+import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
 import { PlansController } from './controllers/v1/plans.controller';
 import { SubscriptionsController } from './controllers/v1/subscriptions.controller';
 import { TenantsController } from './controllers/v1/tenants.controller';
@@ -19,6 +21,7 @@ import { PlanService } from './services/plan.service';
 import { SubscriptionService } from './services/subscription.service';
 import { TenantService } from './services/tenant.service';
 import { TenantDomainService } from './services/tenant-domain.service';
+import { SaasInvoiceService } from './services/saas-invoice.service';
 import { PlanRepository } from './repositories/plan.repository';
 import { SubscriptionRepository } from './repositories/subscription.repository';
 import { TenantRepository } from './repositories/tenant.repository';
@@ -26,16 +29,26 @@ import { TenantDomainRepository } from './repositories/tenant-domain.repository'
 import { TenantSettingsRepository } from './repositories/tenant-settings.repository';
 import { TenantFeatureRepository } from './repositories/tenant-feature.repository';
 import { UsageCounterRepository } from './repositories/usage-counter.repository';
+import { SaasInvoiceRepository } from './repositories/saas-invoice.repository';
+import { SaasInvoicePaymentHandler } from './events/handlers/payment-succeeded.handler';
 
-// The expiry worker job (jobs/grace-period.job.ts) is instantiated by apps/worker with a privileged
-// kv_relay Pool — not a DI provider (it takes a Pool), mirroring the other expiry jobs.
+// Worker jobs (grace-period, renewal-invoices, trial-expiry, usage-limit-alerts) are instantiated by apps/worker
+// with the privileged kv_relay Pool — not DI providers (they take a Pool / DI service), mirroring the other jobs.
 @Module({
   controllers: [PlansController, SubscriptionsController, TenantsController, TenantSettingsController],
   providers: [
     PlanService, SubscriptionService, PlanRepository, SubscriptionRepository,
     TenantService, TenantDomainService,
     TenantRepository, TenantDomainRepository, TenantSettingsRepository, TenantFeatureRepository, UsageCounterRepository,
+    SaasInvoiceService, SaasInvoiceRepository, SaasInvoicePaymentHandler,
   ],
-  exports: [PlanService, SubscriptionService, TenantService, TenantDomainService],
+  exports: [PlanService, SubscriptionService, TenantService, TenantDomainService, SaasInvoiceService],
 })
-export class TenancyModule {}
+export class TenancyModule implements OnModuleInit {
+  constructor(
+    @Inject(OUTBOX_HANDLER_REGISTRY) private readonly registry: OutboxHandlerRegistry,
+    private readonly saasInvoicePayment: SaasInvoicePaymentHandler,
+  ) {}
+  // payments.payment_succeeded (referenceType='saas_invoice') → mark the SaaS invoice paid
+  onModuleInit(): void { this.registry.register(this.saasInvoicePayment); }
+}
