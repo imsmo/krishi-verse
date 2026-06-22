@@ -76,10 +76,32 @@ to the seller through the commission/tax engine (a fresh `settlement_line`). The
 `apps/api/src/modules/payments/__tests__/dispute-refund.integration.spec.ts` (not-settled refund AND
 settled clawback, both zero-sum).
 
+## Returns / RMA + SLA jobs (built — API-W3-09)
+- **Returns sub-domain** (`domain/{return.entity,return.state}.ts`, `repositories/return.repository.ts`,
+  `services/return.service.ts`, `controllers/v1/returns.controller.ts`) — a buyer-initiated return/RMA on a
+  delivered order, worked through a state machine: `requested → approved → in_transit → received → refunded`
+  (or `rejected` from requested/approved). Only the order's **buyer** may request (eligibility from
+  `dispute_eligibility`, anti-IDOR); **seller-or-moderator** approves/rejects/receives; the **buyer**
+  ships the goods back; a **moderator** (`dispute.resolve`) issues the refund. Party roles are resolved
+  server-side from eligibility — never client-supplied; a non-party gets **404** (no enumeration). One
+  ACID tx per write, status via the machine (Law 5), outbox events in the SAME tx (Law 4), audit on
+  moderator actions, one active return per order. **NO money moves here** — refunding emits
+  `disputes.return_refunded`; orders/payments apply the wallet reversal downstream (mirrors the dispute
+  refund path). `POST /v1/returns` (+ `:id/{approve,reject,ship,receive,refund}`), `GET /v1/returns[/:id]`
+  (boxes: mine/against/all). Gated by the `disputes` flag.
+- **Threaded messages** moved to a dedicated **`DisputeMessageService`** (post/list, party-or-moderator,
+  active-only) that `DisputeService` now delegates to.
+- **SLA worker jobs** (`jobs/{seller-response-timeout,sla-escalation}.job.ts`, run as kv_relay): a dispute
+  still `open` past its `seller_respond_by` is moved to `under_review`; any active dispute past `sla_due_at`
+  is `escalated` — each emits an outbox event (notifications fan out). Cross-tenant, bounded
+  (`FOR UPDATE SKIP LOCKED`), idempotent by the status guard, the flip + outbox write in ONE tx.
+  Tests: `returns.spec.ts` (state machine + aggregate) + `returns.integration.spec.ts` (real Postgres:
+  buyer-only request + duplicate guard, per-row party authority, full lifecycle to refunded, both SLA jobs,
+  cross-tenant RLS denial).
+
 ## Deferred (flagged, not faked) — later wave
 - **Withdrawn-seller recovery** — if a paid-out seller has withdrawn before a post-settlement clawback,
   the reversal fails to DLQ for manual recovery (no negative-balance/debt ledger yet).
-- **Returns flow** — the `returns` table + `return.*`/`returns.controller` scaffolds (return-shipment
-  lifecycle, refund-on-receipt) are DEFERRED; stubs, not wired.
-- **SLA jobs** (`seller-response-timeout`, `sla-escalation`) and **AI triage** (`ai_triage` column) land
-  with the worker/notifications + AI wave.
+- **Return → wallet refund** — `disputes.return_refunded` is emitted; the orders/payments consumer that
+  applies the actual wallet reversal on a received return lands with the events-and-jobs sweep (W4).
+- **AI triage** (`ai_triage` column) lands with the AI wave.

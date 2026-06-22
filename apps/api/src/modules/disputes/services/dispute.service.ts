@@ -19,6 +19,7 @@ import { isActive } from '../domain/dispute.state';
 import { DisputeNotFoundError, DisputeForbiddenError, NotEligibleToDisputeError, DuplicateDisputeError, InvalidDisputeError, DisputeNotActiveError } from '../domain/disputes.errors';
 import { DisputeRepository } from '../repositories/dispute.repository';
 import { DisputeMessageRepository } from '../repositories/dispute-message.repository';
+import { DisputeMessageService } from './dispute-message.service';
 import { CreateDisputeDto } from '../dto/create-dispute.dto';
 import { ResolveDisputeDto } from '../dto/update-dispute.dto';
 import { CreateDisputeMessageDto } from '../dto/create-dispute-message.dto';
@@ -37,6 +38,7 @@ export class DisputeService {
     private readonly audit: AuditWriter,
     private readonly repo: DisputeRepository,
     private readonly messages: DisputeMessageRepository,
+    private readonly messageService: DisputeMessageService,
   ) {}
 
   /** A party to a delivered order raises a dispute against the counterparty. */
@@ -79,29 +81,14 @@ export class DisputeService {
       (d) => d.resolve(actor.userId, dto.resolutionType as ResolutionType, dto.resolutionAmountMinor ? BigInt(dto.resolutionAmountMinor) : null), ip, dto.note ?? null);
   }
 
-  /** A party (or moderator) posts threaded evidence while the dispute is active. */
-  async postMessage(tenantId: string, actor: DisputeActor, id: string, dto: CreateDisputeMessageDto) {
-    return timed(this.metrics, 'disputes.message', { tenant: tenantId }, () =>
-      this.uow.run(tenantId, async (tx) => {
-        const dispute = await this.repo.getForUpdate(tx, tenantId, id);
-        if (!dispute) throw new DisputeNotFoundError(id);
-        this.assertParty(dispute, actor);
-        if (!isActive(dispute.status)) throw new DisputeNotActiveError(dispute.status);
-        const msg = DisputeMessage.create({ id: uuidv7(), disputeId: id, tenantId, authorUserId: actor.userId, body: dto.body });
-        await this.messages.insert(tx, msg);
-        await this.outbox.write(tx, { tenantId, aggregateType: 'dispute', aggregateId: id, eventType: 'disputes.dispute_message_posted', payload: { v: 1, disputeId: id, authorUserId: actor.userId } });
-        return { id: msg.props.id, authorUserId: actor.userId, body: msg.props.body, createdAt: msg.props.createdAt };
-      }, { userId: actor.userId }));
+  /** A party (or moderator) posts threaded evidence while the dispute is active. Delegated to the
+   *  dedicated DisputeMessageService (the message use-cases live there). */
+  postMessage(tenantId: string, actor: DisputeActor, id: string, dto: CreateDisputeMessageDto) {
+    return this.messageService.post(tenantId, actor, id, dto);
   }
 
-  async listMessages(tenantId: string, actor: DisputeActor, id: string, q: { cursor?: { c: string; id: string }; limit: number }) {
-    const dispute = await this.repo.getById(tenantId, id);
-    if (!dispute) throw new DisputeNotFoundError(id);
-    this.assertParty(dispute, actor);
-    const items = await this.messages.listFor(tenantId, id, q);
-    const last = items[items.length - 1];
-    const nextCursor = items.length === q.limit && last ? Buffer.from(`${last.createdAt.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;
-    return { items, nextCursor };
+  listMessages(tenantId: string, actor: DisputeActor, id: string, q: { cursor?: { c: string; id: string }; limit: number }) {
+    return this.messageService.list(tenantId, actor, id, q);
   }
 
   async getById(tenantId: string, actor: DisputeActor, id: string) {

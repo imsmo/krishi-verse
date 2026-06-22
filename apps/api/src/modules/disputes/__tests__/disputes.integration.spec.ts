@@ -32,6 +32,7 @@ import { DisputeResolvedHandler } from '../../orders/events/handlers/dispute-res
 import { DisputeRepository } from '../repositories/dispute.repository';
 import { DisputeMessageRepository } from '../repositories/dispute-message.repository';
 import { DisputeService } from '../services/dispute.service';
+import { DisputeMessageService } from '../services/dispute-message.service';
 import { OrderDeliveredHandler } from '../events/handlers/order-delivered.handler';
 import { NotEligibleToDisputeError, DuplicateDisputeError } from '../domain/disputes.errors';
 
@@ -79,7 +80,8 @@ run('disputes slice (integration, real Postgres + RLS + outbox relay)', () => {
     const audit = new AuditWriter(pools);
     const disputeRepo = new DisputeRepository(replica as any);
     const msgRepo = new DisputeMessageRepository(replica as any);
-    disputes = new DisputeService(uow, outbox, idem, metrics, audit, disputeRepo, msgRepo);
+    const msgService = new DisputeMessageService(uow, outbox, metrics, disputeRepo, msgRepo);
+    disputes = new DisputeService(uow, outbox, idem, metrics, audit, disputeRepo, msgRepo, msgService);
 
     const orderRepo = new OrderRepository(replica as any);
     const registry = new OutboxHandlerRegistry();

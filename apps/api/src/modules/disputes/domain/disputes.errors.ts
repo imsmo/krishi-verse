@@ -11,3 +11,15 @@ export class DisputeNotActiveError extends AppError { constructor(status: string
 /** The raiser already has an OPEN dispute on this order (bounds dispute spam — one active at a time). */
 export class DuplicateDisputeError extends AppError { constructor() { super('DISPUTE_DUPLICATE', 'You already have an active dispute on this order', 409); } }
 export class InvalidDisputeError extends DomainError { constructor(message: string) { super('DISPUTE_INVALID', message, 400); } }
+
+// ---- returns / RMA ----
+export class ReturnNotFoundError extends NotFoundError { constructor(id: string) { super('Return not found'); (this as any).details = { id }; } }
+/** The actor is not the buyer / the seller / a moderator, as the return action requires. */
+export class ReturnForbiddenError extends AppError { constructor(message = 'Not allowed on this return') { super('RETURN_FORBIDDEN', message, 403); } }
+/** Acting on a terminal return (refunded/rejected). */
+export class ReturnNotActiveError extends AppError { constructor(status: string) { super('RETURN_NOT_ACTIVE', `Return is not active (status: ${status})`, 409, { status }); } }
+/** The order already has an ACTIVE return (one at a time — bounds abuse). */
+export class DuplicateReturnError extends AppError { constructor() { super('RETURN_DUPLICATE', 'This order already has an active return', 409); } }
+/** Only the order's buyer may request a return (eligibility resolved server-side, anti-IDOR). */
+export class NotEligibleToReturnError extends AppError { constructor() { super('RETURN_NOT_ELIGIBLE', 'You can only return an order you bought (after delivery)', 403); } }
+export class InvalidReturnError extends DomainError { constructor(message: string) { super('RETURN_INVALID', message, 400); } }
