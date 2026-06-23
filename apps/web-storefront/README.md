@@ -119,6 +119,22 @@ rejected server-side and surfaced. The order detail page shows a "Write a review
 (averageStars/count) — no method to fetch individual reviews or a **seller response**, so showing seller responses
 on the listing is deferred (the listing already renders the aggregate summary, SF-W2-02).
 
+## Offers & messaging
+
+**Offers:** `/offers` is the buyer's offer inbox (`offers.list` box=outgoing, keyset); `/offers/[id]` shows the
+negotiation (offered + countered price, quantity, round, status) and, while the offer is open, lets the buyer
+accept / counter (float-free `parseMajorToMinor`) / reject — authed Server Actions the server validates. A
+"message seller" action opens a chat with the listing's seller (resolved server-side via `listings.get`). Offer
+creation is the idempotency-keyed `offers.make` from the listing page; counter/accept/reject expose no key (the
+state machine guards them).
+
+**Messaging:** `/messages` lists conversations; `/messages/[id]` is the thread (`conversations.get` +
+`listMessages` + `auth.me` to align bubbles, best-effort `markRead`, a post-message form). The **masked-call
+CTA** (`maskedCalls.initiate`) passes only the counterpart's **user id** — derived from message senders, since
+the conversation read-model lists no participants — and the proxy bridges the call server-side: **no phone number
+is ever fetched or shown**. Voice/attachment messages render as localized labels (their bytes live in S3 by id).
+The header shows Offers + Messages links when signed in.
+
 ## Authentication
 
 Phone-OTP sign-in at `/login`. A single `loginAction` Server Action (`app/login/actions.ts`, two steps —

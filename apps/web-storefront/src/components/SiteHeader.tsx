@@ -32,6 +32,8 @@ export async function SiteHeader() {
         </nav>
         <div className="kv-header__actions">
           <LocaleSwitcher active={lang} label={t.t('lang.label')} />
+          {signedIn && <Link href="/offers" className="kv-header__link">{t.t('nav.offers')}</Link>}
+          {signedIn && <Link href="/messages" className="kv-header__link">{t.t('nav.messages')}</Link>}
           <Link href="/cart" className="kv-header__cart" aria-label={t.t('nav.cart')}>
             {t.t('nav.cart')}{cartCount > 0 && <span className="kv-header__badge" aria-hidden="true">{cartCount}</span>}
           </Link>

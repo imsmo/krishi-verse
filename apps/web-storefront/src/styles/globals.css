@@ -199,3 +199,29 @@ a { color: inherit; text-decoration: none; }
 .kv-stars__star:hover span[aria-hidden], .kv-stars__star:hover ~ .kv-stars__star span[aria-hidden] { color: #f9a825; }
 .kv-stars__star:has(input:checked) span[aria-hidden], .kv-stars__star:has(input:checked) ~ .kv-stars__star span[aria-hidden] { color: #f9a825; }
 .kv-stars__star:has(input:focus-visible) span[aria-hidden] { outline: 2px solid var(--kv-brand-500); outline-offset: 2px; border-radius: 4px; }
+
+/* ---- offers ---- */
+.kv-offers, .kv-offer { max-width: 640px; }
+.kv-offer__facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: var(--kv-space) 0; }
+.kv-offer__facts dt { color: var(--kv-neutral-600); }
+.kv-offer__facts dd { margin: 0; font-weight: 600; }
+.kv-offer__actions { display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--kv-neutral-100); border-radius: var(--kv-radius); padding: var(--kv-space); margin: var(--kv-space) 0; }
+.kv-offer__counter { display: flex; flex-direction: column; gap: 6px; }
+.kv-offer__msg { margin: 12px 0; }
+
+/* ---- messages / chat ---- */
+.kv-threads, .kv-thread { max-width: 640px; }
+.kv-threads__list { list-style: none; padding: 0; margin: var(--kv-space) 0; }
+.kv-threads__item { border-bottom: 1px solid var(--kv-neutral-100); }
+.kv-threads__link { display: flex; gap: 12px; align-items: center; padding: 12px 0; }
+.kv-threads__ctx { font-weight: 600; }
+.kv-thread__msgs { list-style: none; padding: 0; margin: var(--kv-space) 0; display: flex; flex-direction: column; gap: 8px; }
+.kv-msg { display: flex; flex-direction: column; max-width: 80%; padding: 8px 12px; border-radius: var(--kv-radius); }
+.kv-msg--them { align-self: flex-start; background: var(--kv-neutral-100); }
+.kv-msg--mine { align-self: flex-end; background: #dcedc8; }
+.kv-msg__who { font-size: 12px; color: var(--kv-neutral-600); }
+.kv-msg__body { white-space: pre-wrap; word-break: break-word; }
+.kv-msg__time { font-size: 11px; color: var(--kv-neutral-600); align-self: flex-end; }
+.kv-thread__compose { display: flex; gap: 8px; margin: var(--kv-space) 0; }
+.kv-thread__compose .kv-field__input { flex: 1 1 auto; }
+.kv-thread__call { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: var(--kv-space); }
