@@ -135,6 +135,23 @@ the conversation read-model lists no participants — and the proxy bridges the 
 is ever fetched or shown**. Voice/attachment messages render as localized labels (their bytes live in S3 by id).
 The header shows Offers + Messages links when signed in.
 
+## Auctions
+
+`/auctions` (public, SSR + ISR, flag-gated by `env.featureAuctions` / `NEXT_PUBLIC_FEATURE_AUCTIONS` — the whole
+surface `notFound()`s and the header link is removed when set to `false`) lists live lots as cards with a ticking
+**countdown** (`Countdown`, the only client component — no data, no secret) and keyset paging. `/auctions/[id]`
+shows the countdown, current high bid (pure `currentHighMinor`), suggested minimum next bid (pure BigInt
+`minNextBidMinor`), reserve, the bid history (bidder identity is never exposed; sealed amounts show as "sealed"),
+and the anti-snipe + EMD notes. Bidding is an authed Server Action (`auctions.placeBid`, `randomUUID`
+Idempotency-Key, float-free `parseMajorToMinor`); the earnest-money deposit is held on the wallet **server-side**
+(Law 11). The API's own `auctions` flag is the authoritative gate — public reads degrade to an empty state when
+it's off.
+
+**Not available in the SDK (flagged):** the auctions resource has **no watch/follow method**, so the "watch" half
+of bid-and-watch can't be built without inventing an endpoint (the server-side watchers from apps/api W3-11 aren't
+exposed in the SDK) — deferred until `auctions.watch` exists. The `Auction` read-model also carries no EMD amount,
+so EMD is surfaced as a behaviour note rather than a figure.
+
 ## Authentication
 
 Phone-OTP sign-in at `/login`. A single `loginAction` Server Action (`app/login/actions.ts`, two steps —

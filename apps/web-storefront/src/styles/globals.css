@@ -225,3 +225,10 @@ a { color: inherit; text-decoration: none; }
 .kv-thread__compose { display: flex; gap: 8px; margin: var(--kv-space) 0; }
 .kv-thread__compose .kv-field__input { flex: 1 1 auto; }
 .kv-thread__call { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: var(--kv-space); }
+
+/* ---- auctions ---- */
+.kv-auction { max-width: 640px; }
+.kv-auction__ends { font-size: 18px; }
+.kv-countdown { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--kv-brand-700); }
+.kv-countdown--ended { color: var(--kv-neutral-600); font-weight: 600; }
+.kv-auction__bid { display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--kv-neutral-100); border-radius: var(--kv-radius); padding: var(--kv-space); margin: var(--kv-space) 0; max-width: 360px; }

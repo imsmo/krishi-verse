@@ -16,5 +16,8 @@ export const env = {
   /** Razorpay PUBLISHABLE key id (rzp_*) — public by design (it's shown in the browser checkout). Null when
    *  unset → the pay step fails closed with a friendly "online payments unavailable" message (never a fake pay). */
   razorpayKeyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || null,
+  /** Client visibility switch for the auctions surface (hidden when 'false'). Enabled by default; the API's own
+   *  `auctions` flag is the authoritative gate (if it's off, the public reads simply degrade to an empty state). */
+  featureAuctions: process.env.NEXT_PUBLIC_FEATURE_AUCTIONS !== 'false',
   appName: 'Krishi-Verse',
 } as const;

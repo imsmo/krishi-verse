@@ -19,6 +19,7 @@ export async function SiteHeader() {
   const cartCount = await getCartItemCount(); // 0 for anonymous / on failure (degrade)
   const nav = [
     { href: '/', label: t.t('nav.home') },
+    ...(env.featureAuctions ? [{ href: '/auctions', label: t.t('nav.auctions') }] : []),
     { href: '/pricing', label: t.t('nav.pricing') },
     { href: '/about', label: t.t('nav.about') },
     { href: '/help', label: t.t('nav.help') },
