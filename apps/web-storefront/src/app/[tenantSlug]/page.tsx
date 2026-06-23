@@ -43,7 +43,7 @@ export default async function TenantStorefront(
 
   return (
     <section>
-      <h1 style={{ textTransform: 'capitalize' }}>{params.tenantSlug}</h1>
+      <h1 className="kv-storefront__title">{params.tenantSlug}</h1>
 
       <SearchFilters basePath={basePath} sp={searchParams} />
 

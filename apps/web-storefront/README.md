@@ -19,6 +19,11 @@ in an httpOnly cookie; all copy is i18n (en/hi/gu); data flows exclusively throu
   localized copy (the SDK exposes no `cms` resource), each with `generateMetadata`; `/blog` renders an empty
   state until a content source exists; `/tenants-signup` CTA links to the seller console (`env.tenantAppUrl`)
   or falls back to `/login`.
+- `/auctions`, `/auctions/[id]` — public auction browse + detail (flag-gated; see **Auctions**).
+- **Authenticated buyer routes** (all `requireSession`-gated, noindex; see the matching sections below):
+  `/login`, `/cart`, `/checkout` → `/checkout/pay` → `/checkout/confirm`, `/orders` + `/orders/[id]` (+
+  `/orders/[id]/review`), `/offers` + `/offers/[id]`, `/messages` + `/messages/[id]`, `/notifications` +
+  `/notifications/preferences`.
 
 ## App shell
 
