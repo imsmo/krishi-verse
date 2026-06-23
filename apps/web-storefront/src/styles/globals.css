@@ -167,3 +167,23 @@ a { color: inherit; text-decoration: none; }
 .kv-confirm__row { display: flex; justify-content: space-between; max-width: 360px; margin: 4px 0; color: var(--kv-neutral-600); }
 .kv-confirm__row--total { color: var(--kv-neutral-900); font-size: 18px; border-top: 1px solid var(--kv-neutral-100); padding-top: 8px; }
 .kv-confirm__actions { display: flex; gap: var(--kv-space); align-items: center; flex-wrap: wrap; }
+
+/* ---- orders ---- */
+.kv-orders, .kv-order { max-width: 760px; }
+.kv-order__section { margin-top: 24px; padding-top: var(--kv-space); border-top: 1px solid var(--kv-neutral-100); }
+.kv-order__section h2 { font-size: 18px; margin: 0 0 12px; }
+.kv-order__shipments { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+.kv-order__shipment { border: 1px solid var(--kv-neutral-100); border-radius: var(--kv-radius); padding: 12px; }
+.kv-order__shipstatus { margin: 0 0 4px; }
+
+/* ---- order timeline ---- */
+.kv-timeline { list-style: none; display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 0; margin: var(--kv-space) 0; }
+.kv-timeline__step { display: flex; align-items: center; gap: 8px; color: var(--kv-neutral-600); font-size: 14px; }
+.kv-timeline__dot { width: 12px; height: 12px; border-radius: 9999px; border: 2px solid var(--kv-neutral-600); display: inline-block; }
+.kv-timeline__step--done { color: var(--kv-success); }
+.kv-timeline__step--done .kv-timeline__dot { background: var(--kv-success); border-color: var(--kv-success); }
+.kv-timeline__step--current { color: var(--kv-brand-700); font-weight: 700; }
+.kv-timeline__step--current .kv-timeline__dot { background: var(--kv-brand-700); border-color: var(--kv-brand-700); }
+.kv-timeline__terminal { padding: 10px 12px; border-radius: var(--kv-radius); margin: var(--kv-space) 0; font-weight: 600; }
+.kv-timeline__terminal--cancelled { background: #fdecea; color: #b71c1c; }
+.kv-timeline__terminal--disputed { background: #fff8e1; color: #8d6e00; }

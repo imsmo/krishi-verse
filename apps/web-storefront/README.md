@@ -93,6 +93,19 @@ lookup, so the discount/charges/tax are computed at order placement and shown on
 page states this), and `deliveryMethodId` is omitted. Multi-seller checkout creates one order per seller; the pay
 step settles the primary order and confirmation links to "my orders" (SF-W3-03) for any others.
 
+## Orders
+
+`/orders` (protected, dynamic) lists the buyer's orders (`orders.list` role=buyer, keyset) through the shared
+accessible `DataTable` — order number (link), localized status, seller, total (`formatMoneyMinor`), date
+(`formatDate`). `/orders/[id]` reads `orders.get` and `notFound()`s on a missing or foreign id (RLS-scoped, no
+IDOR); it shows a localized **status timeline** (pure `features/orders/timeline.ts` → `OrderTimeline`, with a
+cancelled/disputed terminal banner), the line items, the server-computed subtotal/delivery/discount/tax/total
+breakdown, and **shipment tracking** via `shipments.list({orderId})` (status, tracking number, pickup/delivered
+timestamps, OTP note — degrades to "no shipment yet" when the logistics flag is off or none exist).
+
+**Not available in the SDK (flagged):** there is no invoice resource or download method (no `payments.invoices`,
+no `orders.invoice`), so invoice download is deferred until the SDK exposes one.
+
 ## Authentication
 
 Phone-OTP sign-in at `/login`. A single `loginAction` Server Action (`app/login/actions.ts`, two steps —

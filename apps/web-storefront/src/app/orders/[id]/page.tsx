@@ -1,0 +1,94 @@
+// apps/web-storefront/src/app/orders/[id]/page.tsx · one order's detail. PROTECTED + dynamic. Reads the order via
+// the authed SDK; a missing/foreign id → notFound() (the API + RLS only return the caller's own order — no IDOR).
+// Renders the status timeline, line items, the server-computed totals breakdown, and shipment tracking
+// (shipments.list by order — degrades to "no shipment yet" if the logistics flag is off or none exist). Money via
+// formatMoneyMinor, timestamps via formatDate (Law 2, Law 12).
+//
+// FLAGGED: the SDK exposes NO invoice resource / download method (no payments.invoices, no orders.invoice), so an
+// "invoice download" can't be built without inventing an endpoint. It's deferred until the SDK adds one.
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { formatMoneyMinor, formatDate } from '@krishi-verse/i18n';
+import type { OrderDetail, Shipment } from '@krishi-verse/sdk-js';
+import { SdkError } from '@krishi-verse/sdk-js';
+import { serverClient } from '../../../lib/api-client';
+import { requireSession } from '../../../lib/session';
+import { getTranslator, getLang } from '../../../lib/i18n';
+import { OrderTimeline } from '../../../components/OrderTimeline';
+
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const t = getTranslator();
+  return { title: t.t('order.detailTitle'), robots: { index: false, follow: false } };
+}
+
+export default async function OrderDetailPage({ params }: { params: { id: string } }) {
+  await requireSession(`/orders/${encodeURIComponent(params.id)}`);
+  const t = getTranslator();
+  const lang = getLang();
+
+  let order: OrderDetail | null = null;
+  try { order = await serverClient().orders.get(params.id); }
+  catch (e) { if (e instanceof SdkError && e.isNotFound) notFound(); order = null; }
+
+  if (!order) {
+    return <section className="kv-order"><h1>{t.t('order.detailTitle')}</h1>
+      <p className="kv-form__error" role="alert">{t.t('order.loadError')}</p></section>;
+  }
+
+  // Shipment tracking is optional/flagged on the API — never let its absence break the order page.
+  let shipments: Shipment[] = [];
+  try { shipments = (await serverClient().shipments.list({ orderId: order.id })).items; } catch { shipments = []; }
+
+  const cur = order.currencyCode;
+  const ts = (v?: string | null) => (v ? formatDate(v, lang) : null);
+
+  return (
+    <section className="kv-order">
+      <h1>{t.t('order.orderNo', { no: order.orderNo })}</h1>
+
+      <OrderTimeline status={order.status} />
+
+      <section className="kv-order__section" aria-labelledby="items-h">
+        <h2 id="items-h">{t.t('order.items')}</h2>
+        <ul className="kv-confirm__items">
+          {order.items.map((it) => (
+            <li key={it.listing_id} className="kv-confirm__item">
+              <span>{it.title_snapshot} × {it.quantity} {it.unit_code}</span>
+              <span>{formatMoneyMinor(it.line_total_minor, cur, lang)}</span>
+            </li>
+          ))}
+        </ul>
+        <div className="kv-confirm__totals">
+          <p className="kv-confirm__row"><span>{t.t('cart.subtotal')}</span> <span>{formatMoneyMinor(order.subtotalMinor, cur, lang)}</span></p>
+          <p className="kv-confirm__row"><span>{t.t('checkout.delivery')}</span> <span>{formatMoneyMinor(order.deliveryFeeMinor, cur, lang)}</span></p>
+          {order.discountMinor !== '0' && <p className="kv-confirm__row"><span>{t.t('checkout.discount')}</span> <span>{formatMoneyMinor(order.discountMinor, cur, lang)}</span></p>}
+          <p className="kv-confirm__row"><span>{t.t('checkout.tax')}</span> <span>{formatMoneyMinor(order.taxMinor, cur, lang)}</span></p>
+          <p className="kv-confirm__row kv-confirm__row--total"><span>{t.t('checkout.total')}</span> <strong>{formatMoneyMinor(order.totalMinor, cur, lang)}</strong></p>
+        </div>
+      </section>
+
+      <section className="kv-order__section" aria-labelledby="ship-h">
+        <h2 id="ship-h">{t.t('order.tracking')}</h2>
+        {shipments.length === 0 ? (
+          <p className="kv-detail__muted">{t.t('order.noShipment')}</p>
+        ) : (
+          <ul className="kv-order__shipments">
+            {shipments.map((s) => (
+              <li key={s.id} className="kv-order__shipment">
+                <p className="kv-order__shipstatus">{t.t('order.shipmentStatus')}: <strong>{s.status}</strong></p>
+                {s.awbNo && <p className="kv-detail__muted">{t.t('order.awb')}: {s.awbNo}</p>}
+                {ts(s.scheduledPickupAt) && <p className="kv-detail__muted">{t.t('order.scheduledPickup')}: {ts(s.scheduledPickupAt)}</p>}
+                {ts(s.pickedUpAt) && <p className="kv-detail__muted">{t.t('order.pickedUp')}: {ts(s.pickedUpAt)}</p>}
+                {ts(s.deliveredAt) && <p className="kv-detail__muted">{t.t('order.delivered')}: {ts(s.deliveredAt)}</p>}
+                {s.requiresOtp && <p className="kv-detail__muted">{t.t('order.otpNote')}</p>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <p><Link href="/orders" className="kv-btn--link">{t.t('order.backToList')}</Link></p>
+    </section>
+  );
+}
