@@ -26,6 +26,7 @@ export const gu: Messages = {
   'footer.col.company': 'કંપની',
   'footer.col.support': 'સહાય',
   'footer.col.sellers': 'વેચનારાઓ માટે',
+  'common.skipToContent': 'સામગ્રી પર જાઓ',
 
   'common.loading': 'લોડ થઈ રહ્યું છે…',
   'common.errorTitle': 'કંઈક ખોટું થયું',
@@ -384,4 +385,12 @@ export const gu: Messages = {
   'notif.channel.email': 'ઈમેલ',
   'notif.channel.push': 'પુશ',
   'notif.channel.whatsapp': 'વોટ્સએપ',
+
+  'trace.title': 'ખેતર-થી-થાળી ઉદ્ગમ',
+  'trace.metaDescription': 'આ પેદાશની ચકાસાયેલી યાત્રા, કૃષિ-વર્સ પર નોંધાયેલી.',
+  'trace.notFoundTitle': 'ઉદ્ગમ મળ્યું નથી',
+  'trace.heading': 'ખેતર-થી-થાળી યાત્રા',
+  'trace.lead': 'આ પેદાશની નોંધાયેલી યાત્રા. {date} ના રોજ નોંધાયેલી.',
+  'trace.leadAnchored': 'આ પેદાશની નોંધાયેલી યાત્રા — છેડછાડ-પ્રતિરોધી ✓. {date} ના રોજ નોંધાયેલી.',
+  'trace.noEvents': 'હજુ કોઈ યાત્રા ઘટના નોંધાયેલી નથી.',
 };

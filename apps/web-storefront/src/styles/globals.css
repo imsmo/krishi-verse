@@ -19,7 +19,9 @@ a { color: inherit; text-decoration: none; }
 .kv-card__meta { margin-top: 8px; display: flex; gap: 8px; align-items: center; }
 .kv-badge { font-size: 12px; padding: 2px 8px; border-radius: 9999px; background: var(--kv-neutral-100); }
 .kv-badge--organic { background: #dcedc8; color: var(--kv-success); }
-.kv-trace__event { border-left: 3px solid var(--kv-brand-500); padding: 4px 12px; margin: 8px 0; }
+.kv-trace__event { border-left: 3px solid var(--kv-brand-500); padding: 4px 12px; margin: 8px 0; display: flex; flex-direction: column; }
+.kv-trace__list { list-style: none; padding: 0; }
+.kv-trace__code { text-transform: capitalize; }
 
 /* ---- skip link (a11y) ---- */
 .kv-skip { position: absolute; left: -9999px; top: 0; background: var(--kv-brand-700); color: #fff; padding: 8px 12px; border-radius: 0 0 var(--kv-radius) 0; z-index: 100; }

@@ -29,6 +29,7 @@ export const en: Messages = {
   'footer.col.support': 'Support',
   'footer.col.sellers': 'For sellers',
 
+  'common.skipToContent': 'Skip to content',
   'common.loading': 'Loading…',
   'common.errorTitle': 'Something went wrong',
   'common.errorBody': 'We could not load this page just now. Please try again.',
@@ -386,4 +387,12 @@ export const en: Messages = {
   'notif.channel.email': 'Email',
   'notif.channel.push': 'Push',
   'notif.channel.whatsapp': 'WhatsApp',
+
+  'trace.title': 'Farm-to-fork provenance',
+  'trace.metaDescription': 'Verified journey of this produce, recorded on Krishi-Verse.',
+  'trace.notFoundTitle': 'Provenance not found',
+  'trace.heading': 'Farm-to-fork journey',
+  'trace.lead': 'This produce’s recorded journey. Registered {date}.',
+  'trace.leadAnchored': 'This produce’s recorded journey — tamper-anchored ✓. Registered {date}.',
+  'trace.noEvents': 'No journey events recorded yet.',
 };

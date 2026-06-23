@@ -19,5 +19,9 @@ export const env = {
   /** Client visibility switch for the auctions surface (hidden when 'false'). Enabled by default; the API's own
    *  `auctions` flag is the authoritative gate (if it's off, the public reads simply degrade to an empty state). */
   featureAuctions: process.env.NEXT_PUBLIC_FEATURE_AUCTIONS !== 'false',
+  /** The storefront's OWN public origin (e.g. https://krishi-verse.example) — used for metadataBase (absolute
+   *  canonical/OpenGraph URLs), robots.txt sitemap pointer, and sitemap.xml entries. Public, not a secret. Empty
+   *  when unset → metadata stays relative and robots omits the sitemap line (still valid; set this in prod). */
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || '',
   appName: 'Krishi-Verse',
 } as const;

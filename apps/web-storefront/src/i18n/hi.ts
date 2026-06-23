@@ -28,6 +28,7 @@ export const hi: Messages = {
   'footer.col.support': 'सहायता',
   'footer.col.sellers': 'विक्रेताओं के लिए',
 
+  'common.skipToContent': 'सामग्री पर जाएँ',
   'common.loading': 'लोड हो रहा है…',
   'common.errorTitle': 'कुछ गड़बड़ हो गई',
   'common.errorBody': 'हम अभी यह पृष्ठ लोड नहीं कर सके। कृपया फिर से प्रयास करें।',
@@ -385,4 +386,12 @@ export const hi: Messages = {
   'notif.channel.email': 'ईमेल',
   'notif.channel.push': 'पुश',
   'notif.channel.whatsapp': 'व्हाट्सएप',
+
+  'trace.title': 'खेत-से-थाली उद्गम',
+  'trace.metaDescription': 'इस उपज की सत्यापित यात्रा, कृषि-वर्स पर दर्ज।',
+  'trace.notFoundTitle': 'उद्गम नहीं मिला',
+  'trace.heading': 'खेत-से-थाली यात्रा',
+  'trace.lead': 'इस उपज की दर्ज यात्रा। {date} को पंजीकृत।',
+  'trace.leadAnchored': 'इस उपज की दर्ज यात्रा — छेड़छाड़-रोधी ✓। {date} को पंजीकृत।',
+  'trace.noEvents': 'अभी कोई यात्रा घटना दर्ज नहीं है।',
 };

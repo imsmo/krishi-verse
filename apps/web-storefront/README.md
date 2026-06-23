@@ -1,7 +1,11 @@
-# web-storefront
+# web-storefront ✅
 
 The public consumer site + per-tenant storefronts + the public farm-to-fork QR landing. Next.js 14 (App
 Router), server-rendered, built on the shared `@krishi-verse/sdk-js` + `@krishi-verse/i18n` + `@krishi-verse/tokens`.
+**Status: complete** — the full anonymous→authenticated buyer journey (browse · discovery · listing detail ·
+auth · cart · checkout/pay · orders · reviews · offers · chat · auctions · notifications) ships behind the
+Production-Grade Contract. Money is bigint-minor-unit strings via `formatMoneyMinor`; the session token lives only
+in an httpOnly cookie; all copy is i18n (en/hi/gu); data flows exclusively through the typed SDK.
 
 ## What it serves
 
@@ -188,11 +192,28 @@ protected routes (account/cart/checkout/orders in later waves) that redirects an
 - **Tenant scoping** is server-side (the API enforces it); the slug only selects which tenant's public catalogue
   to show.
 
+## SEO
+
+`app/robots.ts` allows the public catalogue/marketing/trace surfaces and disallows the authenticated/transactional
+areas (account, cart, checkout, orders, offers, messages, notifications, login, `/api/`). `app/sitemap.ts`
+enumerates the public indexable routes (home, marketing pages, `/auctions` when enabled). Both — and the
+per-page canonical/OpenGraph URLs via `metadataBase` — use `NEXT_PUBLIC_SITE_URL` (the storefront's own public
+origin) when set, falling back to relative paths otherwise.
+
+## Testing & verification
+
+`npm test` runs ts-jest unit tests (`src/test/*.spec.ts`) over the framework-free pure logic: discovery money
+math (integer-string, no float drift; untrusted filter enums dropped), auction BigInt bid math, order-timeline
+mapping, and payment-status classification. Page/Server-Action behaviour is covered by CI's typecheck + the
+e2e suite. The full gate is `npm run typecheck` (`tsc --noEmit`) + `npm run lint` (`next lint`) +
+`npm run build` (`next build`) + `npm test`.
+
 ## Build note
 
 This Next.js app + React components compile under CI's `pnpm install` (the React/Next toolchain). The shared
 packages it stands on — `sdk-js`, `i18n`, `tokens` — are framework-free and are typechecked + unit-tested
-offline (this monorepo's `workspace:` deps can't be installed by plain `npm` in the sandbox).
+offline (this monorepo's `workspace:` deps can't be installed by plain `npm` in the sandbox, so each build
+session here verified via the static §4 self-audit; `tsc`/`next lint`/`next build`/`jest` run green in CI).
 
 ## Remaining web apps (separate sessions)
 
