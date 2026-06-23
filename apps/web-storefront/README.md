@@ -61,6 +61,18 @@ deep-link** (we link to the `/help` traceability explainer instead), and a **pla
 be built without inventing data. These unblock once the SDK listing read-model exposes media / trace-token /
 auction-link fields. Auction and service listings show a localized "opens in the app" note instead of a button.
 
+## Cart
+
+`/cart` is a protected, dynamic page (`requireSession` → anon to `/login?next=/cart`) that reads the
+authoritative cart from the authed SDK on every view — prices and availability are always the server's truth,
+never a stale client total. Quantity-update, remove, and clear are Server Actions (`serverClient().cart.*`,
+`revalidatePath('/cart')`; the SDK cart mutations are naturally idempotent and expose no Idempotency-Key). Line
+totals and subtotal render via `formatMoneyMinor` (platform currency INR; the cart read-model has no per-line
+currency code, matching the formatter default). The page surfaces `priceChanged` / unavailable warnings and
+gates checkout until unavailable lines are removed. The header shows a live cart **badge** via
+`features/cart/summary.getCartItemCount()` (anonymous or on failure → 0, no network for anonymous visitors).
+The checkout CTA points to `/checkout` (built in SF-W3-02; degrades to the localized 404 until then).
+
 ## Authentication
 
 Phone-OTP sign-in at `/login`. A single `loginAction` Server Action (`app/login/actions.ts`, two steps —

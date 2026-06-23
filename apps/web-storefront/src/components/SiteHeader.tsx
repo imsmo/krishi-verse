@@ -9,12 +9,14 @@ import { getTranslator, getLang } from '../lib/i18n';
 import { LocaleSwitcher } from './LocaleSwitcher';
 import { env } from '../lib/env';
 import { hasSessionCookie } from '../lib/auth';
+import { getCartItemCount } from '../features/cart/summary';
 import { logoutAction } from '../app/login/actions';
 
-export function SiteHeader({ cartCount = 0 }: { cartCount?: number }) {
+export async function SiteHeader() {
   const t = getTranslator();
   const lang = getLang();
   const signedIn = hasSessionCookie();
+  const cartCount = await getCartItemCount(); // 0 for anonymous / on failure (degrade)
   const nav = [
     { href: '/', label: t.t('nav.home') },
     { href: '/pricing', label: t.t('nav.pricing') },
