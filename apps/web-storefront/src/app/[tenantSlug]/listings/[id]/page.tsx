@@ -1,11 +1,24 @@
-// apps/web-storefront/src/app/[tenantSlug]/listings/[id]/page.tsx · a single listing detail page. SSR-fetched
-// via the SDK; a missing/unavailable listing renders Next's notFound() (404) rather than crashing.
+// apps/web-storefront/src/app/[tenantSlug]/listings/[id]/page.tsx · a single listing detail page. SSR-fetched via
+// the SDK (anonymous public read); a missing/unavailable listing renders notFound() (404). Enriched with a price/
+// quantity block, the localized sale-type, a seller trust card + listing review summary (both via the public
+// reviews.summary aggregate — degrade silently if unavailable), the buyer CTAs (BuyerActions), a farm-to-fork
+// note, and rich OpenGraph metadata for sharing. Money via formatMoneyMinor from minor-unit strings (Law 2).
+//
+// FLAGGED — the listing read-model (`ListingCard`) carries no media ids, no trace qrToken, and no auctionId, so:
+//   • a media gallery,
+//   • a direct /trace/[qrToken] provenance deep-link, and
+//   • a place-bid-from-listing CTA
+// cannot be built without fabricating data. They are out of scope until the SDK listing read-model exposes those
+// fields. We link to the /help traceability explainer instead of inventing a QR token.
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { formatMoneyMinor } from '@krishi-verse/i18n';
-import type { ListingCard } from '@krishi-verse/sdk-js';
+import type { ListingCard, ReviewSummary } from '@krishi-verse/sdk-js';
 import { SdkError } from '@krishi-verse/sdk-js';
 import { publicClient } from '../../../../lib/api-client';
+import { getTranslator, getLang } from '../../../../lib/i18n';
+import { BuyerActions } from '../../../../components/BuyerActions';
 
 export const revalidate = 60;
 
@@ -14,23 +27,101 @@ async function load(tenantSlug: string, id: string): Promise<ListingCard | null>
   catch (e) { if (e instanceof SdkError && e.isNotFound) return null; throw e; }
 }
 
-export async function generateMetadata({ params }: { params: { tenantSlug: string; id: string } }): Promise<Metadata> {
-  const l = await load(params.tenantSlug, params.id);
-  return l ? { title: l.title, description: `${l.title} — ${formatMoneyMinor(l.priceMinor, l.currencyCode)} / ${l.unitCode}` } : { title: 'Listing not found' };
+/** Public review aggregates degrade to null — a flaky/optional reviews service never breaks the product page. */
+async function safeSummary(tenantSlug: string, q: { listingId?: string; targetUserId?: string }): Promise<ReviewSummary | null> {
+  try { return await publicClient(tenantSlug).reviews.summary(q); } catch { return null; }
 }
 
-export default async function ListingDetail({ params }: { params: { tenantSlug: string; id: string } }) {
+export async function generateMetadata({ params }: { params: { tenantSlug: string; id: string } }): Promise<Metadata> {
+  const l = await load(params.tenantSlug, params.id);
+  const t = getTranslator();
+  if (!l) return { title: t.t('common.notFoundTitle'), robots: { index: false } };
+  const desc = `${l.title} — ${formatMoneyMinor(l.priceMinor, l.currencyCode)} / ${l.unitCode}`;
+  const canonical = `/${params.tenantSlug}/listings/${params.id}`;
+  return {
+    title: l.title,
+    description: desc,
+    alternates: { canonical },
+    openGraph: { title: l.title, description: desc, type: 'website', url: canonical },
+    twitter: { card: 'summary', title: l.title, description: desc },
+  };
+}
+
+function Stars({ summary, label, none }: { summary: ReviewSummary | null; label: string; none: string }) {
+  if (!summary || summary.count <= 0) return <p className="kv-rating kv-rating--none">{none}</p>;
+  const avg = Math.round(summary.averageStars * 10) / 10;
+  const full = Math.round(avg);
+  return (
+    <p className="kv-rating">
+      <span aria-hidden="true" className="kv-rating__stars">{'★'.repeat(full)}{'☆'.repeat(Math.max(0, 5 - full))}</span>
+      <span>{label}</span>
+    </p>
+  );
+}
+
+export default async function ListingDetail(
+  { params, searchParams }: { params: { tenantSlug: string; id: string }; searchParams: { status?: string } },
+) {
   const l = await load(params.tenantSlug, params.id);
   if (!l) notFound();
+  const t = getTranslator();
+  const lang = getLang();
+
+  const [listingReviews, sellerReviews] = await Promise.all([
+    safeSummary(params.tenantSlug, { listingId: l.id }),
+    safeSummary(params.tenantSlug, { targetUserId: l.sellerUserId }),
+  ]);
+
+  const status = searchParams.status;
+  const notice =
+    status === 'added' ? { kind: 'ok', msg: t.t('listing.statusAdded'), cta: true } :
+    status === 'offer_sent' ? { kind: 'ok', msg: t.t('listing.statusOfferSent'), cta: false } :
+    status === 'err' ? { kind: 'err', msg: t.t('listing.statusError'), cta: false } : null;
+
   return (
-    <article>
+    <article className="kv-detail">
+      {notice && (
+        <p className={notice.kind === 'ok' ? 'kv-form__notice' : 'kv-form__error'} role="status">
+          {notice.msg}{notice.cta && <> <Link href="/cart" className="kv-link">{t.t('listing.viewCart')}</Link></>}
+        </p>
+      )}
+
       <h1>{l.title}</h1>
-      <p className="kv-card__price" style={{ fontSize: 22 }}>{formatMoneyMinor(l.priceMinor, l.currencyCode)} <span className="kv-card__unit">/ {l.unitCode}</span></p>
-      <ul style={{ color: 'var(--kv-neutral-600)' }}>
-        <li>{l.quantityAvailable} {l.unitCode} available</li>
-        <li>Sale type: {l.saleType}</li>
-        {l.organicClaim && <li><span className="kv-badge kv-badge--organic">Organic</span></li>}
+      <p className="kv-card__price kv-detail__price">
+        {formatMoneyMinor(l.priceMinor, l.currencyCode, lang)} <span className="kv-card__unit">/ {l.unitCode}</span>
+      </p>
+
+      <ul className="kv-detail__facts">
+        <li>{l.quantityAvailable} {l.unitCode} {t.t('card.available')}</li>
+        <li>{t.t('discover.saleType')}: {t.t(`discover.saleType.${l.saleType}`)}</li>
+        {l.organicClaim && <li><span className="kv-badge kv-badge--organic">{t.t('card.organic')}</span></li>}
       </ul>
+
+      <BuyerActions listing={l} tenantSlug={params.tenantSlug} />
+
+      <section className="kv-detail__section" aria-labelledby="seller-h">
+        <h2 id="seller-h">{t.t('listing.sellerTitle')}</h2>
+        <Stars
+          summary={sellerReviews}
+          label={sellerReviews && sellerReviews.count > 0 ? t.t('listing.sellerRating', { avg: String(Math.round(sellerReviews.averageStars * 10) / 10), count: String(sellerReviews.count) }) : ''}
+          none={t.t('listing.sellerNoRatings')}
+        />
+      </section>
+
+      <section className="kv-detail__section" aria-labelledby="reviews-h">
+        <h2 id="reviews-h">{t.t('listing.reviewsTitle')}</h2>
+        <Stars
+          summary={listingReviews}
+          label={listingReviews && listingReviews.count > 0 ? t.t('listing.reviewsSummary', { avg: String(Math.round(listingReviews.averageStars * 10) / 10), count: String(listingReviews.count) }) : ''}
+          none={t.t('listing.reviewsNone')}
+        />
+      </section>
+
+      <section className="kv-detail__section" aria-labelledby="trace-h">
+        <h2 id="trace-h">{t.t('listing.traceTitle')}</h2>
+        <p className="kv-detail__muted">{t.t('listing.traceNote')}</p>
+        <Link href="/help" className="kv-link">{t.t('listing.traceLink')}</Link>
+      </section>
     </article>
   );
 }

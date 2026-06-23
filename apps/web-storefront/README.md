@@ -44,6 +44,23 @@ expose. `listings.browse` accepts `categoryId`/`regionId`, so those are honoured
 (deep links filter correctly) — but the storefront will not render fabricated category/region names. A named UI
 is unblocked once the SDK adds e.g. `catalogue.categories()` / `geo.regions()`.
 
+## Listing detail
+
+`/[tenantSlug]/listings/[id]` (SSR + ISR, `notFound()` on miss) is enriched with a price/quantity block, the
+localized sale type, a **seller trust card** and **listing reviews summary** (both via the public
+`reviews.summary` aggregate — they degrade silently if unavailable), buyer CTAs, a farm-to-fork note, and rich
+**OpenGraph / Twitter / canonical** metadata. `BuyerActions` picks the CTA by sale type: purchasable listings
+get an **add-to-cart** form (`cart.addItem`) and offer-capable listings a **make-an-offer** form (`offers.make`,
+Idempotency-Keyed). Both are authed Server Actions — `requireSession` redirects anonymous users to login with a
+return path, the mutation runs through `serverClient(tenantSlug)`, qty/price are validated server-side, and the
+page shows a localized `?status=` notice (works without client JS).
+
+**Not built (read-model has no field — flagged, not faked):** the `ListingCard` read-model carries no media ids,
+no trace `qrToken`, and no `auctionId`, so a **media gallery**, a direct **`/trace/[qrToken]` provenance
+deep-link** (we link to the `/help` traceability explainer instead), and a **place-bid-from-listing** CTA can't
+be built without inventing data. These unblock once the SDK listing read-model exposes media / trace-token /
+auction-link fields. Auction and service listings show a localized "opens in the app" note instead of a button.
+
 ## Authentication
 
 Phone-OTP sign-in at `/login`. A single `loginAction` Server Action (`app/login/actions.ts`, two steps —

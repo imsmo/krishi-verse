@@ -1,0 +1,67 @@
+'use server';
+// apps/web-storefront/src/app/[tenantSlug]/listings/[id]/actions.ts · the buyer mutations on a listing detail
+// page — add-to-cart and make-an-offer. Both are AUTHENTICATED: they call requireSession (anonymous visitors are
+// bounced to /login with a return path back to this listing, so no private write happens unauthenticated), then
+// invoke the authed serverClient scoped to the tenant slug. The session token never leaves the server. offers.make
+// carries an Idempotency-Key (Law 3) so a double-submit can't post two offers; cart.addItem is naturally
+// idempotent server-side (it merges quantity) and the SDK exposes no key for it. Money is parsed major→minor as
+// an INTEGER STRING (Law 2) via the shared pure helper — never a float. On completion we redirect back to the
+// listing with a ?status= flag the page renders as a localized notice (works with no client JS).
+import { randomUUID } from 'crypto';
+import { redirect } from 'next/navigation';
+import { serverClient } from '../../../../lib/api-client';
+import { requireSession } from '../../../../lib/session';
+import { parseMajorToMinor } from '../../../../features/discovery/query';
+
+function listingPath(tenantSlug: string, id: string): string {
+  return `/${encodeURIComponent(tenantSlug)}/listings/${encodeURIComponent(id)}`;
+}
+
+/** Parse a positive integer quantity within [1, available]; null if invalid. */
+function parseQty(raw: string, available: number): number | null {
+  if (!/^\d{1,7}$/.test(raw)) return null;
+  const n = Number(raw);
+  return n >= 1 && n <= available ? n : null;
+}
+
+/** Add the listing to the buyer's cart, then return to the listing with a status notice. */
+export async function addToCartAction(formData: FormData): Promise<void> {
+  const tenantSlug = String(formData.get('tenantSlug') ?? '');
+  const listingId = String(formData.get('listingId') ?? '');
+  const available = Number(formData.get('available') ?? '0');
+  const path = listingPath(tenantSlug, listingId);
+  const qty = parseQty(String(formData.get('quantity') ?? ''), Number.isFinite(available) ? available : 0);
+  if (!tenantSlug || !listingId || qty === null) redirect(`${path}?status=err`);
+
+  await requireSession(path);
+  try {
+    await serverClient(tenantSlug).cart.addItem(listingId, qty as number);
+  } catch {
+    redirect(`${path}?status=err`); // out of stock / price race / transient — never auto-retry a mutation
+  }
+  redirect(`${path}?status=added`);
+}
+
+/** Make a price offer on the listing (per-unit price + quantity), then return with a status notice. */
+export async function makeOfferAction(formData: FormData): Promise<void> {
+  const tenantSlug = String(formData.get('tenantSlug') ?? '');
+  const listingId = String(formData.get('listingId') ?? '');
+  const available = Number(formData.get('available') ?? '0');
+  const path = listingPath(tenantSlug, listingId);
+  const qty = parseQty(String(formData.get('quantity') ?? ''), Number.isFinite(available) ? available : 0);
+  const offeredPriceMinor = parseMajorToMinor(String(formData.get('offerPrice') ?? ''));
+  if (!tenantSlug || !listingId || qty === null || !offeredPriceMinor || offeredPriceMinor === '0') {
+    redirect(`${path}?status=err`);
+  }
+
+  await requireSession(path);
+  try {
+    await serverClient(tenantSlug).offers.make(
+      { listingId, quantity: String(qty), offeredPriceMinor: offeredPriceMinor as string },
+      randomUUID(),
+    );
+  } catch {
+    redirect(`${path}?status=err`);
+  }
+  redirect(`${path}?status=offer_sent`);
+}
