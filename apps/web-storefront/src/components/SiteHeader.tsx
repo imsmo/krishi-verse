@@ -35,6 +35,7 @@ export async function SiteHeader() {
           <LocaleSwitcher active={lang} label={t.t('lang.label')} />
           {signedIn && <Link href="/offers" className="kv-header__link">{t.t('nav.offers')}</Link>}
           {signedIn && <Link href="/messages" className="kv-header__link">{t.t('nav.messages')}</Link>}
+          {signedIn && <Link href="/notifications" className="kv-header__link">{t.t('nav.notifications')}</Link>}
           <Link href="/cart" className="kv-header__cart" aria-label={t.t('nav.cart')}>
             {t.t('nav.cart')}{cartCount > 0 && <span className="kv-header__badge" aria-hidden="true">{cartCount}</span>}
           </Link>

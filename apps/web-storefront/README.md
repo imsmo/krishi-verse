@@ -152,6 +152,16 @@ of bid-and-watch can't be built without inventing an endpoint (the server-side w
 exposed in the SDK) — deferred until `auctions.watch` exists. The `Auction` read-model also carries no EMD amount,
 so EMD is surfaced as a behaviour note rather than a figure.
 
+## Notifications
+
+`/notifications` (protected, dynamic) is the caller's own in-app inbox (`notifications.inbox`, keyset, RLS-scoped)
+with an unread-only filter; each row shows the server-rendered payload title/body and an optional **same-origin**
+deep link, with a per-item mark-read Server Action (`notifications.markRead`, idempotent). `/notifications/preferences`
+manages the event×channel **preference matrix** (a no-JS form posting the complete matrix to `setPreferences`;
+mandatory events the server won't disable surface a generic error) and **quiet hours** (`get`/`setQuietHours`,
+native time inputs + IANA timezone, defaulting to `Asia/Kolkata` when unset). The header shows a Notifications
+link when signed in. All writes are authed Server Actions; the PUTs are idempotent by nature so no key is sent.
+
 ## Authentication
 
 Phone-OTP sign-in at `/login`. A single `loginAction` Server Action (`app/login/actions.ts`, two steps —
