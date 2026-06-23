@@ -11,6 +11,22 @@ Router), server-rendered, built on the shared `@krishi-verse/sdk-js` + `@krishi-
 - `/[tenantSlug]/listings/[id]` — listing detail; `notFound()` on a missing listing.
 - `/trace/[qrToken]` — **public** farm-to-fork provenance: anonymous `traceability.scan` (the API's NON-PII
   SECURITY-DEFINER projection), SEO-indexed, 404 on unknown/disabled token.
+- `/about`, `/blog`, `/help`, `/pricing`, `/press`, `/tenants-signup` — marketing/static surface. Static
+  localized copy (the SDK exposes no `cms` resource), each with `generateMetadata`; `/blog` renders an empty
+  state until a content source exists; `/tenants-signup` CTA links to the seller console (`env.tenantAppUrl`)
+  or falls back to `/login`.
+
+## App shell
+
+A shared **header** (brand, primary nav, locale switcher, cart badge, login link) + **footer** wrap every page
+from `app/layout.tsx`, which sets `<html lang/dir>` from the active locale and renders a skip-to-content link.
+**i18n** is server-side: `lib/i18n.ts` resolves the locale (`kv_lang` cookie → `Accept-Language` → default) and
+builds an `@krishi-verse/i18n` Translator over the `en`/`hi`/`gu` catalogs (full key parity; **no inline copy**
+in components/pages). Locale switching works **without client JS** — a `<form>` posts to `/api/lang`, which
+validates fail-closed against the supported set and 303-redirects back (same-origin guard, no open redirect).
+Segment `loading.tsx`/`error.tsx`/`not-found.tsx` boundaries are localized; `error.tsx` is the one client
+component, reading the cookie to localize. A shared accessible `components/DataTable.tsx` (caption, empty state,
+keyset "next" — never OFFSET) is ready for the authed lists in later waves.
 
 ## Security / correctness
 
