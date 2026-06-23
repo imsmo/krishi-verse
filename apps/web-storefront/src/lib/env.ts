@@ -13,5 +13,8 @@ export const env = {
   /** Origin of the seller/tenant console (web-tenant); the "Sell on Krishi-Verse" CTA links here. An origin,
    *  not a secret — safe to expose. Null when unset → the CTA falls back to in-app sign-in. */
   tenantAppUrl: process.env.NEXT_PUBLIC_TENANT_APP_URL || null,
+  /** Razorpay PUBLISHABLE key id (rzp_*) — public by design (it's shown in the browser checkout). Null when
+   *  unset → the pay step fails closed with a friendly "online payments unavailable" message (never a fake pay). */
+  razorpayKeyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || null,
   appName: 'Krishi-Verse',
 } as const;

@@ -1,0 +1,39 @@
+'use server';
+// apps/web-storefront/src/app/checkout/actions.ts · place-order. AUTHENTICATED: requireSession bounces anonymous
+// callers to /login?next=/checkout before any write. checkout.checkout converts the buyer's cart into one order
+// per seller under ONE Idempotency-Key (Law 3): the key is generated server-side when the /checkout form renders
+// and submitted as a hidden field, so a refresh / double-submit of the SAME review carries the SAME key and the
+// API dedupes — never a double order. The discount/charges/tax are computed SERVER-SIDE and read back on the
+// order (the client never computes money). On success we redirect to the pay step for the primary order.
+import { redirect } from 'next/navigation';
+import { serverClient } from '../../lib/api-client';
+import { requireSession } from '../../lib/session';
+
+function isUuidish(v: string): boolean {
+  return /^[0-9a-fA-F-]{8,64}$/.test(v);
+}
+
+export async function placeOrderAction(formData: FormData): Promise<void> {
+  await requireSession('/checkout');
+
+  const idempotencyKey = String(formData.get('idempotencyKey') ?? '');
+  if (!idempotencyKey) redirect('/checkout?status=err');
+
+  const addrRaw = String(formData.get('deliveryAddressId') ?? '');
+  const couponRaw = String(formData.get('couponCode') ?? '').trim();
+  const deliveryAddressId = isUuidish(addrRaw) ? addrRaw : undefined;
+  const couponCode = couponRaw ? couponRaw.slice(0, 40) : undefined;
+
+  let primaryOrderId: string | null = null;
+  try {
+    const result = await serverClient().checkout.checkout({ deliveryAddressId, couponCode }, idempotencyKey);
+    primaryOrderId = result.orders[0]?.id ?? null;
+  } catch {
+    // Invalid coupon / empty cart / stock race / transient — never auto-retry a money mutation; send the buyer
+    // back to the cart-reviewed checkout with a generic, non-leaky error.
+    redirect('/checkout?status=err');
+  }
+
+  if (!primaryOrderId) redirect('/checkout?status=err'); // nothing was created
+  redirect(`/checkout/pay?o=${encodeURIComponent(primaryOrderId)}`);
+}

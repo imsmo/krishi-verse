@@ -73,6 +73,26 @@ gates checkout until unavailable lines are removed. The header shows a live cart
 `features/cart/summary.getCartItemCount()` (anonymous or on failure → 0, no network for anonymous visitors).
 The checkout CTA points to `/checkout` (built in SF-W3-02; degrades to the localized 404 until then).
 
+## Checkout & payment
+
+`/checkout` (protected, dynamic) reviews the cart, lets the buyer pick a saved address and enter an optional
+coupon, then `placeOrderAction` calls `checkout.checkout` under a **stable per-render Idempotency-Key** (hidden
+field) so a refresh/double-submit can't double-create orders. It redirects to `/checkout/pay`, where `PayButton`
+(the only client component in the money path) runs the real Razorpay flow: a server action creates the payment
+intent from the order's **authoritative** total (`payments.createIntent`, purpose `direct_order`, referencing the
+order) under a **stable `order-pay:<orderId>` key** so re-clicks reuse the same gateway order — never a
+double-charge — then opens Razorpay with the **publishable** key (`NEXT_PUBLIC_RAZORPAY_KEY_ID`; the session token
+never reaches the browser), and polls `payments.get` for the authoritative status (capture is verified by the
+signed server webhook, not the client). `/checkout/confirm` shows the server-computed
+subtotal/delivery/discount/tax/total breakdown and line items. Money is minor-unit strings end-to-end via
+`formatMoneyMinor`. **Fail-closed:** no publishable key → "online payments unavailable"; a failed or cancelled
+payment offers retry (never auto-retried); a pending capture shows "we'll confirm shortly".
+
+**Not available in the SDK (flagged):** there is no coupon **discount-preview** endpoint and no **delivery-methods**
+lookup, so the discount/charges/tax are computed at order placement and shown on the confirmation (the checkout
+page states this), and `deliveryMethodId` is omitted. Multi-seller checkout creates one order per seller; the pay
+step settles the primary order and confirmation links to "my orders" (SF-W3-03) for any others.
+
 ## Authentication
 
 Phone-OTP sign-in at `/login`. A single `loginAction` Server Action (`app/login/actions.ts`, two steps —
