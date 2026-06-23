@@ -242,4 +242,16 @@ export const en: Messages = {
   'order.status.completed': 'Completed',
   'order.status.cancelled': 'Cancelled',
   'order.status.disputed': 'Disputed',
+
+  'review.title': 'Write a review',
+  'review.writeCta': 'Write a review',
+  'review.notYet': 'You can review this order once it’s completed.',
+  'review.rule': 'You can leave one review per order. Your rating helps other buyers and the seller.',
+  'review.error': 'We couldn’t save your review. You may have already reviewed this order — please check your orders.',
+  'review.ratingLabel': 'Your rating',
+  'review.starsN': '{n} stars',
+  'review.commentLabel': 'Comment (optional)',
+  'review.commentPlaceholder': 'Share what other buyers should know…',
+  'review.submit': 'Submit review',
+  'review.thanks': 'Thanks! Your review has been submitted.',
 };

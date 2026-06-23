@@ -241,4 +241,16 @@ export const hi: Messages = {
   'order.status.completed': 'पूर्ण',
   'order.status.cancelled': 'रद्द',
   'order.status.disputed': 'विवादित',
+
+  'review.title': 'समीक्षा लिखें',
+  'review.writeCta': 'समीक्षा लिखें',
+  'review.notYet': 'ऑर्डर पूरा होने के बाद आप इसकी समीक्षा कर सकते हैं।',
+  'review.rule': 'आप प्रति ऑर्डर एक समीक्षा दे सकते हैं। आपकी रेटिंग अन्य खरीदारों और विक्रेता की मदद करती है।',
+  'review.error': 'हम आपकी समीक्षा सहेज नहीं सके। हो सकता है आपने इस ऑर्डर की समीक्षा पहले ही कर दी हो — कृपया अपने ऑर्डर देखें।',
+  'review.ratingLabel': 'आपकी रेटिंग',
+  'review.starsN': '{n} सितारे',
+  'review.commentLabel': 'टिप्पणी (वैकल्पिक)',
+  'review.commentPlaceholder': 'अन्य खरीदारों को क्या जानना चाहिए, साझा करें…',
+  'review.submit': 'समीक्षा सबमिट करें',
+  'review.thanks': 'धन्यवाद! आपकी समीक्षा सबमिट हो गई है।',
 };

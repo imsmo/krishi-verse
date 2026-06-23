@@ -240,4 +240,16 @@ export const gu: Messages = {
   'order.status.completed': 'પૂર્ણ',
   'order.status.cancelled': 'રદ',
   'order.status.disputed': 'વિવાદિત',
+
+  'review.title': 'સમીક્ષા લખો',
+  'review.writeCta': 'સમીક્ષા લખો',
+  'review.notYet': 'ઓર્ડર પૂર્ણ થયા પછી તમે તેની સમીક્ષા કરી શકો છો.',
+  'review.rule': 'તમે પ્રતિ ઓર્ડર એક સમીક્ષા આપી શકો છો. તમારી રેટિંગ અન્ય ખરીદદારો અને વેચનારને મદદ કરે છે.',
+  'review.error': 'અમે તમારી સમીક્ષા સાચવી શક્યા નહીં. કદાચ તમે આ ઓર્ડરની સમીક્ષા પહેલેથી કરી હોય — કૃપા કરી તમારા ઓર્ડર જુઓ.',
+  'review.ratingLabel': 'તમારી રેટિંગ',
+  'review.starsN': '{n} તારા',
+  'review.commentLabel': 'ટિપ્પણી (વૈકલ્પિક)',
+  'review.commentPlaceholder': 'અન્ય ખરીદદારોએ શું જાણવું જોઈએ તે શેર કરો…',
+  'review.submit': 'સમીક્ષા સબમિટ કરો',
+  'review.thanks': 'આભાર! તમારી સમીક્ષા સબમિટ થઈ ગઈ છે.',
 };

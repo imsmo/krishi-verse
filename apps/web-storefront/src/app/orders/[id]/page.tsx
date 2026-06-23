@@ -16,13 +16,14 @@ import { serverClient } from '../../../lib/api-client';
 import { requireSession } from '../../../lib/session';
 import { getTranslator, getLang } from '../../../lib/i18n';
 import { OrderTimeline } from '../../../components/OrderTimeline';
+import { orderTimeline, ORDER_STEPS } from '../../../features/orders/timeline';
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const t = getTranslator();
   return { title: t.t('order.detailTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function OrderDetailPage({ params }: { params: { id: string } }) {
+export default async function OrderDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { status?: string } }) {
   await requireSession(`/orders/${encodeURIComponent(params.id)}`);
   const t = getTranslator();
   const lang = getLang();
@@ -42,10 +43,13 @@ export default async function OrderDetailPage({ params }: { params: { id: string
 
   const cur = order.currencyCode;
   const ts = (v?: string | null) => (v ? formatDate(v, lang) : null);
+  const isComplete = orderTimeline(order.status).currentIndex === ORDER_STEPS.length - 1;
 
   return (
     <section className="kv-order">
       <h1>{t.t('order.orderNo', { no: order.orderNo })}</h1>
+
+      {searchParams.status === 'reviewed' && <p className="kv-form__notice" role="status">{t.t('review.thanks')}</p>}
 
       <OrderTimeline status={order.status} />
 
@@ -88,7 +92,10 @@ export default async function OrderDetailPage({ params }: { params: { id: string
         )}
       </section>
 
-      <p><Link href="/orders" className="kv-btn--link">{t.t('order.backToList')}</Link></p>
+      <div className="kv-cart__actions">
+        {isComplete && <Link href={`/orders/${encodeURIComponent(order.id)}/review`} className="kv-btn">{t.t('review.writeCta')}</Link>}
+        <Link href="/orders" className="kv-btn--link">{t.t('order.backToList')}</Link>
+      </div>
     </section>
   );
 }

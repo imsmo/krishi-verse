@@ -187,3 +187,15 @@ a { color: inherit; text-decoration: none; }
 .kv-timeline__terminal { padding: 10px 12px; border-radius: var(--kv-radius); margin: var(--kv-space) 0; font-weight: 600; }
 .kv-timeline__terminal--cancelled { background: #fdecea; color: #b71c1c; }
 .kv-timeline__terminal--disputed { background: #fff8e1; color: #8d6e00; }
+
+/* ---- review / star rating ---- */
+.kv-review { max-width: 560px; }
+.kv-stars { border: none; padding: 0; margin: 0; }
+/* radios are rendered 5→1; default grey, and the checked star + all following siblings (= lower numbers) fill */
+.kv-stars__row { display: inline-flex; flex-direction: row-reverse; gap: 4px; }
+.kv-stars__star { cursor: pointer; font-size: 30px; line-height: 1; color: var(--kv-neutral-600); }
+.kv-stars__star input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.kv-stars__star span[aria-hidden] { transition: color .1s; }
+.kv-stars__star:hover span[aria-hidden], .kv-stars__star:hover ~ .kv-stars__star span[aria-hidden] { color: #f9a825; }
+.kv-stars__star:has(input:checked) span[aria-hidden], .kv-stars__star:has(input:checked) ~ .kv-stars__star span[aria-hidden] { color: #f9a825; }
+.kv-stars__star:has(input:focus-visible) span[aria-hidden] { outline: 2px solid var(--kv-brand-500); outline-offset: 2px; border-radius: 4px; }

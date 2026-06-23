@@ -106,6 +106,19 @@ timestamps, OTP note — degrades to "no shipment yet" when the logistics flag i
 **Not available in the SDK (flagged):** there is no invoice resource or download method (no `payments.invoices`,
 no `orders.invoice`), so invoice download is deferred until the SDK exposes one.
 
+## Reviews
+
+`/orders/[id]/review` (protected, `notFound` on a foreign id) lets a buyer leave a verified-purchase review once
+the order is complete (gated by the pure `orderTimeline`). It's an accessible no-JS star radio-group (1–5) plus an
+optional comment, posting to `submitReviewAction` (`reviews.create`, `randomUUID` Idempotency-Key); the target and
+verified-purchase eligibility are resolved server-side (the client never names a target). The **one-review-per-order**
+rule is stated in the form; since the SDK has no per-order review lookup we can't pre-check it, so a duplicate is
+rejected server-side and surfaced. The order detail page shows a "Write a review" CTA when complete.
+
+**Not available in the SDK (flagged):** `reviews` exposes only `create` and an aggregate `summary`
+(averageStars/count) — no method to fetch individual reviews or a **seller response**, so showing seller responses
+on the listing is deferred (the listing already renders the aggregate summary, SF-W2-02).
+
 ## Authentication
 
 Phone-OTP sign-in at `/login`. A single `loginAction` Server Action (`app/login/actions.ts`, two steps —
