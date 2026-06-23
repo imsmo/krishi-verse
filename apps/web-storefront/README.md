@@ -28,6 +28,20 @@ Segment `loading.tsx`/`error.tsx`/`not-found.tsx` boundaries are localized; `err
 component, reading the cookie to localize. A shared accessible `components/DataTable.tsx` (caption, empty state,
 keyset "next" — never OFFSET) is ready for the authed lists in later waves.
 
+## Authentication
+
+Phone-OTP sign-in at `/login`. A single `loginAction` Server Action (`app/login/actions.ts`, two steps —
+request code, then verify — chosen by the form's `intent`) calls the SDK `auth` resource via the anonymous
+`publicClient()`; on a successful verify the returned tokens are written into two httpOnly+Secure+SameSite
+cookies — `kv_session` (access, lifetime = the token's `expiresInSec`) and `kv_refresh` (refresh, 30-day cap)
+— and the browser is redirected to a validated same-origin `next`. The browser never sees a raw token. The
+flow is enumeration-safe (requesting a code always shows the same neutral notice), carries a `randomUUID`
+Idempotency-Key on every call, shows one generic verify error, and never renders the OTP. Logout (`logoutAction`)
+clears both cookies. `lib/session.ts` provides silent refresh (`refreshSession()` mints a new access token from
+the refresh cookie server-side when the access cookie has expired) and `requireSession(returnTo)`, the gate for
+protected routes (account/cart/checkout/orders in later waves) that redirects anonymous users to
+`/login?next=…`. The header shows a sign-out button when a session cookie is present, a sign-in link otherwise.
+
 ## Security / correctness
 
 - **No secrets in the bundle.** Only `NEXT_PUBLIC_*` (the API origin) reaches the browser; the server-only API

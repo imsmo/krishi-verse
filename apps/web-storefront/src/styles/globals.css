@@ -85,3 +85,17 @@ a { color: inherit; text-decoration: none; }
 .kv-empty-state { text-align: center; padding: 48px var(--kv-space); }
 .kv-empty-state h1 { margin-bottom: 8px; }
 .kv-empty-state p { color: var(--kv-neutral-600); margin-bottom: var(--kv-space); }
+
+/* ---- auth / login ---- */
+.kv-auth { max-width: 26rem; margin: 0 auto; }
+.kv-form { display: flex; flex-direction: column; gap: var(--kv-space); margin-top: var(--kv-space); }
+.kv-field { display: flex; flex-direction: column; gap: 6px; }
+.kv-field__label { font-weight: 600; }
+.kv-field__input { font: inherit; padding: 10px 12px; min-height: 44px; border: 1px solid var(--kv-neutral-600); border-radius: var(--kv-radius); background: var(--kv-neutral-0); }
+.kv-field__input:focus { outline: 2px solid var(--kv-brand-500); outline-offset: 1px; border-color: var(--kv-brand-500); }
+.kv-field__hint { color: var(--kv-neutral-600); font-size: 13px; margin: 0; }
+.kv-form__notice { background: #dcedc8; color: var(--kv-success); padding: 10px 12px; border-radius: var(--kv-radius); margin: 0; }
+.kv-form__error { background: #fdecea; color: #b71c1c; padding: 10px 12px; border-radius: var(--kv-radius); margin: 0; }
+.kv-btn--link { background: none; border: none; color: var(--kv-brand-700); font: inherit; font-weight: 600; padding: 8px 0; min-height: 44px; cursor: pointer; text-align: left; }
+.kv-btn--link:hover { text-decoration: underline; }
+.kv-btn:disabled, .kv-btn--link:disabled { opacity: .6; cursor: progress; }
