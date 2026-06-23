@@ -1,35 +1,71 @@
-// apps/web-storefront/src/app/[tenantSlug]/page.tsx · a tenant's public storefront. The SDK is configured with
-// the tenant slug (sent as X-Tenant-Slug) so the API scopes the listing browse to that tenant. SSR + ISR.
+// apps/web-storefront/src/app/[tenantSlug]/page.tsx · a tenant's public storefront with full discovery. The SDK
+// is configured with the tenant slug (sent as X-Tenant-Slug) so the API + RLS scope the browse to that tenant;
+// the slug only SELECTS which public catalogue to show — it is never trusted as an authorization claim. All
+// facets live in the URL searchParams (shareable, bookmarkable), parsed through the pure features/discovery
+// helpers into a typed SDK query. SSR + ISR. Degrades to an empty state if the API is unavailable (Law 12).
 import type { Metadata } from 'next';
 import type { ListingCard as ListingCardData } from '@krishi-verse/sdk-js';
 import { publicClient } from '../../lib/api-client';
+import { getTranslator, getLang } from '../../lib/i18n';
 import { ListingCard } from '../../components/ListingCard';
+import { SearchFilters } from '../../components/SearchFilters';
+import { toListingQuery, loadMoreHref, hasActiveFilters, type RawSearchParams } from '../../features/discovery/query';
 
 export const revalidate = 60;
+
 export async function generateMetadata({ params }: { params: { tenantSlug: string } }): Promise<Metadata> {
-  return { title: `${params.tenantSlug} storefront`, description: `Browse produce from ${params.tenantSlug} on Krishi-Verse.` };
+  const t = getTranslator();
+  const title = t.t('storefront.title', { tenant: params.tenantSlug });
+  return { title, description: t.t('storefront.metaDescription', { tenant: params.tenantSlug }) };
 }
 
-export default async function TenantStorefront({ params, searchParams }: { params: { tenantSlug: string }; searchParams: { q?: string; cursor?: string } }) {
-  let items: ListingCardData[] = []; let nextCursor: string | null = null;
+export default async function TenantStorefront(
+  { params, searchParams }: { params: { tenantSlug: string }; searchParams: RawSearchParams },
+) {
+  const t = getTranslator();
+  const lang = getLang();
+  const basePath = `/${params.tenantSlug}`;
+  const query = toListingQuery(searchParams);
+
+  let items: ListingCardData[] = [];
+  let nextCursor: string | null = null;
+  let total: number | null = null;
   try {
-    const page = await publicClient(params.tenantSlug).listings.browse({ q: searchParams.q, cursor: searchParams.cursor, limit: 24 });
-    items = page.items; nextCursor = page.nextCursor;
-  } catch { items = []; }
+    const page = await publicClient(params.tenantSlug).listings.browse(query);
+    items = page.items;
+    nextCursor = page.nextCursor;
+    total = page.total ?? null;
+  } catch {
+    items = []; // API/search down → empty state, never a 500 (Law 12)
+  }
+
+  const cardLabels = { organic: t.t('card.organic'), available: t.t('card.available') };
 
   return (
     <section>
       <h1 style={{ textTransform: 'capitalize' }}>{params.tenantSlug}</h1>
-      <form method="get" style={{ margin: '12px 0' }}>
-        <input name="q" defaultValue={searchParams.q ?? ''} placeholder="Search produce…" aria-label="Search produce"
-          style={{ padding: 10, minHeight: 44, width: 'min(420px, 100%)', borderRadius: 8, border: '1px solid var(--kv-neutral-100)' }} />
-      </form>
-      {items.length === 0
-        ? <p>No listings match. Try a different search.</p>
-        : <div className="kv-grid">{items.map((l) => <ListingCard key={l.id} listing={l} tenantSlug={params.tenantSlug} />)}</div>}
+
+      <SearchFilters basePath={basePath} sp={searchParams} />
+
+      {typeof total === 'number' && items.length > 0 && (
+        <p className="kv-results-count" aria-live="polite">{t.t('discover.resultsCount', { count: String(total) })}</p>
+      )}
+
+      {items.length === 0 ? (
+        <div className="kv-empty">
+          <p>{hasActiveFilters(searchParams) ? t.t('discover.resultsNone') : t.t('storefront.empty')}</p>
+          {hasActiveFilters(searchParams) && <a href={basePath} className="kv-btn--link">{t.t('discover.clear')}</a>}
+        </div>
+      ) : (
+        <div className="kv-grid">
+          {items.map((l) => <ListingCard key={l.id} listing={l} tenantSlug={params.tenantSlug} lang={lang} labels={cardLabels} />)}
+        </div>
+      )}
+
       {nextCursor && (
-        <p style={{ marginTop: 16 }}>
-          <a href={`/${params.tenantSlug}?${new URLSearchParams({ ...(searchParams.q ? { q: searchParams.q } : {}), cursor: nextCursor }).toString()}`}>Next page →</a>
+        <p className="kv-loadmore">
+          {/* SSR keyset pagination: a real link to the next page (works with no client JS); preserves all filters. */}
+          <a href={loadMoreHref(basePath, searchParams, nextCursor)} className="kv-btn" rel="next">{t.t('discover.nextPage')}</a>
         </p>
       )}
     </section>

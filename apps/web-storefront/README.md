@@ -28,6 +28,22 @@ Segment `loading.tsx`/`error.tsx`/`not-found.tsx` boundaries are localized; `err
 component, reading the cookie to localize. A shared accessible `components/DataTable.tsx` (caption, empty state,
 keyset "next" — never OFFSET) is ready for the authed lists in later waves.
 
+## Discovery (search & filters)
+
+The tenant storefront (`/[tenantSlug]`) is a faceted discovery surface driven entirely by URL searchParams, so
+every filtered view is a shareable, bookmarkable link and the browser back button just works. `SearchFilters` is
+a no-JS `<form method="get">`; `features/discovery/query.ts` (pure, framework-free) maps the searchParams to a
+typed `listings.browse` query and back. Facets: full-text `q`, **sale type**, **organic-only**, **price band**
+(major-unit input → minor-unit string via integer math — never a float, Law 2), and **sort**. Paging is keyset
+("show more" is a real next-page link that preserves all filters). Localized results-count, zero-result, and
+empty states; changing a filter restarts paging.
+
+**Not yet built (no SDK surface — flagged, not faked):** a *named* category-navigation tree, a region/pincode
+picker, and attribute facets need a categories / regions / attributes **lookup** resource that the SDK does not
+expose. `listings.browse` accepts `categoryId`/`regionId`, so those are honoured as transparent URL passthrough
+(deep links filter correctly) — but the storefront will not render fabricated category/region names. A named UI
+is unblocked once the SDK adds e.g. `catalogue.categories()` / `geo.regions()`.
+
 ## Authentication
 
 Phone-OTP sign-in at `/login`. A single `loginAction` Server Action (`app/login/actions.ts`, two steps —
