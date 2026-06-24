@@ -1,136 +1,114 @@
 // apps/web-partner/src/app/loan-queue/[id]/page.tsx · application detail + lender decision. Server-gated; the API
-// scopes the read to this partner (404 if not theirs). Decisions are Server Actions hitting the real endpoints:
-// review → under_review, approve (amount + cooling-off window), reject (note), disburse (Idempotency-Key, Law 3).
-// The API/state-machine is the authority — it rejects illegal transitions and re-enforces partner RBAC; this UI
-// only offers the actions valid for the current status. Money is bigint-minor: the approved-amount field takes
-// whole rupees and converts via BigInt (no float, Law 2).
-import { randomUUID } from 'node:crypto';
+// scopes the read to this partner (404 if not theirs → notFound). Decisions are Server Actions (./actions.ts)
+// hitting the real endpoints: review → under_review, approve (amount + cooling-off), reject (note), disburse
+// (Idempotency-Key, Law 3). The API/state-machine is the authority — it rejects illegal transitions and re-enforces
+// partner RBAC; this UI only offers the actions legal for the current status (pure lending gates). Money is
+// bigint-minor (formatMoneyMinor display; approve input → paise via BigInt in the action). All copy via i18n; no
+// inline styles; noindex.
+import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound, redirect } from 'next/navigation';
-import { revalidatePath } from 'next/cache';
-import { requirePartner } from '../../../lib/partner-auth';
+import { notFound } from 'next/navigation';
+import { requirePartner } from '../../../lib/session';
 import { partnerClient } from '../../../lib/api-client';
+import { getTranslator } from '../../../lib/i18n';
 import { formatMoneyMinor, formatDate } from '@krishi-verse/i18n';
 import { SdkError } from '@krishi-verse/sdk-js';
+import {
+  canReview, canApprove, canReject, canDisburse, isTerminal, statusKey, statusTone, isAppStatus,
+  type AppStatus, type AppDetail,
+} from '../../../features/lending/application';
+import { reviewAction, approveAction, rejectAction, disburseAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
 
-interface AppDetail {
-  id: string; applicantUserId: string; productId: string; partnerId: string;
-  amountRequestedMinor: string; amountApprovedMinor: string | null; purposeText: string | null;
-  status: string; nwrId: string | null; decisionAt: string | null; decisionNote: string | null;
-  coolingOffUntil: string | null; createdAt?: string;
+export function generateMetadata(): Metadata {
+  return { title: getTranslator().t('loan.detailTitle'), robots: { index: false, follow: false } };
 }
 
-async function review(formData: FormData) {
-  'use server';
-  const id = String(formData.get('id'));
-  try { await partnerClient().request('POST', `fintech/loan-applications/${id}/review`); }
-  catch (e) { redirect(`/loan-queue/${id}?error=${encodeURIComponent(e instanceof SdkError ? e.code : 'ACTION_FAILED')}`); }
-  revalidatePath(`/loan-queue/${id}`); redirect(`/loan-queue/${id}`);
-}
-async function approve(formData: FormData) {
-  'use server';
-  const id = String(formData.get('id'));
-  const rupees = String(formData.get('rupees') ?? '').trim();
-  const coolingOffHours = Number(formData.get('coolingOffHours') ?? 24);
-  if (!/^\d{1,13}$/.test(rupees)) redirect(`/loan-queue/${id}?error=BAD_AMOUNT`);
-  const amountApprovedMinor = (BigInt(rupees) * 100n).toString();   // ₹ → paise, no float
-  try { await partnerClient().request('POST', `fintech/loan-applications/${id}/approve`, { body: { amountApprovedMinor, coolingOffHours }, idempotencyKey: randomUUID() }); }
-  catch (e) { redirect(`/loan-queue/${id}?error=${encodeURIComponent(e instanceof SdkError ? e.code : 'ACTION_FAILED')}`); }
-  revalidatePath(`/loan-queue/${id}`); redirect(`/loan-queue/${id}`);
-}
-async function reject(formData: FormData) {
-  'use server';
-  const id = String(formData.get('id'));
-  const note = String(formData.get('note') ?? '').trim() || undefined;
-  try { await partnerClient().request('POST', `fintech/loan-applications/${id}/reject`, { body: { note } }); }
-  catch (e) { redirect(`/loan-queue/${id}?error=${encodeURIComponent(e instanceof SdkError ? e.code : 'ACTION_FAILED')}`); }
-  revalidatePath(`/loan-queue/${id}`); redirect(`/loan-queue/${id}`);
-}
-async function disburse(formData: FormData) {
-  'use server';
-  const id = String(formData.get('id'));
-  try { await partnerClient().request('POST', `fintech/loan-applications/${id}/disburse`, { idempotencyKey: randomUUID() }); }
-  catch (e) { redirect(`/loan-queue/${id}?error=${encodeURIComponent(e instanceof SdkError ? e.code : 'ACTION_FAILED')}`); }
-  revalidatePath(`/loan-queue/${id}`); redirect(`/loan-queue/${id}`);
-}
+const OK = new Set(['review', 'approve', 'reject', 'disburse']);
+const ERR = new Set(['badAmount', 'reason', 'illegal', 'forbidden', 'notFound', 'generic']);
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
-  return <div style={{ marginBottom: 8 }}><span style={{ color: 'var(--kv-neutral-600)', display: 'inline-block', minWidth: 180 }}>{label}</span><strong>{value}</strong></div>;
+  return <div className="kv-facts__row"><dt>{label}</dt><dd>{value}</dd></div>;
 }
 
-export default async function LoanApplicationPage({ params, searchParams }: { params: { id: string }; searchParams: { error?: string } }) {
-  requirePartner();
+export default async function LoanApplicationPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+  await requirePartner();
+  const t = getTranslator();
 
   let a: AppDetail | undefined;
   let notice: string | undefined;
   try {
-    const res = await partnerClient().request<AppDetail>('GET', `fintech/loan-applications/${params.id}`);
-    a = res.data;
+    a = (await partnerClient().request<AppDetail>('GET', `fintech/loan-applications/${params.id}`)).data;
   } catch (e) {
     if (e instanceof SdkError && e.status === 404) notFound();
-    notice = 'This application is temporarily unavailable.';
+    notice = t.t('dash.unavailable');
   }
 
   if (!a) {
-    return <section><p style={{ marginBottom: 16 }}><Link href="/loan-queue">← Loan queue</Link></p><p className="kv-error">{notice}</p></section>;
+    return <section><p className="kv-backlink"><Link href="/loan-queue">{t.t('loan.back')}</Link></p><p className="kv-error" role="alert">{notice}</p></section>;
   }
 
-  const canReview = a.status === 'submitted';
-  const canDecide = a.status === 'under_review';
-  const canDisburse = a.status === 'approved';
+  const status = (isAppStatus(a.status) ? a.status : 'draft') as AppStatus;
+  const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;
+  const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
 
   return (
     <section>
-      <p style={{ marginBottom: 16 }}><Link href="/loan-queue">← Loan queue</Link></p>
-      <h1>Application {a.id.slice(0, 8)}…</h1>
-      {searchParams.error && <p className="kv-error">Action could not be completed ({searchParams.error}).</p>}
+      <p className="kv-backlink"><Link href="/loan-queue">{t.t('loan.back')}</Link></p>
+      <h1>{t.t('loan.detailTitle')} {a.id.slice(0, 8)}…</h1>
+      <p><span className={`kv-status kv-status--${statusTone(a.status)}`}>{t.t(statusKey(a.status))}</span></p>
+      {okKey && <p className="kv-success" role="status">{t.t(`loan.ok.${okKey}`)}</p>}
+      {errKey && <p className="kv-error" role="alert">{t.t(`loan.err.${errKey}`)}</p>}
 
-      <div className="kv-card" style={{ marginTop: 16 }}>
-        <Field label="Status" value={a.status} />
-        <Field label="Requested" value={formatMoneyMinor(a.amountRequestedMinor, 'INR', 'en')} />
-        <Field label="Approved" value={a.amountApprovedMinor ? formatMoneyMinor(a.amountApprovedMinor, 'INR', 'en') : '—'} />
-        <Field label="Purpose" value={a.purposeText ?? '—'} />
-        <Field label="Collateral (NWR)" value={a.nwrId ?? '—'} />
-        <Field label="Applied" value={a.createdAt ? formatDate(a.createdAt, 'en') : '—'} />
-        {a.decisionAt && <Field label="Decided" value={formatDate(a.decisionAt, 'en')} />}
-        {a.coolingOffUntil && <Field label="Cooling-off until" value={formatDate(a.coolingOffUntil, 'en')} />}
-        {a.decisionNote && <Field label="Decision note" value={a.decisionNote} />}
-      </div>
+      <dl className="kv-facts">
+        <Field label={t.t('loan.requested')} value={formatMoneyMinor(a.amountRequestedMinor, 'INR', 'en')} />
+        <Field label={t.t('loan.approvedAmount')} value={a.amountApprovedMinor ? formatMoneyMinor(a.amountApprovedMinor, 'INR', 'en') : t.t('common.dash')} />
+        <Field label={t.t('loan.purpose')} value={a.purposeText ?? t.t('common.dash')} />
+        <Field label={t.t('loan.collateral')} value={a.nwrId ?? t.t('common.dash')} />
+        <Field label={t.t('loan.applied')} value={a.createdAt ? formatDate(a.createdAt, 'en') : t.t('common.dash')} />
+        {a.decisionAt && <Field label={t.t('loan.decided')} value={formatDate(a.decisionAt, 'en')} />}
+        {a.coolingOffUntil && <Field label={t.t('loan.coolingOff')} value={formatDate(a.coolingOffUntil, 'en')} />}
+        {a.decisionNote && <Field label={t.t('loan.decisionNote')} value={a.decisionNote} />}
+      </dl>
 
-      {canReview && (
-        <form action={review} style={{ marginTop: 24 }}>
+      {canReview(status) && (
+        <form action={reviewAction} className="kv-inline-form">
           <input type="hidden" name="id" value={a.id} />
-          <button className="kv-btn" type="submit">Begin review</button>
+          <button className="kv-btn" type="submit">{t.t('loan.beginReview')}</button>
         </form>
       )}
 
-      {canDecide && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginTop: 24 }}>
-          <form action={approve} className="kv-card">
-            <h2>Approve</h2>
+      {(canApprove(status) || canReject(status)) && (
+        <div className="kv-card-grid">
+          <form action={approveAction} className="kv-card kv-form">
+            <h2 className="kv-card__title">{t.t('loan.approveHeading')}</h2>
             <input type="hidden" name="id" value={a.id} />
-            <label>Approved amount (₹, whole rupees)<br /><input className="kv-input" name="rupees" inputMode="numeric" required /></label>
-            <label style={{ display: 'block', marginTop: 8 }}>Cooling-off window (hours)<br /><input className="kv-input" name="coolingOffHours" type="number" min={0} max={720} defaultValue={24} /></label>
-            <p><button className="kv-btn" type="submit">Approve application</button></p>
+            <label htmlFor="rupees" className="kv-field__label">{t.t('loan.approveAmount')}</label>
+            <input id="rupees" className="kv-input" name="rupees" inputMode="numeric" required />
+            <label htmlFor="coolingOffHours" className="kv-field__label">{t.t('loan.approveCooling')}</label>
+            <input id="coolingOffHours" className="kv-input" name="coolingOffHours" inputMode="numeric" defaultValue="24" />
+            <button className="kv-btn" type="submit">{t.t('loan.approveSubmit')}</button>
           </form>
-          <form action={reject} className="kv-card">
-            <h2>Reject</h2>
+          <form action={rejectAction} className="kv-card kv-form">
+            <h2 className="kv-card__title">{t.t('loan.rejectHeading')}</h2>
             <input type="hidden" name="id" value={a.id} />
-            <label>Reason (optional)<br /><textarea className="kv-input" name="note" rows={3} maxLength={500} /></label>
-            <p><button className="kv-btn" type="submit" style={{ background: 'var(--kv-danger)' }}>Reject application</button></p>
+            <label htmlFor="note" className="kv-field__label">{t.t('loan.rejectReason')}</label>
+            <textarea id="note" className="kv-input" name="note" rows={3} maxLength={500} />
+            <button className="kv-btn kv-btn--danger" type="submit">{t.t('loan.rejectSubmit')}</button>
           </form>
         </div>
       )}
 
-      {canDisburse && (
-        <form action={disburse} style={{ marginTop: 24 }}>
+      {canDisburse(status) && (
+        <form action={disburseAction} className="kv-form">
           <input type="hidden" name="id" value={a.id} />
-          <button className="kv-btn" type="submit">Disburse approved amount</button>
-          <p style={{ color: 'var(--kv-neutral-600)', fontSize: 13 }}>Disbursal moves funds and is idempotent; allowed only after the cooling-off window per platform rules.</p>
+          <button className="kv-btn" type="submit">{t.t('loan.disburseSubmit')}</button>
+          <p className="kv-field__hint">{t.t('loan.disburseHint')}</p>
         </form>
       )}
+
+      {isTerminal(status) && <p className="kv-muted">{t.t('loan.terminal')}</p>}
     </section>
   );
 }
