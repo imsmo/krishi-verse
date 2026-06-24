@@ -3,11 +3,13 @@
 // HTTPONLY, Secure, SameSite=Strict cookie (Strict, not Lax — no cross-site navigation should carry a god-mode
 // token). admin-api independently re-enforces owner-RBAC + hardware-key + step-up on every call, so this cookie
 // is convenience, never the authority. requireAdmin() gates server components.
+import 'server-only';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { env } from './env';
 
 export const ADMIN_COOKIE = 'kva_session';
-const OPTS = { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict' as const, path: '/' };
+const OPTS = { httpOnly: true, secure: env.isProduction, sameSite: 'strict' as const, path: '/' };
 
 export function getAdminToken(): string | undefined { return cookies().get(ADMIN_COOKIE)?.value; }
 export function setAdminSession(token: string, maxAgeSec: number): void { cookies().set(ADMIN_COOKIE, token, { ...OPTS, maxAge: maxAgeSec }); }

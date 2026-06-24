@@ -1,26 +1,27 @@
 // apps/web-admin/src/app/ai-models/page.tsx · god-mode AI model registry. Server component: requireAdmin gates,
 // adminGet hits admin-api GET /v1/ai/models (owner perm enforced server-side). Keyset pagination (?cursor=).
-// Degrade-never-die: a 401 redirects to login; a 403 surfaces the step-up prompt; any other failure shows an
-// empty state rather than a 500. Read-only list — mutations (register/promote/tune) require FIDO2 + step-up and
-// live behind dedicated flows, not built in this slice.
+// Degrade-never-die: failures map (via features/nav adminNoticeKey) to a localized notice — 403 → re-auth prompt,
+// 401 → session expired, else transient. Read-only list; promote/threshold mutations live on the detail page.
+// confidenceThreshold is a model CONFIDENCE RATIO (0..1), not money — rendered via the feature module's float-free
+// formatThreshold4 (integer math, no float-format helper). Status chip tone via the shared modelStatusTone helper.
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireAdmin } from '../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../lib/admin-client';
 import { DataTable, Column } from '../../components/DataTable';
+import { getTranslator } from '../../lib/i18n';
+import { adminNoticeKey } from '../../features/nav/nav-model';
+import { modelStatusKey, modelStatusTone, formatThreshold4, type ModelRow } from '../../features/ai-models/model';
 
 export const dynamic = 'force-dynamic';
 
-interface ModelRow {
-  id: string; code: string; version: string; provider: string | null;
-  status: string; confidenceThreshold: number | null; createdAt?: string;
+export function generateMetadata(): Metadata {
+  return { title: getTranslator().t('aiModels.title'), robots: { index: false, follow: false } };
 }
-
-const STATUS_TINT: Record<string, string> = {
-  shadow: 'var(--kv-neutral-600)', canary: '#c77700', live: '#1b7f3b', retired: 'var(--kv-neutral-600)',
-};
 
 export default async function AiModelsPage({ searchParams }: { searchParams: { cursor?: string; status?: string } }) {
   requireAdmin();
+  const t = getTranslator();
 
   let rows: ModelRow[] = [];
   let nextCursor: string | undefined;
@@ -30,29 +31,27 @@ export default async function AiModelsPage({ searchParams }: { searchParams: { c
     rows = res.data ?? [];
     nextCursor = (res.meta?.nextCursor as string | undefined) ?? undefined;
   } catch (e) {
-    if (e instanceof AdminApiError && e.needsElevation) notice = 'Hardware-key / step-up re-authentication required to view the model registry.';
-    else if (e instanceof AdminApiError && e.unauthorized) notice = 'Session expired. Sign in again.';
-    else notice = 'The model registry is temporarily unavailable.';
+    notice = t.t(`notice.${adminNoticeKey(e instanceof AdminApiError ? e.status : undefined)}`);
   }
 
   const columns: Column<ModelRow>[] = [
-    { header: 'Code', cell: (r) => <Link href={`/ai-models/${r.id}`}>{r.code}</Link> },
-    { header: 'Version', cell: (r) => r.version },
-    { header: 'Provider', cell: (r) => r.provider ?? '—' },
-    { header: 'Status', cell: (r) => <span style={{ color: STATUS_TINT[r.status] ?? 'inherit', fontWeight: 600 }}>{r.status}</span> },
-    { header: 'Threshold', cell: (r) => (r.confidenceThreshold == null ? '—' : r.confidenceThreshold.toFixed(4)) },
+    { header: t.t('aiModels.colCode'), cell: (r) => <Link href={`/ai-models/${r.id}`}>{r.code}</Link> },
+    { header: t.t('aiModels.colVersion'), cell: (r) => r.version },
+    { header: t.t('aiModels.colProvider'), cell: (r) => r.provider ?? t.t('common.dash') },
+    { header: t.t('aiModels.colStatus'), cell: (r) => <span className={`kv-status kv-status--${modelStatusTone(r.status)}`}>{t.t(modelStatusKey(r.status))}</span> },
+    { header: t.t('aiModels.colThreshold'), cell: (r) => formatThreshold4(r.confidenceThreshold) ?? t.t('common.dash') },
   ];
 
   return (
     <section>
-      <h1>AI model registry</h1>
-      <p style={{ color: 'var(--kv-neutral-600)' }}>Cross-tenant inference models. Promotion and threshold tuning are consequential and require step-up elevation.</p>
-      {notice ? <p className="kv-error" style={{ marginTop: 16 }}>{notice}</p> : (
+      <h1>{t.t('aiModels.title')}</h1>
+      <p className="kv-muted">{t.t('aiModels.lead')}</p>
+      {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
-          <div style={{ marginTop: 16 }}><DataTable columns={columns} rows={rows} empty="No models registered." /></div>
+          <DataTable columns={columns} rows={rows} empty={t.t('aiModels.empty')} />
           {nextCursor && (
-            <p style={{ marginTop: 16 }}>
-              <Link className="kv-btn" href={`/ai-models?cursor=${encodeURIComponent(nextCursor)}${searchParams.status ? `&status=${searchParams.status}` : ''}`}>Next page →</Link>
+            <p className="kv-pager">
+              <Link className="kv-btn" href={`/ai-models?cursor=${encodeURIComponent(nextCursor)}${searchParams.status ? `&status=${encodeURIComponent(searchParams.status)}` : ''}`}>{t.t('common.nextPage')}</Link>
             </p>
           )}
         </>

@@ -1,76 +1,127 @@
-// apps/web-admin/src/app/ai-models/[id]/page.tsx · god-mode model detail + fairness report. Hits admin-api
-// GET /v1/ai/models/:id/fairness, which returns the model, the stored monthly fairness audit, and a fresh 30-day
-// roll-up of the inference log (total / overridden / low-confidence + override rate). Read-only and audited
-// server-side (viewing cross-tenant data is itself logged). Degrade-never-die: 401→login, 403→step-up prompt,
-// not-found→notFound(), transient→inline notice.
+// apps/web-admin/src/app/ai-models/[id]/page.tsx · god-mode model detail + fairness report + lifecycle mutations.
+// Server component: requireAdmin gates, GET /v1/ai/models/:id/fairness (model + stored monthly fairness audit + a
+// fresh 30-day inference roll-up; 404 → notFound, other failures → localized notice via adminNoticeKey). The two
+// consequential writes are surfaced as Server-Action forms: PROMOTE (POST :id/promote — offers ONLY the model
+// state machine's legal next states) and TUNE THRESHOLD (PATCH :id/threshold — a 0..1 confidence ratio, blank
+// clears it). Both carry a mandatory audit reason; admin-api re-checks ai.model.manage + FIDO2 + step-up.
+// confidenceThreshold + overrideRate are RATIOS (0..1), rendered via the feature module's float-free formatters
+// (integer math, no float-format helper). Degrade-never-die. No inline styles.
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
+import { getTranslator } from '../../../lib/i18n';
+import { adminNoticeKey } from '../../../features/nav/nav-model';
+import {
+  transitionTargets, modelStatusKey, modelStatusTone, formatThreshold4, formatPercent2,
+  isModelStatus, type ModelStatus, type FairnessReport,
+} from '../../../features/ai-models/model';
+import { promoteModelAction, tuneThresholdAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
 
-interface FairnessReport {
-  model: { id: string; code: string; version: string; provider: string | null; status: string; confidenceThreshold: number | null; createdAt?: string };
-  storedFairnessAudit: Record<string, unknown> | null;
-  recent: { window: string; total: number; overridden: number; lowConfidence: number; overrideRate: number };
+export function generateMetadata(): Metadata {
+  return { title: getTranslator().t('aiModels.title'), robots: { index: false, follow: false } };
 }
+
+const OK = new Set(['promoted', 'threshold', 'thresholdCleared']);
+const ERR = new Set(['status', 'illegal', 'threshold', 'reason', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="kv-card" style={{ minWidth: 160 }}>
-      <div style={{ color: 'var(--kv-neutral-600)', fontSize: 13 }}>{label}</div>
-      <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4 }}>{value}</div>
+    <div className="kv-card kv-stat">
+      <div className="kv-stat__label">{label}</div>
+      <div className="kv-stat__value">{value}</div>
     </div>
   );
 }
 
-export default async function AiModelDetailPage({ params }: { params: { id: string } }) {
+export default async function AiModelDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
   requireAdmin();
+  const t = getTranslator();
 
   let report: FairnessReport | undefined;
   let notice: string | undefined;
   try {
-    const res = await adminGet<FairnessReport>(`ai/models/${params.id}/fairness`);
-    report = res.data;
+    report = (await adminGet<FairnessReport>(`ai/models/${encodeURIComponent(params.id)}/fairness`)).data;
   } catch (e) {
     if (e instanceof AdminApiError && e.status === 404) notFound();
-    else if (e instanceof AdminApiError && e.needsElevation) notice = 'Hardware-key / step-up re-authentication required to view fairness data.';
-    else if (e instanceof AdminApiError && e.unauthorized) notice = 'Session expired. Sign in again.';
-    else notice = 'The fairness report is temporarily unavailable.';
+    notice = t.t(`notice.${adminNoticeKey(e instanceof AdminApiError ? e.status : undefined)}`);
   }
 
   if (!report) {
     return (
       <section>
-        <p style={{ marginBottom: 16 }}><Link href="/ai-models">← Model registry</Link></p>
-        <p className="kv-error">{notice}</p>
+        <p className="kv-backlink"><Link href="/ai-models">{t.t('aiModels.back')}</Link></p>
+        <p className="kv-error" role="alert">{notice}</p>
       </section>
     );
   }
 
   const m = report.model;
   const r = report.recent;
+  const threshold = formatThreshold4(m.confidenceThreshold) ?? t.t('common.dash');
+  const fromStatus = (isModelStatus(m.status) ? m.status : 'shadow') as ModelStatus;
+  const targets = transitionTargets(fromStatus);
+  const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;
+  const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
+
   return (
     <section>
-      <p style={{ marginBottom: 16 }}><Link href="/ai-models">← Model registry</Link></p>
-      <h1>{m.code} <span style={{ color: 'var(--kv-neutral-600)', fontWeight: 400 }}>v{m.version}</span></h1>
-      <p style={{ color: 'var(--kv-neutral-600)' }}>
-        Status <strong>{m.status}</strong> · Provider {m.provider ?? '—'} · Routing threshold {m.confidenceThreshold == null ? '—' : m.confidenceThreshold.toFixed(4)}
+      <p className="kv-backlink"><Link href="/ai-models">{t.t('aiModels.back')}</Link></p>
+      <h1>{m.code} <span className="kv-muted">v{m.version}</span></h1>
+      <p>
+        <span className={`kv-status kv-status--${modelStatusTone(m.status)}`}>{t.t(modelStatusKey(m.status))}</span>
+        <span className="kv-muted"> · {t.t('aiModels.providerLabel')}: {m.provider ?? t.t('common.dash')} · {t.t('aiModels.colThreshold')}: {threshold}</span>
       </p>
+      {okKey && <p className="kv-success" role="status">{t.t(`aiModels.ok.${okKey}`)}</p>}
+      {errKey && <p className="kv-error" role="alert">{t.t(`aiModels.err.${errKey}`)}</p>}
 
-      <h2 style={{ marginTop: 24 }}>Inference roll-up ({r.window})</h2>
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 12 }}>
-        <Stat label="Inferences" value={r.total.toLocaleString()} />
-        <Stat label="Human-overridden" value={r.overridden.toLocaleString()} />
-        <Stat label="Override rate" value={`${(r.overrideRate * 100).toFixed(2)}%`} />
-        <Stat label="Low-confidence (<0.5)" value={r.lowConfidence.toLocaleString()} />
+      <h2>{t.t('aiModels.rollup', { window: r.window })}</h2>
+      <div className="kv-stat-row">
+        <Stat label={t.t('aiModels.statInferences')} value={r.total.toLocaleString()} />
+        <Stat label={t.t('aiModels.statOverridden')} value={r.overridden.toLocaleString()} />
+        <Stat label={t.t('aiModels.statOverrideRate')} value={formatPercent2(r.overrideRate)} />
+        <Stat label={t.t('aiModels.statLowConfidence')} value={r.lowConfidence.toLocaleString()} />
       </div>
 
-      <h2 style={{ marginTop: 24 }}>Stored fairness audit</h2>
+      <h2>{t.t('aiModels.manageHeading')}</h2>
+      {targets.length > 0 ? (
+        <details className="kv-card kv-limit-form">
+          <summary className="kv-card__title">{t.t('aiModels.promoteTitle')}</summary>
+          <p className="kv-field__hint">{t.t('aiModels.promoteHint')}</p>
+          <form action={promoteModelAction} className="kv-form">
+            <input type="hidden" name="id" value={m.id} />
+            <input type="hidden" name="from" value={fromStatus} />
+            <label className="kv-field__label">{t.t('aiModels.promoteTo')}</label>
+            <select name="to" className="kv-input" defaultValue={targets[0]}>
+              {targets.map((s) => <option key={s} value={s}>{t.t(modelStatusKey(s))}</option>)}
+            </select>
+            <label className="kv-field__label">{t.t('aiModels.reason')}</label>
+            <input name="reason" className="kv-input" required minLength={1} maxLength={500} />
+            <button type="submit" className="kv-btn">{t.t('aiModels.promoteSubmit')}</button>
+          </form>
+        </details>
+      ) : <p className="kv-muted">{t.t('aiModels.terminal')}</p>}
+
+      <details className="kv-card kv-limit-form">
+        <summary className="kv-card__title">{t.t('aiModels.thresholdTitle')}</summary>
+        <p className="kv-field__hint">{t.t('aiModels.thresholdHint')}</p>
+        <form action={tuneThresholdAction} className="kv-form">
+          <input type="hidden" name="id" value={m.id} />
+          <label className="kv-field__label">{t.t('aiModels.thresholdField')}</label>
+          <input name="confidenceThreshold" className="kv-input" inputMode="decimal" defaultValue={formatThreshold4(m.confidenceThreshold) ?? ''} placeholder={t.t('aiModels.thresholdPlaceholder')} />
+          <label className="kv-field__label">{t.t('aiModels.reason')}</label>
+          <input name="reason" className="kv-input" required minLength={1} maxLength={500} />
+          <button type="submit" className="kv-btn">{t.t('aiModels.thresholdSubmit')}</button>
+        </form>
+      </details>
+
+      <h2>{t.t('aiModels.fairnessHeading')}</h2>
       {report.storedFairnessAudit
-        ? <pre className="kv-card" style={{ overflowX: 'auto', whiteSpace: 'pre-wrap' }}>{JSON.stringify(report.storedFairnessAudit, null, 2)}</pre>
-        : <p style={{ color: 'var(--kv-neutral-600)' }}>No fairness audit recorded yet for this model.</p>}
+        ? <pre className="kv-card kv-pre">{JSON.stringify(report.storedFairnessAudit, null, 2)}</pre>
+        : <p className="kv-muted">{t.t('aiModels.fairnessEmpty')}</p>}
     </section>
   );
 }

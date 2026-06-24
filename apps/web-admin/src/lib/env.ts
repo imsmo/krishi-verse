@@ -7,4 +7,6 @@ export const env = {
   publicAdminApiUrl,
   serverAdminApiUrl: process.env.ADMIN_API_URL_INTERNAL || publicAdminApiUrl,
   appName: 'Krishi-Verse Admin',
+  // single source for the NODE_ENV gate (so other modules never read process.env directly)
+  isProduction: process.env.NODE_ENV === 'production',
 } as const;
