@@ -18,6 +18,7 @@ import { CartItemService } from './services/cart-item.service';
 import { CheckoutService } from './services/checkout.service';
 import { CheckoutGroupService } from './services/checkout-group.service';
 import { OrderService } from './services/order.service';
+import { OrderPaymentService } from './services/order-payment.service';
 import { OrderItemService } from './services/order-item.service';
 import { OrderTimelineReadModel } from './read-models/order-timeline.read-model';
 import { TenantOrderStatsReadModel } from './read-models/tenant-order-stats.read-model';
@@ -41,7 +42,7 @@ import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handl
   imports: [ListingsModule, PaymentsModule, PromotionsModule, MembershipsModule],   // PaymentsModule: ChargePricingService; PromotionsModule: CouponService; MembershipsModule: member checkout benefits
   controllers: [CartsController, CheckoutController, OrdersController],
   providers: [
-    CartService, CartItemService, CheckoutService, CheckoutGroupService, OrderService, OrderItemService,
+    CartService, CartItemService, CheckoutService, CheckoutGroupService, OrderService, OrderPaymentService, OrderItemService,
     OrderTimelineReadModel, TenantOrderStatsReadModel, OrdersPublisher,
     CartRepository, CartItemRepository, CheckoutGroupRepository, OrderRepository, OrderItemRepository,
     SellerConfirmTimeoutJob, AutoCompleteQualityWindowJob, AbandonedCartsJob,

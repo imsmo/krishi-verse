@@ -20,4 +20,9 @@ export class DataSubjectRequestRepository {
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM data_subject_requests WHERE user_id=$1 AND deleted_at IS NULL ORDER BY created_at DESC`, [userId]);
     return r.rows.map(toDomain);
   }
+  /** An existing NOT-yet-resolved request of this type (the dedupe guard — one open request per kind per user). */
+  async findOpen(tx: TxContext, userId: string, requestType: DsrType): Promise<DataSubjectRequest | null> {
+    const r = await tx.query(`SELECT ${COLS} FROM data_subject_requests WHERE user_id=$1 AND request_type=$2 AND status IN ('open','in_progress') AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1`, [userId, requestType]);
+    return r.rows[0] ? toDomain(r.rows[0]) : null;
+  }
 }

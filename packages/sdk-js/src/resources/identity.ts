@@ -3,10 +3,14 @@
 // Bank accounts store a gateway-tokenised vaultRef + last-4/IFSC only — never a raw account number. Both POSTs
 // require an Idempotency-Key (Law 3). KYC is gated server-side by the `kyc` flag.
 import { HttpClient } from '../http';
-import { KycDocument, BankAccount, Address } from '../types';
+import { KycDocument, KycDocType, BankAccount, Address } from '../types';
 
 export class KycResource {
   constructor(private readonly http: HttpClient) {}
+  /** Accepted document types (seeded catalogue). Lets the client show a name + submit a real docTypeId. */
+  async docTypes(signal?: AbortSignal): Promise<KycDocType[]> {
+    return (await this.http.request<KycDocType[]>('GET', 'kyc/doc-types', { signal })).data;
+  }
   /** Submit a KYC document (docTypeId + uploaded mediaId). Status starts 'pending' (manual review). */
   async submit(input: { docTypeId: string; mediaId: string; roleId?: string; docNoMasked?: string; issuedBy?: string; validFrom?: string; validUntil?: string }, idempotencyKey: string): Promise<{ id: string }> {
     return (await this.http.request<{ id: string }>('POST', 'kyc', { idempotencyKey, body: input })).data;

@@ -10,3 +10,9 @@ export class NoCommissionPlanError extends DomainError { constructor(eventCode: 
 export class NothingToPayoutError extends DomainError { constructor(ambassadorId: string) { super('NOTHING_TO_PAYOUT', `Ambassador ${ambassadorId} has no unpaid earnings`, 409, { ambassadorId }); } }
 export class InvalidReferralError extends DomainError { constructor(detail: string) { super('REFERRAL_INVALID', detail, 422, { detail }); } }
 export class AmbassadorsForbiddenError extends DomainError { constructor(detail = 'forbidden') { super('AMBASSADORS_FORBIDDEN', detail, 403, {}); } }
+/** The caller is not an active ambassador — only an active ambassador may assist-onboard / log visits. */
+export class NotAnAmbassadorError extends DomainError { constructor() { super('NOT_AN_AMBASSADOR', 'You must be an active ambassador to perform this action', 403, {}); } }
+/** Assisted onboarding REQUIRES the farmer's recorded consent (DPDP) — refuse to create an account without it. */
+export class ConsentRequiredError extends DomainError { constructor() { super('CONSENT_REQUIRED', 'Assisted onboarding requires the farmer to grant the data-processing consent', 422, {}); } }
+/** A target for this ambassador + metric + period already exists (UNIQUE(ambassador_id, metric, period_start)). */
+export class DuplicateTargetError extends DomainError { constructor() { super('TARGET_EXISTS', 'A target for this metric + period already exists', 409, {}); } }

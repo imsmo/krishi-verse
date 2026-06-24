@@ -46,6 +46,14 @@ export class BookingsController {
     return this.svc.assign(ctx.tenantId, this.actor(ctx), id, key, { workerId: dto.workerId, wageMinor: dto.wageMinor }).then((data) => ({ data }));
   }
 
+  /** WORKER self-applies to an open booking (any authenticated worker — not the employer's worker.book). The
+   *  caller's own worker profile is resolved from the token (no IDOR); idempotent on the caller's key (Law 3). */
+  @Post(':id/apply')
+  apply(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Headers('idempotency-key') key: string) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.svc.applyAsWorker(ctx.tenantId, ctx.userId, id, key).then((data) => ({ data }));
+  }
+
   @Post(':id/start') @RequirePermissions(LabourPermissions.Book)
   start(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.start(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
 

@@ -24,7 +24,8 @@ import { OrderItem } from '../domain/order-item.entity';
 import { CheckoutGroup } from '../domain/checkout-group.entity';
 import { DomainEvent } from '../domain/orders.events';
 import { CartEmptyError, CartNotFoundError, ListingNotPurchasableError, InsufficientListingStockError } from '../domain/orders.errors';
-import { CheckoutDto } from '../dto/create-order.dto';
+import { CheckoutDto, CheckoutPreviewDto } from '../dto/create-order.dto';
+import { DomainError } from '../../../shared/errors/app-error';
 
 const QUOTA = 'max_orders_month';
 function orderNo(id: string): string { return `KV${new Date().getUTCFullYear()}-${id.slice(0, 8).toUpperCase()}`; }
@@ -121,6 +122,86 @@ export class CheckoutService {
           return { orders: created, checkoutGroupId };
         }, { userId: buyerUserId });
       }));
+  }
+
+  /** READ-ONLY totals preview: the same money math as checkout (subtotal + buyer charges + member
+   *  benefits + coupon), but no order is created, no quota consumed, no money moved. Lets the client
+   *  show an authoritative bill before committing. Coupon is a DRY-RUN (validate, never redeemed) and
+   *  applies to the PRIMARY (first) seller only, mirroring checkout. All money as minor-unit strings. */
+  async previewTotals(tenantId: string, buyerUserId: string, dto: CheckoutPreviewDto) {
+    const applyCharges = await this.flags.isEnabled('buyer_charges', { tenantId, userId: buyerUserId });
+    const applyMemberBenefits = await this.flags.isEnabled('memberships', { tenantId, userId: buyerUserId });
+    const applyCoupon = dto.couponCode ? await this.flags.isEnabled('promotions', { tenantId, userId: buyerUserId }) : false;
+
+    const cartId = await this.carts.activeId(tenantId, buyerUserId);
+    if (!cartId) throw new CartNotFoundError();
+    const cartItems = await this.carts.items(tenantId, cartId);
+    if (cartItems.length === 0) throw new CartEmptyError();
+
+    // group by seller, snapshotting price/title exactly as checkout would (honest, server-truth).
+    const bySeller = new Map<string, { items: OrderItem[]; subtotalMinor: bigint }>();
+    const order: string[] = [];
+    for (const ci of cartItems) {
+      const l: any = await this.listings.getById(tenantId, ci.listing_id);
+      if (!l || l.status !== 'published') throw new ListingNotPurchasableError(ci.listing_id);
+      const qty = Number(ci.quantity);
+      if (Number(l.quantityAvailable) < qty) throw new InsufficientListingStockError(ci.listing_id, qty, Number(l.quantityAvailable));
+      let g = bySeller.get(l.sellerUserId);
+      if (!g) { g = { items: [], subtotalMinor: 0n }; bySeller.set(l.sellerUserId, g); order.push(l.sellerUserId); }
+      const item = OrderItem.of({ id: uuidv7(), orderId: 'preview', orderCreatedAt: new Date(), tenantId, listingId: ci.listing_id,
+        productId: l.productId, titleSnapshot: l.title, quantity: qty, unitCode: l.unitCode, unitPriceMinor: BigInt(l.priceMinor),
+        gstRatePct: null, hsnCode: null, batchId: null });
+      g.items.push(item);
+      g.subtotalMinor += item.props.lineTotalMinor;
+    }
+
+    const sellers = await this.uow.run(tenantId, async (tx) => {
+      let couponDone = false;
+      const out: Array<Record<string, unknown>> = [];
+      for (const sellerUserId of order) {
+        const g = bySeller.get(sellerUserId)!;
+        let { deliveryFeeMinor, platformFeeMinor } = applyCharges
+          ? await this.charges.checkoutCharges(tx, tenantId, g.subtotalMinor)
+          : { deliveryFeeMinor: 0n, platformFeeMinor: 0n };
+        if (applyCharges && applyMemberBenefits) {
+          const ben = await this.memberships.checkoutBenefits(tx, tenantId, buyerUserId);
+          if (ben) {
+            if (ben.freeDelivery) deliveryFeeMinor = 0n;
+            if (ben.platformFeeBpsOverride != null) platformFeeMinor = (g.subtotalMinor * BigInt(ben.platformFeeBpsOverride)) / 10000n;
+          }
+        }
+        // coupon DRY-RUN against the primary seller only (never redeemed here).
+        let discountMinor = 0n; let couponError: string | null = null;
+        if (applyCoupon && !couponDone) {
+          couponDone = true;
+          try { discountMinor = BigInt((await this.coupons.validate(tenantId, dto.couponCode!, g.subtotalMinor)).discountMinor); }
+          catch (e) { couponError = e instanceof DomainError ? (e as any).code ?? 'COUPON_INVALID' : 'COUPON_INVALID'; }
+        }
+        const total = g.subtotalMinor + deliveryFeeMinor + platformFeeMinor - discountMinor;
+        out.push({
+          sellerUserId,
+          items: g.items.map((it) => ({ listingId: it.props.listingId, title: it.props.titleSnapshot, quantity: it.props.quantity, unitCode: it.props.unitCode, unitPriceMinor: it.props.unitPriceMinor.toString(), lineTotalMinor: it.props.lineTotalMinor.toString() })),
+          subtotalMinor: g.subtotalMinor.toString(), deliveryFeeMinor: deliveryFeeMinor.toString(), platformFeeMinor: platformFeeMinor.toString(),
+          discountMinor: discountMinor.toString(), totalMinor: (total < 0n ? 0n : total).toString(),
+          ...(couponError ? { couponError } : {}),
+        });
+      }
+      return out;
+    }, { userId: buyerUserId });
+
+    // grand totals (sum the per-seller breakdown — all integer minor units).
+    const sum = (k: string) => sellers.reduce((a, s) => a + BigInt(s[k] as string), 0n);
+    const grandTotal = sum('totalMinor');
+    return {
+      currencyCode: 'INR',
+      sellers,
+      subtotalMinor: sum('subtotalMinor').toString(),
+      deliveryFeeMinor: sum('deliveryFeeMinor').toString(),
+      platformFeeMinor: sum('platformFeeMinor').toString(),
+      discountMinor: sum('discountMinor').toString(),
+      grandTotalMinor: grandTotal.toString(),
+      couponCode: sellers.some((s) => BigInt((s.discountMinor as string)) > 0n) ? (dto.couponCode ?? null) : null,
+    };
   }
 
   private async flush(tx: TxContext, tenantId: string, orderId: string, events: DomainEvent[]) {

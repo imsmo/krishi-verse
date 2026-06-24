@@ -11,5 +11,6 @@ export const UpdateWorkerSchema = z.object({
   emergencyContactName: z.string().min(1).max(150).optional(),
   emergencyContactPhone: z.string().min(5).max(20).optional(),
   eshramNo: z.string().min(1).max(20).optional(),
+  skillIds: z.array(z.string().uuid()).max(30).optional(),   // replace the worker's self-declared skill set (worker_skills)
 }).strict().refine((o) => Object.keys(o).length > 0, { message: 'at least one field required' });
 export type UpdateWorkerDto = z.infer<typeof UpdateWorkerSchema>;

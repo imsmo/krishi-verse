@@ -24,6 +24,9 @@ import { AddressService } from './services/address.service';
 import { BankAccountService } from './services/bank-account.service';
 import { ConsentService } from './services/consent.service';
 import { SessionService } from './services/session.service';
+import { PrivacyService } from './services/privacy.service';
+import { ChangePhoneService } from './services/change-phone.service';
+import { PrivacyController } from './controllers/v1/privacy.controller';
 
 // Repositories
 import { UserRepository } from './repositories/user.repository';
@@ -48,10 +51,10 @@ import { DpdpErasureCoolingJob } from './jobs/dpdp-erasure-cooling.job';
 import { RiskScoreRecomputeJob } from './jobs/risk-score-recompute.job';
 
 @Module({
-  controllers: [AuthController, UsersController, RolesController, KycController, AddressesController, BankAccountsController, ConsentsController],
+  controllers: [AuthController, UsersController, RolesController, KycController, AddressesController, BankAccountsController, ConsentsController, PrivacyController],
   providers: [
     AuthService, UserService, UserTenantRoleService, RoleService, PermissionService,
-    KycDocumentService, AddressService, BankAccountService, ConsentService, SessionService,
+    KycDocumentService, AddressService, BankAccountService, ConsentService, SessionService, PrivacyService, ChangePhoneService,
     UserRepository, RoleRepository, PermissionRepository, UserTenantRoleRepository, KycDocumentRepository,
     AddressRepository, BankAccountRepository, DeviceRepository, SessionRepository, LoginEventRepository,
     ConsentRepository, DataSubjectRequestRepository, RiskScoreRepository,
@@ -60,7 +63,7 @@ import { RiskScoreRecomputeJob } from './jobs/risk-score-recompute.job';
   ],
   // public surface for other modules (Law 11): services + cross-module event handlers + jobs
   exports: [
-    UserService, UserTenantRoleService, RoleService, PermissionService, KycDocumentService,
+    UserService, ConsentService, UserTenantRoleService, RoleService, PermissionService, KycDocumentService,
     OrderCompletedHandler, DisputeResolvedHandler,
     KycExpiryRemindersJob, DpdpErasureCoolingJob, RiskScoreRecomputeJob,
   ],

@@ -37,6 +37,21 @@ export class WorkerProfileRepository {
        p.minWageExpectationMinor?.toString() ?? null, p.autoAcceptAboveMinor?.toString() ?? null, p.hasSmartphone,
        p.emergencyContactName, p.emergencyContactPhone, p.eshramNo]);
   }
+  /** Replace the worker's self-declared skill set (worker_skills) in one tx. Idempotent: clears then
+   *  re-inserts. An unknown skill id raises an FK violation (rejected — never a silent drop). */
+  async setSkills(tx: TxContext, workerId: string, skillIds: string[]): Promise<void> {
+    await tx.query(`DELETE FROM worker_skills WHERE worker_id=$1`, [workerId]);
+    for (const skillId of [...new Set(skillIds)]) {
+      await tx.query(`INSERT INTO worker_skills (worker_id, skill_id, level) VALUES ($1,$2,'self_declared')`, [workerId, skillId]);
+    }
+  }
+
+  /** The worker's skill ids for the profile read (owner-scoped via the caller resolving their own worker). */
+  async listSkillIds(tenantId: string, workerId: string): Promise<string[]> {
+    const r = await this.replica.forTenant(tenantId).query<{ skill_id: string }>(`SELECT skill_id FROM worker_skills WHERE worker_id=$1`, [workerId]);
+    return r.rows.map((x) => x.skill_id);
+  }
+
   async getForUpdate(tx: TxContext, tenantId: string, id: string): Promise<WorkerProfile | null> {
     const r = await tx.query(`SELECT ${COLS} FROM worker_profiles WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL FOR UPDATE`, [id, tenantId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;

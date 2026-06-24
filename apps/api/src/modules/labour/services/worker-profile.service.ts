@@ -41,6 +41,7 @@ export class WorkerProfileService {
             emergencyContactPhone: dto.emergencyContactPhone ?? null, eshramNo: dto.eshramNo ?? null,
           });
           await this.repo.insert(tx, worker);
+          if (dto.skillIds) await this.repo.setSkills(tx, worker.id, dto.skillIds);   // self-declared skills (worker_skills)
           await this.flush(tx, tenantId, worker.id, worker.pullEvents());
           return this.serialize(worker);
         }, { userId })));
@@ -57,6 +58,7 @@ export class WorkerProfileService {
         hasSmartphone: dto.hasSmartphone, emergencyContactName: dto.emergencyContactName,
         emergencyContactPhone: dto.emergencyContactPhone, eshramNo: dto.eshramNo,
       });
+      if (dto.skillIds) await this.repo.setSkills(tx, worker.id, dto.skillIds);   // replace the self-declared skill set
       await this.repo.update(tx, worker);
       await this.flush(tx, tenantId, worker.id, worker.pullEvents());
       return this.serialize(worker);
@@ -65,7 +67,9 @@ export class WorkerProfileService {
 
   async getMine(tenantId: string, userId: string) {
     const worker = await this.repo.findByUser(tenantId, userId);
-    return { worker: worker ? this.serialize(worker) : null };
+    if (!worker) return { worker: null };
+    const skillIds = await this.repo.listSkillIds(tenantId, worker.id);
+    return { worker: { ...this.serialize(worker), skillIds } };
   }
   async getById(tenantId: string, id: string) {
     const worker = await this.repo.getById(tenantId, id);

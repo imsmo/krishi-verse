@@ -45,3 +45,10 @@ export class BookingNotPayableError extends DomainError { constructor(status: st
 export class InvalidDemandTypeError extends DomainError { constructor(code: string) { super('INVALID_DEMAND_TYPE', `Unknown labour demand type '${code}'`, 422, { code }); } }
 /** The referenced skill does not exist / is inactive. */
 export class SkillNotFoundError extends NotFoundError { constructor(id: string) { super('Skill not found'); (this as any).code = 'SKILL_NOT_FOUND'; (this as any).details = { id }; } }
+
+/** A worker may only clock in once they are an ACCEPTED assignee on the booking. */
+export class AssignmentNotAcceptedError extends DomainError { constructor(status: string) { super('ASSIGNMENT_NOT_ACCEPTED', `Cannot clock in from assignment status '${status}'`, 409, { status }); } }
+/** The clock-in location is outside the booking's ≤100m geofence (server-computed; the device can't fake it). */
+export class OutOfFenceError extends DomainError { constructor(distanceM: number, fenceM: number) { super('ATTENDANCE_OUT_OF_FENCE', `Clock-in is ${distanceM}m from the farm (fence is ${fenceM}m)`, 422, { distanceM, fenceM }); } }
+/** A worker has already clocked in for this assignment today (one attendance per assignment per day). */
+export class AlreadyClockedInError extends DomainError { constructor() { super('ATTENDANCE_ALREADY_CLOCKED_IN', 'Already clocked in for today', 409); } }

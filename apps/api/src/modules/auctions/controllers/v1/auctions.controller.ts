@@ -12,6 +12,7 @@ import { RequestContext } from '../../../../core/tenancy-context/request-context
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { AuctionService } from '../../services/auction.service';
 import { AuctionWatcherService } from '../../services/auction-watcher.service';
+import { MyBidsReadModel } from '../../read-models/my-bids.read-model';
 import { CreateAuctionSchema, CreateAuctionDto } from '../../dto/create-auction.dto';
 import { UpdateAuctionSchema, UpdateAuctionDto } from '../../dto/update-auction.dto';
 import { QueryAuctionsSchema, QueryAuctionsDto } from '../../dto/query-auction.dto';
@@ -25,7 +26,7 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('auctions')
 export class AuctionsController {
-  constructor(private readonly auctions: AuctionService, private readonly watchers: AuctionWatcherService) {}
+  constructor(private readonly auctions: AuctionService, private readonly watchers: AuctionWatcherService, private readonly myBids: MyBidsReadModel) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canModerate: canModerateAuction(ctx) }; }
 
   @Post() @RequirePermissions(AuctionPermissions.Create)
@@ -39,10 +40,16 @@ export class AuctionsController {
     return this.auctions.list(ctx.tenantId, { status: q.status, cursor: decodeCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
 
-  // static route declared BEFORE ':id' so 'watching' isn't captured as an auction id
+  // static routes declared BEFORE ':id' so 'watching'/'my-bids' aren't captured as an auction id
   @Get('watching')
   watching(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryAuctionWatchersSchema) q: QueryAuctionWatchersDto) {
     return this.watchers.listMine(ctx.tenantId, ctx.userId, { cursor: q.cursor, limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
+  }
+
+  /** The caller's OWN bids across ALL auctions (keyset), each with its EMD hold + winning flag. */
+  @Get('my-bids')
+  myBidsList(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryAuctionWatchersSchema) q: QueryAuctionWatchersDto) {
+    return this.myBids.forBidder(ctx.tenantId, ctx.userId, { cursor: decodeCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
 
   @Get(':id')

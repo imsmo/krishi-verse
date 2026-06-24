@@ -54,6 +54,23 @@ export class BidRepository {
     return r.rows.map((x) => ({ bidderUserId: x.bidder_user_id, firstAmountMinor: BigInt(x.amount_minor) }));
   }
 
+  /** The caller's OWN bids across ALL auctions ("my bids"), newest-first keyset. Joins the auction so the
+   *  read-model can show status/ends + compute the EMD hold per bid. Always filtered by the caller's
+   *  bidder_user_id (owner-scoped, no IDOR). */
+  async listForBidder(tenantId: string, bidderUserId: string, opts: { cursor?: { c: string; id: string }; limit: number }): Promise<Array<{ id: string; auctionId: string; listingId: string; amountMinor: string; createdAt: Date; auctionStatus: string; endsAt: Date; emdMinor: string; emdPctBps: number | null; winningBidId: string | null }>> {
+    const params: unknown[] = [tenantId, bidderUserId];
+    let where = `b.tenant_id=$1 AND b.bidder_user_id=$2`;
+    const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
+    if (opts.cursor) { const cc = p(opts.cursor.c), ci = p(opts.cursor.id); where += ` AND (b.created_at < ${cc} OR (b.created_at=${cc} AND b.id < ${ci}))`; }
+    const lp = p(opts.limit);
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT b.id, b.auction_id, b.amount_minor, b.created_at,
+              a.listing_id, a.status AS auction_status, a.ends_at, a.emd_minor, a.emd_pct_bps, a.winning_bid_id
+         FROM bids b JOIN auctions a ON a.id = b.auction_id AND a.tenant_id = b.tenant_id
+        WHERE ${where} ORDER BY b.created_at DESC, b.id DESC LIMIT ${lp}`, params);
+    return r.rows.map((x) => ({ id: x.id, auctionId: x.auction_id, listingId: x.listing_id, amountMinor: String(x.amount_minor), createdAt: x.created_at, auctionStatus: x.auction_status, endsAt: x.ends_at, emdMinor: String(x.emd_minor), emdPctBps: x.emd_pct_bps ?? null, winningBidId: x.winning_bid_id ?? null }));
+  }
+
   /** Bid history for an auction (cursor; sealed bids' amounts are hidden until close by the read-model). */
   async listFor(tenantId: string, auctionId: string, opts: { cursor?: { c: string; id: string }; limit: number }): Promise<Array<{ id: string; bidderUserId: string; amountMinor: string; createdAt: Date }>> {
     const params: unknown[] = [tenantId, auctionId];

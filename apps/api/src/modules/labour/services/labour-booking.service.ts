@@ -100,6 +100,26 @@ export class LabourBookingService {
       }, { userId: actor.userId }));
   }
 
+  // ---- worker: SELF-APPLY to an open booking (creates an 'applied' assignment, an interest pool) ----
+  async applyAsWorker(tenantId: string, userId: string, bookingId: string, idemKey: string) {
+    return this.idem.remember(idemKey, userId, 'labour.booking.apply', () =>
+      timed(this.metrics, 'labour.booking.apply', { tenant: tenantId }, () =>
+        this.uow.run(tenantId, async (tx) => {
+          const booking = await this.bookings.getForWrite(tx, tenantId, bookingId);
+          if (!booking) throw new BookingNotFoundError(bookingId);
+          if (booking.status !== 'open') throw new BookingNotPayableError(booking.status);    // only open bookings accept applications
+          const worker = await this.workers.findByUser(tenantId, userId, tx);                 // the caller's OWN worker profile
+          if (!worker) throw new WorkerProfileNotFoundError(userId);
+          worker.assertAssignable();                                                          // HARD age-18 gate (Law: refuse)
+          if (await this.assignments.findByBookingAndWorker(tx, tenantId, bookingId, worker.id)) throw new WorkerAlreadyAssignedError();
+          const assignment = BookingAssignment.apply({ id: uuidv7(), bookingId, tenantId, workerId: worker.id, wageMinor: booking.wageOfferedMinor });
+          await this.assignments.insert(tx, assignment);
+          await this.flush(tx, tenantId, 'booking_assignment', assignment.id, assignment.pullEvents());
+          return this.serializeAssignment(assignment);
+        }, { userId }));
+      });
+  }
+
   // ---- worker: consent (accept) or decline (reject) their own assignment ----
   async respond(tenantId: string, userId: string, assignmentId: string, dto: { decision: 'accept' | 'reject'; voiceConsentMediaId?: string }) {
     return this.uow.run(tenantId, async (tx) => {

@@ -4,11 +4,13 @@
 // Core infra (UnitOfWork, OutboxWriter, ReadReplica, Quota, Idempotency, Cache,
 // Search, Metrics) is provided by CoreModule (global) and injected by token.
 import { Module } from '@nestjs/common';
+import { MediaModule } from '../../core/media/media.module';   // OBJECT_STORE for public listing-gallery presign
 
 // Controllers (HTTP edge)
 import { ListingsController } from './controllers/listings.controller';
 import { BoostsController } from './controllers/boosts.controller';
 import { GroupLotsController } from './controllers/group-lots.controller';
+import { SellersController } from './controllers/sellers.controller';
 
 // Application services
 import { ListingService } from './services/listing.service';
@@ -20,6 +22,9 @@ import { GroupLotPledgeService } from './services/group-lot-pledge.service';
 // Read-models (CQRS read path)
 import { ListingSearchReadModel } from './read-models/listing-search.read-model';
 import { MandiBandReadModel } from './read-models/mandi-band.read-model';
+import { ListingAnalyticsReadModel } from './read-models/listing-analytics.read-model';
+import { SellerProfileReadModel } from './read-models/seller-profile.read-model';
+import { ListingGalleryReadModel } from './read-models/listing-gallery.read-model';
 
 // Repositories (write/read SQL)
 import { ListingRepository } from './repositories/listing.repository';
@@ -40,10 +45,11 @@ import { BoostExpiryJob } from './jobs/boost-expiry.job';
 import { PublishScheduledJob } from './jobs/publish-scheduled.job';
 
 @Module({
-  controllers: [ListingsController, BoostsController, GroupLotsController],
+  imports: [MediaModule],
+  controllers: [ListingsController, BoostsController, GroupLotsController, SellersController],
   providers: [
     ListingService, ListingBoostService, ListingAttributeService, GroupLotService, GroupLotPledgeService,
-    ListingSearchReadModel, MandiBandReadModel,
+    ListingSearchReadModel, MandiBandReadModel, ListingAnalyticsReadModel, SellerProfileReadModel, ListingGalleryReadModel,
     ListingRepository, PriceHistoryRepository, ListingAttributeRepository,
     ListingBoostRepository, GroupLotRepository, GroupLotPledgeRepository, ListingMediaRepository,
     OrderCompletedHandler, AuctionSettledHandler,

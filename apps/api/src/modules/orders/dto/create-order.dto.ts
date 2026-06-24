@@ -7,3 +7,11 @@ export const CheckoutSchema = z.object({
   couponCode: z.string().regex(/^[A-Za-z0-9_-]{3,40}$/).optional(),   // applied to the primary order (promotions)
 }).strict();
 export type CheckoutDto = z.infer<typeof CheckoutSchema>;
+
+// Read-only totals preview: server-computes the per-seller + grand totals (subtotal + buyer charges +
+// member benefits + coupon dry-run) from the buyer's active cart WITHOUT creating an order or moving
+// money. Only `couponCode` affects the totals; delivery selection doesn't change the slab here.
+export const CheckoutPreviewSchema = z.object({
+  couponCode: z.string().regex(/^[A-Za-z0-9_-]{3,40}$/).optional(),
+}).strict();
+export type CheckoutPreviewDto = z.infer<typeof CheckoutPreviewSchema>;

@@ -69,6 +69,16 @@ export class User {
     };
   }
 
+  /** Swap the global identity phone (after OTP-verifying the NEW number). Re-marks it verified now. */
+  changePhone(newPhone: string): void {
+    if (!isValidE164(newPhone)) throw new InvalidPhoneError();
+    if (newPhone === this.props.phone) return;
+    const from = this.props.phone;
+    this.props.phone = newPhone;
+    this.props.phoneVerifiedAt = new Date();
+    this.events.push({ type: 'identity.phone_changed', payload: { userId: this.props.id, fromMasked: maskPhone(from), toMasked: maskPhone(newPhone) } });
+  }
+
   changeStatus(to: UserStatus, by?: string): void {
     assertUserTransition(this.props.status, to);
     if (this.props.status === to) return;

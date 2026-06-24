@@ -46,6 +46,11 @@ export class UserRepository {
     );
   }
 
+  /** Swap the identity phone (change-phone flow). Re-stamps phone_verified_at. UNIQUE(phone) guards collisions. */
+  async updatePhone(tx: TxContext, id: string, phone: string, phoneVerifiedAt: Date | null): Promise<void> {
+    await tx.query(`UPDATE users SET phone=$2, phone_verified_at=$3, updated_at=now() WHERE id=$1 AND deleted_at IS NULL`, [id, phone, phoneVerifiedAt]);
+  }
+
   async getForUpdate(tx: TxContext, id: string): Promise<User | null> {
     const r = await tx.query<Row>(`SELECT ${COLS} FROM users WHERE id= AND deleted_at IS NULL FOR UPDATE`, [id]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;

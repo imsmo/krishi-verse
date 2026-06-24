@@ -18,6 +18,7 @@ import { AuctionRepository } from './repositories/auction.repository';
 import { BidRepository } from './repositories/bid.repository';
 import { AuctionWatcherRepository } from './repositories/auction-watcher.repository';
 import { AuctionLiveReadModel } from './read-models/auction-live.read-model';
+import { MyBidsReadModel } from './read-models/my-bids.read-model';
 
 // The open/close/EMD-release worker jobs (jobs/*.job.ts) are instantiated by apps/worker with a
 // privileged kv_relay Pool — not DI providers (they take a Pool), mirroring the payout/image jobs.
@@ -26,7 +27,7 @@ import { AuctionLiveReadModel } from './read-models/auction-live.read-model';
   controllers: [AuctionsController, BidsController],
   providers: [
     AuctionService, BidService, AuctionWatcherService, AuctionsPublisher, AuctionPaymentSucceededHandler,
-    AuctionRepository, BidRepository, AuctionWatcherRepository, AuctionLiveReadModel,
+    AuctionRepository, BidRepository, AuctionWatcherRepository, AuctionLiveReadModel, MyBidsReadModel,
   ],
   exports: [AuctionService],
 })

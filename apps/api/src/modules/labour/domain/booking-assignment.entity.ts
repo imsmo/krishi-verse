@@ -25,6 +25,13 @@ export class BookingAssignment {
     a.events.push({ type: LabourEventType.WorkerAssigned, payload: { assignmentId: a.props.id, bookingId: a.props.bookingId, workerId: a.props.workerId, wageMinor: a.props.wageMinor.toString() } });
     return a;
   }
+
+  /** Worker SELF-APPLIES to an OPEN booking (status 'applied' — an interest pool, not a committed slot). */
+  static apply(input: { id: string; bookingId: string; tenantId: string; workerId: string; wageMinor: bigint }): BookingAssignment {
+    const a = new BookingAssignment({ ...input, status: 'applied', acceptedAt: null, voiceConsentMediaId: null });
+    a.events.push({ type: LabourEventType.WorkerAssigned, payload: { assignmentId: a.props.id, bookingId: a.props.bookingId, workerId: a.props.workerId, wageMinor: a.props.wageMinor.toString(), applied: true } });
+    return a;
+  }
   static rehydrate(props: BookingAssignmentProps): BookingAssignment { return new BookingAssignment(props); }
 
   get id() { return this.props.id; }

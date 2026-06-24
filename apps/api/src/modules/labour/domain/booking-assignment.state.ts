@@ -1,14 +1,17 @@
 // modules/labour/domain/booking-assignment.state.ts · STATE MACHINE for booking_assignments.status (Law 5).
 // One row per worker per booking. Subset of booking_status used for the assignment lifecycle:
-//   pending_worker → accepted | rejected | expired      (worker consent, PRD §31.5)
+//   applied → accepted | rejected | expired             (WORKER self-apply to an OPEN booking, API-W8)
+//   pending_worker → accepted | rejected | expired      (EMPLOYER proposes → worker consent, PRD §31.5)
 //   accepted → paid                                      (wage settled when the booking is paid)
-// no_show/disputed belong to the deferred attendance flow and are not reachable here.
+// 'applied' is an interest pool — it does NOT consume a booking slot (see countActive). no_show/disputed
+// belong to the deferred attendance flow and are not reachable here.
 import { DomainError } from '../../../shared/errors/app-error';
 
-export const ASSIGNMENT_STATUSES = ['pending_worker', 'accepted', 'rejected', 'expired', 'paid'] as const;
+export const ASSIGNMENT_STATUSES = ['applied', 'pending_worker', 'accepted', 'rejected', 'expired', 'paid'] as const;
 export type AssignmentStatus = (typeof ASSIGNMENT_STATUSES)[number];
 
 const TRANSITIONS: Readonly<Record<AssignmentStatus, readonly AssignmentStatus[]>> = Object.freeze({
+  applied:        ['accepted', 'rejected', 'expired'],
   pending_worker: ['accepted', 'rejected', 'expired'],
   accepted:       ['paid'],
   rejected:       [],

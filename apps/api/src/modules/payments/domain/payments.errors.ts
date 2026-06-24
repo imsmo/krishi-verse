@@ -21,6 +21,12 @@ export class RefundExceedsPaymentError extends DomainError {
 export class PaymentForbiddenError extends AppError {
   constructor(message = 'Not allowed on this payment') { super('PAYMENT_FORBIDDEN', message, 403); }
 }
+/** Pay-from-wallet fails closed when the buyer's spendable balance can't cover the order in full. */
+export class InsufficientWalletBalanceError extends DomainError {
+  constructor(required: bigint, available: bigint) {
+    super('WALLET_INSUFFICIENT_BALANCE', 'Wallet balance is less than the amount required', 422, { requiredMinor: required.toString(), availableMinor: available.toString() });
+  }
+}
 
 /** A batch row was not found in the caller's scope (404, never 403 — no enumeration). */
 export class PayoutBatchNotFoundError extends NotFoundError {

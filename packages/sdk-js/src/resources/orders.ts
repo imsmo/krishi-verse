@@ -4,7 +4,7 @@
 // client only reflects what's allowed. Lifecycle POSTs carry an Idempotency-Key (Law 3): a retried "confirm" from a
 // flaky network can't double-apply. Money is bigint minor-unit strings (Law 2).
 import { HttpClient } from '../http';
-import { OrderListItem, OrderDetail, Page } from '../types';
+import { OrderListItem, OrderDetail, WalletPaymentResult, Page } from '../types';
 
 export type OrderRole = 'buyer' | 'seller';
 
@@ -34,6 +34,13 @@ export class OrdersResource {
   /** Raise a dispute / report a problem with an order (free-text note; the server opens the case). */
   dispute(id: string, note: string, idempotencyKey: string): Promise<{ ok: boolean }> {
     return this.http.request<{ ok: boolean }>('POST', `orders/${encodeURIComponent(id)}/dispute`, { idempotencyKey, body: { note } }).then((r) => r.data);
+  }
+
+  /** Pay an awaiting-payment order from the buyer's OWN wallet balance (alternative to the gateway).
+   *  Idempotent (Law 3); the server charges the order's authoritative total and fails closed if the
+   *  wallet can't cover it. The order confirms shortly after (async, via the same path as a gateway pay). */
+  payFromWallet(id: string, idempotencyKey: string): Promise<WalletPaymentResult> {
+    return this.http.request<WalletPaymentResult>('POST', `orders/${encodeURIComponent(id)}/pay-from-wallet`, { idempotencyKey, body: {} }).then((r) => r.data);
   }
 
   private transition(id: string, action: string, idempotencyKey: string): Promise<{ ok: boolean }> {

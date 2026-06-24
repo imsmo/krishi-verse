@@ -6,6 +6,9 @@ import { DomainError } from '../../../shared/errors/app-error';
 export class ListingNotFoundError extends DomainError {
   constructor(id: string) { super('LISTING_NOT_FOUND', `Listing ${id} not found`, 404); }
 }
+export class SellerNotFoundError extends DomainError {
+  constructor(id: string) { super('SELLER_NOT_FOUND', `Seller ${id} not found`, 404, { id }); }
+}
 export class IllegalListingTransitionError extends DomainError {
   constructor(from: string, to: string) {
     super('LISTING_ILLEGAL_TRANSITION', `Cannot move listing from ${from} to ${to}`, 409,

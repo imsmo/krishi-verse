@@ -28,3 +28,8 @@ export type RefreshDto = z.infer<typeof RefreshSchema>;
 
 export const LogoutSchema = z.object({ allDevices: z.coerce.boolean().default(false) }).strict();
 export type LogoutDto = z.infer<typeof LogoutSchema>;
+
+export const ChangePhoneStartSchema = z.object({ newPhone: phone }).strict();
+export type ChangePhoneStartDto = z.infer<typeof ChangePhoneStartSchema>;
+export const ChangePhoneConfirmSchema = z.object({ newPhone: phone, code: z.string().regex(/^\d{4,8}$/) }).strict();
+export type ChangePhoneConfirmDto = z.infer<typeof ChangePhoneConfirmSchema>;

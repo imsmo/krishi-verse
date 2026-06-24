@@ -12,24 +12,35 @@
 import { Module, OnModuleInit, Inject } from '@nestjs/common';
 import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
+import { IdentityModule } from '../identity/identity.module';
 import { AmbassadorsController } from './controllers/v1/ambassadors.controller';
 import { ReferralsController } from './controllers/v1/referrals.controller';
 import { EarningsController } from './controllers/v1/earnings.controller';
+import { FieldOpsController } from './controllers/v1/field-ops.controller';
 import { AmbassadorProfileService } from './services/ambassador-profile.service';
 import { CommissionPlanService } from './services/commission-plan.service';
 import { ReferralService } from './services/referral.service';
 import { AmbassadorEarningService } from './services/ambassador-earning.service';
+import { AssistedOnboardingService } from './services/assisted-onboarding.service';
+import { AmbassadorVisitService } from './services/ambassador-visit.service';
+import { AmbassadorTargetService } from './services/ambassador-target.service';
+import { LeaderboardReadModel } from './read-models/leaderboard.read-model';
 import { AmbassadorProfileRepository } from './repositories/ambassador-profile.repository';
 import { CommissionPlanRepository } from './repositories/commission-plan.repository';
 import { AmbassadorEarningRepository } from './repositories/ambassador-earning.repository';
 import { ReferralRepository } from './repositories/referral.repository';
+import { AmbassadorVisitRepository } from './repositories/ambassador-visit.repository';
+import { AmbassadorTargetRepository } from './repositories/ambassador-target.repository';
 import { OrderCompletedHandler } from './events/handlers/order-completed.handler';
 
 @Module({
-  controllers: [AmbassadorsController, ReferralsController, EarningsController],
+  imports: [IdentityModule],   // UserService.adminCreate + ConsentService.grant for assisted onboarding (Law 11 reuse)
+  controllers: [AmbassadorsController, ReferralsController, EarningsController, FieldOpsController],
   providers: [
     AmbassadorProfileService, CommissionPlanService, ReferralService, AmbassadorEarningService,
+    AssistedOnboardingService, AmbassadorVisitService, AmbassadorTargetService, LeaderboardReadModel,
     AmbassadorProfileRepository, CommissionPlanRepository, AmbassadorEarningRepository, ReferralRepository,
+    AmbassadorVisitRepository, AmbassadorTargetRepository,
   ],
   exports: [AmbassadorEarningService],
 })

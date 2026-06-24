@@ -14,6 +14,7 @@ export const LabourEventType = {
   WagesPaid:          'labour.wages_paid',
   BookingCancelled:   'labour.booking_cancelled',
   BookingExpired:     'labour.booking_expired',
+  AttendanceClockedIn:'labour.attendance_clocked_in',
 } as const;
 
 export type DomainEvent = { type: string; payload: Record<string, unknown> };

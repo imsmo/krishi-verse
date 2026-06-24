@@ -11,6 +11,7 @@ import { MandiPrice } from '../domain/mandi-price.entity';
 import { DomainEvent, MarketEventType, PriceSource } from '../domain/market-intel.events';
 import { MandiPriceRepository } from '../repositories/mandi-price.repository';
 import { PriceAlertRepository } from '../repositories/price-alert.repository';
+import { MarketNamesReadModel, withNames } from '../read-models/market-names.read-model';
 import { MarketForbiddenError } from '../domain/market-intel.errors';
 
 export interface MarketActor { userId: string; canManage: boolean; }
@@ -24,6 +25,7 @@ export class MandiPriceService {
     @Inject(METRICS) private readonly metrics: Metrics,
     private readonly prices: MandiPriceRepository,
     private readonly alerts: PriceAlertRepository,
+    private readonly names: MarketNamesReadModel,
   ) {}
 
   async ingest(tenantId: string, actor: MarketActor, idemKey: string, dto: { mandiId?: string | null; regionId?: string | null; productId: string; gradeOptionId?: string | null; priceDate: string; minMinor?: string | null; maxMinor?: string | null; modalMinor: string; unitCode: string; arrivalsQty?: string | null; source: string }) {
@@ -50,7 +52,9 @@ export class MandiPriceService {
 
   async list(tenantId: string, q: { productId: string; regionId?: string; mandiId?: string; fromDate?: string; cursor?: { c: string; id: string }; limit: number }) {
     const rows = await this.prices.listFor(tenantId, q);
-    const items = rows.map((m) => m.toJSON());
+    const base = rows.map((m) => m.toJSON());
+    const maps = await this.names.resolve(tenantId, base as any);   // commodity/grade/region names (bounded by the page)
+    const items = base.map((m) => withNames(m as any, maps));
     const last = items[items.length - 1] as any;
     const nextCursor = items.length === q.limit && last ? Buffer.from(`${last.priceDate}|${last.id}`).toString('base64') : null;
     return { items, nextCursor };

@@ -4,7 +4,7 @@
 // is refunded server-side. create + placeBid carry an Idempotency-Key (Law 3) — a retried bid can't double-hold.
 // Money is bigint minor-unit strings (Law 2). Gated server-side by the `auctions` flag.
 import { HttpClient } from '../http';
-import { Auction, BidHistoryItem, PlaceBidResult, Page } from '../types';
+import { Auction, BidHistoryItem, PlaceBidResult, MyBid, Page } from '../types';
 
 export class AuctionsResource {
   constructor(private readonly http: HttpClient) {}
@@ -35,6 +35,12 @@ export class AuctionsResource {
   /** Bid history (newest-first, keyset). Sealed auctions mask others' amounts until close (server-side). */
   async listBids(auctionId: string, params: { cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<BidHistoryItem>> {
     const r = await this.http.request<BidHistoryItem[]>('GET', `auctions/${encodeURIComponent(auctionId)}/bids`, { query: { cursor: params.cursor, limit: params.limit ?? 20 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+
+  /** The caller's OWN bids across ALL auctions (keyset), each with its EMD hold + winning flag. */
+  async myBids(params: { cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<MyBid>> {
+    const r = await this.http.request<MyBid[]>('GET', 'auctions/my-bids', { query: { cursor: params.cursor, limit: params.limit ?? 20 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
 }

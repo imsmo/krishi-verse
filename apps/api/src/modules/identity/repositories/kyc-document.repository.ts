@@ -36,4 +36,16 @@ export class KycDocumentRepository {
       [userId, status ?? null]);
     return r.rows.map(toDomain);
   }
+
+  /** The 'doc_type' lookup catalogue (id + code + display name) so the client submits a real docTypeId
+   *  and shows a name instead of a UUID. Platform values (tenant_id NULL) + any tenant overlay; active only. */
+  async listDocTypes(tenantId: string): Promise<{ id: string; code: string; name: string }[]> {
+    const r = await this.replica.forTenant(tenantId).query<{ id: string; code: string; default_name: string }>(
+      `SELECT id, code, default_name
+         FROM lookup_values
+        WHERE type_code = 'doc_type' AND is_active = true AND (tenant_id IS NULL OR tenant_id = $1)
+        ORDER BY sort_order, default_name`,
+      [tenantId]);
+    return r.rows.map((x) => ({ id: x.id, code: x.code, name: x.default_name }));
+  }
 }

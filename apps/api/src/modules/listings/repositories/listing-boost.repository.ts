@@ -1,14 +1,40 @@
 // modules/listings/repositories/listing-boost.repository.ts
 // SQL for paid visibility boosts. Money stored as bigint minor units (Law 1);
 // tenant_id on every query; batched expiry uses SKIP LOCKED for multi-pod jobs.
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
 import { ListingBoost } from '../domain/listing-boost.entity';
 
 export interface BoostRow { id: string; listing_id: string; ends_at: Date; }
+/** A selectable boost tier: id to submit + display name + the SERVER-side price/days (from lookup meta). */
+export interface BoostTier { id: string; code: string; name: string; priceMinor: string; days: number; }
 
 @Injectable()
 export class ListingBoostRepository {
+  constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
+
+  /** The seeded 'boost_tier' catalogue (price_minor + days live in lookup_values.meta). Platform tiers
+   *  (tenant_id NULL) + any tenant overlay; active only. The client shows names + submits a real id. */
+  async listTiers(tenantId: string): Promise<BoostTier[]> {
+    const r = await this.replica.forTenant(tenantId).query<{ id: string; code: string; default_name: string; meta: any }>(
+      `SELECT id, code, default_name, meta FROM lookup_values
+        WHERE type_code='boost_tier' AND is_active=true AND (tenant_id IS NULL OR tenant_id=$1)
+        ORDER BY sort_order, default_name`,
+      [tenantId]);
+    return r.rows.map((x) => ({ id: x.id, code: x.code, name: x.default_name, priceMinor: String(x.meta?.price_minor ?? 0), days: Number(x.meta?.days ?? 0) }));
+  }
+
+  /** Resolve ONE tier's authoritative price + days (server truth — the client never sends the price). */
+  async getTier(tenantId: string, boostTierId: string): Promise<{ priceMinor: bigint; days: number } | null> {
+    const r = await this.replica.forTenant(tenantId).query<{ meta: any }>(
+      `SELECT meta FROM lookup_values WHERE id=$1 AND type_code='boost_tier' AND is_active=true AND (tenant_id IS NULL OR tenant_id=$2)`,
+      [boostTierId, tenantId]);
+    const m = r.rows[0]?.meta;
+    if (!m || m.price_minor == null || m.days == null) return null;
+    return { priceMinor: BigInt(m.price_minor), days: Number(m.days) };
+  }
+
   async insert(tx: TxContext, b: ListingBoost): Promise<void> {
     const p = b.props;
     await tx.query(

@@ -6,7 +6,13 @@
 // minor strings (Law 2). The app never enrolls/activates/pays out (those are ambassador.manage / back-office —
 // Law 11). Gated server-side by the `ambassadors` flag.
 import { HttpClient } from '../http';
-import { AmbassadorProfile, Referral, AmbassadorEarning, CommissionPlan, Page } from '../types';
+import { AmbassadorProfile, Referral, AmbassadorEarning, CommissionPlan, AmbassadorVisit, AmbassadorTarget, LeaderboardEntry, AssistedOnboardingResult, Page } from '../types';
+
+/** Ambassador-assisted farmer onboarding (the farmer is created on-behalf; DPDP consent is mandatory). */
+export interface AssistedOnboardingInput {
+  phone: string; fullName?: string; languageCode?: string; countryCode?: string; regionId?: string;
+  consents: { purposeCode: string; granted: boolean }[];
+}
 
 export class AmbassadorsResource {
   constructor(private readonly http: HttpClient) {}
@@ -38,5 +44,30 @@ export class AmbassadorsResource {
   async listReferrals(params: { status?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<Referral>> {
     const r = await this.http.request<Referral[]>('GET', 'ambassadors/referrals', { query: { status: params.status, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+
+  // --- field-ops (API-W9) ---
+  /** Onboard a farmer ON-BEHALF (the caller must be an active ambassador; DPDP consent is required). The farmer
+   * account + consent + a 'signed_up' attribution referral are created server-side; the onboarding COMMISSION
+   * accrues only when an admin activates the referral. Idempotent (Law 3). */
+  async assistedOnboard(input: AssistedOnboardingInput, idempotencyKey: string): Promise<AssistedOnboardingResult> {
+    return (await this.http.request<AssistedOnboardingResult>('POST', 'ambassadors/assisted-onboarding', { idempotencyKey, body: input })).data;
+  }
+  /** Log a geo-stamped field visit the caller-ambassador made. */
+  async logVisit(input: { purpose?: string; visitedUserId?: string; notes?: string; lat?: number; lng?: number; regionId?: string }): Promise<AmbassadorVisit> {
+    return (await this.http.request<AmbassadorVisit>('POST', 'ambassadors/visits', { body: input })).data;
+  }
+  /** The caller-ambassador's own visit timeline (keyset). */
+  async listVisits(params: { cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<AmbassadorVisit>> {
+    const r = await this.http.request<AmbassadorVisit[]>('GET', 'ambassadors/visits', { query: { cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  /** The tenant leaderboard (ranked by commission earned, optional date window). */
+  async leaderboard(params: { periodStart?: string; periodEnd?: string; limit?: number } = {}, signal?: AbortSignal): Promise<LeaderboardEntry[]> {
+    return (await this.http.request<LeaderboardEntry[]>('GET', 'ambassadors/leaderboard', { query: { periodStart: params.periodStart, periodEnd: params.periodEnd, limit: params.limit ?? 20 }, signal })).data;
+  }
+  /** The caller-ambassador's own period targets. */
+  async myTargets(limit = 50, signal?: AbortSignal): Promise<AmbassadorTarget[]> {
+    return (await this.http.request<AmbassadorTarget[]>('GET', 'ambassadors/targets/me', { query: { limit }, signal })).data;
   }
 }

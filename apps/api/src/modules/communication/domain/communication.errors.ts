@@ -24,3 +24,6 @@ export class IllegalNotificationTransitionError extends DomainError {
 export class CommForbiddenError extends DomainError {
   constructor(detail = 'forbidden') { super('COMM_FORBIDDEN', detail, 403, {}); }
 }
+export class InvalidPushDeviceError extends DomainError {
+  constructor(detail = 'Invalid push device registration') { super('PUSH_DEVICE_INVALID', detail, 400, {}); }
+}

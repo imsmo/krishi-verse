@@ -16,6 +16,9 @@ export class IllegalUserTransitionError extends DomainError {
 export class InvalidOtpError extends DomainError {
   constructor() { super('OTP_INVALID', 'Invalid or expired verification code', 401); }
 }
+export class PhoneAlreadyInUseError extends DomainError {
+  constructor() { super('PHONE_IN_USE', 'That phone number is already registered to another account', 409); }
+}
 export class InvalidRefreshError extends DomainError {
   constructor() { super('REFRESH_INVALID', 'Refresh token is invalid, expired, or revoked', 401); }
 }

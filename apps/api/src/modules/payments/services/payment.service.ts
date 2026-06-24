@@ -10,14 +10,14 @@ import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempoten
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 import { WALLET_SERVICE, WalletPort } from '../../../core/wallet/wallet.port';
-import { platform, PlatformAccount } from '../../../core/wallet/account-codes';
+import { platform, userMain, PlatformAccount } from '../../../core/wallet/account-codes';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { Payment } from '../domain/payment.entity';
 import { DomainEvent } from '../domain/payments.events';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { GatewayRegistry } from '../gateway/gateway.registry';
 import { CreatePaymentIntentDto, RefundPaymentDto } from '../dto/create-payment.dto';
-import { PaymentNotFoundError, WebhookSignatureError, PaymentAmountMismatchError } from '../domain/payments.errors';
+import { PaymentNotFoundError, WebhookSignatureError, PaymentAmountMismatchError, InsufficientWalletBalanceError } from '../domain/payments.errors';
 import { BadRequestError, InfraError } from '../../../shared/errors/app-error';
 
 export interface PaymentActor { userId: string; canModerate: boolean; }
@@ -129,6 +129,40 @@ export class PaymentService {
         await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'payment.refunded', entityType: 'payment', entityId: paymentId, newValue: { refundedMinor: amount.toString(), reason: dto.reason ?? null }, ip });
         return { paymentId, status: payment.status, refundedMinor: amount.toString() };
       }, { userId: actor.userId }));
+  }
+
+  /** Pay an order from the buyer's OWN wallet balance (no gateway). Mirrors a gateway capture's money
+   *  move, but the source is the user's wallet rather than the platform gateway account: user main →
+   *  platform escrow (zero-sum). Records a 'wallet'-provider Payment in 'success' and emits
+   *  payments.payment_succeeded (referenceType 'order') so the existing orders handler confirms the
+   *  order — exactly like the gateway path. Runs inside the CALLER'S tx (the orders service owns the
+   *  order load/verify + caller-key idempotency). Fails CLOSED when the wallet can't cover it in full.
+   *  Money is idempotent on the order (ledger key `walletpay:<orderId>`) so a retry never double-debits. */
+  async captureOrderFromWalletInTx(tx: TxContext, input: { tenantId: string; buyerUserId: string; orderId: string; amountMinor: bigint; currencyCode: string }): Promise<{ paymentId: string; ledgerTxnId: string }> {
+    const purposeId = await this.repo.resolvePurposeId(input.tenantId, 'direct_order');
+    if (!purposeId) throw new BadRequestError("Unknown payment purpose 'direct_order'");
+    const buyer = userMain(input.buyerUserId, input.currencyCode);
+    const available = await this.wallet.balanceMinor(tx, buyer);              // server-truth spendable balance
+    if (available < input.amountMinor) throw new InsufficientWalletBalanceError(input.amountMinor, available);
+    const id = uuidv7();
+    const payment = Payment.initiate({
+      id, tenantId: input.tenantId, userId: input.buyerUserId, purposeId, referenceType: 'order', referenceId: input.orderId,
+      amountMinor: input.amountMinor, currencyCode: input.currencyCode, providerCode: 'wallet', idempotencyKey: `walletpay:${input.orderId}`,
+    });
+    // money MOVES (Law 11): buyer's wallet → platform escrow, in the caller's tx, idempotent on the order.
+    const txn = await this.wallet.post(tx, {
+      tenantId: input.tenantId, txnType: 'order_payment', idempotencyKey: `walletpay:${input.orderId}`,
+      referenceType: 'payment', referenceId: id, initiatedBy: input.buyerUserId,
+      legs: [
+        { account: platform(PlatformAccount.Escrow, input.currencyCode), amountMinor: input.amountMinor },
+        { account: buyer, amountMinor: -input.amountMinor },
+      ],
+    });
+    payment.markCaptured(`wallet:${id}`, 'wallet', txn.txnId);                // → emits payments.payment_succeeded
+    await this.repo.insert(tx, payment);
+    await this.flush(tx, input.tenantId, id, payment.pullEvents());
+    await this.audit.write(tx, { tenantId: input.tenantId, actorUserId: input.buyerUserId, action: 'payment.wallet_captured', entityType: 'payment', entityId: id, newValue: { status: 'success', orderId: input.orderId, amountMinor: input.amountMinor.toString() }, ip: null });
+    return { paymentId: id, ledgerTxnId: txn.txnId };
   }
 
   async getById(tenantId: string, actor: PaymentActor, id: string) {

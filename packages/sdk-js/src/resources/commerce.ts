@@ -4,7 +4,7 @@
 // (Law 3) so a retried "place order" can't double-create. Money is bigint minor-unit strings (Law 2); the final
 // charges/discount/tax are computed SERVER-SIDE and read back on the order.
 import { HttpClient } from '../http';
-import { Cart, CheckoutResult } from '../types';
+import { Cart, CheckoutResult, CheckoutPreview } from '../types';
 
 export class CartResource {
   constructor(private readonly http: HttpClient) {}
@@ -23,6 +23,11 @@ export class CartResource {
 
 export class CheckoutResource {
   constructor(private readonly http: HttpClient) {}
+  /** Read-only totals preview: server-computed subtotal + delivery + platform fee + member benefits +
+   *  coupon (DRY-RUN) for the active cart. No order is created and no money moves — show the bill first. */
+  async preview(input: { couponCode?: string } = {}): Promise<CheckoutPreview> {
+    return (await this.http.request<CheckoutPreview>('POST', 'checkout/preview', { body: input })).data;
+  }
   /** Convert the active cart into orders. Idempotency-keyed (Law 3). `couponCode` is validated + redeemed
    * SERVER-SIDE against the primary order (the client never computes the discount). */
   async checkout(input: { deliveryAddressId?: string; deliveryMethodId?: string; couponCode?: string }, idempotencyKey: string): Promise<CheckoutResult> {

@@ -45,10 +45,12 @@ import { PaymentsPublisher } from './events/payments.publisher';
 import { PayoutBatchRepository } from './repositories/payout-batch.repository';
 import { PayoutBatchService } from './services/payout-batch.service';
 import { WalletBalanceReadModel } from './read-models/wallet-balance.read-model';
+import { WalletLedgerReadModel } from './read-models/wallet-ledger.read-model';
+import { WalletController } from './controllers/v1/wallet.controller';
 
 @Module({
   imports: [MediaModule],   // MediaService for rendered statement/invoice PDFs
-  controllers: [PaymentsController, PaymentWebhooksController, PayoutsController, SettlementStatementsController, InvoicesController, CommissionRulesController],
+  controllers: [PaymentsController, PaymentWebhooksController, PayoutsController, SettlementStatementsController, InvoicesController, CommissionRulesController, WalletController],
   providers: [
     PaymentService,
     PayoutService,
@@ -75,6 +77,7 @@ import { WalletBalanceReadModel } from './read-models/wallet-balance.read-model'
     PayoutBatchRepository,
     PayoutBatchService,
     WalletBalanceReadModel,
+    WalletLedgerReadModel,
     {
       provide: GatewayRegistry,
       useFactory: (resilience: ResilienceService) => {

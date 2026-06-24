@@ -50,6 +50,12 @@ export class KycDocumentService {
     return this.kyc.listByUser(tenantId, userId, status).then((docs) => docs.map((d) => d.toProps()));
   }
 
+  /** Catalogue of accepted KYC document types (seeded 'doc_type' lookup) so the client shows a name
+   *  and submits a real docTypeId instead of guessing a UUID. Read-only; no PII. */
+  listDocTypes(tenantId: string) {
+    return this.kyc.listDocTypes(tenantId);
+  }
+
   private async flush(tx: TxContext, id: string, events: { type: string; payload: Record<string, unknown> }[], tenantId: string) {
     for (const e of events) await this.outbox.write(tx, { tenantId, aggregateType: 'kyc_document', aggregateId: id, eventType: e.type, payload: { v: 1, ...e.payload } });
   }

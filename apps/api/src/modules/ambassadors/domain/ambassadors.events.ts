@@ -6,6 +6,9 @@ export const AmbassadorEventType = {
   ReferralActivated:   'ambassadors.referral_activated',
   EarningAccrued:      'ambassadors.earning_accrued',
   EarningsPaidOut:     'ambassadors.earnings_paid_out',
+  VisitLogged:         'ambassadors.visit_logged',
+  TargetSet:           'ambassadors.target_set',
+  AssistedOnboarded:   'ambassadors.assisted_onboarded',
 } as const;
 export type AmbassadorEventType = (typeof AmbassadorEventType)[keyof typeof AmbassadorEventType];
 export type DomainEvent = { type: string; payload: Record<string, unknown> };

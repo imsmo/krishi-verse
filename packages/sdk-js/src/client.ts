@@ -7,7 +7,7 @@ import { CatalogueResource } from './resources/catalogue';
 import { TraceabilityResource } from './resources/traceability';
 import { AuthResource } from './resources/auth';
 import { MediaResource } from './resources/media';
-import { PaymentsResource, PayoutsResource } from './resources/payments';
+import { PaymentsResource, PayoutsResource, WalletResource } from './resources/payments';
 import { KycResource, BankAccountsResource, AddressesResource } from './resources/identity';
 import { TenancyResource } from './resources/tenancy';
 import { RbacResource, DisputesResource, UsersResource } from './resources/admin';
@@ -16,6 +16,7 @@ import { OrdersResource } from './resources/orders';
 import { ShipmentsResource } from './resources/logistics';
 import { ReviewsResource } from './resources/reviews';
 import { CartResource, CheckoutResource } from './resources/commerce';
+import { BuyerResource } from './resources/buyer';
 import { OffersResource } from './resources/offers';
 import { ConversationsResource, MaskedCallsResource } from './resources/messaging';
 import { AuctionsResource } from './resources/auctions';
@@ -38,6 +39,7 @@ export class KrishiVerseClient {
   readonly media: MediaResource;
   readonly payments: PaymentsResource;
   readonly payouts: PayoutsResource;
+  readonly wallet: WalletResource;
   readonly kyc: KycResource;
   readonly bankAccounts: BankAccountsResource;
   readonly notifications: NotificationsResource;
@@ -46,6 +48,7 @@ export class KrishiVerseClient {
   readonly reviews: ReviewsResource;
   readonly addresses: AddressesResource;
   readonly cart: CartResource;
+  readonly buyer: BuyerResource;
   readonly checkout: CheckoutResource;
   readonly offers: OffersResource;
   readonly conversations: ConversationsResource;
@@ -77,6 +80,7 @@ export class KrishiVerseClient {
     this.media = new MediaResource(this.http);
     this.payments = new PaymentsResource(this.http);
     this.payouts = new PayoutsResource(this.http);
+    this.wallet = new WalletResource(this.http);
     this.kyc = new KycResource(this.http);
     this.bankAccounts = new BankAccountsResource(this.http);
     this.notifications = new NotificationsResource(this.http);
@@ -85,6 +89,7 @@ export class KrishiVerseClient {
     this.reviews = new ReviewsResource(this.http);
     this.addresses = new AddressesResource(this.http);
     this.cart = new CartResource(this.http);
+    this.buyer = new BuyerResource(this.http);
     this.checkout = new CheckoutResource(this.http);
     this.offers = new OffersResource(this.http);
     this.conversations = new ConversationsResource(this.http);

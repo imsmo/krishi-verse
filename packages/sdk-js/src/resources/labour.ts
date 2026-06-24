@@ -5,12 +5,14 @@
 // hard-gates accepting work on it. register carries an Idempotency-Key (Law 3). Money is bigint minor strings
 // (Law 2). Gated server-side by the `labour` flag.
 import { HttpClient } from '../http';
-import { WorkerProfile, LabourBooking, LabourAssignment, Page } from '../types';
+import { WorkerProfile, LabourBooking, LabourAssignment, LabourAttendance, LabourLookups, Page } from '../types';
 
 export interface WorkerPrefsInput {
   villageRegionId?: string; travelKm?: number; stayAwayOk?: 'same_day' | 'overnight' | 'weekly' | 'monthly';
   minWageExpectationMinor?: string; autoAcceptAboveMinor?: string; hasSmartphone?: boolean;
   emergencyContactName?: string; emergencyContactPhone?: string; eshramNo?: string;
+  /** The worker's self-declared skill ids (replaces the whole set on update). Unknown ids are rejected. */
+  skillIds?: string[];
 }
 
 /** Employer "post a booking" payload (P-14). The server snapshots the statutory min-wage from (regionId,
@@ -61,6 +63,22 @@ export class LabourResource {
   /** Accept or reject an assignment (the caller's own). The server enforces the booking's respond-by window. */
   async respondAssignment(id: string, decision: 'accept' | 'reject', voiceConsentMediaId?: string): Promise<LabourAssignment> {
     return (await this.http.request<LabourAssignment>('POST', `labour/assignments/${encodeURIComponent(id)}/respond`, { body: { decision, voiceConsentMediaId } })).data;
+  }
+  /** Worker SELF-APPLIES to an open booking — creates an 'applied' assignment (an interest pool that does not
+   * consume a slot). The caller's worker profile is resolved server-side from the token. Idempotent (Law 3). */
+  async applyToBooking(bookingId: string, idempotencyKey: string): Promise<LabourAssignment> {
+    return (await this.http.request<LabourAssignment>('POST', `labour/bookings/${encodeURIComponent(bookingId)}/apply`, { idempotencyKey })).data;
+  }
+  /** Worker clocks in for today on their OWN accepted assignment. The device sends only its GPS fix; the ≤100m
+   * farm geofence is computed + enforced SERVER-side (the client cannot forge proximity). Idempotent (Law 3). */
+  async clockIn(assignmentId: string, fix: { lat: number; lng: number }, idempotencyKey: string): Promise<LabourAttendance> {
+    return (await this.http.request<LabourAttendance>('POST', `labour/assignments/${encodeURIComponent(assignmentId)}/attendance`, { idempotencyKey, body: fix })).data;
+  }
+
+  // --- taxonomy ---
+  /** The labour catalogue (work-types, skill tree, regions, skill-levels) for rendering pickers with real ids. */
+  async lookups(signal?: AbortSignal): Promise<LabourLookups> {
+    return (await this.http.request<LabourLookups>('GET', 'labour/lookups', { signal })).data;
   }
 
   // --- employer / hire side (P-14). All authorized server-side by worker.book; owner-or-admin per booking. ---

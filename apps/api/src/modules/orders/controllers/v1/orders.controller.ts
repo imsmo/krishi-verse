@@ -1,12 +1,14 @@
 // modules/orders/controllers/v1/orders.controller.ts · order history + lifecycle.
-import { Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
+import { BadRequestError } from '../../../../shared/errors/app-error';
 import { OrderService } from '../../services/order.service';
+import { OrderPaymentService } from '../../services/order-payment.service';
 import { OrderItemService } from '../../services/order-item.service';
 import { CheckoutGroupService } from '../../services/checkout-group.service';
 import { OrderTimelineReadModel } from '../../read-models/order-timeline.read-model';
@@ -23,6 +25,7 @@ const ipOf = (req: Request) => req.ip || null;
 export class OrdersController {
   constructor(
     private readonly orders: OrderService,
+    private readonly orderPay: OrderPaymentService,
     private readonly timeline: OrderTimelineReadModel,
     private readonly orderItems: OrderItemService,
     private readonly groups: CheckoutGroupService,
@@ -66,6 +69,15 @@ export class OrdersController {
   ready(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) { return this.orders.markReady(ctx.tenantId, this.actor(ctx), id, ipOf(r)).then(() => ({ data: { ok: true } })); }
   @Post(':id/delivered') @RequirePermissions(OrderPermissions.Manage)
   delivered(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) { return this.orders.markDelivered(ctx.tenantId, this.actor(ctx), id, ipOf(r)).then(() => ({ data: { ok: true } })); }
+
+  /** Buyer pays an awaiting-payment order from their OWN wallet balance (alternative to the gateway).
+   *  Idempotent (Law 3). Amount is the order's server total; the service re-resolves the buyer from the
+   *  loaded order (no IDOR). order.create = the buyer's own permission (they created/own the order). */
+  @Post(':id/pay-from-wallet') @RequirePermissions(OrderPermissions.Create)
+  async payFromWallet(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @Param('id') id: string) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return { data: await this.orderPay.payFromWallet(ctx.tenantId, ctx.userId, key, id) };
+  }
 
   // cancel/complete/dispute: any authed party; the entity + service enforce buyer/seller ownership
   @Post(':id/cancel')

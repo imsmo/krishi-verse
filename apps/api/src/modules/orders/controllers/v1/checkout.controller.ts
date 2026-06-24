@@ -7,13 +7,19 @@ import { CurrentContext } from '../../../../core/tenancy-context/current-context
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { CheckoutService } from '../../services/checkout.service';
-import { CheckoutSchema, CheckoutDto } from '../../dto/create-order.dto';
+import { CheckoutSchema, CheckoutDto, CheckoutPreviewSchema, CheckoutPreviewDto } from '../../dto/create-order.dto';
 import { OrderPermissions } from '../../policies/orders.policies';
 
 @Controller({ path: 'checkout', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard)
 export class CheckoutController {
   constructor(private readonly checkout: CheckoutService) {}
+
+  // Read-only totals preview (no order, no money moved) — server-authoritative bill before checkout.
+  @Post('preview') @RequirePermissions(OrderPermissions.Create)
+  preview(@CurrentContext() ctx: RequestContext, @ZodBody(CheckoutPreviewSchema) dto: CheckoutPreviewDto) {
+    return this.checkout.previewTotals(ctx.tenantId, ctx.userId, dto).then((data) => ({ data }));
+  }
   // Idempotency is owned by CheckoutService (it wraps the whole cart→orders tx under this key).
   // The controller MUST NOT also wrap it — a second remember() with the same scoped key would see
   // the service's in-progress claim and wrongly reject the very first request as a duplicate.

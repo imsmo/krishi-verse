@@ -16,6 +16,32 @@ export interface ListingQuery {
 }
 export interface ProductCard { id: string; name: string; categoryId: string; defaultUnit: string; brandId: string | null; gstRatePct: number | null; isPerishable: boolean; isPlatform: boolean; }
 
+/** A selectable paid-boost tier (price + days are server truth, from the seeded lookup meta). Money minor-unit string. */
+export interface BoostTier { id: string; code: string; name: string; priceMinor: string; days: number; }
+/** Result of paying for a boost from the wallet (server-resolved price; boost recorded immediately). */
+export interface BoostWalletPayResult { ok: boolean; boostId: string; endsAt: string; priceMinor: string; days: number; txnId: string; }
+/** A seller's own-listing engagement analytics. Real metrics only (no fabricated impression/view count). */
+export interface ListingAnalytics {
+  listingId: string; status: string; publishedAt: string | null;
+  offers: number; priceChanges: number; boostsPurchased: number; activeBoost: { endsAt: string } | null;
+}
+
+// --- buyer favourites (module: buyer) ---
+export type SavedEntityType = 'listing' | 'product' | 'seller' | 'worker' | 'course' | 'tip';
+/** A buyer's saved item (polymorphic favourite). */
+export interface SavedItem { id: string; entityType: SavedEntityType; entityId: string; createdAt: string; }
+/** A buyer's saved search (re-runnable filter set). */
+export interface SavedSearch { id: string; name: string; query: Record<string, unknown>; notifyNewMatches: boolean; createdAt: string; }
+
+// --- public seller profile + listing gallery (discovery) ---
+/** Public seller storefront: SAFE fields + reputation only (NO phone/email/KYC). */
+export interface SellerPublicProfile {
+  sellerId: string; displayName: string | null; regionId: string | null; memberSince: string | null;
+  rating: { count: number; avgStars: number }; listingsActive: number;
+}
+/** One signed gallery image for a public listing (short-lived presigned GET url). */
+export interface GalleryItem { mediaId: string; url: string; sortOrder: number; }
+
 /** Public farm-to-fork provenance (from the SECURITY DEFINER trace_scan projection — NON-PII). */
 export interface TraceProvenance {
   qrToken: string; listingId: string | null; declaredInputs: unknown[]; certificateIds: unknown[];
@@ -31,11 +57,17 @@ export type PaymentPurpose = 'wallet_recharge' | 'direct_order' | 'subscription'
 export interface PaymentIntent { paymentId: string; gatewayOrderId: string; provider: string; amountMinor: string; status: string; }
 export interface PaymentSummary { id: string; status: string; amountMinor: string; currencyCode: string; purpose?: string; createdAt?: string; }
 export interface PayoutSummary { id: string; status: string; amountMinor: string; currencyCode: string; purpose?: string; createdAt?: string; }
+/** Reconciled wallet balance (server-truth, bigint minor-unit strings). */
+export interface WalletBalance { userId: string; currencyCode: string; availableMinor: string; heldMinor: string; isFrozen: boolean; }
+/** One ledger entry in the caller's wallet statement. amountMinor is SIGNED (+credit / −debit). */
+export interface WalletLedgerEntry { entryId: string; txnId: string; txnType: string | null; accountCode: string; amountMinor: string; balanceAfterMinor: string; currencyCode: string; referenceType: string | null; referenceId: string | null; description: string | null; createdAt: string; }
 export interface BankAccount { id: string; accountKind: 'bank' | 'upi'; upiId?: string | null; accountLast4?: string | null; ifsc?: string | null; holderName?: string | null; isPrimary: boolean; }
 
 // --- KYC (module 1, identity) — never carries raw doc numbers, only masked + media refs ---
 export type KycStatus = 'pending' | 'verified' | 'rejected' | 'expired';
 export interface KycDocument { id: string; status: KycStatus; docTypeId?: string; mediaId?: string; docNoMasked?: string | null; rejectReason?: string | null; createdAt?: string; }
+/** A selectable KYC document type from the seeded 'doc_type' catalogue (id to submit + name to show). */
+export interface KycDocType { id: string; code: string; name: string; }
 
 // --- notifications (communication module) ---
 /** An inbox notification. The rendered title/body/deepLink live in `payload` (server-rendered, localized);
@@ -83,6 +115,22 @@ export interface Cart { items: CartItem[]; subtotalMinor: string; }
  * (charges/discount/tax) live on each created order — read them back via orders.get. */
 export interface CheckoutResult { orders: Array<{ id: string; orderNo: string; totalMinor: string; status: string }>; checkoutGroupId: string | null; }
 
+/** One seller's slice of the read-only checkout totals preview (server-computed; money minor-unit strings). */
+export interface CheckoutPreviewSeller {
+  sellerUserId: string;
+  items: Array<{ listingId: string; title: string; quantity: number; unitCode: string; unitPriceMinor: string; lineTotalMinor: string }>;
+  subtotalMinor: string; deliveryFeeMinor: string; platformFeeMinor: string; discountMinor: string; totalMinor: string;
+  couponError?: string;
+}
+/** Server-authoritative bill BEFORE checkout (no order, no money moved). Totals = sum of the seller slices. */
+export interface CheckoutPreview {
+  currencyCode: string; sellers: CheckoutPreviewSeller[];
+  subtotalMinor: string; deliveryFeeMinor: string; platformFeeMinor: string; discountMinor: string; grandTotalMinor: string;
+  couponCode: string | null;
+}
+/** Result of paying an order from the buyer's wallet (the order confirms shortly after, async). */
+export interface WalletPaymentResult { orderId: string; paymentId: string; status: string; amountMinor: string; currencyCode: string; }
+
 // --- addresses (module 1, identity) — the buyer's delivery address book ---
 export interface Address {
   id: string; line1: string; line2?: string | null; village?: string | null; regionId?: string | null;
@@ -124,6 +172,11 @@ export interface Auction {
 export interface BidHistoryItem { id: string; bidderUserId: string; amountMinor: string | null; createdAt?: string; }
 /** Result of placing a bid. `extended` = the soft-close auto-extended the end time. */
 export interface PlaceBidResult { bidId: string; auctionId: string; amountMinor: string; extended: boolean; endsAt: string; }
+/** One of the caller's bids across auctions ("my bids"), with the EMD hold + winning flag. Money minor-unit strings. */
+export interface MyBid {
+  bidId: string; auctionId: string; listingId: string; amountMinor: string; emdHeldMinor: string;
+  auctionStatus: string; endsAt: string; isWinning: boolean; createdAt: string;
+}
 
 // --- labour (module 6) — money is bigint minor-unit STRINGS (Law 2) ---
 /** A worker's self-managed profile. `ageVerified18` is set out-of-band (KYC/admin) — NOT client-settable; the
@@ -131,7 +184,9 @@ export interface PlaceBidResult { bidId: string; auctionId: string; amountMinor:
 export interface WorkerProfile {
   id: string; userId: string; ageVerified18: boolean; villageRegionId: string | null; travelKm: number | null;
   stayAwayOk: string | null; minWageExpectationMinor: string | null; autoAcceptAboveMinor: string | null;
-  hasSmartphone: boolean | null; ratingAvg: number | null; bookingsCompleted: number | null; noShowCount: number | null; createdAt?: string;
+  hasSmartphone: boolean | null; ratingAvg: number | null; bookingsCompleted: number | null; noShowCount: number | null;
+  /** The caller's self-declared skill ids — present on the `myWorker()` read. */
+  skillIds?: string[]; createdAt?: string;
 }
 /** A labour booking (a job). Workers browse `box=open`; the employer owns `box=mine`. `respondBy` is the
  * accept/decline window deadline (server-enforced). */
@@ -142,6 +197,15 @@ export interface LabourBooking {
 }
 /** A worker's assignment to a booking (the "job offer"). The worker accepts/rejects within the booking's window. */
 export interface LabourAssignment { id: string; bookingId: string; workerId: string; status: string; wageMinor: string; acceptedAt: string | null; createdAt?: string; }
+/** A geo-fenced clock-in receipt. `distanceM` is the SERVER-computed metres from the farm (≤100m fence). */
+export interface LabourAttendance { id: string; assignmentId: string; bookingId: string; workDate: string; clockInAt: string; distanceM: number; method: string; }
+/** The labour taxonomy catalogue for client pickers (real server ids + human labels). */
+export interface LabourLookups {
+  workTypes: { id: string; code: string; name: string }[];
+  skills: { id: string; code: string; name: string; tier: number; parentId: string | null; hazardous: boolean }[];
+  regions: { id: string; code: string | null; name: string }[];
+  skillLevels: string[];
+}
 
 // --- ambassadors (module 7 — village acquisition agents) — money is bigint minor STRINGS (Law 2) ---
 /** The caller's own ambassador profile (PII-minimised: no name/phone). monthlyStipendMinor is bigint minor. */
@@ -156,6 +220,14 @@ export interface Referral { id: string; referrerUserId: string; refereeUserId: s
 export interface AmbassadorEarning { id: string; ambassadorId: string; eventCode: string; referenceType: string | null; referenceId: string | null; amountMinor: string; payoutId: string | null; createdAt?: string; }
 /** A commission plan (read-only catalogue for display). */
 export interface CommissionPlan { id: string; code: string; name?: string; [k: string]: unknown; }
+/** A geo-stamped field visit logged by an ambassador. */
+export interface AmbassadorVisit { id: string; ambassadorId: string; visitedUserId: string | null; purpose: string; notes: string | null; lat: number | null; lng: number | null; regionId: string | null; visitedAt: string; createdAt?: string; }
+/** A per-period goal for one metric. `targetValue` is a count, or bigint minor units for 'earnings_minor'. */
+export interface AmbassadorTarget { id: string; ambassadorId: string; metric: string; periodStart: string; periodEnd: string; targetValue: string; createdAt?: string; }
+/** A leaderboard row: an ambassador ranked by commission earned (bigint minor) in the window. */
+export interface LeaderboardEntry { ambassadorId: string; userId: string; tierId: string | null; earnedMinor: string; events: number; rank: number; }
+/** The result of an assisted onboarding: the created/resolved farmer + the attribution referral id. */
+export interface AssistedOnboardingResult { user: { id: string; [k: string]: unknown }; ambassadorId: string; referralId: string | null; }
 
 // --- education (module 9 — courses/lessons/enrollments) — money is bigint minor STRINGS (Law 2) ---
 /** A course (training). `priceMinor` 0 = free. Browse returns published courses. */
@@ -260,6 +332,16 @@ export interface Subscription {
 }
 /** A role assignment (the tenant's roster + approval queue). Pending = not yet approved (approvedAt null). */
 export interface RoleAssignment { id: string; userId: string; roleId?: string; roleCode: string; kycStatus: string; isActive: boolean; approvedAt: string | null; }
+/** The tenant's own analytics dashboard over a window. All money is bigint minor STRINGS (Law 2). */
+export interface TenantAnalytics {
+  windowFrom: string; windowTo: string; currencyCode: string;
+  gmvMinor: string; orders: number; commissionMinor: string; platformFeeMinor: string;
+  refundedOrders: number; activeListings: number; disputesOpen: number; payoutsPaidMinor: string;
+  topProducts: { productId: string; quantity: string; salesMinor: string }[];
+  topSellers: { sellerUserId: string; orders: number; salesMinor: string }[];
+}
+/** A tenant→audience broadcast (status queued→sending→sent; counts reflect enqueued recipients). */
+export interface TenantBroadcast { id: string; audienceRoleCode: string | null; title: string; body: string; status: string; recipientCount: number; sentCount: number; failureReason: string | null; createdAt?: string; }
 // --- market-intel (mandi prices) + weather (P-19) — money is bigint minor STRINGS (Law 2) ---
 /** A mandi (market yard). lat/lng for map/nearest; no PII. */
 export interface Mandi { id: string; defaultName: string; regionId: string | null; mandiCode: string | null; lat: number | null; lng: number | null; isActive: boolean; }
@@ -267,9 +349,14 @@ export interface Mandi { id: string; defaultName: string; regionId: string | nul
 export interface MandiPrice {
   id: string; mandiId: string | null; regionId: string | null; productId: string; gradeOptionId: string | null; priceDate: string;
   minMinor: string | null; maxMinor: string | null; modalMinor: string; unitCode: string; arrivalsQty: number | null; source: string | null;
+  // API-W11 catalogue name-join (null if the id no longer resolves — degrade, never blank the row).
+  productName?: string | null; gradeName?: string | null; regionName?: string | null;
 }
 /** A price prediction band (p10/p50/p90 bigint minor). */
-export interface PricePrediction { productId: string; regionId: string | null; gradeOptionId: string | null; targetDate: string; p10Minor: string; p50Minor: string; p90Minor: string; confidence: number | null; modelVersion: string | null; createdAt?: string; }
+export interface PricePrediction {
+  productId: string; regionId: string | null; gradeOptionId: string | null; targetDate: string; p10Minor: string; p50Minor: string; p90Minor: string; confidence: number | null; modelVersion: string | null; createdAt?: string;
+  productName?: string | null; gradeName?: string | null; regionName?: string | null;
+}
 /** The live pulse for a (product, region): the latest price, the prediction band, and recent history. */
 export interface MandiPulse { latest: MandiPrice | null; band: PricePrediction | null; history: MandiPrice[]; }
 /** The caller's price alert (threshold subscription). thresholdMinor is bigint minor. */

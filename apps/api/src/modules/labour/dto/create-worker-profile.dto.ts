@@ -13,5 +13,6 @@ export const RegisterWorkerSchema = z.object({
   emergencyContactName: z.string().min(1).max(150).optional(),
   emergencyContactPhone: z.string().min(5).max(20).optional(),
   eshramNo: z.string().min(1).max(20).optional(),
+  skillIds: z.array(z.string().uuid()).max(30).optional(),   // self-declared skills (worker_skills)
 }).strict();
 export type RegisterWorkerDto = z.infer<typeof RegisterWorkerSchema>;

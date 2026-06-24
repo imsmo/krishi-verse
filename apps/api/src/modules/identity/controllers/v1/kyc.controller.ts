@@ -29,6 +29,13 @@ export class KycController {
     return { data };
   }
 
+  // Static path declared BEFORE the bare @Get() so the catalogue route is unambiguous. Self-read of a
+  // seeded vocabulary (no PII, no subject ids) — inherits AuthGuard + the 'kyc' flag from the controller.
+  @Get('doc-types')
+  docTypes(@CurrentContext() ctx: RequestContext) {
+    return this.kyc.listDocTypes(ctx.tenantId).then((data) => ({ data }));
+  }
+
   @Get()
   list(@CurrentContext() ctx: RequestContext, @Query('status') status?: string) {
     return this.kyc.list(ctx.tenantId, ctx.userId, status).then((data) => ({ data }));

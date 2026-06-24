@@ -33,4 +33,14 @@ export class NotificationsResource {
   async setQuietHours(input: QuietHours): Promise<QuietHours> {
     return (await this.http.request<QuietHours>('PUT', 'notifications/quiet-hours', { body: input })).data;
   }
+
+  /** Register this device's push token so the server can target it (call after login). Idempotent: the
+   *  token is unique server-side, so re-registering the same token is a no-op re-stamp. Never log the token. */
+  async registerDevice(platform: 'ios' | 'android' | 'web', token: string): Promise<{ ok: boolean; platform: string }> {
+    return (await this.http.request<{ ok: boolean; platform: string }>('POST', 'notifications/devices', { body: { platform, token } })).data;
+  }
+  /** Revoke this device's push token (call on logout). Idempotent — ok whether or not a row existed. */
+  async revokeDevice(token: string): Promise<{ ok: boolean; revoked: boolean }> {
+    return (await this.http.request<{ ok: boolean; revoked: boolean }>('DELETE', 'notifications/devices', { body: { token } })).data;
+  }
 }

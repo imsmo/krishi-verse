@@ -1,6 +1,6 @@
 // @krishi-verse/sdk-js · listings resource (the marketplace browse surface, GET /v1/listings).
 import { HttpClient } from '../http';
-import { ListingCard, ListingQuery, Page } from '../types';
+import { ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, ListingAnalytics, SellerPublicProfile, GalleryItem, Page } from '../types';
 
 export class ListingsResource {
   constructor(private readonly http: HttpClient) {}
@@ -18,6 +18,16 @@ export class ListingsResource {
   /** A single published listing by id (public/visibility-gated). */
   async get(id: string, signal?: AbortSignal): Promise<ListingCard> {
     return (await this.http.request<ListingCard>('GET', `listings/${encodeURIComponent(id)}`, { anonymous: true, signal })).data;
+  }
+
+  /** Signed photo gallery for a public listing (short-lived presigned urls; clean assets only). Public. */
+  async media(id: string, signal?: AbortSignal): Promise<GalleryItem[]> {
+    return (await this.http.request<GalleryItem[]>('GET', `listings/${encodeURIComponent(id)}/media`, { anonymous: true, signal })).data;
+  }
+
+  /** Public seller storefront profile (safe fields + rating + active-listing count; no PII). Public. */
+  async sellerPublic(sellerId: string, signal?: AbortSignal): Promise<SellerPublicProfile> {
+    return (await this.http.request<SellerPublicProfile>('GET', `sellers/${encodeURIComponent(sellerId)}/public`, { anonymous: true, signal })).data;
   }
 
   /** A single listing the AUTHENTICATED caller owns (same path, but authenticated → owner can see drafts). */
@@ -40,9 +50,25 @@ export class ListingsResource {
     return (await this.http.request<{ ok: boolean }>('PATCH', `listings/${encodeURIComponent(id)}/price`, { body: { priceMinor, expectedVersion } })).data;
   }
 
+  /** The paid-boost tier catalogue (id + name + server price/days). Show real prices; submit a real tier id. */
+  async boostTiers(signal?: AbortSignal): Promise<BoostTier[]> {
+    return (await this.http.request<BoostTier[]>('GET', 'listings/boost-tiers', { signal })).data;
+  }
+
   /** Start a paid visibility boost. `paymentTxnId` proves the wallet already captured payment (Law 2). */
   async startBoost(id: string, dto: { boostTierId: string; priceMinor: string; currencyCode?: string; days: number; paymentTxnId: string }, idempotencyKey: string): Promise<{ ok: boolean }> {
     return (await this.http.request<{ ok: boolean }>('POST', `listings/${encodeURIComponent(id)}/boosts`, { idempotencyKey, body: dto })).data;
+  }
+
+  /** Pay for a boost straight from the wallet: send only the tier id, the server resolves the price +
+   *  debits the wallet (fails closed on insufficient balance). Idempotency-keyed (Law 3). */
+  async payBoostFromWallet(id: string, boostTierId: string, idempotencyKey: string, currencyCode?: string): Promise<BoostWalletPayResult> {
+    return (await this.http.request<BoostWalletPayResult>('POST', `listings/${encodeURIComponent(id)}/boosts/pay-from-wallet`, { idempotencyKey, body: { boostTierId, currencyCode } })).data;
+  }
+
+  /** Seller engagement analytics for the caller's OWN listing (offers / price changes / boosts). 404 if not owner. */
+  async analytics(id: string, signal?: AbortSignal): Promise<ListingAnalytics> {
+    return (await this.http.request<ListingAnalytics>('GET', `listings/${encodeURIComponent(id)}/analytics`, { signal })).data;
   }
 }
 
