@@ -23,3 +23,89 @@ a { color: inherit; text-decoration: none; }
 .kv-card { border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); padding: var(--kv-space); background: var(--kv-neutral-0); }
 .kv-error { color: var(--kv-danger); }
 .kv-badge { font-size: 12px; padding: 2px 8px; border-radius: 9999px; background: var(--kv-neutral-100); }
+
+/* --- TC-W0-01 foundation: skip-link, bare login surface, sidebar chrome, locale switcher, boundaries --- */
+.kv-skip { position: absolute; left: -9999px; top: 0; background: var(--kv-brand-700); color: #fff; padding: 10px 16px; border-radius: var(--kv-radius); z-index: 100; }
+.kv-skip:focus { left: 8px; top: 8px; }
+.kv-content--bare { display: block; margin: 48px auto; max-width: 420px; }
+
+.kv-sidebar { display: flex; flex-direction: column; }
+.kv-sidebar__who { color: var(--kv-neutral-600); font-size: 14px; margin: 0 0 var(--kv-space); }
+.kv-sidebar__nav { list-style: none; margin: 0; padding: 0; flex: 1; }
+.kv-sidebar__foot { margin-top: auto; display: grid; gap: 12px; }
+
+.kv-locale { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.kv-locale__label { color: var(--kv-neutral-600); font-size: 13px; }
+.kv-locale__btn { min-height: 44px; padding: 6px 10px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); background: var(--kv-neutral-0); cursor: pointer; font: inherit; }
+.kv-locale__btn.is-active { border-color: var(--kv-brand-500); color: var(--kv-brand-700); font-weight: 600; }
+.kv-btn--muted { background: var(--kv-neutral-100); color: var(--kv-neutral-900); }
+.kv-btn--link { display: inline-block; min-height: 44px; padding: 10px 0; color: var(--kv-brand-700); font-weight: 600; }
+
+.kv-auth h1 { margin-top: 0; }
+.kv-form { display: grid; gap: 10px; max-width: 360px; }
+.kv-field__label { font-weight: 600; }
+.kv-field__hint { color: var(--kv-neutral-600); font-size: 13px; margin: 0; }
+.kv-muted { color: var(--kv-neutral-600); }
+.kv-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--kv-space); margin-top: var(--kv-space); }
+.kv-pager { margin-top: var(--kv-space); }
+
+.kv-loading { padding: 24px; color: var(--kv-neutral-600); }
+.kv-empty-state { padding: 24px; color: var(--kv-neutral-600); }
+.kv-empty-state h1 { color: var(--kv-neutral-900); }
+
+/* --- TC-W1-01 new-listing form: page head, select/textarea, search row, uploader, success --- */
+.kv-page-head { display: flex; align-items: center; justify-content: space-between; gap: var(--kv-space); flex-wrap: wrap; }
+.kv-success { color: var(--kv-brand-700); background: var(--kv-neutral-100); padding: 10px 12px; border-radius: var(--kv-radius); }
+.kv-select { padding: 10px; min-height: 44px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); width: min(360px, 100%); background: var(--kv-neutral-0); font: inherit; }
+.kv-textarea { padding: 10px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); width: min(480px, 100%); font: inherit; resize: vertical; }
+.kv-search { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; margin: var(--kv-space) 0; }
+.kv-form__actions { display: flex; align-items: center; gap: var(--kv-space); margin-top: var(--kv-space); }
+.kv-uploader { display: grid; gap: 8px; max-width: 480px; }
+.kv-upload-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.kv-upload-tile { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); }
+.kv-upload-tile--error { border-color: var(--kv-danger); }
+.kv-upload-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kv-upload-status { color: var(--kv-neutral-600); font-size: 13px; }
+.kv-upload-tile--error .kv-upload-status { color: var(--kv-danger); }
+.kv-upload-remove { min-height: 32px; min-width: 32px; border: 0; background: transparent; cursor: pointer; font-size: 20px; line-height: 1; color: var(--kv-neutral-600); }
+
+/* --- TC-W1-02 listing-manage: facts list, inline action form, card title, table link, gap note --- */
+.kv-link { color: var(--kv-brand-700); font-weight: 600; }
+.kv-link:hover { text-decoration: underline; }
+.kv-facts { margin: var(--kv-space) 0; display: grid; gap: 2px; }
+.kv-facts__row { display: grid; grid-template-columns: 160px 1fr; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--kv-neutral-100); }
+.kv-facts__row dt { color: var(--kv-neutral-600); margin: 0; }
+.kv-facts__row dd { margin: 0; }
+.kv-inline-form { margin: var(--kv-space) 0; }
+.kv-card { max-width: 480px; }
+.kv-card__title { margin: 0 0 8px; font-size: 16px; }
+.kv-note { margin-top: 24px; }
+
+/* --- TC-W2-01 order-fulfilment: section titles, lifecycle action row, totals emphasis --- */
+.kv-section-title { font-size: 16px; margin: 24px 0 8px; }
+.kv-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: var(--kv-space) 0; }
+.kv-actions .kv-inline-form { margin: 0; }
+.kv-facts--totals { max-width: 360px; }
+.kv-facts--totals .kv-facts__row:last-child { font-weight: 700; border-bottom: 0; }
+
+/* --- TC-W3-01 payouts: destination list + add-account checkbox --- */
+.kv-account-list { list-style: none; margin: var(--kv-space) 0; padding: 0; display: grid; gap: 6px; max-width: 480px; }
+.kv-account { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); }
+.kv-check { display: flex; align-items: center; gap: 8px; }
+details.kv-card > summary { cursor: pointer; }
+
+/* --- TC-W4-03 notifications: filters, inbox list, preference rows --- */
+.kv-notif-filters { display: flex; gap: 12px; margin: var(--kv-space) 0; }
+.kv-btn--link.is-active { font-weight: 700; color: var(--kv-brand-700); }
+.kv-notif-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.kv-notif-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); }
+.kv-notif-item--unread { border-left: 3px solid var(--kv-brand-500); background: var(--kv-neutral-50); }
+.kv-notif-main { display: grid; gap: 4px; }
+.kv-notif-title { font-weight: 600; }
+.kv-notif-meta { display: flex; gap: 12px; align-items: center; font-size: 13px; }
+.kv-prefs-list { list-style: none; margin: 0 0 var(--kv-space); padding: 0; display: grid; gap: 6px; }
+.kv-prefs-row { padding: 6px 0; border-bottom: 1px solid var(--kv-neutral-100); }
+
+/* --- TC-W5-01 billing: plan cards --- */
+.kv-plan { display: grid; gap: 8px; align-content: start; }
+.kv-plan__price { font-size: 18px; font-weight: 700; margin: 0; }

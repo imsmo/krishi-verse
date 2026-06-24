@@ -7,4 +7,7 @@ export const env = {
   publicApiUrl,
   serverApiUrl: process.env.API_URL_INTERNAL || publicApiUrl,   // server-side SSR origin (never shipped)
   appName: 'Krishi-Verse Console',
+  /** Console visibility switch for the auctions surface (hidden when 'false'). Enabled by default; the API's own
+   *  `auctions` flag is the authoritative gate (if it's off, the reads simply degrade to an empty state). */
+  featureAuctions: process.env.NEXT_PUBLIC_FEATURE_AUCTIONS !== 'false',
 } as const;
