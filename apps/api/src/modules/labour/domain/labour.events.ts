@@ -15,6 +15,8 @@ export const LabourEventType = {
   BookingCancelled:   'labour.booking_cancelled',
   BookingExpired:     'labour.booking_expired',
   AttendanceClockedIn:'labour.attendance_clocked_in',
+  AttendanceClockedOut:'labour.attendance_clocked_out',   // hours/overtime finalised for the day (P0-9)
+  AttendanceConfirmed:'labour.attendance_confirmed',       // employer dual-confirmed the day → wages may settle
 } as const;
 
 export type DomainEvent = { type: string; payload: Record<string, unknown> };

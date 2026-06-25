@@ -2,7 +2,8 @@
 // Responding (accept/reject) acts on the caller's OWN assignment (ownership resolved server-side from the
 // caller's worker profile — anti-IDOR). Listing 'mine' is the caller's; 'booking' is the employer's view.
 // Gated by the `labour` flag.
-import { Controller, Get, Headers, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
@@ -14,9 +15,11 @@ import { LabourBookingService } from '../../services/labour-booking.service';
 import { AttendanceService } from '../../services/attendance.service';
 import { RespondAssignmentSchema, RespondAssignmentDto } from '../../dto/create-booking-assignment.dto';
 import { QueryAssignmentsSchema, QueryAssignmentsDto } from '../../dto/query-booking-assignment.dto';
-import { ClockInSchema, ClockInDto } from '../../dto/create-attendance.dto';
+import { ClockInSchema, ClockInDto, ClockOutSchema, ClockOutDto, ConfirmAttendanceSchema, ConfirmAttendanceDto } from '../../dto/create-attendance.dto';
+import { canManageLabour } from '../../policies/labour.policies';
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
+const ipOf = (req: Request) => req.ip || null;
 
 @Controller({ path: 'labour/assignments', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
@@ -27,6 +30,14 @@ export class AssignmentsController {
   @Get()
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryAssignmentsSchema) q: QueryAssignmentsDto) {
     return this.svc.listAssignments(ctx.tenantId, ctx.userId, { box: q.box, bookingId: q.bookingId, status: q.status, cursor: decodeCursor(q.cursor), limit: q.limit })
+      .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
+  }
+
+  /** The caller's OWN attendance work-history (keyset). Declared BEFORE ':id' so the literal path wins. */
+  @Get('attendance/history')
+  history(@CurrentContext() ctx: RequestContext, @Query('cursor') cursor?: string, @Query('limit') limit?: string) {
+    const lim = Math.min(Math.max(Number(limit) || 20, 1), 100);
+    return this.attendance.workHistory(ctx.tenantId, ctx.userId, { cursor: decodeCursor(cursor), limit: lim })
       .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
 
@@ -44,5 +55,21 @@ export class AssignmentsController {
   clockIn(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Headers('idempotency-key') key: string, @ZodBody(ClockInSchema) dto: ClockInDto) {
     if (!key) throw new BadRequestError('Idempotency-Key header required');
     return this.attendance.clockIn(ctx.tenantId, ctx.userId, id, { lat: dto.lat, lng: dto.lng }, key).then((data) => ({ data }));
+  }
+
+  /** WORKER clocks out of TODAY's open attendance on their OWN assignment. The SERVER stamps the time +
+   *  computes hours/overtime; the worker only declares the break taken. State-advancing → Idempotency-Key (Law 3). */
+  @Post(':id/attendance/clock-out')
+  clockOut(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Headers('idempotency-key') key: string, @ZodBody(ClockOutSchema) dto: ClockOutDto) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.attendance.clockOut(ctx.tenantId, ctx.userId, id, { breakMinutes: dto.breakMinutes }, key).then((data) => ({ data }));
+  }
+
+  /** EMPLOYER dual-confirms a worker's clocked-out day (booking owner OR a booking.manage admin, Law 11).
+   *  A non-owner without booking.manage gets 404 (no enumeration). State-advancing → Idempotency-Key (Law 3). */
+  @Post(':id/attendance/confirm')
+  confirm(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @Headers('idempotency-key') key: string, @ZodBody(ConfirmAttendanceSchema) dto: ConfirmAttendanceDto) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.attendance.confirmDay(ctx.tenantId, { userId: ctx.userId, canManage: canManageLabour(ctx) }, id, dto.workDate, key, ipOf(r)).then((data) => ({ data }));
   }
 }

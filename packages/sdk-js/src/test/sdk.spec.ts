@@ -364,4 +364,33 @@ describe('HttpClient via resources', () => {
     expect(page.items[0].id).toBe('m1');
     expect(page.nextCursor).toBe('c2');
   });
+
+  it('labour.clockOut POSTs the clock-out path with break + Idempotency-Key; hours come back as numbers', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'a1', assignmentId: 'as1', bookingId: 'b1', workDate: '2026-06-01', status: 'clocked_out', clockOutAt: '2026-06-01T16:00:00.000Z', hoursRegular: 8, hoursOvertime: 1.5 } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const a = await c.labour.clockOut('as1', 30, 'idem-co-1');
+    expect(calls[0].url).toBe('https://api.test/v1/labour/assignments/as1/attendance/clock-out');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-co-1');
+    expect(JSON.parse(calls[0].init.body as string)).toEqual({ breakMinutes: 30 });
+    expect(a.hoursOvertime).toBe(1.5);
+  });
+
+  it('labour.confirmAttendance POSTs the confirm path with the workDate body', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'a1', assignmentId: 'as1', bookingId: 'b1', workDate: '2026-06-01', status: 'confirmed' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const a = await c.labour.confirmAttendance('as1', '2026-06-01', 'idem-cf-1');
+    expect(calls[0].url).toBe('https://api.test/v1/labour/assignments/as1/attendance/confirm');
+    expect(JSON.parse(calls[0].init.body as string)).toEqual({ workDate: '2026-06-01' });
+    expect(a.status).toBe('confirmed');
+  });
+
+  it('labour.workHistory GETs the keyset history path and unwraps the page', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: [{ id: 'a1', assignmentId: 'as1', bookingId: 'b1', workDate: '2026-06-01', status: 'confirmed', hoursRegular: 8, hoursOvertime: 0 }], meta: { nextCursor: 'h2' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const page = await c.labour.workHistory(undefined, 50);
+    expect(calls[0].url).toBe('https://api.test/v1/labour/assignments/attendance/history?limit=50');
+    expect(page.items[0].status).toBe('confirmed');
+    expect(page.nextCursor).toBe('h2');
+  });
 });

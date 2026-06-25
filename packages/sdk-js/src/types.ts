@@ -204,7 +204,15 @@ export interface LabourBooking {
 /** A worker's assignment to a booking (the "job offer"). The worker accepts/rejects within the booking's window. */
 export interface LabourAssignment { id: string; bookingId: string; workerId: string; status: string; wageMinor: string; acceptedAt: string | null; createdAt?: string; }
 /** A geo-fenced clock-in receipt. `distanceM` is the SERVER-computed metres from the farm (≤100m fence). */
-export interface LabourAttendance { id: string; assignmentId: string; bookingId: string; workDate: string; clockInAt: string; distanceM: number; method: string; }
+// An attendance day. clock-in carries distanceM/method; clock-out/confirm + work-history carry the lifecycle
+// (status clocked_in→clocked_out→confirmed) + SERVER-computed hours/overtime (P0-9). Fields are optional because
+// the same shape serves all four endpoints. Hours are numbers (not money — wages settle only in the ledger).
+export interface LabourAttendance {
+  id: string; assignmentId: string; bookingId: string; workDate: string;
+  clockInAt?: string | null; clockOutAt?: string | null; distanceM?: number; method?: string;
+  status?: 'clocked_in' | 'clocked_out' | 'confirmed'; breakMinutes?: number;
+  hoursRegular?: number | null; hoursOvertime?: number; confirmedByEmployer?: boolean; paid?: boolean; createdAt?: string;
+}
 /** The labour taxonomy catalogue for client pickers (real server ids + human labels). */
 export interface LabourLookups {
   workTypes: { id: string; code: string; name: string }[];

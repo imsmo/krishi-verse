@@ -74,6 +74,20 @@ export class LabourResource {
   async clockIn(assignmentId: string, fix: { lat: number; lng: number }, idempotencyKey: string): Promise<LabourAttendance> {
     return (await this.http.request<LabourAttendance>('POST', `labour/assignments/${encodeURIComponent(assignmentId)}/attendance`, { idempotencyKey, body: fix })).data;
   }
+  /** WORKER clocks out of TODAY's open attendance. The SERVER stamps the time + computes hours/overtime; the
+   *  client may only declare the unpaid break it took. Idempotent (Law 3). */
+  async clockOut(assignmentId: string, breakMinutes: number, idempotencyKey: string): Promise<LabourAttendance> {
+    return (await this.http.request<LabourAttendance>('POST', `labour/assignments/${encodeURIComponent(assignmentId)}/attendance/clock-out`, { idempotencyKey, body: { breakMinutes } })).data;
+  }
+  /** EMPLOYER dual-confirms a worker's clocked-out day (booking owner OR a booking.manage admin). Idempotent. */
+  async confirmAttendance(assignmentId: string, workDate: string, idempotencyKey: string): Promise<LabourAttendance> {
+    return (await this.http.request<LabourAttendance>('POST', `labour/assignments/${encodeURIComponent(assignmentId)}/attendance/confirm`, { idempotencyKey, body: { workDate } })).data;
+  }
+  /** The caller's OWN work-history (attendance days, newest first), keyset-paginated. */
+  async workHistory(cursor?: string, limit = 20, signal?: AbortSignal): Promise<Page<LabourAttendance>> {
+    const r = await this.http.request<LabourAttendance[]>('GET', 'labour/assignments/attendance/history', { query: { cursor, limit }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
 
   // --- taxonomy ---
   /** The labour catalogue (work-types, skill tree, regions, skill-levels) for rendering pickers with real ids. */

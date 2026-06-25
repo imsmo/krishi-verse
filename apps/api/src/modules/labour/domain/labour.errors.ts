@@ -52,3 +52,13 @@ export class AssignmentNotAcceptedError extends DomainError { constructor(status
 export class OutOfFenceError extends DomainError { constructor(distanceM: number, fenceM: number) { super('ATTENDANCE_OUT_OF_FENCE', `Clock-in is ${distanceM}m from the farm (fence is ${fenceM}m)`, 422, { distanceM, fenceM }); } }
 /** A worker has already clocked in for this assignment today (one attendance per assignment per day). */
 export class AlreadyClockedInError extends DomainError { constructor() { super('ATTENDANCE_ALREADY_CLOCKED_IN', 'Already clocked in for today', 409); } }
+/** No clock-in exists yet for this assignment + day (cannot clock out / confirm what never started). */
+export class NotClockedInError extends NotFoundError { constructor() { super('No attendance record for this day'); (this as any).code = 'ATTENDANCE_NOT_CLOCKED_IN'; } }
+/** The day is already clocked out — a second clock-out is a no-op guard (idempotent at the API, conflict here). */
+export class AlreadyClockedOutError extends DomainError { constructor() { super('ATTENDANCE_ALREADY_CLOCKED_OUT', 'Already clocked out for today', 409); } }
+/** Clock-out time is not strictly after clock-in (clock skew / tamper) — refuse to compute negative hours. */
+export class ClockOutBeforeClockInError extends DomainError { constructor() { super('ATTENDANCE_CLOCK_OUT_BEFORE_IN', 'Clock-out must be after clock-in', 422); } }
+/** Employer tried to confirm a day that has not been clocked out yet (hours not finalised). */
+export class NotClockedOutError extends DomainError { constructor(status: string) { super('ATTENDANCE_NOT_CLOCKED_OUT', `Cannot confirm attendance from status '${status}'`, 409, { status }); } }
+/** The day is already employer-confirmed (terminal — immutable for audit integrity). Repeat is a no-op. */
+export class AlreadyConfirmedError extends DomainError { constructor() { super('ATTENDANCE_ALREADY_CONFIRMED', 'Attendance already confirmed', 409); } }
