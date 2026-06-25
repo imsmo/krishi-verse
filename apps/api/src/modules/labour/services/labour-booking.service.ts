@@ -116,8 +116,7 @@ export class LabourBookingService {
           await this.assignments.insert(tx, assignment);
           await this.flush(tx, tenantId, 'booking_assignment', assignment.id, assignment.pullEvents());
           return this.serializeAssignment(assignment);
-        }, { userId }));
-      });
+        }, { userId })));
   }
 
   // ---- worker: consent (accept) or decline (reject) their own assignment ----
