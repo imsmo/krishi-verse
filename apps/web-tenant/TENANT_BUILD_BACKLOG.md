@@ -205,11 +205,15 @@ When the last box is ticked, `web-tenant` flips to ✅.
   toolchain (the sandbox can't install `workspace:*`); the always-on gate here is this static §4 sweep.
 
 > **`web-tenant` is ✅** — the seller/tenant-admin console DoD is closed. The remaining tenant-*config* + vertical-
-> operator surfaces (commission-rules, delivery-zones, branding, integrations, webhooks, billing-config, staff-
-> permissions matrix, languages; dairy-MCC / labour-employer-admin / schemes-assistant / ambassadors-admin /
-> group-lots / auditor / ai-review-queue) stay **SDK-gap-flagged**: the seller-facing `sdk-js` exposes no method for
-> them, so they are intentionally out of scope and unblocked only when the SDK (or admin-api client) adds them —
-> never faked, never reached past the typed SDK.
+> operator surfaces (integrations, webhooks, billing-config, staff-permissions matrix; dairy-MCC /
+> labour-employer-admin / schemes-assistant / ambassadors-admin / group-lots / auditor / ai-review-queue) stay
+> **SDK-gap-flagged**: the seller-facing `sdk-js` exposes no method for them, so they are intentionally out of scope
+> and unblocked only when the SDK (or admin-api client) adds them — never faked, never reached past the typed SDK.
+>
+> **P1-10 (resolved):** **commission-rules, delivery-zones, branding, languages** are no longer SDK-gap-flagged —
+> the `sdk-js` `tenantConfig` resource now exposes them and `/settings` wires all four (Server Actions → the audited,
+> RBAC-gated API; platform-default commission rows shown read-only; money stays server-authoritative). See
+> `docs/production-backlog/P1-GA-completeness.md` → P1-10.
 
 ---
 

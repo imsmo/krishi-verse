@@ -415,6 +415,34 @@ export interface TenantAnalytics {
 }
 /** A tenant→audience broadcast (status queued→sending→sent; counts reflect enqueued recipients). */
 export interface TenantBroadcast { id: string; audienceRoleCode: string | null; title: string; body: string; status: string; recipientCount: number; sentCount: number; failureReason: string | null; createdAt?: string; }
+
+// --- tenant self-config (P1-10): commission-rules / delivery-zones / settings (branding+languages) ---
+// Money rules stay SERVER-authoritative: the app never computes a fee — it only reads/edits the rule rows.
+// All *Minor are bigint minor STRINGS (Law 2). `scope:'platform'` rows are read-only inherited defaults (Law 11).
+/** A commission rule. Platform rows (scope 'platform') are god-mode defaults — read-only here. */
+export interface CommissionRule {
+  id: string; scope: 'platform' | 'tenant'; categoryId: string | null; source: string | null; sellerRoleId: string | null;
+  rateBps: number; fixedMinor: string; capMinor: string | null; platformShareBps: number; chargedTo: 'seller' | 'buyer';
+  priority: number; effectiveFrom: string | null; effectiveTo: string | null; isActive: boolean;
+}
+/** Input to create a tenant commission rule. rateBps/platformShareBps in basis-points (0–100000). */
+export interface CreateCommissionRuleInput {
+  categoryId?: string | null; source?: 'direct' | 'auction' | 'requirement' | 'subscription' | null; sellerRoleId?: string | null;
+  rateBps: number; fixedMinor?: string; capMinor?: string | null; platformShareBps: number;
+  chargedTo?: 'seller' | 'buyer'; priority?: number; effectiveFrom?: string; effectiveTo?: string | null;
+}
+/** A delivery zone (set of pincodes / regions, optional charge definition). */
+export interface DeliveryZone {
+  id: string; defaultName: string; pincodes: string[]; regionIds: string[]; chargeDefinitionId: string | null; isActive: boolean; createdAt?: string | null;
+}
+/** Input to create a delivery zone. */
+export interface CreateDeliveryZoneInput { defaultName: string; pincodes?: string[]; regionIds?: string[]; chargeDefinitionId?: string | null; }
+/** Patch to a delivery zone (all fields optional). */
+export interface UpdateDeliveryZoneInput { defaultName?: string; pincodes?: string[]; regionIds?: string[]; chargeDefinitionId?: string | null; }
+/** A tenant setting row (typed value validated server-side against its definition). Used for branding + languages. */
+export interface TenantSetting { key: string; value: unknown; }
+/** A read-only feature override the tenant inherits from its plan (cannot self-grant — Law 11). */
+export interface TenantFeature { key: string; isEnabled: boolean; }
 // --- market-intel (mandi prices) + weather (P-19) — money is bigint minor STRINGS (Law 2) ---
 /** A mandi (market yard). lat/lng for map/nearest; no PII. */
 export interface Mandi { id: string; defaultName: string; regionId: string | null; mandiCode: string | null; lat: number | null; lng: number | null; isActive: boolean; }

@@ -11,6 +11,7 @@ import { MediaResource } from './resources/media';
 import { PaymentsResource, PayoutsResource, WalletResource, AutopayResource } from './resources/payments';
 import { KycResource, BankAccountsResource, AddressesResource } from './resources/identity';
 import { TenancyResource } from './resources/tenancy';
+import { TenantConfigResource } from './resources/tenant-config';
 import { RbacResource, DisputesResource, UsersResource } from './resources/admin';
 import { NotificationsResource } from './resources/notifications';
 import { OrdersResource } from './resources/orders';
@@ -62,6 +63,7 @@ export class KrishiVerseClient {
   readonly courses: CoursesResource;
   readonly enrollments: EnrollmentsResource;
   readonly tenancy: TenancyResource;
+  readonly tenantConfig: TenantConfigResource;
   readonly rbac: RbacResource;
   readonly disputes: DisputesResource;
   readonly users: UsersResource;
@@ -105,6 +107,7 @@ export class KrishiVerseClient {
     this.courses = new CoursesResource(this.http);
     this.enrollments = new EnrollmentsResource(this.http);
     this.tenancy = new TenancyResource(this.http);
+    this.tenantConfig = new TenantConfigResource(this.http);
     this.rbac = new RbacResource(this.http);
     this.disputes = new DisputesResource(this.http);
     this.users = new UsersResource(this.http);

@@ -131,3 +131,11 @@ details.kv-card > summary { cursor: pointer; }
 .kv-badge--frozen { background: var(--kv-danger-100, #fde2e2); color: var(--kv-danger-700, #a12020); }
 .kv-amount--credit { color: var(--kv-success-700, #1f7a3d); font-weight: 600; }
 .kv-amount--debit { color: var(--kv-danger-700, #a12020); font-weight: 600; }
+
+/* settings (tenant self-config · P1-10) */
+.kv-form--grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; align-items: end; }
+.kv-disclosure { margin: 12px 0; border: 1px solid var(--kv-neutral-200, #e5e5e5); border-radius: 8px; padding: 8px 12px; }
+.kv-disclosure > summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+.kv-fieldset { border: 1px solid var(--kv-neutral-200, #e5e5e5); border-radius: 8px; padding: 8px 12px; margin: 8px 0; }
+.kv-fieldset > legend { font-size: 13px; color: var(--kv-neutral-500, #737373); padding: 0 4px; }
+.kv-btn--sm { padding: 4px 10px; font-size: 13px; min-height: 32px; }

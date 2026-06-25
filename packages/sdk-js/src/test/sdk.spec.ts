@@ -486,4 +486,49 @@ describe('HttpClient via resources', () => {
     expect(page.items[0].emdHeldMinor).toBe('50000');
     expect(page.items[0].isWinning).toBe(true);
   });
+
+  it('tenantConfig.commissionRules GETs /v1/commission-rules; create POSTs with idempotency key, money stays string (P1-10)', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n === 1
+      ? { body: { data: [{ id: 'cr1', scope: 'tenant', categoryId: null, source: null, sellerRoleId: null, rateBps: 250, fixedMinor: '0', capMinor: null, platformShareBps: 100, chargedTo: 'seller', priority: 100, effectiveFrom: '2026-06-01', effectiveTo: null, isActive: true }], meta: { nextCursor: 'crc' } } }
+      : { body: { data: { id: 'cr2', scope: 'tenant', categoryId: null, source: 'auction', sellerRoleId: null, rateBps: 300, fixedMinor: '0', capMinor: null, platformShareBps: 150, chargedTo: 'seller', priority: 100, effectiveFrom: null, effectiveTo: null, isActive: true } } });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const page = await c.tenantConfig.commissionRules({ activeOnly: true, includePlatformDefaults: false });
+    expect(calls[0].url).toBe('https://api.test/v1/commission-rules?activeOnly=true&includePlatformDefaults=false');
+    expect(calls[0].init.method).toBe('GET');
+    expect(typeof page.items[0].fixedMinor).toBe('string');
+    expect(page.nextCursor).toBe('crc');
+    const created = await c.tenantConfig.createCommissionRule({ rateBps: 300, platformShareBps: 150, source: 'auction' }, 'idem-cr-1');
+    expect(calls[1].url).toBe('https://api.test/v1/commission-rules');
+    expect(calls[1].init.method).toBe('POST');
+    expect((calls[1].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-cr-1');
+    expect(created.scope).toBe('tenant');
+  });
+
+  it('tenantConfig delivery zones: list/create/update/setActive hit the right logistics/zones paths (P1-10)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'z1', defaultName: 'Pune metro', pincodes: ['411001'], regionIds: [], chargeDefinitionId: null, isActive: true } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    await c.tenantConfig.deliveryZones({ activeOnly: true });
+    expect(calls[0].url).toBe('https://api.test/v1/logistics/zones?activeOnly=true');
+    await c.tenantConfig.createDeliveryZone({ defaultName: 'Pune metro', pincodes: ['411001'] }, 'idem-z-1');
+    expect(calls[1].url).toBe('https://api.test/v1/logistics/zones');
+    expect((calls[1].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-z-1');
+    await c.tenantConfig.updateDeliveryZone('z1', { defaultName: 'Pune greater' });
+    expect(calls[2].url).toBe('https://api.test/v1/logistics/zones/z1');
+    expect(calls[2].init.method).toBe('PATCH');
+    await c.tenantConfig.setDeliveryZoneActive('z1', false);
+    expect(calls[3].url).toBe('https://api.test/v1/logistics/zones/z1/active');
+    expect(calls[3].init.method).toBe('POST');
+    expect(JSON.parse(calls[3].init.body as string)).toEqual({ isActive: false });
+  });
+
+  it('tenantConfig.putSetting PUTs /v1/tenant-settings with key/value + idempotency key (branding/languages) (P1-10)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { key: 'branding.primary_color', value: '#1B5E20' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const r = await c.tenantConfig.putSetting('branding.primary_color', '#1B5E20', 'idem-set-1');
+    expect(calls[0].url).toBe('https://api.test/v1/tenant-settings');
+    expect(calls[0].init.method).toBe('PUT');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-set-1');
+    expect(JSON.parse(calls[0].init.body as string)).toEqual({ key: 'branding.primary_color', value: '#1B5E20' });
+    expect(r.key).toBe('branding.primary_color');
+  });
 });

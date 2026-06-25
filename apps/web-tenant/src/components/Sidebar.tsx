@@ -29,6 +29,7 @@ export async function Sidebar() {
     { href: '/billing', label: t.t('nav.billing') },
     { href: '/team', label: t.t('nav.team') },
     { href: '/kyc', label: t.t('nav.kyc') },
+    { href: '/settings', label: t.t('nav.settings') },
   ];
 
   return (
