@@ -6,10 +6,23 @@
 import { Injectable } from '@nestjs/common';
 import { Metrics } from './metrics';
 
+// Prometheus metric names must match [a-zA-Z_:][a-zA-Z0-9_:]* — our use-case names use dots
+// (e.g. "auth.request_otp"), so sanitise to underscores. Without this, the scrape parser rejects the series.
+function sanitize(name: string): string {
+  return name.replace(/[^a-zA-Z0-9_:]/g, '_');
+}
+
 function labelKey(name: string, labels?: Record<string, string>): string {
-  if (!labels) return name;
-  const parts = Object.keys(labels).sort().map((k) => `${k}="${labels[k]}"`);
-  return `${name}{${parts.join(',')}}`;
+  const n = sanitize(name);
+  if (!labels) return n;
+  const parts = Object.keys(labels).sort().map((k) => `${sanitize(k)}="${String(labels[k]).replace(/(["\\\n])/g, '\\$1')}"`);
+  return `${n}{${parts.join(',')}}`;
+}
+
+/** Base metric name (strip any label set) from a series key. */
+function baseName(key: string): string {
+  const i = key.indexOf('{');
+  return i === -1 ? key : key.slice(0, i);
 }
 
 @Injectable()
@@ -29,19 +42,26 @@ export class PromMetrics extends Metrics {
     this.samples.set(k, arr);
   }
 
-  /** Prometheus text exposition format. */
+  /** Prometheus text exposition format (valid names + # TYPE lines). */
   render(): string {
     const lines: string[] = [];
-    for (const [k, v] of this.counters) lines.push(`${k} ${v}`);
+    const typed = new Set<string>();
+    const emitType = (base: string, type: 'counter' | 'summary') => {
+      if (!typed.has(base)) { typed.add(base); lines.push(`# TYPE ${base} ${type}`); }
+    };
+
+    for (const [k, v] of this.counters) { emitType(baseName(k), 'counter'); lines.push(`${k} ${v}`); }
     for (const [k, arr] of this.samples) {
+      const base = baseName(k);
+      emitType(base, 'summary');
       const sorted = [...arr].sort((a, b) => a - b);
       const q = (p: number) => sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))] : 0;
-      const base = k.includes('{') ? k.slice(0, -1) + ',' : k + '{';
-      lines.push(`${base}quantile="0.5"} ${q(50)}`);
-      lines.push(`${base}quantile="0.95"} ${q(95)}`);
-      lines.push(`${base}quantile="0.99"} ${q(99)}`);
-      lines.push(`${k}_count ${arr.length}`);
-      lines.push(`${k}_sum ${arr.reduce((a, b) => a + b, 0)}`);
+      const withQ = k.includes('{') ? k.slice(0, -1) + ',' : k + '{';
+      lines.push(`${withQ}quantile="0.5"} ${q(50)}`);
+      lines.push(`${withQ}quantile="0.95"} ${q(95)}`);
+      lines.push(`${withQ}quantile="0.99"} ${q(99)}`);
+      lines.push(`${base}_count${k.includes('{') ? k.slice(k.indexOf('{')) : ''} ${arr.length}`);
+      lines.push(`${base}_sum${k.includes('{') ? k.slice(k.indexOf('{')) : ''} ${arr.reduce((a, b) => a + b, 0)}`);
     }
     return lines.join('\n') + '\n';
   }

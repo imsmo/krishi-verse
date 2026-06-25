@@ -1,1 +1,112 @@
-{ "_doc": "ops/dashboards/business-kpis.json · dashboard-as-code (Datadog/Grafana) · [P1]" }
+{
+  "uid": "krishiverse-biz",
+  "title": "Krishi-Verse \u00b7 Business KPIs",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {}
+      }
+    ]
+  },
+  "tags": [
+    "krishiverse",
+    "p0-6"
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "OTP verify success %",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(auth_verify_otp_count{ok=\"true\"}[15m])) / clamp_min(sum(increase(auth_verify_otp_count[15m])),1)",
+          "legendFormat": "success"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Payment failure %",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(payments_webhook_count{kind=\"payment_failed\"}[15m])) / clamp_min(sum(increase(payments_webhook_count[15m])),1)",
+          "legendFormat": "fail"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Orders created /30m",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(orders_created_count[30m]))",
+          "legendFormat": "orders"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      }
+    }
+  ]
+}

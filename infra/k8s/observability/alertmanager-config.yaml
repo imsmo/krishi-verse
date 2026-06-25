@@ -1,0 +1,35 @@
+# infra/k8s/observability/alertmanager-config.yaml · route alerts by severity. The PagerDuty routing key + Slack
+# webhook come from a k8s Secret (synced from Secrets Manager by External Secrets), never inline.
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: krishiverse-routing
+  namespace: monitoring
+  labels: { release: kube-prometheus-stack }
+spec:
+  route:
+    receiver: slack-tickets
+    groupBy: [alertname, job, dep]
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 4h
+    routes:
+      - matchers: [{ name: severity, value: page }]
+        receiver: pagerduty-page
+        continue: false
+  receivers:
+    - name: pagerduty-page
+      pagerdutyConfigs:
+        - routingKey:
+            name: krishiverse-alerting    # k8s Secret
+            key: pagerduty_routing_key
+          severity: critical
+          description: "{{ .CommonAnnotations.summary }}"
+    - name: slack-tickets
+      slackConfigs:
+        - apiURL:
+            name: krishiverse-alerting
+            key: slack_webhook_url
+          channel: "#kv-alerts"
+          title: "{{ .CommonAnnotations.summary }}"
+          text: "{{ range .Alerts }}{{ .Annotations.description }}\nrunbook: {{ .Annotations.runbook }}\n{{ end }}"

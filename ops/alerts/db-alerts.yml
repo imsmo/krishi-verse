@@ -1,1 +1,28 @@
-# ops/alerts/db-alerts.yml · alert rules as code · [P1]
+# ops/alerts/db-alerts.yml · Aurora/RDS + connection-pool health (RDS Exporter / CloudWatch-via-Prometheus).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata: { name: krishiverse-db-alerts, namespace: monitoring, labels: { release: kube-prometheus-stack } }
+spec:
+  groups:
+    - name: db.health
+      rules:
+        - alert: AuroraCpuHigh
+          expr: aws_rds_cpuutilization_average{dbinstance_identifier=~"krishiverse-prod-aurora.*"} > 85
+          for: 10m
+          labels: { severity: ticket }
+          annotations: { summary: "Aurora CPU >85% on {{ $labels.dbinstance_identifier }}" }
+        - alert: AuroraReplicaLagHigh
+          expr: aws_rds_aurora_replica_lag_average > 2000
+          for: 5m
+          labels: { severity: page }
+          annotations: { summary: "Aurora replica lag >2s (CQRS reads stale)" }
+        - alert: AuroraFreeStorageLow
+          expr: aws_rds_free_local_storage_average < 5e9
+          for: 15m
+          labels: { severity: ticket }
+          annotations: { summary: "Aurora free storage <5GB" }
+        - alert: AuroraConnectionsNearMax
+          expr: aws_rds_database_connections_average > 0.85 * 1000
+          for: 10m
+          labels: { severity: page }
+          annotations: { summary: "Aurora connections >85% of cap (pool exhaustion risk)" }

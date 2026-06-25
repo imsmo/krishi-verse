@@ -1,1 +1,206 @@
-{ "_doc": "ops/dashboards/api-golden-signals.json · dashboard-as-code (Datadog/Grafana) · [P1]" }
+{
+  "uid": "krishiverse-api-golden",
+  "title": "Krishi-Verse \u00b7 API Golden Signals",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {}
+      }
+    ]
+  },
+  "tags": [
+    "krishiverse",
+    "p0-6"
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Request rate (use-cases /s)",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (job)(rate(auth_verify_otp_count[5m]))",
+          "legendFormat": "auth.verify"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(rate(listings_search_count[5m]))",
+          "legendFormat": "listings"
+        },
+        {
+          "refId": "C",
+          "expr": "sum(rate(payments_webhook_count[5m]))",
+          "legendFormat": "pay.webhook"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Dependency error rate",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (dep)(increase(dep_failure[5m])) / clamp_min(sum by (dep)(increase(dep_call_count[5m])),1)",
+          "legendFormat": "{{dep}}"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Dependency latency p99 (ms)",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (dep)(dep_call{quantile=\"0.99\"})",
+          "legendFormat": "{{dep}}"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Pod restarts (10m)",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (pod)(increase(kube_pod_container_status_restarts_total{namespace=\"krishiverse\"}[10m]))",
+          "legendFormat": "{{pod}}"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Memory vs limit",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (pod)(container_memory_working_set_bytes{namespace=\"krishiverse\",container!=\"\"}) / max by (pod)(kube_pod_container_resource_limits{namespace=\"krishiverse\",resource=\"memory\"})",
+          "legendFormat": "{{pod}}"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Targets up",
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "up{namespace=\"krishiverse\"}",
+          "legendFormat": "{{job}}/{{pod}}"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      }
+    }
+  ]
+}

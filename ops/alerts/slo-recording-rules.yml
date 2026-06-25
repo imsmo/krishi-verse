@@ -1,0 +1,37 @@
+# ops/alerts/slo-recording-rules.yml · SLO recording rules + burn-rate alerts for the four hot paths.
+# Latency comes from our per-use-case summaries (quantile + _count/_sum); success from the ok="true" label.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata: { name: krishiverse-slo, namespace: monitoring, labels: { release: kube-prometheus-stack } }
+spec:
+  groups:
+    - name: slo.recording
+      interval: 30s
+      rules:
+        # success ratio over 5m/1h windows for each hot use-case
+        - record: slo:auth_verify:success5m
+          expr: sum(increase(auth_verify_otp_count{ok="true"}[5m])) / clamp_min(sum(increase(auth_verify_otp_count[5m])),1)
+        - record: slo:payment_capture:success5m
+          expr: sum(increase(payments_webhook_count{kind="payment_captured",ok="true"}[5m])) / clamp_min(sum(increase(payments_webhook_count{kind=~"payment_.*"}[5m])),1)
+        - record: slo:bid_place:success5m
+          expr: sum(increase(auctions_place_bid_count{ok="true"}[5m])) / clamp_min(sum(increase(auctions_place_bid_count[5m])),1)
+        - record: slo:listings_read:success5m
+          expr: sum(increase(listings_search_count{ok="true"}[5m])) / clamp_min(sum(increase(listings_search_count[5m])),1)
+    - name: slo.burn
+      rules:
+        # fast burn (2h budget @ 99.9% target) → page; references the recorded ratios above.
+        - alert: SloAuthVerifyFastBurn
+          expr: (1 - slo:auth_verify:success5m) > (14.4 * 0.001)
+          for: 5m
+          labels: { severity: page, slo: auth }
+          annotations: { summary: "Auth-verify SLO fast burn (>14.4x error budget)" }
+        - alert: SloPaymentCaptureFastBurn
+          expr: (1 - slo:payment_capture:success5m) > (14.4 * 0.001)
+          for: 5m
+          labels: { severity: page, slo: pay }
+          annotations: { summary: "Payment-capture SLO fast burn" }
+        - alert: SloListingsLatencyP99
+          expr: max(listings_search{quantile="0.99"}) > 800
+          for: 10m
+          labels: { severity: ticket, slo: listings }
+          annotations: { summary: "Listings read p99 > 800ms" }

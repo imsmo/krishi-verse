@@ -1,1 +1,27 @@
-# ops/alerts/business-alerts.yml (GMV drop, dispute spike) · alert rules as code · [P1]
+# ops/alerts/business-alerts.yml · business-KPI guardrails (sudden drop = something upstream broke).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata: { name: krishiverse-business-alerts, namespace: monitoring, labels: { release: kube-prometheus-stack } }
+spec:
+  groups:
+    - name: business.kpis
+      rules:
+        - alert: OtpVerifySuccessRateLow
+          expr: |
+            sum(increase(auth_verify_otp_count{ok="true"}[15m]))
+              / clamp_min(sum(increase(auth_verify_otp_count[15m])), 1) < 0.6
+          for: 15m
+          labels: { severity: page }
+          annotations: { summary: "OTP verify success <60% (logins failing for real users)" }
+        - alert: CheckoutFailureSpike
+          expr: |
+            sum(increase(payments_webhook_count{kind="payment_failed"}[15m]))
+              / clamp_min(sum(increase(payments_webhook_count[15m])), 1) > 0.3
+          for: 15m
+          labels: { severity: page }
+          annotations: { summary: "Payment failure rate >30% (gateway/UPI issue?)" }
+        - alert: NoOrdersCreated
+          expr: sum(increase(orders_created_count[30m])) == 0
+          for: 30m
+          labels: { severity: ticket }
+          annotations: { summary: "Zero orders created in 30m (during business hours = investigate)" }
