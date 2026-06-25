@@ -212,6 +212,16 @@ export class AppConfig {
       webhookSecret: this.env.NOTIFY_WEBHOOK_SECRET,
     };
   }
+  get push() {
+    // First-party PUSH transport (P0-10). Default provider is Expo (no key required for basic sends; an access
+    // token raises rate limits + adds auth). PUSH_PROVIDER='none' forces the noop sender (drops in prod, accepts
+    // in dev). The token is a provider secret — read here, never logged.
+    return {
+      provider: (this.env.PUSH_PROVIDER || 'expo').toLowerCase(),   // 'expo' | 'none'
+      expoBaseUrl: this.env.EXPO_PUSH_URL || 'https://exp.host',
+      expoAccessToken: this.env.EXPO_ACCESS_TOKEN || null,
+    };
+  }
   get masking() {
     return {
       providerUrl: this.env.MASKING_PROVIDER_URL || null,   // null ⇒ noop masking provider

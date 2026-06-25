@@ -14,6 +14,8 @@ import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { METRICS, Metrics } from '../../../core/observability/metrics';
 import { NOTIFICATION_GATEWAY, NotificationGateway, NotifyChannel } from '../gateway/notification-gateway.port';
+import { PUSH_SENDER, PushSender } from '../gateway/push-sender.port';
+import { PushDeviceRepository } from '../repositories/push-device.repository';
 import { Notification } from '../domain/notification.entity';
 import { DomainEvent, NotifChannel } from '../domain/communication.events';
 import { resolveChannels } from '../domain/channel-resolution';
@@ -42,6 +44,8 @@ export class NotificationService {
     @Inject(OUTBOX_WRITER) private readonly outbox: OutboxWriter,
     @Inject(METRICS) private readonly metrics: Metrics,
     @Inject(NOTIFICATION_GATEWAY) private readonly gateway: NotificationGateway,
+    @Inject(PUSH_SENDER) private readonly pushSender: PushSender,
+    private readonly devices: PushDeviceRepository,
     private readonly events: NotificationEventRepository,
     private readonly templates: NotificationTemplateRepository,
     private readonly prefs: NotificationPreferenceRepository,
@@ -80,6 +84,10 @@ export class NotificationService {
     } else if (!template) {
       n.markFailed('no_template');   // can't send an empty external message — record + skip (fail-closed)
       this.metrics.inc('comm.no_template', { event: a.event, channel: a.channel });
+    } else if (a.channel === 'push') {
+      // FIRST-PARTY push (P0-10): resolve the recipient's own registered device tokens (push_devices) and
+      // send via the resilient PUSH_SENDER. Dead tokens (DeviceNotRegistered) are deactivated in-tx (hygiene).
+      await this.deliverPush(tx, a, n, { subject: rendered.subject, body: rendered.body });
     } else {
       const res = await this.gateway.dispatch({ idempotencyKey: id, tenantId: a.tenantId, userId: a.userId, channel: a.channel as NotifyChannel,
         eventCode: a.event, languageCode: n.toProps().languageCode ?? a.lang, subject: rendered.subject, body: rendered.body, providerTemplateRef: template.providerTemplateRef, payload: a.payload });
@@ -89,6 +97,22 @@ export class NotificationService {
     await this.notifications.insert(tx, n);
     await this.flush(tx, a.tenantId, n.id, n.pullEvents());
     this.metrics.inc('comm.delivered', { event: a.event, channel: a.channel, status: n.status });
+  }
+
+  /** Send a rendered notification to the recipient's registered push devices (P0-10). The token is the
+   *  recipient's OWN (push_devices is user-scoped). No device on file → 'no_device' (recorded, not an error).
+   *  The send is resilience-wrapped (degrade, never die); tokens the provider rejects as permanently dead are
+   *  deactivated in the SAME tx so we stop targeting them. The deep-link payload rides in `data`. */
+  private async deliverPush(tx: TxContext, a: { tenantId: string | null; userId: string; event: string; payload: Record<string, unknown> }, n: Notification, rendered: { subject: string | null; body: string }): Promise<void> {
+    const tokens = await this.devices.activeTokensForUser(a.userId);
+    if (tokens.length === 0) { n.markFailed('no_device'); this.metrics.inc('comm.push.no_device', { event: a.event }); return; }
+    const res = await this.pushSender.send({
+      idempotencyKey: n.id, tokens: tokens.map((t) => t.token),
+      title: rendered.subject, body: rendered.body, data: { ...a.payload, eventCode: a.event },
+    });
+    for (const dead of res.invalidTokens) { await this.devices.deactivate(tx, a.userId, dead); this.metrics.inc('comm.push.token_pruned', {}); }
+    if (res.sent > 0) n.markSent(null, null);
+    else n.markFailed(res.failureReason ?? 'push_failed');
   }
 
   // ---- the recipient's own inbox (controller-facing) -------------------------------------------------

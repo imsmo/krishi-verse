@@ -18,6 +18,21 @@ export const notificationGatewayProvider: Provider = {
   },
 };
 
+import { PUSH_SENDER } from './push-sender.port';
+import { ExpoPushSender } from './expo-push.sender';
+import { NoopPushSender } from './noop-push.sender';
+
+// First-party push sender (P0-10): Expo by default (no key needed for basic sends); PUSH_PROVIDER='none' → noop.
+export const pushSenderProvider: Provider = {
+  provide: PUSH_SENDER,
+  inject: [AppConfig, ResilienceService],
+  useFactory: (config: AppConfig, resilience: ResilienceService) => {
+    const p = config.push;
+    if (p.provider === 'expo') return new ExpoPushSender({ baseUrl: p.expoBaseUrl, accessToken: p.expoAccessToken }, resilience);
+    return new NoopPushSender(config.isProd);
+  },
+};
+
 import { MASKING_PROVIDER } from './masking-provider.port';
 import { HttpMaskingGateway } from './http-masking.gateway';
 import { NoopMaskingGateway } from './noop-masking.gateway';

@@ -9,7 +9,9 @@ import { NotificationPreference } from '../domain/notification-preference.entity
 import { NotificationNotFoundError } from '../domain/communication.errors';
 import { NotifChannel } from '../domain/communication.events';
 
-const catalog = (over: Partial<any> = {}) => NotificationEvent.rehydrate({ code: 'order.delivered', defaultName: 'Delivered', priority: 'important', defaultChannels: ['push', 'inapp'] as NotifChannel[], userCanOptOut: true, batchable: false, ...over });
+// default channels are sms + inapp: sms exercises the external gateway path; inapp needs no send. (The PUSH
+// channel now has its own first-party path (push_devices → PUSH_SENDER), covered by notification-push-dispatch.spec.)
+const catalog = (over: Partial<any> = {}) => NotificationEvent.rehydrate({ code: 'order.delivered', defaultName: 'Delivered', priority: 'important', defaultChannels: ['sms', 'inapp'] as NotifChannel[], userCanOptOut: true, batchable: false, ...over });
 const template = (channel: NotifChannel) => NotificationTemplate.rehydrate({ id: `tmpl-${channel}`, eventCode: 'order.delivered', channel, languageCode: 'en', tenantId: null, subject: null, body: 'Order {{orderNo}} delivered', providerTemplateRef: null, isActive: true });
 
 function harness(opts: { event?: NotificationEvent | null; prefs?: NotificationPreference[]; gatewayStatus?: 'accepted' | 'failed' } = {}) {
@@ -23,19 +25,21 @@ function harness(opts: { event?: NotificationEvent | null; prefs?: NotificationP
   const templates = { resolve: jest.fn(async (_t: any, _e: string, channel: NotifChannel) => template(channel)) };
   const prefs = { listForUser: jest.fn(async () => opts.prefs ?? []) };
   const quiet = { getForUser: jest.fn(async () => null) };
+  const pushSender = { providerCode: 'fake', send: jest.fn(async () => ({ sent: 1, invalidTokens: [] })) };
+  const devices = { activeTokensForUser: jest.fn(async () => [{ token: 'tok', platform: 'android' }]), deactivate: jest.fn(async () => 1) };
   const notifications = { insert: jest.fn(async (_tx: any, n: any) => { inserted.push(n); }), getForUserUpdate: jest.fn(async () => null), update: jest.fn(), getByProviderRef: jest.fn() };
-  const svc = new NotificationService(uow as any, outbox as any, metrics as any, gateway as any, events as any, templates as any, prefs as any, quiet as any, notifications as any);
-  return { svc, tx, gateway, notifications, inserted, metrics };
+  const svc = new NotificationService(uow as any, outbox as any, metrics as any, gateway as any, pushSender as any, devices as any, events as any, templates as any, prefs as any, quiet as any, notifications as any);
+  return { svc, tx, gateway, pushSender, devices, notifications, inserted, metrics };
 }
 
 describe('NotificationService.fanout', () => {
   it('records one row per resolved channel; dispatches non-inapp, skips the gateway for inapp', async () => {
     const h = harness();
     await h.svc.fanout(h.tx as any, { tenantId: 't1', eventCode: 'order.delivered', recipients: ['u1'], payload: { orderNo: 'A1' }, dedupeKey: 'evt-1' });
-    expect(h.inserted).toHaveLength(2);                              // push + inapp
-    expect(h.gateway.dispatch).toHaveBeenCalledTimes(1);            // only push went to the gateway
+    expect(h.inserted).toHaveLength(2);                              // sms + inapp
+    expect(h.gateway.dispatch).toHaveBeenCalledTimes(1);            // only sms went to the external gateway
     const channels = h.inserted.map((n) => n.toProps().channel).sort();
-    expect(channels).toEqual(['inapp', 'push']);
+    expect(channels).toEqual(['inapp', 'sms']);
     expect(h.inserted.every((n) => n.status === 'sent')).toBe(true);
   });
   it('skips an uncatalogued event (fail-closed — no spam)', async () => {
@@ -44,16 +48,16 @@ describe('NotificationService.fanout', () => {
     expect(h.inserted).toHaveLength(0);
     expect(h.gateway.dispatch).not.toHaveBeenCalled();
   });
-  it('DEGRADES on gateway failure: the push row is recorded failed, no throw', async () => {
+  it('DEGRADES on gateway failure: the sms row is recorded failed, no throw', async () => {
     const h = harness({ gatewayStatus: 'failed' });
     await h.svc.fanout(h.tx as any, { tenantId: 't1', eventCode: 'order.delivered', recipients: ['u1'], payload: {}, dedupeKey: 'evt-2' });
-    const push = h.inserted.find((n) => n.toProps().channel === 'push');
+    const push = h.inserted.find((n) => n.toProps().channel === 'sms');
     expect(push.status).toBe('failed');
     const inapp = h.inserted.find((n) => n.toProps().channel === 'inapp');
     expect(inapp.status).toBe('sent');                              // inapp unaffected
   });
   it('honors an opt-out: a disabled channel is not recorded', async () => {
-    const h = harness({ prefs: [NotificationPreference.rehydrate({ userId: 'u1', eventCode: 'order.delivered', channel: 'push', isEnabled: false })] });
+    const h = harness({ prefs: [NotificationPreference.rehydrate({ userId: 'u1', eventCode: 'order.delivered', channel: 'sms', isEnabled: false })] });
     await h.svc.fanout(h.tx as any, { tenantId: 't1', eventCode: 'order.delivered', recipients: ['u1'], payload: {}, dedupeKey: 'evt-3' });
     expect(h.inserted.map((n) => n.toProps().channel)).toEqual(['inapp']);
   });
@@ -63,7 +67,7 @@ describe('NotificationService.fanout', () => {
     const idsA = a.inserted.map((n) => n.id).sort();
     const idsB = b.inserted.map((n) => n.id).sort();
     expect(idsA).toEqual(idsB);
-    expect((a.gateway.dispatch.mock.calls as any[])[0][0].idempotencyKey).toBe(a.inserted.find((n) => n.toProps().channel === 'push').id);
+    expect((a.gateway.dispatch.mock.calls as any[])[0][0].idempotencyKey).toBe(a.inserted.find((n) => n.toProps().channel === 'sms').id);
   });
 });
 

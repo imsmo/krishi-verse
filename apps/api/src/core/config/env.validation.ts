@@ -76,6 +76,9 @@ export const EnvSchema = z.object({
   NOTIFY_GATEWAY_URL: z.string().default(''),           // external notification product base URL; absent ⇒ noop gateway
   NOTIFY_GATEWAY_API_KEY: z.string().default(''),
   NOTIFY_WEBHOOK_SECRET: z.string().default(''),        // HMAC secret for the delivery-status callback
+  PUSH_PROVIDER: z.string().default('expo'),            // first-party push sender: 'expo' (default) | 'none' (noop)
+  EXPO_PUSH_URL: z.string().default(''),                // Expo push base (default https://exp.host)
+  EXPO_ACCESS_TOKEN: z.string().default(''),            // optional Expo access token (raises rate limits + auth)
   MASKING_PROVIDER_URL: z.string().default(''),         // external number-masking telephony provider; absent ⇒ noop
   MASKING_PROVIDER_API_KEY: z.string().default(''),
   MASKING_WEBHOOK_SECRET: z.string().default(''),       // HMAC secret for the call-status callback

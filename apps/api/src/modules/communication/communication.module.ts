@@ -44,7 +44,7 @@ import { ConversationRepository } from './repositories/conversation.repository';
 import { MessageRepository } from './repositories/message.repository';
 import { MaskedCallRepository } from './repositories/masked-call.repository';
 import { PushDeviceRepository } from './repositories/push-device.repository';
-import { notificationGatewayProvider, maskingProviderProvider } from './gateway/gateway.provider';
+import { notificationGatewayProvider, maskingProviderProvider, pushSenderProvider } from './gateway/gateway.provider';
 import { DomainEventFanoutHandler } from './events/handlers/domain-event-fanout.handler';
 import { NOTIFICATION_EVENT_MAP } from './events/notification-event-map';
 
@@ -54,7 +54,7 @@ import { NOTIFICATION_EVENT_MAP } from './events/notification-event-map';
     NotificationService, PreferenceService, TemplateAdminService, ConversationService, MessageService, MaskedCallService, DeviceService, BroadcastService,
     NotificationEventRepository, NotificationTemplateRepository, NotificationPreferenceRepository, QuietHoursRepository, NotificationRepository,
     ConversationRepository, MessageRepository, MaskedCallRepository, PushDeviceRepository, BroadcastRepository,
-    notificationGatewayProvider, maskingProviderProvider,
+    notificationGatewayProvider, maskingProviderProvider, pushSenderProvider,
   ],
   exports: [NotificationService, ConversationService, MessageService, MaskedCallService],
 })

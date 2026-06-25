@@ -17,6 +17,8 @@ import { PgReadReplicaProvider } from '../../../core/database/read-replica.pg';
 import { PgOutboxWriter } from '../../../core/outbox/outbox.writer.pg';
 import { PromMetrics } from '../../../core/observability/metrics.prom';
 import { NoopNotificationGateway } from '../gateway/noop.gateway';
+import { NoopPushSender } from '../gateway/noop-push.sender';
+import { PushDeviceRepository } from '../repositories/push-device.repository';
 import { NotificationEventRepository } from '../repositories/notification-event.repository';
 import { NotificationTemplateRepository } from '../repositories/notification-template.repository';
 import { NotificationPreferenceRepository } from '../repositories/notification-preference.repository';
@@ -44,12 +46,14 @@ run('communication spine (integration, real Postgres + RLS + seeded catalog)', (
     const replica = new PgReadReplicaProvider(pools, shards);
     const outbox = new PgOutboxWriter(); const metrics = new PromMetrics();
     const gateway = new NoopNotificationGateway(config);   // test ⇒ accepts; no external notifier
+    const pushSender = new NoopPushSender(false);          // test ⇒ accepts (no real device send)
+    const pushDevices = new PushDeviceRepository(replica as any);
     const events = new NotificationEventRepository(replica as any);
     const templates = new NotificationTemplateRepository(replica as any);
     const prefs = new NotificationPreferenceRepository(replica as any);
     const quiet = new QuietHoursRepository(replica as any);
     notifRepo = new NotificationRepository(replica as any);
-    notifications = new NotificationService(uow, outbox, metrics, gateway, events, templates, prefs, quiet, notifRepo);
+    notifications = new NotificationService(uow, outbox, metrics, gateway, pushSender, pushDevices, events, templates, prefs, quiet, notifRepo);
     prefsSvc = new PreferenceService(uow, outbox, events, prefs, quiet);
     inspect = new Pool({ connectionString: APP_URL });
   }, 30000);
