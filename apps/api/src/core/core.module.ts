@@ -21,6 +21,8 @@ import { TokenService, TOKEN_SERVICE } from './auth/token.service';
 import { OtpService, OTP_SERVICE, SMS_SENDER, SmsSender } from './auth/otp.service';
 import { RefreshTokenService } from './auth/refresh-token.service';
 import { NoopSmsSender } from './auth/sms.noop';
+import { Msg91SmsSender } from './auth/sms.msg91';
+import { TwilioSmsSender } from './auth/sms.twilio';
 import { RoleCacheService, ROLE_CACHE_SERVICE } from './rbac/role-cache.service';
 
 import { OUTBOX_WRITER } from './outbox/outbox.writer';
@@ -89,7 +91,20 @@ import { MetricsController } from './observability/metrics.controller';
     OtpService, { provide: OTP_SERVICE, useExisting: OtpService },
     RefreshTokenService,
     RoleCacheService, { provide: ROLE_CACHE_SERVICE, useExisting: RoleCacheService },
-    { provide: SMS_SENDER, useClass: NoopSmsSender },
+    {
+      // SMS provider chosen by config: msg91 (Indian DLT) / twilio (global) / noop (dev). In production
+      // assertProductionSecurity has already refused to boot on 'noop' or missing provider creds.
+      provide: SMS_SENDER,
+      useFactory: (config: AppConfig, resilience: ResilienceService): SmsSender => {
+        resilience.configure('sms', { timeoutMs: 6000, retries: 1, circuit: { failureThreshold: 5, resetMs: 15_000, halfOpenMax: 2 }, bulkhead: { maxConcurrent: 32, maxQueue: 256 } });
+        switch (config.sms.provider) {
+          case 'msg91':  return new Msg91SmsSender(config.sms.msg91, resilience);
+          case 'twilio': return new TwilioSmsSender(config.sms.twilio, resilience);
+          default:       return new NoopSmsSender(config);
+        }
+      },
+      inject: [AppConfig, ResilienceService],
+    },
     // global error envelope + success envelope
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },

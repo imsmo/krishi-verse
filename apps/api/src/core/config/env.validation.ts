@@ -62,7 +62,16 @@ export const EnvSchema = z.object({
   RAZORPAYX_BASE_URL: z.string().optional(),
   RAZORPAYX_WEBHOOK_SECRET: z.string().default(''),
   SANDBOX_WEBHOOK_SECRET: z.string().default(''),
+  // --- SMS / OTP delivery ---
+  // noop = log only (dev). msg91 = Indian DLT gateway (prod default). twilio = global fallback.
+  SMS_PROVIDER: z.enum(['noop', 'msg91', 'twilio']).default('noop'),
   MSG91_AUTH_KEY: z.string().default(''),
+  MSG91_SENDER_ID: z.string().default(''),              // DLT-registered 6-char header
+  MSG91_OTP_TEMPLATE_ID: z.string().default(''),        // DLT-approved OTP template id (carries the {code} var)
+  MSG91_BASE_URL: z.string().default('https://control.msg91.com'),
+  TWILIO_ACCOUNT_SID: z.string().default(''),
+  TWILIO_AUTH_TOKEN: z.string().default(''),
+  TWILIO_FROM: z.string().default(''),                  // sender number / messaging-service SID
   SMS_DAILY_BUDGET_PAISE: z.coerce.number().nonnegative().default(0),
   NOTIFY_GATEWAY_URL: z.string().default(''),           // external notification product base URL; absent ⇒ noop gateway
   NOTIFY_GATEWAY_API_KEY: z.string().default(''),

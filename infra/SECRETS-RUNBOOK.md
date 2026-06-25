@@ -61,6 +61,11 @@ Repeat for `krishiverse-prod/{admin-api,wallet,worker,realtime,ai}/env` with eac
 **Never** set `S3_ACCESS_KEY_ID`/`S3_SECRET_ACCESS_KEY` (S3 uses the pod's IRSA role) and **never** set
 `AUTH_EXPOSE_OTP=true` — boot will refuse either.
 
+> **SMS/OTP (P0-3):** add the provider selection to the API env JSON so real users get OTP texts. For India:
+> `"SMS_PROVIDER":"msg91"`, `"MSG91_AUTH_KEY":"<live>"`, `"MSG91_SENDER_ID":"<DLT 6-char header>"`,
+> `"MSG91_OTP_TEMPLATE_ID":"<DLT OTP template id>"`. (Global fallback: `"SMS_PROVIDER":"twilio"` +
+> `TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN`/`TWILIO_FROM`.) Boot **refuses** `noop` in production.
+
 **c) External provider keys** — fill the empty containers Terraform made:
 ```bash
 aws secretsmanager put-secret-value --secret-id krishiverse-prod/sms/provider_api_key   --secret-string '<...>'

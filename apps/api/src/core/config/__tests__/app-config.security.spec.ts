@@ -16,6 +16,10 @@ const SECURE_RAW: Record<string, string> = {
   S3_MEDIA_BUCKET: 'krishiverse-prod-media-123456789012',
   RAZORPAY_KEY_ID: 'rzp_live_abc123',
   RAZORPAY_WEBHOOK_SECRET: 'whsec_live_strong_secret_abcdef0123456789',
+  SMS_PROVIDER: 'msg91',
+  MSG91_AUTH_KEY: 'msg91-live-auth-key',
+  MSG91_OTP_TEMPLATE_ID: '64a1b2c3template',
+  MSG91_SENDER_ID: 'KRSHVR',
 };
 
 const envWith = (overrides: Record<string, string | undefined>): Env => {
@@ -57,6 +61,9 @@ describe('AppConfig.collectProductionProblems (fail-closed)', () => {
     ['payments weak webhook secret', { RAZORPAY_WEBHOOK_SECRET: 'sandbox-secret' }, /RAZORPAY_WEBHOOK_SECRET/],
     ['notify gateway without secret', { NOTIFY_GATEWAY_URL: 'https://notify.example.com', NOTIFY_WEBHOOK_SECRET: undefined }, /NOTIFY_WEBHOOK_SECRET/],
     ['masking provider without secret', { MASKING_PROVIDER_URL: 'https://mask.example.com', MASKING_WEBHOOK_SECRET: undefined }, /MASKING_WEBHOOK_SECRET/],
+    ['SMS provider noop in prod', { SMS_PROVIDER: 'noop' }, /SMS_PROVIDER must be/],
+    ['MSG91 without template', { SMS_PROVIDER: 'msg91', MSG91_OTP_TEMPLATE_ID: undefined }, /MSG91_/],
+    ['Twilio without creds', { SMS_PROVIDER: 'twilio', TWILIO_ACCOUNT_SID: undefined }, /TWILIO_/],
   ])('flags %s', (_label, overrides, pattern) => {
     const problems = AppConfig.collectProductionProblems(envWith(overrides));
     expect(problems.length).toBeGreaterThan(0);

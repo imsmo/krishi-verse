@@ -81,6 +81,19 @@ export class OtpService {
 }
 export const OTP_SERVICE = Symbol('OTP_SERVICE');
 
-/** A pluggable SMS sender (real provider = MSG91 in Phase 2; default logs only). */
-export abstract class SmsSender { abstract send(phone: string, message: string): Promise<void>; }
+/** Context for an OTP send — real (DLT) providers template on `code`; never log it. */
+export interface SmsOtpContext { code: string; ttlMin: number; purpose: 'login' | 'change_phone'; locale?: string }
+
+/**
+ * A pluggable SMS sender. `send` delivers a pre-rendered message (used for dev/noop and free-text providers).
+ * `sendOtp` is the OTP path: India's DLT regime forbids raw-text OTP, so real providers (MSG91) override it to
+ * send via a DLT-approved OTP TEMPLATE with `code` as a variable. The default delegates to `send(renderedMessage)`
+ * so the noop/dev path and free-text providers (Twilio) keep working. OTP codes are NEVER logged.
+ */
+export abstract class SmsSender {
+  abstract send(phone: string, message: string): Promise<void>;
+  async sendOtp(phone: string, _ctx: SmsOtpContext, renderedMessage: string): Promise<void> {
+    return this.send(phone, renderedMessage);
+  }
+}
 export const SMS_SENDER = Symbol('SMS_SENDER');

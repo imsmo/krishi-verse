@@ -79,6 +79,11 @@ export class AppConfig {
     if (env.NOTIFY_GATEWAY_URL && weak16(env.NOTIFY_WEBHOOK_SECRET)) p.push('NOTIFY_WEBHOOK_SECRET (strong) required when NOTIFY_GATEWAY_URL is set');
     if (env.MASKING_PROVIDER_URL && weak16(env.MASKING_WEBHOOK_SECRET)) p.push('MASKING_WEBHOOK_SECRET (strong) required when MASKING_PROVIDER_URL is set');
 
+    // --- SMS/OTP: a real provider must be wired (noop drops messages → no real user can log in) ---
+    if (env.SMS_PROVIDER === 'noop') p.push('SMS_PROVIDER must be msg91 or twilio in production (noop drops OTP texts — login impossible)');
+    if (env.SMS_PROVIDER === 'msg91' && (!env.MSG91_AUTH_KEY || !env.MSG91_OTP_TEMPLATE_ID || !env.MSG91_SENDER_ID)) p.push('MSG91_AUTH_KEY + MSG91_OTP_TEMPLATE_ID + MSG91_SENDER_ID required when SMS_PROVIDER=msg91');
+    if (env.SMS_PROVIDER === 'twilio' && (!env.TWILIO_ACCOUNT_SID || !env.TWILIO_AUTH_TOKEN || !env.TWILIO_FROM)) p.push('TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN + TWILIO_FROM required when SMS_PROVIDER=twilio');
+
     return p;
   }
 
@@ -180,6 +185,26 @@ export class AppConfig {
     };
   }
   get smsBudgetPaise() { return this.env.SMS_DAILY_BUDGET_PAISE; }
+  /** SMS/OTP delivery wiring. All SMS env reads live here. */
+  get sms() {
+    return {
+      provider: this.env.SMS_PROVIDER,
+      msg91: {
+        authKey: this.env.MSG91_AUTH_KEY,
+        senderId: this.env.MSG91_SENDER_ID,
+        otpTemplateId: this.env.MSG91_OTP_TEMPLATE_ID,
+        baseUrl: this.env.MSG91_BASE_URL,
+        configured: this.env.MSG91_AUTH_KEY.length > 0 && this.env.MSG91_OTP_TEMPLATE_ID.length > 0,
+      },
+      twilio: {
+        accountSid: this.env.TWILIO_ACCOUNT_SID,
+        authToken: this.env.TWILIO_AUTH_TOKEN,
+        from: this.env.TWILIO_FROM,
+        configured: this.env.TWILIO_ACCOUNT_SID.length > 0 && this.env.TWILIO_AUTH_TOKEN.length > 0 && this.env.TWILIO_FROM.length > 0,
+      },
+      dailyBudgetPaise: this.env.SMS_DAILY_BUDGET_PAISE,
+    };
+  }
   get notifications() {
     return {
       gatewayUrl: this.env.NOTIFY_GATEWAY_URL || null,   // null ⇒ noop gateway (dev) / drop (prod)

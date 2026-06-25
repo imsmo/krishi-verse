@@ -39,7 +39,8 @@ export class ChangePhoneService {
         if (owner && owner.id !== userId) throw new PhoneAlreadyInUseError();   // can't capture someone else's number
         const { code, ttlSec } = await this.otp.issue(phone);                   // throttled inside
         const lang = tryGetRequestContext()?.lang ?? 'en';
-        await this.sms.send(phone, this.i18n.t('sms.otp', lang, { code, minutes: Math.round(ttlSec / 60) }));
+        const ttlMin = Math.round(ttlSec / 60);
+        await this.sms.sendOtp(phone, { code, ttlMin, purpose: 'change_phone', locale: lang }, this.i18n.t('sms.otp', lang, { code, minutes: ttlMin }));
         this.metrics.inc('identity.change_phone.otp_sent');
         return { ok: true as const };
       }));

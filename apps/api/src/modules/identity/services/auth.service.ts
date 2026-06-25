@@ -58,8 +58,9 @@ export class AuthService {
     return timed(this.metrics, 'auth.request_otp', {}, async () => {
       const { code, ttlSec } = await this.otp.issue(phone); // throttled inside
       const lang = tryGetRequestContext()?.lang ?? 'en';
-      const message = this.i18n.t('sms.otp', lang, { code, minutes: Math.round(ttlSec / 60) });
-      await this.sms.send(phone, message);
+      const ttlMin = Math.round(ttlSec / 60);
+      const message = this.i18n.t('sms.otp', lang, { code, minutes: ttlMin });
+      await this.sms.sendOtp(phone, { code, ttlMin, purpose: 'login', locale: lang }, message);
       this.metrics.inc('auth.otp_requested');
       // dev affordance ONLY outside production, so integration tests/local can complete login.
       return { sent: true, resendInSec: this.config.auth.otp.resendCooldownSec, ...(this.config.auth.exposeOtp ? { devCode: code } : {}) };
