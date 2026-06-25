@@ -10,6 +10,7 @@ export const AuctionEventType = {
   Cancelled: 'auctions.auction_cancelled',
   Outbid: 'auctions.bidder_outbid',     // a higher bid arrived → notify the previous high bidder
   WatchStarted: 'auctions.watch_started',
+  WatchersEnded: 'auctions.watchers_auction_ended', // an auction closed → notify everyone who WATCHED it (fanout)
   Updated: 'auctions.auction_updated',  // seller edited a scheduled auction's terms
   EmdReleased: 'auctions.emd_released', // a (losing) bidder's EMD hold was returned
 } as const;

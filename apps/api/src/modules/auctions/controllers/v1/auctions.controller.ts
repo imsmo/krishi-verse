@@ -52,6 +52,11 @@ export class AuctionsController {
     return this.myBids.forBidder(ctx.tenantId, ctx.userId, { cursor: decodeCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
 
+  // whether the caller is watching a given auction (O(1)) — declared before ':id' is irrelevant (distinct suffix),
+  // but kept with the watch routes for clarity. Used by clients to render the watch-toggle state.
+  @Get(':id/watch')
+  isWatching(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.watchers.isWatching(ctx.tenantId, ctx.userId, id).then((data) => ({ data })); }
+
   @Get(':id')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.auctions.getById(ctx.tenantId, id).then((data) => ({ data })); }
 

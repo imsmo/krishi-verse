@@ -27,6 +27,17 @@ export class AuctionWatcherRepository {
       [tenantId, auctionId, userId]);
     return (r.rowCount ?? 0) > 0;
   }
+  /** The user ids watching an auction — read INSIDE the caller's tx (the auction is already resolved + locked in
+   *  this tenant) so the fanout commits atomically with the close. BOUNDED by `cap` to bound write amplification
+   *  (a notification per watcher); a hugely-watched auction is capped, never unbounded. JOINs auctions on
+   *  tenant_id (the table has no tenant_id of its own) — no cross-tenant leakage. */
+  async listWatcherUserIds(tx: TxContext, tenantId: string, auctionId: string, cap = 5000): Promise<string[]> {
+    const r = await tx.query<{ user_id: string }>(
+      `SELECT w.user_id FROM auction_watchers w JOIN auctions a ON a.id=w.auction_id AND a.tenant_id=$1
+        WHERE w.auction_id=$2 ORDER BY w.user_id LIMIT $3`, [tenantId, auctionId, cap]);
+    return r.rows.map((x) => x.user_id);
+  }
+
   async countForAuction(tenantId: string, auctionId: string): Promise<number> {
     const r = await this.replica.forTenant(tenantId).query<{ n: string }>(
       `SELECT count(*)::text n FROM auction_watchers w JOIN auctions a ON a.id=w.auction_id AND a.tenant_id=$1 WHERE w.auction_id=$2`, [tenantId, auctionId]);

@@ -19,6 +19,8 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   { outboxType: 'comm.message_posted',          eventCode: 'chat.message_posted',  recipientKeys: ['recipientUserIds'] },
   // ---- Wave 4 engagement glue (API-W4-01) ----
   { outboxType: 'auctions.bidder_outbid',       eventCode: 'bid.outbid',           recipientKeys: ['previousBidderUserId'] },
+  // P1-7: an auction closed → notify everyone who WATCHED it (fanout list travels as recipientUserIds).
+  { outboxType: 'auctions.watchers_auction_ended', eventCode: 'auction.ended',     recipientKeys: ['recipientUserIds'] },
   { outboxType: 'requirements.requirement_matched',  eventCode: 'requirement.matched',  recipientKeys: ['buyerUserId'] },
   { outboxType: 'requirements.requirement_reminder', eventCode: 'requirement.reminder', recipientKeys: ['buyerUserId'] },
   { outboxType: 'reviews.review_prompt',        eventCode: 'review.prompt',        recipientKeys: ['recipientUserIds'] },

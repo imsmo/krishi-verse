@@ -4,7 +4,7 @@
 // is refunded server-side. create + placeBid carry an Idempotency-Key (Law 3) — a retried bid can't double-hold.
 // Money is bigint minor-unit strings (Law 2). Gated server-side by the `auctions` flag.
 import { HttpClient } from '../http';
-import { Auction, BidHistoryItem, PlaceBidResult, MyBid, Page } from '../types';
+import { Auction, BidHistoryItem, PlaceBidResult, MyBid, WatchedAuction, Page } from '../types';
 
 export class AuctionsResource {
   constructor(private readonly http: HttpClient) {}
@@ -41,6 +41,26 @@ export class AuctionsResource {
   /** The caller's OWN bids across ALL auctions (keyset), each with its EMD hold + winning flag. */
   async myBids(params: { cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<MyBid>> {
     const r = await this.http.request<MyBid[]>('GET', 'auctions/my-bids', { query: { cursor: params.cursor, limit: params.limit ?? 20 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+
+  // --- watch / follow (P1-7): any authed member may watch an auction in their tenant. Watching is idempotent and
+  // owner-scoped server-side; watchers are notified when the auction closes (via the notification spine). ---
+  /** Start watching an auction (idempotent). Returns the current watch state. */
+  async watch(auctionId: string): Promise<{ ok: boolean; auctionId: string; watching: boolean }> {
+    return (await this.http.request<{ ok: boolean; auctionId: string; watching: boolean }>('POST', `auctions/${encodeURIComponent(auctionId)}/watch`, { body: {} })).data;
+  }
+  /** Stop watching an auction (idempotent). */
+  async unwatch(auctionId: string): Promise<{ ok: boolean; auctionId: string; watching: boolean }> {
+    return (await this.http.request<{ ok: boolean; auctionId: string; watching: boolean }>('DELETE', `auctions/${encodeURIComponent(auctionId)}/watch`, {})).data;
+  }
+  /** Whether the caller is currently watching this auction (O(1)) — drives a watch-toggle's state. */
+  async isWatching(auctionId: string, signal?: AbortSignal): Promise<boolean> {
+    return (await this.http.request<{ auctionId: string; watching: boolean }>('GET', `auctions/${encodeURIComponent(auctionId)}/watch`, { signal })).data.watching;
+  }
+  /** The caller's watched auctions (with live status/ends_at), keyset-paginated. */
+  async watching(params: { cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<WatchedAuction>> {
+    const r = await this.http.request<WatchedAuction[]>('GET', 'auctions/watching', { query: { cursor: params.cursor, limit: params.limit ?? 20 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
 }

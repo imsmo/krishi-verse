@@ -29,3 +29,22 @@ export async function placeBidAction(formData: FormData): Promise<void> {
   revalidatePath(path);
   redirect(`${path}?status=bid`);
 }
+
+/** P1-7: watch / unwatch an auction (AUTHENTICATED → anon redirected to /login?next=). Idempotent + owner-scoped
+ * server-side; watchers are notified when the auction closes (notification spine). A failure degrades to a notice
+ * (Law 12) — never a crash. `intent` decides the direction so a single form handles both. */
+export async function toggleWatchAction(formData: FormData): Promise<void> {
+  const auctionId = String(formData.get('auctionId') ?? '');
+  if (!auctionId) redirect('/auctions');
+  const path = `/auctions/${encodeURIComponent(auctionId)}`;
+  await requireSession(path);
+  const intent = String(formData.get('intent') ?? 'watch'); // 'watch' | 'unwatch'
+  try {
+    if (intent === 'unwatch') await serverClient().auctions.unwatch(auctionId);
+    else await serverClient().auctions.watch(auctionId);
+  } catch {
+    redirect(`${path}?status=watch_err`);
+  }
+  revalidatePath(path);
+  redirect(`${path}?status=${intent === 'unwatch' ? 'unwatched' : 'watched'}`);
+}

@@ -28,6 +28,11 @@ export class AuctionsPublisher {
   watchStarted(tx: TxContext, tenantId: string, auctionId: string, userId: string) {
     return this.emit(tx, tenantId, auctionId, AuctionEventType.WatchStarted, { userId });
   }
+  /** An auction closed → notify everyone who WATCHED it. recipientUserIds travels in the payload (the notification
+   *  bridge fans out one notification per recipient, deduped); carries NO PII beyond the in-tenant user ids. */
+  watchersAuctionEnded(tx: TxContext, tenantId: string, auctionId: string, recipientUserIds: string[], hadWinner: boolean) {
+    return this.emit(tx, tenantId, auctionId, AuctionEventType.WatchersEnded, { recipientUserIds, hadWinner });
+  }
   /** A (losing) bidder's EMD hold was returned to their wallet. */
   emdReleased(tx: TxContext, tenantId: string, auctionId: string, bidderUserId: string, amountMinor: bigint) {
     return this.emit(tx, tenantId, auctionId, AuctionEventType.EmdReleased, { bidderUserId, amountMinor: amountMinor.toString() });

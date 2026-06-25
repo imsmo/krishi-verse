@@ -214,6 +214,9 @@ export interface MyBid {
   bidId: string; auctionId: string; listingId: string; amountMinor: string; emdHeldMinor: string;
   auctionStatus: string; endsAt: string; isWinning: boolean; createdAt: string;
 }
+/** An auction the caller is WATCHING (follow). `status`/`endsAt` are the live auction's, `watchedAt` is when the
+ * caller started watching. No money lives here. */
+export interface WatchedAuction { auctionId: string; status: string; endsAt: string; watchedAt: string; }
 
 // --- labour (module 6) — money is bigint minor-unit STRINGS (Law 2) ---
 /** A worker's self-managed profile. `ageVerified18` is set out-of-band (KYC/admin) — NOT client-settable; the

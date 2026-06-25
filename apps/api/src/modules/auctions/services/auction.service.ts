@@ -19,6 +19,8 @@ import { UpdateAuctionDto } from '../dto/update-auction.dto';
 import { AuctionNotFoundError, AuctionForbiddenError, AuctionConcurrencyError, InvalidAuctionError } from '../domain/auctions.errors';
 import { AuctionRepository } from '../repositories/auction.repository';
 import { BidRepository } from '../repositories/bid.repository';
+import { AuctionWatcherRepository } from '../repositories/auction-watcher.repository';
+import { AuctionsPublisher } from '../events/auctions.publisher';
 
 export interface AuctionActor { userId: string; canModerate: boolean; }
 
@@ -34,6 +36,8 @@ export class AuctionService {
     private readonly listings: ListingService,
     private readonly repo: AuctionRepository,
     private readonly bids: BidRepository,
+    private readonly watchers: AuctionWatcherRepository,
+    private readonly publisher: AuctionsPublisher,
   ) {}
 
   private async sellerOf(tenantId: string, listingId: string): Promise<string> {
@@ -90,7 +94,14 @@ export class AuctionService {
       if (!(await this.repo.update(tx, a))) throw new AuctionConcurrencyError(auctionId);
       await this.releaseAllEmd(tx, tenantId, auctionId, a);
       await this.repo.recordEvent(tx, tenantId, auctionId, 'ended', { status: a.status });
-      await this.flush(tx, tenantId, auctionId, a.pullEvents());
+      const events = a.pullEvents();
+      await this.flush(tx, tenantId, auctionId, events);
+      // P1-7: fan the close out to everyone WATCHING this auction (notification spine). Bounded + atomic in this tx.
+      const watcherIds = await this.watchers.listWatcherUserIds(tx, tenantId, auctionId);
+      if (watcherIds.length > 0) {
+        const hadWinner = events.some((e) => e.type === 'auctions.auction_won');
+        await this.publisher.watchersAuctionEnded(tx, tenantId, auctionId, watcherIds, hadWinner);
+      }
     }, { userId: 'system' });
   }
 

@@ -51,8 +51,13 @@ too-low rejected) → close (winner + all EMD released) → cross-tenant RLS den
   PK) and lists their own watched auctions. `auction_watchers` has no `tenant_id`; it is reachable only
   through the tenant-scoped, RLS-protected `auctions` row (every read JOINs `auctions` + filters
   `tenant_id`), and the auction is resolved within the tenant before a watch (a non-member → 404, no
-  enumeration). `POST/DELETE /v1/auctions/:id/watch`, `GET /v1/auctions/watching`. watch emits
-  `auctions.watch_started` (Law 4).
+  enumeration). `POST/DELETE /v1/auctions/:id/watch`, `GET /v1/auctions/watching`,
+  `GET /v1/auctions/:id/watch` (O(1) `isWatching` for the UI toggle state). watch emits
+  `auctions.watch_started` (Law 4). **On close (P1-7)** `closeAndResolve` loads the auction's watchers
+  (`listWatcherUserIds`, bounded cap, read in the close tx) and emits `auctions.watchers_auction_ended` carrying
+  `recipientUserIds` → mapped in `communication/events/notification-event-map.ts` to the `auction.ended` catalog
+  event, so every watcher is notified atomically with the close (Law 4); the fanout is bounded (write-amplification
+  cap) and carries no PII beyond in-tenant user ids.
 - **Outbid notifications** — when a strictly-higher open-auction bid displaces the previous high bidder,
   `BidService` emits `auctions.bidder_outbid` (via `AuctionsPublisher`) IN THE SAME bid tx → notifications
   fan out to the outbid bidder. Sealed bids never emit it.

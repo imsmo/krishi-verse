@@ -29,3 +29,20 @@ export function createAuction(input: { listingId: string; kind?: 'english_open' 
   return apiClient().auctions.create(input, newId());
 }
 export function cancelAuction(id: string): Promise<{ ok: boolean }> { return apiClient().auctions.cancel(id); }
+
+// --- watch / follow (P1-7) — any authed member may watch an auction in their tenant; watchers are notified when it
+// closes (server-side, via the notification spine). Reads degrade-never-die; the toggle mutations throw so the
+// screen can show the precise outcome. No money moves on any of these. ---
+export async function isWatchingAuction(id: string): Promise<boolean> {
+  try { return await apiClient().auctions.isWatching(id); } catch { return false; }
+}
+export function watchAuction(id: string): Promise<{ ok: boolean; auctionId: string; watching: boolean }> {
+  return apiClient().auctions.watch(id);
+}
+export function unwatchAuction(id: string): Promise<{ ok: boolean; auctionId: string; watching: boolean }> {
+  return apiClient().auctions.unwatch(id);
+}
+/** The caller's watched auctions (keyset). Degrades to an empty page on failure. */
+export async function listWatchedAuctions(cursor?: string): Promise<{ items: import('@krishi-verse/sdk-js').WatchedAuction[]; nextCursor: string | null }> {
+  try { return await apiClient().auctions.watching({ cursor }); } catch { return { items: [], nextCursor: null }; }
+}

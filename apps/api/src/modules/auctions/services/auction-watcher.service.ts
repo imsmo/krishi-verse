@@ -43,6 +43,13 @@ export class AuctionWatcherService {
     return { ok: true, auctionId, watching: false };
   }
 
+  /** Is the caller watching this auction? O(1) read (composite PK), tenant-scoped via the auctions JOIN —
+   *  a missing/foreign auction simply reads false (no enumeration). Powers the UI watch-toggle state. */
+  async isWatching(tenantId: string, userId: string, auctionId: string) {
+    const watching = await this.watchers.isWatching(tenantId, auctionId, userId);
+    return { auctionId, watching };
+  }
+
   async listMine(tenantId: string, userId: string, q: { cursor?: string; limit: number }) {
     let cursor: { c: string; id: string } | undefined;
     if (q.cursor) { try { cursor = JSON.parse(dec(q.cursor)); } catch { /* first page */ } }

@@ -10,12 +10,21 @@ import Link from 'next/link';
 import { formatMoneyMinor } from '@krishi-verse/i18n';
 import type { Auction, BidHistoryItem } from '@krishi-verse/sdk-js';
 import { SdkError } from '@krishi-verse/sdk-js';
-import { publicClient } from '../../../lib/api-client';
+import { publicClient, serverClient } from '../../../lib/api-client';
+import { resolveSessionToken } from '../../../lib/session';
 import { env } from '../../../lib/env';
 import { getTranslator, getLang } from '../../../lib/i18n';
 import { Countdown, type CountdownLabels } from '../../../components/Countdown';
 import { currentHighMinor, minNextBidMinor } from '../../../features/auctions/bid';
-import { placeBidAction } from './actions';
+import { placeBidAction, toggleWatchAction } from './actions';
+
+/** The caller's watch state for this auction — null when anonymous (no session), boolean when authed. Degrades
+ * to null on any error so a flaky read never breaks the public product page (Law 12). */
+async function safeWatchState(auctionId: string): Promise<boolean | null> {
+  const tok = await resolveSessionToken();
+  if (!tok) return null;
+  try { return await serverClient().auctions.isWatching(auctionId); } catch { return null; }
+}
 
 const TERMINAL = new Set(['ended', 'settled', 'cancelled', 'closed', 'completed', 'expired']);
 
@@ -45,10 +54,14 @@ export default async function AuctionDetailPage({ params, searchParams }: { para
   const high = currentHighMinor(bids);
   const minNext = minNextBidMinor(auction, bids);
   const isOpen = !TERMINAL.has(auction.status.toLowerCase());
+  const watching = await safeWatchState(auction.auctionId);
   const cd: CountdownLabels = { ended: t.t('auctions.ended'), d: t.t('auctions.cd.d'), h: t.t('auctions.cd.h'), m: t.t('auctions.cd.m'), s: t.t('auctions.cd.s') };
   const notice =
     searchParams.status === 'bid' ? { kind: 'ok', msg: t.t('auctions.bidSuccess') } :
-    searchParams.status === 'err' ? { kind: 'err', msg: t.t('auctions.bidError') } : null;
+    searchParams.status === 'err' ? { kind: 'err', msg: t.t('auctions.bidError') } :
+    searchParams.status === 'watched' ? { kind: 'ok', msg: t.t('auctions.watchOn') } :
+    searchParams.status === 'unwatched' ? { kind: 'ok', msg: t.t('auctions.watchOff') } :
+    searchParams.status === 'watch_err' ? { kind: 'err', msg: t.t('auctions.watchError') } : null;
 
   return (
     <section className="kv-auction">
@@ -56,6 +69,17 @@ export default async function AuctionDetailPage({ params, searchParams }: { para
       {notice && <p className={notice.kind === 'ok' ? 'kv-form__notice' : 'kv-form__error'} role="status">{notice.msg}</p>}
 
       <p className="kv-auction__ends">{t.t('auctions.endsIn')}: <Countdown endsAt={auction.endsAt} labels={cd} /></p>
+
+      {isOpen && (
+        <form action={toggleWatchAction} className="kv-auction__watch">
+          <input type="hidden" name="auctionId" value={auction.auctionId} />
+          <input type="hidden" name="intent" value={watching ? 'unwatch' : 'watch'} />
+          <button type="submit" className={watching ? 'kv-btn kv-btn--ghost' : 'kv-btn kv-btn--ghost kv-watch--on'} aria-pressed={watching === true}>
+            {watching ? t.t('auctions.unwatch') : t.t('auctions.watch')}
+          </button>
+          <span className="kv-field__hint">{t.t('auctions.watchHint')}</span>
+        </form>
+      )}
 
       <dl className="kv-offer__facts">
         <div><dt>{t.t('auctions.currentBid')}</dt><dd>{high ? formatMoneyMinor(high, 'INR', lang) : t.t('auctions.noBids')}</dd></div>

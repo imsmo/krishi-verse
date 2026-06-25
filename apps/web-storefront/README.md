@@ -171,10 +171,11 @@ Idempotency-Key, float-free `parseMajorToMinor`); the earnest-money deposit is h
 (Law 11). The API's own `auctions` flag is the authoritative gate — public reads degrade to an empty state when
 it's off.
 
-**Not available in the SDK (flagged):** the auctions resource has **no watch/follow method**, so the "watch" half
-of bid-and-watch can't be built without inventing an endpoint (the server-side watchers from apps/api W3-11 aren't
-exposed in the SDK) — deferred until `auctions.watch` exists. The `Auction` read-model also carries no EMD amount,
-so EMD is surfaced as a behaviour note rather than a figure.
+**Watch/follow (P1-7, LIVE):** the auction detail now shows a **Watch / Unwatch** toggle (authed server actions;
+anonymous viewers are sent to `/login?next=`). The current state is read per-auction via `auctions.isWatching(id)`
+(optional-session — hidden when anonymous). Watchers are notified server-side when the auction closes (the
+`auction.ended` notification, fanned out via the notification spine). The `Auction` read-model still carries no EMD
+amount, so EMD is surfaced as a behaviour note rather than a figure (tracked in P1-8).
 
 ## Notifications
 

@@ -12,7 +12,7 @@ import { formatRelative } from '@krishi-verse/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { useAuth } from '../../../core/auth/auth.store';
-import { getAuction, bidHistory } from '../../../features/auctions/auctions.api';
+import { getAuction, bidHistory, isWatchingAuction, watchAuction, unwatchAuction } from '../../../features/auctions/auctions.api';
 import { getPublicListing } from '../../../features/buyer/browse.api';
 import { auctionStatusTone, isBiddable, currentPriceMinor, minNextBidMinor, isOutbid } from '../../../features/auctions/auction-status';
 
@@ -30,6 +30,8 @@ export default function AuctionDetail() {
   const [title, setTitle] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [watching, setWatching] = useState(false);
+  const [watchBusy, setWatchBusy] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const refresh = useCallback(async () => {
@@ -49,6 +51,19 @@ export default function AuctionDetail() {
 
   // Fetch the product title once (public listing read).
   useEffect(() => { if (auction && title === null) getPublicListing(auction.listingId).then((l) => setTitle(l?.title ?? '')); }, [auction, title]);
+
+  // Load the caller's watch state once the auction is known (best-effort; the toggle reflects server truth).
+  useEffect(() => { if (id && auction) isWatchingAuction(id).then(setWatching); }, [id, auction]);
+
+  // Toggle watch/unwatch. Optimistic flip with rollback on failure (degrade-never-die; no money moves).
+  const toggleWatch = useCallback(async () => {
+    if (!id || watchBusy) return;
+    setWatchBusy(true);
+    const next = !watching; setWatching(next);
+    try { const r = next ? await watchAuction(id) : await unwatchAuction(id); setWatching(r.watching); }
+    catch { setWatching(!next); }
+    finally { setWatchBusy(false); }
+  }, [id, watching, watchBusy]);
 
   if (!enabled) return <ScreenScaffold title={t('auction.title')}><EmptyState title={t('common.unavailable')} /></ScreenScaffold>;
 
@@ -76,6 +91,10 @@ export default function AuctionDetail() {
             <MoneyText minor={current} langCode={lang} size="3xl" />
             {biddable ? <Text style={styles.minNext}>{t('auction.minNext')} <MoneyText minor={minNext} langCode={lang} size="sm" /></Text> : null}
             <Text style={styles.emd}>{t('auction.emdNote')}</Text>
+            <View style={styles.watchRow}>
+              <Button title={watching ? t('auction.unwatch') : t('auction.watch')} variant="outline" loading={watchBusy} onPress={toggleWatch} />
+              <Text style={styles.watchHint}>{t('auction.watchHint')}</Text>
+            </View>
           </Card>
 
           <Text style={styles.section}>{t('auction.history')}</Text>
@@ -107,6 +126,8 @@ const styles = StyleSheet.create({
   label: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink500 },
   minNext: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink600, marginTop: space[2] },
   emd: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink400, marginTop: space[3] },
+  watchRow: { marginTop: space[3], gap: space[1] },
+  watchHint: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink400 },
   section: { fontFamily: font.body, fontSize: font.size.md, fontWeight: font.weight.semibold, color: color.ink700, marginTop: space[4], marginBottom: space[2] },
   bidRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: space[3] },
   bidder: { fontFamily: font.body, fontSize: font.size.md, color: color.ink700 },

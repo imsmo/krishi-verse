@@ -421,4 +421,33 @@ describe('HttpClient via resources', () => {
     expect(page.items[0].status).toBe('confirmed');
     expect(page.nextCursor).toBe('h2');
   });
+
+  it('auctions.watch POSTs :id/watch; unwatch DELETEs; isWatching GETs the boolean (P1-7)', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n === 3
+      ? ({ body: { data: { auctionId: 'au1', watching: true } } })
+      : ({ body: { data: { ok: true, auctionId: 'au1', watching: n === 1 } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const w = await c.auctions.watch('au1');
+    expect(calls[0].url).toBe('https://api.test/v1/auctions/au1/watch');
+    expect(calls[0].init.method).toBe('POST');
+    expect(w.watching).toBe(true);
+    const u = await c.auctions.unwatch('au1');
+    expect(calls[1].url).toBe('https://api.test/v1/auctions/au1/watch');
+    expect(calls[1].init.method).toBe('DELETE');
+    expect(u.watching).toBe(false);
+    const is = await c.auctions.isWatching('au1');
+    expect(calls[2].url).toBe('https://api.test/v1/auctions/au1/watch');
+    expect(calls[2].init.method).toBe('GET');
+    expect(is).toBe(true);
+  });
+
+  it('auctions.watching GETs the keyset watch-list and unwraps the page (P1-7)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: [{ auctionId: 'au1', status: 'live', endsAt: '2026-07-01T00:00:00Z', watchedAt: '2026-06-20T00:00:00Z' }], meta: { nextCursor: 'w2' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const page = await c.auctions.watching({ limit: 20 });
+    expect(calls[0].url).toBe('https://api.test/v1/auctions/watching?limit=20');
+    expect(calls[0].init.method).toBe('GET');
+    expect(page.items[0].auctionId).toBe('au1');
+    expect(page.nextCursor).toBe('w2');
+  });
 });
