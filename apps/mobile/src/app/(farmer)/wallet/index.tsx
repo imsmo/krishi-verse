@@ -19,12 +19,14 @@ export default function Wallet() {
   const addMoneyEnabled = useFlag('payments_addmoney');
   const walletEnabled = useFlag('wallet');
   const { notice } = useLocalSearchParams<{ notice?: string }>();
-  const [balanceMinor, setBalanceMinor] = useState<string>('0');
+  const [availableMinor, setAvailableMinor] = useState<string>('0');
+  const [heldMinor, setHeldMinor] = useState<string>('0');
   const [failed, setFailed] = useState(false);
 
   const load = useCallback(async () => {
     const res = await walletBalance();
-    setBalanceMinor(res.balanceMinor);
+    setAvailableMinor(res.availableMinor);
+    setHeldMinor(res.heldMinor);
     setFailed(res.failed);
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -35,12 +37,16 @@ export default function Wallet() {
       {notice ? <Text style={styles.notice}>{notice}</Text> : null}
       <Card style={styles.balanceCard}>
         <Text style={styles.label}>{t('wallet.available')}</Text>
-        <MoneyText minor={balanceMinor} langCode={lang} size="3xl" style={{ color: color.white }} />
+        <MoneyText minor={availableMinor} langCode={lang} size="3xl" style={{ color: color.white }} />
+        {hasHeld(heldMinor) ? (
+          <Text style={styles.held}>{t('wallet.held')}: <MoneyText minor={heldMinor} langCode={lang} size="sm" style={{ color: color.primary100 }} /></Text>
+        ) : null}
       </Card>
 
       <View style={styles.actions}>
         {addMoneyEnabled ? <Button title={t('wallet.addMoney')} onPress={() => router.push('/(farmer)/wallet/add-money')} /> : null}
         {walletEnabled ? <Button title={t('wallet.withdraw')} variant="outline" onPress={() => router.push('/(farmer)/wallet/withdraw')} /> : null}
+        {walletEnabled ? <Button title={t('wallet.statement')} variant="outline" onPress={() => router.push('/(farmer)/wallet/statement')} /> : null}
         {walletEnabled ? <Button title={t('wallet.transactions')} variant="outline" onPress={() => router.push('/(farmer)/wallet/transactions')} /> : null}
         {walletEnabled ? <Button title={t('wallet.payouts')} variant="outline" onPress={() => router.push('/(farmer)/wallet/payouts')} /> : null}
         {walletEnabled ? <Button title={t('wallet.insights')} variant="outline" onPress={() => router.push('/(farmer)/wallet/earnings')} /> : null}
@@ -52,9 +58,15 @@ export default function Wallet() {
   );
 }
 
+/** Pure helper (BigInt, never float): is there a non-zero reserved/held balance worth showing? */
+function hasHeld(heldMinor: string): boolean {
+  try { return BigInt(heldMinor) > 0n; } catch { return false; }
+}
+
 const styles = StyleSheet.create({
   balanceCard: { backgroundColor: color.primary600, paddingVertical: space[8], alignItems: 'center', gap: space[2] },
   label: { fontFamily: font.body, fontSize: font.size.md, color: color.primary100 },
+  held: { fontFamily: font.body, fontSize: font.size.sm, color: color.primary100 },
   actions: { marginTop: space[4], gap: space[3] },
   notice: { fontFamily: font.body, fontSize: font.size.md, color: color.successDark, marginBottom: space[3], textAlign: 'center' },
 });

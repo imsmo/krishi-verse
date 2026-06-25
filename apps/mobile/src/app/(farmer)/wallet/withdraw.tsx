@@ -35,7 +35,7 @@ export default function Withdraw() {
   const load = useCallback(async () => {
     setLoading(true);
     const [bal, accts] = await Promise.all([walletBalance(), listBankAccounts()]);
-    setBalanceMinor(bal.balanceMinor);
+    setBalanceMinor(bal.availableMinor);
     setAccounts(accts);
     setSelected((prev) => prev ?? accts.find((a) => a.isPrimary)?.id ?? accts[0]?.id ?? null);
     setLoading(false);

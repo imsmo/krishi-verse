@@ -1,7 +1,7 @@
 // Unit tests for the PURE wallet presenters + the withdrawal guard (features/wallet/txn). No React/native deps
 // (SDK/ui imports are type-only). Money is bigint minor units (Law 2) — the guard must use BigInt, never float.
-import { statusTone, statusLabelKey, txnTitleKey, presentPayment, presentPayout, withdrawable } from '../../features/wallet/txn';
-import type { PaymentSummary, PayoutSummary } from '@krishi-verse/sdk-js';
+import { statusTone, statusLabelKey, txnTitleKey, presentPayment, presentPayout, withdrawable, ledgerMoneyTone, presentLedgerEntry } from '../../features/wallet/txn';
+import type { PaymentSummary, PayoutSummary, WalletLedgerEntry } from '@krishi-verse/sdk-js';
 
 describe('statusTone / statusLabelKey', () => {
   it('maps terminal/non-terminal statuses to tone + label key', () => {
@@ -40,6 +40,31 @@ describe('presentPayment / presentPayout', () => {
   });
   it('defaults missing amount to 0 (never undefined into MoneyText)', () => {
     expect(presentPayment({ id: 'p3', status: 'captured' } as PaymentSummary).amountMinor).toBe('0');
+  });
+});
+
+describe('ledgerMoneyTone / presentLedgerEntry (server-truth signed amount + running balance)', () => {
+  it('classifies credit / debit / neutral from the signed minor amount (BigInt)', () => {
+    expect(ledgerMoneyTone('5000')).toBe('positive');
+    expect(ledgerMoneyTone('-5000')).toBe('negative');
+    expect(ledgerMoneyTone('0')).toBe('default');
+    expect(ledgerMoneyTone('9007199254740993')).toBe('positive');   // > 2^53
+    expect(ledgerMoneyTone('xyz')).toBe('default');
+  });
+  it('passes the server signed amount + running balance straight through', () => {
+    const e: WalletLedgerEntry = {
+      entryId: '42', txnId: 't1', txnType: 'order_settlement', accountCode: 'main',
+      amountMinor: '5000', balanceAfterMinor: '125000', currencyCode: 'INR',
+      referenceType: 'order', referenceId: 'o1', description: null, createdAt: '2026-06-01T00:00:00Z',
+    };
+    expect(presentLedgerEntry(e)).toEqual({
+      id: '42', amountMinor: '5000', balanceAfterMinor: '125000', moneyTone: 'positive',
+      txnType: 'order_settlement', createdAt: '2026-06-01T00:00:00Z',
+    });
+  });
+  it('defaults a missing amount/balance to 0 (never undefined into MoneyText)', () => {
+    const e = { entryId: '7', txnId: 't', txnType: null, accountCode: 'main', currencyCode: 'INR', referenceType: null, referenceId: null, description: null } as unknown as WalletLedgerEntry;
+    expect(presentLedgerEntry(e)).toMatchObject({ amountMinor: '0', balanceAfterMinor: '0', moneyTone: 'default' });
   });
 });
 

@@ -5,11 +5,11 @@
 // live decision (balance/KYC/limits) the server owns, and the user needs an immediate outcome.
 //
 // FLAGGED BACKEND GAPS (built real where the endpoint exists; did NOT fake the rest):
-//  • Balance read-model: GET /v1/wallet/balance is assumed (the wallet-service ledger is gRPC-internal; no HTTP
-//    read-model is wired yet). We display it and degrade to ₹0+retry until it lands.
-//  • There is NO unified wallet-ledger "transactions" endpoint. The real money movements the user CAN see are
-//    payments (money-in) and payouts (money-out), so the Transactions screen lists payments and Payout history
-//    lists payouts — both keyset-paged real endpoints. A single ledger-entry feed awaits a wallet read-model.
+//  • Balance read-model is now LIVE (P1-6): GET /v1/wallet/balance returns the caller's reconciled available +
+//    held figure (server-truth, ledger-derived; we NEVER compute a balance here). Degrades to ₹0 + retry on failure.
+//  • Wallet ledger statement is now LIVE (P1-6): GET /v1/wallet/ledger is the per-entry statement with a
+//    server-computed running balance (balanceAfterMinor), keyset-paged. The Transactions screen still lists
+//    payments (money-in) and Payout history lists payouts; the Statement screen shows the unified ledger feed.
 //  • Earnings (settlement credits) + spending-insights are now LIVE (P0-8): GET /v1/wallet/earnings and
 //    /v1/wallet/spending-insights — the caller's OWN wallet, aggregated float-free (bigint-minor strings).
 //  • UPI autopay mandates are now LIVE (P0-8): register / list / cancel against /v1/wallet/autopay. The actual
@@ -17,19 +17,31 @@
 //    mandate records the standing instruction; it does not yet pull money.
 //    Adding a bank/UPI payout destination (tokenised vaultRef) is the P-03 flagged gap — withdrawal works against
 //    destinations already on file.
-import type { PaymentSummary, PayoutSummary, BankAccount, WalletInsights, AutopayMandate } from '@krishi-verse/sdk-js';
+import type { PaymentSummary, PayoutSummary, BankAccount, WalletInsights, AutopayMandate, WalletBalance, WalletLedgerEntry } from '@krishi-verse/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 
 export interface Keyset<T> { items: T[]; nextCursor: string | null }
 
-export async function walletBalance(): Promise<{ balanceMinor: string; failed: boolean }> {
+export interface WalletBalanceView { availableMinor: string; heldMinor: string; isFrozen: boolean; currencyCode: string; failed: boolean }
+
+/** The caller's reconciled wallet balance (available + held), SERVER-truth (ledger-derived; we never compute it).
+ * Reads the typed SDK read-model — available is the withdrawable figure, held is reserved (escrow/pending payout).
+ * Degrades to ₹0 + failed flag so the screen shows a retry, never a crash (Law 12). */
+export async function walletBalance(): Promise<WalletBalanceView> {
   try {
-    const r = await apiClient().request<{ balanceMinor: string }>('GET', 'wallet/balance');
-    return { balanceMinor: r.data?.balanceMinor ?? '0', failed: false };
+    const b: WalletBalance = await apiClient().wallet.balance();
+    return { availableMinor: b.availableMinor ?? '0', heldMinor: b.heldMinor ?? '0', isFrozen: b.isFrozen === true, currencyCode: b.currencyCode ?? 'INR', failed: false };
   } catch {
-    return { balanceMinor: '0', failed: true };
+    return { availableMinor: '0', heldMinor: '0', isFrozen: false, currencyCode: 'INR', failed: true };
   }
+}
+
+/** The caller's wallet LEDGER statement (per-entry, with a server-computed running balance). Keyset-paged;
+ * degrades to an empty page on failure. The signed amount + running balance come straight from the server. */
+export async function walletLedger(cursor?: string): Promise<Keyset<WalletLedgerEntry>> {
+  try { return await apiClient().wallet.ledger(cursor, 50); }
+  catch { return { items: [], nextCursor: null }; }
 }
 
 /** Transactions = the caller's payments (money-in). Keyset-paged; degrades to an empty page on failure. */

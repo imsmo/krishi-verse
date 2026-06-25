@@ -109,3 +109,25 @@ details.kv-card > summary { cursor: pointer; }
 /* --- TC-W5-01 billing: plan cards --- */
 .kv-plan { display: grid; gap: 8px; align-content: start; }
 .kv-plan__price { font-size: 18px; font-weight: 700; margin: 0; }
+
+/* --- P1-5 reviews (disputes "Your reviews" section) --- */
+.kv-label { display: block; font-size: 13px; font-weight: 600; margin: 8px 0 4px; }
+.kv-notice { color: var(--kv-brand-700); background: var(--kv-neutral-50); border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); padding: 8px 12px; margin: var(--kv-space) 0; }
+.kv-reviews { list-style: none; margin: 0 0 var(--kv-space); padding: 0; display: grid; gap: 10px; }
+.kv-review { padding: 12px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); display: grid; gap: 6px; max-width: 560px; }
+.kv-review__head { display: flex; gap: 10px; align-items: center; margin: 0; }
+.kv-review__body { margin: 0; }
+.kv-review__response { border-left: 3px solid var(--kv-brand-500); padding-left: 10px; background: var(--kv-neutral-50); }
+.kv-review__response-label { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--kv-neutral-500); margin: 0 0 2px; }
+.kv-review__form { display: grid; gap: 4px; }
+
+/* --- P1-6 wallet: balance card + ledger amount tones --- */
+.kv-wallet__balance { max-width: 560px; }
+.kv-wallet__total { font-size: 28px; font-weight: 700; margin: 4px 0; display: flex; align-items: center; gap: 10px; }
+.kv-wallet__split { display: flex; gap: 32px; margin: 8px 0 0; }
+.kv-wallet__split div { display: grid; gap: 2px; }
+.kv-wallet__split dt { font-size: 13px; color: var(--kv-neutral-500); }
+.kv-wallet__split dd { margin: 0; font-weight: 600; }
+.kv-badge--frozen { background: var(--kv-danger-100, #fde2e2); color: var(--kv-danger-700, #a12020); }
+.kv-amount--credit { color: var(--kv-success-700, #1f7a3d); font-weight: 600; }
+.kv-amount--debit { color: var(--kv-danger-700, #a12020); font-weight: 600; }

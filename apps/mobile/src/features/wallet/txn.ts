@@ -2,7 +2,7 @@
 // payout history, withdraw). No React, no native imports (SDK/ui types are `import type` → erased), so this is
 // unit-tested under ts-jest. Money is bigint minor-unit strings end-to-end (Law 2) — comparisons use BigInt,
 // never a float. Direction/tone are derived ONLY from server fields (status/purpose); the client invents nothing.
-import type { PaymentSummary, PayoutSummary } from '@krishi-verse/sdk-js';
+import type { PaymentSummary, PayoutSummary, WalletLedgerEntry } from '@krishi-verse/sdk-js';
 import type { PillTone } from '@krishi-verse/ui-native';
 import { paymentOutcome } from '../../core/payments/money';
 
@@ -57,6 +57,36 @@ export function presentPayout(p: PayoutSummary): TxnView {
   return {
     id: p.id, kind: 'payout', amountMinor: p.amountMinor ?? '0', status: p.status ?? 'pending',
     tone: statusTone(p.status), moneyTone: 'negative', purpose: p.purpose, createdAt: p.createdAt,
+  };
+}
+
+/** A presentational view of one wallet LEDGER entry. The signed amount + running balance are server-truth (the
+ * client never computes a balance — Law 2/11); we only classify the sign for display. */
+export interface LedgerView {
+  id: string;
+  amountMinor: string;        // SIGNED: +credit / −debit (exactly as the server sent it)
+  balanceAfterMinor: string;  // running balance after this entry (server-computed)
+  moneyTone: MoneyTone;       // credit (+) / debit (−) / neutral
+  txnType: string | null;
+  createdAt?: string;
+}
+
+/** Classify a signed ledger amount's tone (BigInt, never float). Non-numeric/zero → neutral. */
+export function ledgerMoneyTone(amountMinor: string): MoneyTone {
+  let v: bigint;
+  try { v = BigInt(amountMinor); } catch { return 'default'; }
+  return v > 0n ? 'positive' : v < 0n ? 'negative' : 'default';
+}
+
+/** Present a ledger entry for the statement screen. Pure — signed amount + running balance pass straight through. */
+export function presentLedgerEntry(e: WalletLedgerEntry): LedgerView {
+  return {
+    id: e.entryId,
+    amountMinor: e.amountMinor ?? '0',
+    balanceAfterMinor: e.balanceAfterMinor ?? '0',
+    moneyTone: ledgerMoneyTone(e.amountMinor ?? '0'),
+    txnType: e.txnType ?? null,
+    createdAt: e.createdAt,
   };
 }
 

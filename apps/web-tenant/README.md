@@ -56,10 +56,11 @@ The seller / tenant-admin **console**. Next.js 14 (App Router), server-rendered,
   destination, and **add destination** (`bankAccounts.add`, Idempotency-Key) by its **gateway vaultRef** + masked
   display fields — raw account numbers / VPAs are tokenised at the gateway out-of-band and **never entered here**.
   Pure validation in `features/payouts/form.ts` (unit-tested). Money via `formatMoneyMinor`.
-- `/wallet` — settlements / payments ledger (`payments.list`, keyset): money credited to the tenant (order
-  settlements, recharges, captures) with status/purpose/amount/date, money via `formatMoneyMinor`. **SDK gap
-  flagged:** the seller SDK exposes no wallet-balance / ledger-summary read, so a running balance is intentionally
-  not shown (we ship the ledger only and note it) rather than computing a fake balance from a partial page.
+- `/wallet` — wallet **balance + ledger statement** (P1-6). A balance card shows the reconciled available + held
+  figure (`wallet.balance`, ledger-derived server-truth; total via pure `totalWalletMinor`, frozen badge), and the
+  statement table is the true per-entry ledger (`wallet.ledger`, keyset) with a server-computed running balance
+  (`balanceAfterMinor`) and credit/debit colour (pure `presentLedgerEntry`/`ledgerTone`, unit-tested). The client
+  NEVER computes a balance (Law 2/11); each read degrades independently. Money via `formatMoneyMinor`.
 - `/auctions` — the tenant's auctions (`auctions.list`, keyset) + **create** (listing picker + form →
   `auctions.create`, Idempotency-Key; money in major units parsed float-free, datetime-local → ISO, end after
   start) and `/auctions/[id]` (detail + bid history `listBids` — sealed amounts shown as "sealed" — + **approve**/

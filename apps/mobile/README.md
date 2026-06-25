@@ -93,10 +93,11 @@ message. Pure presenters (`presentPayment`/`presentPayout`/`statusTone`/`withdra
 `wallet` flag (OFF); add-money keeps `payments_addmoney`.
 
 ### Flagged backend gaps (built real where the endpoint exists; did NOT fake the rest)
-- **No HTTP wallet-ledger read-model:** the double-entry ledger lives in the gRPC wallet-service. The real money
-  movements a user can see are payments (money-in) and payouts (money-out), so Transactions = payments and Payout
-  history = payouts (both real keyset endpoints). A single per-entry ledger feed awaits a wallet read-model.
-- **Balance** uses the assumed `GET /v1/wallet/balance` (degrades to ₹0 + retry until the read-model lands).
+- **Wallet ledger statement (P1-6, LIVE):** `GET /v1/wallet/ledger` is the per-entry double-entry statement with a
+  server-computed running balance (`balanceAfterMinor`), keyset-paged → the **Statement** screen. Transactions =
+  payments (money-in) and Payout history = payouts remain as focused views; the Statement is the unified feed.
+- **Balance (P1-6, LIVE):** `GET /v1/wallet/balance` returns the reconciled available + held figure (ledger-derived,
+  server-truth; the client never computes a balance). Hub shows available + a held sub-line; degrades to ₹0 + retry.
 - **Earnings (58)** (settlement credits), **spending-insights (182)**, and **autopay/mandates (181)** have no
   endpoint yet → not shipped (flagged). **Adding a bank/UPI payout destination (180)** is the P-03 flagged gap
   (tokenised `vaultRef`); withdrawal works against destinations already on file, so it shows a clear "add an
