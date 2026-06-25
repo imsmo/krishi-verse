@@ -5,12 +5,14 @@
 // regionId, if present in the URL, ride along as hidden inputs so they survive a filter change. All copy via i18n.
 import { getTranslator } from '../lib/i18n';
 import { SALE_TYPES, SORTS, minorToMajor, parseMajorToMinor, type RawSearchParams } from '../features/discovery/query';
+import type { CategoryOption } from '../features/discovery/categories';
 
-export function SearchFilters({ basePath, sp }: { basePath: string; sp: RawSearchParams }) {
+export function SearchFilters({ basePath, sp, categories = [] }: { basePath: string; sp: RawSearchParams; categories?: CategoryOption[] }) {
   const t = getTranslator();
   const cur = (k: string) => (Array.isArray(sp[k]) ? (sp[k] as string[])[0] : (sp[k] as string | undefined)) ?? '';
   const saleType = cur('saleType');
   const sort = cur('sort');
+  const categoryId = cur('categoryId');
 
   return (
     <form method="get" action={basePath} className="kv-filters" role="search" aria-label={t.t('discover.filtersLabel')}>
@@ -34,6 +36,16 @@ export function SearchFilters({ basePath, sp }: { basePath: string; sp: RawSearc
             {SORTS.map((s) => <option key={s} value={s}>{t.t(`discover.sort.${s}`)}</option>)}
           </select>
         </div>
+
+        {categories.length > 0 && (
+          <div className="kv-filters__field">
+            <label htmlFor="f-cat" className="kv-filters__label">{t.t('discover.category')}</label>
+            <select id="f-cat" name="categoryId" defaultValue={categoryId} className="kv-field__input">
+              <option value="">{t.t('discover.category.any')}</option>
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+            </select>
+          </div>
+        )}
       </div>
 
       <div className="kv-filters__row">
@@ -53,8 +65,9 @@ export function SearchFilters({ basePath, sp }: { basePath: string; sp: RawSearc
         </div>
 
         <div className="kv-filters__actions">
-          {/* carry tenant-scoped passthrough filters that have no visible control */}
-          {cur('categoryId') && <input type="hidden" name="categoryId" value={cur('categoryId')} />}
+          {/* carry tenant-scoped passthrough filters that have no visible control. categoryId rides as a hidden
+              input ONLY when the category <select> isn't shown (no lookup available) so it survives a filter change. */}
+          {categories.length === 0 && categoryId && <input type="hidden" name="categoryId" value={categoryId} />}
           {cur('regionId') && <input type="hidden" name="regionId" value={cur('regionId')} />}
           <button type="submit" className="kv-btn">{t.t('discover.apply')}</button>
           <a href={basePath} className="kv-btn--link">{t.t('discover.clear')}</a>

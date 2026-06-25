@@ -119,6 +119,8 @@ export const hi: Messages = {
   'discover.filtersLabel': 'लिस्टिंग फ़िल्टर और क्रमबद्ध करें',
   'discover.searchLabel': 'खोजें',
   'discover.searchPlaceholder': 'उपज खोजें…',
+  'discover.category': 'श्रेणी',
+  'discover.category.any': 'सभी श्रेणियाँ',
   'discover.saleType': 'बिक्री प्रकार',
   'discover.saleType.any': 'कोई भी प्रकार',
   'discover.saleType.direct': 'अभी खरीदें',

@@ -118,6 +118,8 @@ export const gu: Messages = {
   'discover.filtersLabel': 'લિસ્ટિંગ ફિલ્ટર અને ક્રમમાં ગોઠવો',
   'discover.searchLabel': 'શોધો',
   'discover.searchPlaceholder': 'પેદાશ શોધો…',
+  'discover.category': 'શ્રેણી',
+  'discover.category.any': 'બધી શ્રેણીઓ',
   'discover.saleType': 'વેચાણ પ્રકાર',
   'discover.saleType.any': 'કોઈપણ પ્રકાર',
   'discover.saleType.direct': 'હમણાં ખરીદો',

@@ -120,6 +120,8 @@ export const en: Messages = {
   'discover.filtersLabel': 'Filter and sort listings',
   'discover.searchLabel': 'Search',
   'discover.searchPlaceholder': 'Search produce…',
+  'discover.category': 'Category',
+  'discover.category.any': 'All categories',
   'discover.saleType': 'Sale type',
   'discover.saleType.any': 'Any type',
   'discover.saleType.direct': 'Buy now',

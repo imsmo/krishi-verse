@@ -2,6 +2,28 @@
 // units (Law 2) — never a JS number, so a large balance/price never loses precision in a browser.
 export interface Page<T> { items: T[]; nextCursor: string | null; total?: number | null; }
 
+// --- lookups / taxonomy (P1-9) — reference data for rendering pickers/facets with REAL names. ---
+/** A global taxonomy node (category tree). `defaultName` is the canonical label; server-side reads of name-resolved
+ * surfaces may localize elsewhere. `path` (ltree) + `depth` give the tree shape. */
+export interface CategoryNode {
+  id: string; parentId: string | null; code: string; defaultName: string; path: string; depth: number;
+  commerceKind: string; requiresLicense: boolean; requiresCertificate: boolean; minAge: number | null;
+  isActive: boolean; sortOrder: number;
+}
+/** One option for a dropdown/select attribute (e.g. a "Variety" value). */
+export interface AttributeOption { id: string; attributeId: string; code: string; defaultName: string; sortOrder: number; isActive: boolean; }
+/** An attribute definition bound to a category, with its options + per-binding flags (filterable/card/required). */
+export interface AttributeDef {
+  id: string; code: string; defaultName: string; dataType: string; unitCode: string | null;
+  required: boolean; showInFilters: boolean; showOnCard: boolean; options: AttributeOption[];
+  [k: string]: unknown;
+}
+/** A controlled-vocabulary value (e.g. a doc_type), LOCALE-RESOLVED server-side: `name` is in the caller's language
+ * when a translation exists, else the canonical default. */
+export interface LookupValue { id: string; code: string; name: string; sortOrder: number; meta: Record<string, unknown>; }
+/** An admin-region node (state→district→…), LOCALE-RESOLVED `name`. `lat`/`lng` are the centroid when known. */
+export interface RegionNode { id: string; code: string | null; level: number; parentId: string | null; name: string; lat: number | null; lng: number | null; }
+
 export interface ListingCard {
   id: string; title: string; priceMinor: string; currencyCode: string; unitCode: string;
   quantityAvailable: number; organicClaim: boolean; saleType: string; regionId: string | null;

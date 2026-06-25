@@ -460,6 +460,24 @@ describe('HttpClient via resources', () => {
     expect(a.emdPctBps).toBeNull();
   });
 
+  it('lookups.categories / regions / values build the right anonymous GET URLs, locale-resolved server-side (P1-9)', async () => {
+    const { fn, calls } = fakeFetch((_c, n) =>
+      n === 1 ? ({ body: { data: [{ id: 'c1', parentId: null, code: 'grains', defaultName: 'Grains', path: 'grains', depth: 1, commerceKind: 'goods', requiresLicense: false, requiresCertificate: false, minAge: null, isActive: true, sortOrder: 1 }] } })
+      : n === 2 ? ({ body: { data: [{ id: 'r1', code: 'GJ', level: 1, parentId: null, name: 'ગુજરાત', lat: 22.5, lng: 71.2 }] } })
+      : ({ body: { data: [{ id: 'lv1', code: 'aadhaar', name: 'આધાર', sortOrder: 1, meta: {} }] } }));
+    const c = createClient({ ...base, fetchImpl: fn, tenantSlug: 'acme', getToken: () => 'tok' });
+    const cats = await c.lookups.categories();
+    expect(calls[0].url).toBe('https://api.test/v1/categories?activeOnly=true');
+    expect((calls[0].init.headers as Record<string, string>).authorization).toBeUndefined(); // anonymous public read
+    expect(cats[0].defaultName).toBe('Grains');
+    const regions = await c.lookups.regions();
+    expect(calls[1].url).toBe('https://api.test/v1/lookups/regions');
+    expect(regions[0].name).toBe('ગુજરાત');                                       // locale-resolved server-side
+    const docTypes = await c.lookups.values('doc_type');
+    expect(calls[2].url).toBe('https://api.test/v1/lookups/values?type=doc_type');
+    expect(docTypes[0].name).toBe('આધાર');
+  });
+
   it('auctions.myBids GETs the cross-auction keyset feed with the EMD hold per bid (P1-8)', async () => {
     const { fn, calls } = fakeFetch(() => ({ body: { data: [{ bidId: 'b1', auctionId: 'au1', listingId: 'l1', amountMinor: '120000', emdHeldMinor: '50000', auctionStatus: 'live', endsAt: 'e', isWinning: true, createdAt: 'c' }], meta: { nextCursor: 'm2' } } }));
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });

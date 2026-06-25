@@ -4,6 +4,7 @@ import { SdkConfig, resolveConfig } from './config';
 import { HttpClient, HttpMethod, RequestOptions, Envelope } from './http';
 import { ListingsResource } from './resources/listings';
 import { CatalogueResource } from './resources/catalogue';
+import { LookupsResource } from './resources/lookups';
 import { TraceabilityResource } from './resources/traceability';
 import { AuthResource } from './resources/auth';
 import { MediaResource } from './resources/media';
@@ -34,6 +35,7 @@ export class KrishiVerseClient {
   private readonly http: HttpClient;
   readonly listings: ListingsResource;
   readonly catalogue: CatalogueResource;
+  readonly lookups: LookupsResource;
   readonly traceability: TraceabilityResource;
   readonly auth: AuthResource;
   readonly media: MediaResource;
@@ -76,6 +78,7 @@ export class KrishiVerseClient {
     this.http = new HttpClient(resolveConfig(config));
     this.listings = new ListingsResource(this.http);
     this.catalogue = new CatalogueResource(this.http);
+    this.lookups = new LookupsResource(this.http);
     this.traceability = new TraceabilityResource(this.http);
     this.auth = new AuthResource(this.http);
     this.media = new MediaResource(this.http);

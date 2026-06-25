@@ -4,12 +4,13 @@
 // facets live in the URL searchParams (shareable, bookmarkable), parsed through the pure features/discovery
 // helpers into a typed SDK query. SSR + ISR. Degrades to an empty state if the API is unavailable (Law 12).
 import type { Metadata } from 'next';
-import type { ListingCard as ListingCardData } from '@krishi-verse/sdk-js';
+import type { ListingCard as ListingCardData, CategoryNode } from '@krishi-verse/sdk-js';
 import { publicClient } from '../../lib/api-client';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { ListingCard } from '../../components/ListingCard';
 import { SearchFilters } from '../../components/SearchFilters';
 import { toListingQuery, loadMoreHref, hasActiveFilters, type RawSearchParams } from '../../features/discovery/query';
+import { flattenCategoryNav } from '../../features/discovery/categories';
 
 export const revalidate = 60;
 
@@ -39,13 +40,20 @@ export default async function TenantStorefront(
     items = []; // API/search down → empty state, never a 500 (Law 12)
   }
 
+  // P1-9: real category names for the discovery facet (lookups). Degrades to [] → the facet simply hides (Law 12).
+  let categoryNav: ReturnType<typeof flattenCategoryNav> = [];
+  try {
+    const cats: CategoryNode[] = await publicClient(params.tenantSlug).lookups.categories();
+    categoryNav = flattenCategoryNav(cats);
+  } catch { categoryNav = []; }
+
   const cardLabels = { organic: t.t('card.organic'), available: t.t('card.available') };
 
   return (
     <section>
       <h1 className="kv-storefront__title">{params.tenantSlug}</h1>
 
-      <SearchFilters basePath={basePath} sp={searchParams} />
+      <SearchFilters basePath={basePath} sp={searchParams} categories={categoryNav} />
 
       {typeof total === 'number' && items.length > 0 && (
         <p className="kv-results-count" aria-live="polite">{t.t('discover.resultsCount', { count: String(total) })}</p>
