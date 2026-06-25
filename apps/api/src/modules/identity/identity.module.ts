@@ -20,6 +20,8 @@ import { UserTenantRoleService } from './services/user-tenant-role.service';
 import { RoleService } from './services/role.service';
 import { PermissionService } from './services/permission.service';
 import { KycDocumentService } from './services/kyc-document.service';
+import { EkycService } from './services/ekyc.service';
+import { ekycProviderProvider } from './gateway/ekyc-provider.provider';
 import { AddressService } from './services/address.service';
 import { BankAccountService } from './services/bank-account.service';
 import { ConsentService } from './services/consent.service';
@@ -34,6 +36,7 @@ import { RoleRepository } from './repositories/role.repository';
 import { PermissionRepository } from './repositories/permission.repository';
 import { UserTenantRoleRepository } from './repositories/user-tenant-role.repository';
 import { KycDocumentRepository } from './repositories/kyc-document.repository';
+import { EkycSessionRepository } from './repositories/ekyc-session.repository';
 import { AddressRepository } from './repositories/address.repository';
 import { BankAccountRepository } from './repositories/bank-account.repository';
 import { DeviceRepository } from './repositories/device.repository';
@@ -54,8 +57,9 @@ import { RiskScoreRecomputeJob } from './jobs/risk-score-recompute.job';
   controllers: [AuthController, UsersController, RolesController, KycController, AddressesController, BankAccountsController, ConsentsController, PrivacyController],
   providers: [
     AuthService, UserService, UserTenantRoleService, RoleService, PermissionService,
-    KycDocumentService, AddressService, BankAccountService, ConsentService, SessionService, PrivacyService, ChangePhoneService,
-    UserRepository, RoleRepository, PermissionRepository, UserTenantRoleRepository, KycDocumentRepository,
+    KycDocumentService, EkycService, AddressService, BankAccountService, ConsentService, SessionService, PrivacyService, ChangePhoneService,
+    ekycProviderProvider,
+    UserRepository, RoleRepository, PermissionRepository, UserTenantRoleRepository, KycDocumentRepository, EkycSessionRepository,
     AddressRepository, BankAccountRepository, DeviceRepository, SessionRepository, LoginEventRepository,
     ConsentRepository, DataSubjectRequestRepository, RiskScoreRepository,
     OrderCompletedHandler, DisputeResolvedHandler,

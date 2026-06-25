@@ -75,6 +75,11 @@ export interface KycDocument { id: string; status: KycStatus; docTypeId?: string
 /** A selectable KYC document type from the seeded 'doc_type' catalogue (id to submit + name to show). */
 export interface KycDocType { id: string; code: string; name: string; }
 
+// --- eKYC (Aadhaar/PAN provider verification). The server returns ONLY masked values — never the raw id. ---
+export interface EkycStartResult { id: string; docType: 'aadhaar' | 'pan'; maskedId: string; otpRequired: boolean; }
+export interface EkycVerifyResult { id: string; status: 'verified'; docType: 'aadhaar' | 'pan'; maskedId: string; nameMatch: boolean | null; }
+export interface EkycSessionSummary { id: string; docType: 'aadhaar' | 'pan'; maskedId: string; status: 'pending' | 'verified' | 'failed' | 'expired'; nameMatch: boolean | null; }
+
 // --- notifications (communication module) ---
 /** An inbox notification. The rendered title/body/deepLink live in `payload` (server-rendered, localized);
  * `status` includes 'read' once acknowledged. */

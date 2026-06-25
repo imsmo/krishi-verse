@@ -48,4 +48,15 @@ export class KycDocumentRepository {
       [tenantId]);
     return r.rows.map((x) => ({ id: x.id, code: x.code, name: x.default_name }));
   }
+
+  /** Resolve a doc_type lookup id by its code ('aadhaar'|'pan'|…) so the eKYC flow can write a verified
+   *  kyc_documents row pointing at the catalogue value. Platform value (tenant_id NULL) or tenant overlay. */
+  async resolveDocTypeId(tx: TxContext, tenantId: string, code: string): Promise<string | null> {
+    const r = await tx.query<{ id: string }>(
+      `SELECT id FROM lookup_values
+        WHERE type_code='doc_type' AND code=$2 AND is_active=true AND (tenant_id IS NULL OR tenant_id=$1)
+        ORDER BY tenant_id NULLS LAST LIMIT 1`,
+      [tenantId, code]);
+    return r.rows[0]?.id ?? null;
+  }
 }

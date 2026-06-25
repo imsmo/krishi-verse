@@ -20,6 +20,9 @@ const SECURE_RAW: Record<string, string> = {
   MSG91_AUTH_KEY: 'msg91-live-auth-key',
   MSG91_OTP_TEMPLATE_ID: '64a1b2c3template',
   MSG91_SENDER_ID: 'KRSHVR',
+  EKYC_PROVIDER_KIND: 'digilocker',                 // sandbox is forbidden in prod (fixed-OTP backdoor)
+  EKYC_PROVIDER_URL: 'https://ekyc.provider.example.com',
+  EKYC_PROVIDER_API_KEY: 'ekyc-live-strong-api-key-0123456789',
 };
 
 const envWith = (overrides: Record<string, string | undefined>): Env => {
@@ -64,6 +67,8 @@ describe('AppConfig.collectProductionProblems (fail-closed)', () => {
     ['SMS provider noop in prod', { SMS_PROVIDER: 'noop' }, /SMS_PROVIDER must be/],
     ['MSG91 without template', { SMS_PROVIDER: 'msg91', MSG91_OTP_TEMPLATE_ID: undefined }, /MSG91_/],
     ['Twilio without creds', { SMS_PROVIDER: 'twilio', TWILIO_ACCOUNT_SID: undefined }, /TWILIO_/],
+    ['eKYC sandbox in prod (fixed-OTP backdoor)', { EKYC_PROVIDER_KIND: 'sandbox' }, /EKYC_PROVIDER_KIND must be a real provider/],
+    ['eKYC real provider without url/key', { EKYC_PROVIDER_URL: undefined, EKYC_PROVIDER_API_KEY: undefined }, /EKYC_PROVIDER_URL \+ strong EKYC_PROVIDER_API_KEY/],
   ])('flags %s', (_label, overrides, pattern) => {
     const problems = AppConfig.collectProductionProblems(envWith(overrides));
     expect(problems.length).toBeGreaterThan(0);

@@ -365,6 +365,25 @@ describe('HttpClient via resources', () => {
     expect(page.nextCursor).toBe('c2');
   });
 
+  it('kyc.startEkyc / verifyEkyc POST the eKYC paths with an Idempotency-Key; only masked values returned', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 's1', docType: 'aadhaar', maskedId: 'XXXXXXXX0019', otpRequired: true } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const started = await c.kyc.startEkyc({ docType: 'aadhaar', idNumber: '999999990019' }, 'idem-ek-1');
+    expect(calls[0].url).toBe('https://api.test/v1/kyc/ekyc/start');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-ek-1');
+    expect(started.maskedId).toBe('XXXXXXXX0019');
+    // the raw id must never appear in the response surface
+    expect(JSON.stringify(started)).not.toContain('999999990019');
+
+    const { fn: fn2, calls: calls2 } = fakeFetch(() => ({ body: { data: { id: 's1', status: 'verified', docType: 'aadhaar', maskedId: 'XXXXXXXX0019', nameMatch: true } } }));
+    const c2 = createClient({ ...base, fetchImpl: fn2, getToken: () => 'tok' });
+    const v = await c2.kyc.verifyEkyc({ sessionId: 's1', otp: '123456' }, 'idem-ek-2');
+    expect(calls2[0].url).toBe('https://api.test/v1/kyc/ekyc/verify');
+    expect(calls2[0].init.method).toBe('POST');
+    expect(v.status).toBe('verified');
+  });
+
   it('labour.clockOut POSTs the clock-out path with break + Idempotency-Key; hours come back as numbers', async () => {
     const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'a1', assignmentId: 'as1', bookingId: 'b1', workDate: '2026-06-01', status: 'clocked_out', clockOutAt: '2026-06-01T16:00:00.000Z', hoursRegular: 8, hoursOvertime: 1.5 } } }));
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });

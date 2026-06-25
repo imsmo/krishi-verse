@@ -84,6 +84,10 @@ export class AppConfig {
     if (env.SMS_PROVIDER === 'msg91' && (!env.MSG91_AUTH_KEY || !env.MSG91_OTP_TEMPLATE_ID || !env.MSG91_SENDER_ID)) p.push('MSG91_AUTH_KEY + MSG91_OTP_TEMPLATE_ID + MSG91_SENDER_ID required when SMS_PROVIDER=msg91');
     if (env.SMS_PROVIDER === 'twilio' && (!env.TWILIO_ACCOUNT_SID || !env.TWILIO_AUTH_TOKEN || !env.TWILIO_FROM)) p.push('TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN + TWILIO_FROM required when SMS_PROVIDER=twilio');
 
+    // --- eKYC: the sandbox provider accepts a FIXED test OTP — it must NEVER run in production (identity backdoor).
+    if ((env.EKYC_PROVIDER_KIND ?? 'sandbox') === 'sandbox') p.push('EKYC_PROVIDER_KIND must be a real provider (e.g. digilocker) in production — the sandbox accepts a fixed test OTP');
+    if (env.EKYC_PROVIDER_KIND && env.EKYC_PROVIDER_KIND !== 'sandbox' && (!env.EKYC_PROVIDER_URL || weak16(env.EKYC_PROVIDER_API_KEY))) p.push('EKYC_PROVIDER_URL + strong EKYC_PROVIDER_API_KEY required when a real EKYC_PROVIDER_KIND is set');
+
     return p;
   }
 
@@ -220,6 +224,15 @@ export class AppConfig {
       provider: (this.env.PUSH_PROVIDER || 'expo').toLowerCase(),   // 'expo' | 'none'
       expoBaseUrl: this.env.EXPO_PUSH_URL || 'https://exp.host',
       expoAccessToken: this.env.EXPO_ACCESS_TOKEN || null,
+    };
+  }
+  get ekyc() {
+    // eKYC provider (P0-11). Default 'sandbox' (dev/test only — accepts a fixed OTP; assertProductionSecurity
+    // forbids it in prod). A real provider needs URL + api key (secrets, never logged). Gated by the `kyc` flag.
+    return {
+      kind: (this.env.EKYC_PROVIDER_KIND || 'sandbox').toLowerCase(),   // 'sandbox' | 'digilocker' | …
+      baseUrl: this.env.EKYC_PROVIDER_URL || '',
+      apiKey: this.env.EKYC_PROVIDER_API_KEY || '',
     };
   }
   get masking() {

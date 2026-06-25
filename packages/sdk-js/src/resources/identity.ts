@@ -3,7 +3,7 @@
 // Bank accounts store a gateway-tokenised vaultRef + last-4/IFSC only — never a raw account number. Both POSTs
 // require an Idempotency-Key (Law 3). KYC is gated server-side by the `kyc` flag.
 import { HttpClient } from '../http';
-import { KycDocument, KycDocType, BankAccount, Address } from '../types';
+import { KycDocument, KycDocType, BankAccount, Address, EkycStartResult, EkycVerifyResult, EkycSessionSummary } from '../types';
 
 export class KycResource {
   constructor(private readonly http: HttpClient) {}
@@ -23,6 +23,21 @@ export class KycResource {
    * tenant-scoped (NOT god-mode, Law 11). The reviewer never sees raw doc numbers (masked only). */
   async review(id: string, input: { decision: 'verify' | 'reject'; reason?: string }): Promise<{ id: string; status: string }> {
     return (await this.http.request<{ id: string; status: string }>('POST', `kyc/${encodeURIComponent(id)}/review`, { body: input })).data;
+  }
+
+  // --- eKYC (Aadhaar/PAN provider verification). The RAW id is sent ONLY to start(); the server validates it,
+  // hands it to the provider, and persists ONLY masked + a session ref. verify() submits the OTP. ---
+  /** Begin an Aadhaar/PAN verification. Returns a session id + whether an OTP is required. Idempotent (Law 3). */
+  async startEkyc(input: { docType: 'aadhaar' | 'pan'; idNumber: string; fullName?: string }, idempotencyKey: string): Promise<EkycStartResult> {
+    return (await this.http.request<EkycStartResult>('POST', 'kyc/ekyc/start', { idempotencyKey, body: input })).data;
+  }
+  /** Submit the OTP for an eKYC session. On success the verified credential is tokenised server-side (vault ref). */
+  async verifyEkyc(input: { sessionId: string; otp: string }, idempotencyKey: string): Promise<EkycVerifyResult> {
+    return (await this.http.request<EkycVerifyResult>('POST', 'kyc/ekyc/verify', { idempotencyKey, body: input })).data;
+  }
+  /** The caller's recent eKYC sessions (masked-only). */
+  async ekycSessions(signal?: AbortSignal): Promise<EkycSessionSummary[]> {
+    return (await this.http.request<EkycSessionSummary[]>('GET', 'kyc/ekyc/sessions', { signal })).data;
   }
 }
 

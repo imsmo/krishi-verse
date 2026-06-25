@@ -11,7 +11,7 @@ export interface KycDocumentProps {
   userId: string;
   roleId: string | null;
   docTypeId: string;
-  mediaId: string;
+  mediaId: string | null;   // null for eKYC (provider attestation, no uploaded image); required for manual submit
   docNoMasked: string | null;
   issuedBy: string | null;
   validFrom: string | null;
@@ -27,10 +27,10 @@ export class KycDocument {
   private readonly events: DomainEvent[] = [];
   private constructor(private props: KycDocumentProps) {}
 
-  static submit(input: { id: string; tenantId: string | null; userId: string; roleId?: string | null; docTypeId: string; mediaId: string; docNoMasked?: string | null; issuedBy?: string | null; validFrom?: string | null; validUntil?: string | null; verifyMethod?: string }): KycDocument {
+  static submit(input: { id: string; tenantId: string | null; userId: string; roleId?: string | null; docTypeId: string; mediaId?: string | null; docNoMasked?: string | null; issuedBy?: string | null; validFrom?: string | null; validUntil?: string | null; verifyMethod?: string }): KycDocument {
     const d = new KycDocument({
       id: input.id, tenantId: input.tenantId, userId: input.userId, roleId: input.roleId ?? null,
-      docTypeId: input.docTypeId, mediaId: input.mediaId, docNoMasked: input.docNoMasked ?? null,
+      docTypeId: input.docTypeId, mediaId: input.mediaId ?? null, docNoMasked: input.docNoMasked ?? null,
       issuedBy: input.issuedBy ?? null, validFrom: input.validFrom ?? null, validUntil: input.validUntil ?? null,
       status: 'pending', verifyMethod: input.verifyMethod ?? 'manual', reviewedBy: null, reviewedAt: null, rejectReason: null,
     });

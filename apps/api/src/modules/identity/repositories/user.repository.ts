@@ -51,6 +51,20 @@ export class UserRepository {
     await tx.query(`UPDATE users SET phone=$2, phone_verified_at=$3, updated_at=now() WHERE id=$1 AND deleted_at IS NULL`, [id, phone, phoneVerifiedAt]);
   }
 
+  /** Persist verified eKYC tokens on the user row (P0-11). ONLY opaque vault refs + last-4 ever land here —
+   *  never the raw Aadhaar/PAN. COALESCE keeps an existing value when a field isn't being set this call. */
+  async setVaultRef(tx: TxContext, id: string, v: { aadhaarVaultRef?: string | null; aadhaarLast4?: string | null; panVaultRef?: string | null }): Promise<void> {
+    await tx.query(
+      `UPDATE users SET
+         aadhaar_vault_ref = COALESCE($2, aadhaar_vault_ref),
+         aadhaar_last4     = COALESCE($3, aadhaar_last4),
+         pan_vault_ref     = COALESCE($4, pan_vault_ref),
+         updated_at = now()
+       WHERE id=$1 AND deleted_at IS NULL`,
+      [id, v.aadhaarVaultRef ?? null, v.aadhaarLast4 ?? null, v.panVaultRef ?? null],
+    );
+  }
+
   async getForUpdate(tx: TxContext, id: string): Promise<User | null> {
     const r = await tx.query<Row>(`SELECT ${COLS} FROM users WHERE id= AND deleted_at IS NULL FOR UPDATE`, [id]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;

@@ -39,7 +39,7 @@ A module is **✅ only when**: domain invariants + state machine, repo (tenant_i
 ## Business modules (Track B)
 | # | Module | Wave | Status |
 |---|---|---|---|
-| 1 | identity | 1 | ✅ |
+| 1 | identity | 1 | ✅ (+P0-11 **eKYC**: `EKYC_PROVIDER` port + resilience-wrapped HTTP (DigiLocker/UIDAI) & sandbox adapters, config-bound; prod fail-closed refuses sandbox (fixed-OTP backdoor). Pure Verhoeff-Aadhaar/PAN validate+mask. Migration 0050 `ekyc_sessions` (tenant_id+RLS, masked+last4+provider_ref, NO raw id; relaxes kyc_documents.media_id). `EkycService` start/verify: validate→provider→masked-only session (anti-IDOR re-resolve by id+caller, 404 to others); success → users vault_ref+last4 + verified kyc_documents (ekyc:<provider>, media-less) + utr verified + audit/outbox in-tx; wrong-OTP attempt-cap lock (3→429). `kyc/ekyc/start\|verify\|sessions` (Idempotency-Key, `kyc` flag) + SDK. NO raw Aadhaar/PAN ever stored or returned — masked only.) |
 | 2 | catalogue | 1 | ✅ |
 | 3 | **listings** | 1 | ✅ |
 | 4 | orders | 1 | ✅ |

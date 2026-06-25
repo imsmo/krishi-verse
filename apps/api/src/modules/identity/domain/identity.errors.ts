@@ -43,3 +43,28 @@ export class ConcurrencyError extends DomainError {
 export class UnderageError extends DomainError {
   constructor(minAge: number) { super('UNDERAGE', `Must be at least ${minAge} years old for this role`, 422, { minAge }); }
 }
+
+// --- eKYC (P0-11) ---
+/** The submitted Aadhaar/PAN failed format/checksum validation — rejected BEFORE any provider call (anti-abuse). */
+export class InvalidGovIdError extends DomainError {
+  constructor(docType: string) { super('EKYC_INVALID_ID', `The supplied ${docType} is not a valid number`, 422, { docType }); }
+}
+/** The external eKYC provider was unreachable / errored after resilience exhausted — degrade, surface 503. */
+export class EkycProviderError extends DomainError {
+  constructor(reason = 'eKYC provider unavailable') { super('EKYC_PROVIDER_UNAVAILABLE', reason, 503); }
+}
+/** No live eKYC session for this id (wrong id / not the caller's / already terminal) — 404 (no enumeration). */
+export class EkycSessionNotFoundError extends DomainError {
+  constructor(id: string) { super('EKYC_SESSION_NOT_FOUND', `eKYC session ${id} not found`, 404, { id }); }
+}
+/** OTP verification failed (wrong/expired) — the session counts the attempt and may lock. Never echoes the id. */
+export class EkycVerificationFailedError extends DomainError {
+  constructor(reason = 'verification failed') { super('EKYC_VERIFICATION_FAILED', reason, 422, { reason }); }
+}
+/** Too many failed OTP attempts — the session is locked (abuse cap). */
+export class EkycTooManyAttemptsError extends DomainError {
+  constructor() { super('EKYC_TOO_MANY_ATTEMPTS', 'Too many failed attempts; start a new verification', 429); }
+}
+export class IllegalEkycTransitionError extends DomainError {
+  constructor(from: string, to: string) { super('EKYC_ILLEGAL_TRANSITION', `Cannot move eKYC session ${from}→${to}`, 409, { from, to }); }
+}
