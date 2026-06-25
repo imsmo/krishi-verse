@@ -233,6 +233,7 @@ export const gu: Messages = {
   'order.colTotal': 'કુલ',
   'order.colDate': 'મૂકાયો',
   'order.detailTitle': 'ઓર્ડર વિગત',
+  'order.downloadInvoice': 'ભરતિયું {no} ડાઉનલોડ કરો (PDF)',
   'order.orderNo': 'ઓર્ડર {no}',
   'order.items': 'વસ્તુઓ',
   'order.tracking': 'ડિલિવરી ટ્રેકિંગ',

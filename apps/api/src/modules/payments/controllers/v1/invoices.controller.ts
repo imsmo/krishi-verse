@@ -19,4 +19,10 @@ export class InvoicesController {
   byOrder(@CurrentContext() ctx: RequestContext, @Param('orderId') orderId: string) {
     return this.invoices.getByOrder(ctx.tenantId, { userId: ctx.userId, canModerate: canModeratePayment(ctx) }, orderId).then((data) => ({ data }));
   }
+
+  // A short-lived presigned PDF download URL for the order's invoice — buyer/seller/finance only (404 else).
+  @Get('order/:orderId/download')
+  download(@CurrentContext() ctx: RequestContext, @Param('orderId') orderId: string) {
+    return this.invoices.downloadUrlForOrder(ctx.tenantId, { userId: ctx.userId, canModerate: canModeratePayment(ctx) }, orderId).then((data) => ({ data }));
+  }
 }

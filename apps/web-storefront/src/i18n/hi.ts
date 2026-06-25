@@ -234,6 +234,7 @@ export const hi: Messages = {
   'order.colTotal': 'कुल',
   'order.colDate': 'दिया गया',
   'order.detailTitle': 'ऑर्डर विवरण',
+  'order.downloadInvoice': 'चालान {no} डाउनलोड करें (PDF)',
   'order.orderNo': 'ऑर्डर {no}',
   'order.items': 'वस्तुएँ',
   'order.tracking': 'डिलीवरी ट्रैकिंग',

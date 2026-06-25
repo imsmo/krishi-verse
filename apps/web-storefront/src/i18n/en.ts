@@ -235,6 +235,7 @@ export const en: Messages = {
   'order.colTotal': 'Total',
   'order.colDate': 'Placed',
   'order.detailTitle': 'Order detail',
+  'order.downloadInvoice': 'Download invoice {no} (PDF)',
   'order.orderNo': 'Order {no}',
   'order.items': 'Items',
   'order.tracking': 'Delivery tracking',

@@ -7,5 +7,7 @@ export class NoSettlementLinesError extends AppError {
 }
 export class StatementNotFoundError extends NotFoundError { constructor() { super('Settlement statement not found'); } }
 export class InvoiceNotFoundError extends NotFoundError { constructor() { super('Trade invoice not found'); } }
+/** The invoice exists but its PDF isn't available yet (renderer disabled, or scan not yet clean). Retryable. */
+export class InvoicePdfNotReadyError extends AppError { constructor() { super('INVOICE_PDF_NOT_READY', 'Invoice PDF is not available yet', 409); } }
 /** A trade invoice failed its domain invariants (totals/GST split malformed). */
 export class InvalidTradeInvoiceError extends AppError { constructor(message: string) { super('TRADE_INVOICE_INVALID', message, 422); } }

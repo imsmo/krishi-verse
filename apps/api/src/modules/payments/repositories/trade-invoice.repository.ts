@@ -8,11 +8,11 @@ import { TxContext } from '../../../core/database/unit-of-work';
 
 export interface TradeInvoiceRow {
   id: string; invoiceNo: string; orderId: string; sellerGstin: string | null; buyerGstin: string | null;
-  totalMinor: string; taxBreakup: Record<string, unknown>; createdAt: Date;
+  totalMinor: string; taxBreakup: Record<string, unknown>; pdfMediaId: string | null; createdAt: Date;
 }
-const COLS = `id, invoice_no, order_id, seller_gstin, buyer_gstin, total_minor, tax_breakup, created_at`;
+const COLS = `id, invoice_no, order_id, seller_gstin, buyer_gstin, total_minor, tax_breakup, pdf_media_id, created_at`;
 function toRow(r: any): TradeInvoiceRow {
-  return { id: r.id, invoiceNo: r.invoice_no, orderId: r.order_id, sellerGstin: r.seller_gstin, buyerGstin: r.buyer_gstin, totalMinor: String(r.total_minor), taxBreakup: r.tax_breakup, createdAt: r.created_at };
+  return { id: r.id, invoiceNo: r.invoice_no, orderId: r.order_id, sellerGstin: r.seller_gstin, buyerGstin: r.buyer_gstin, totalMinor: String(r.total_minor), taxBreakup: r.tax_breakup, pdfMediaId: r.pdf_media_id ?? null, createdAt: r.created_at };
 }
 
 @Injectable()
@@ -49,5 +49,16 @@ export class TradeInvoiceRepository {
       `SELECT ${COLS} FROM trade_invoices WHERE tenant_id=$1 AND order_id=$2 AND ($3=true OR buyer_user_id=$4 OR seller_user_id=$4)`,
       [tenantId, orderId, canModerate, viewerUserId]);
     return r.rows[0] ? toRow(r.rows[0]) : null;
+  }
+
+  /** Resolve the S3 key of the invoice's rendered PDF, ONLY when the media asset is virus-scan CLEAN
+   *  (an infected/pending asset is never presigned). Tenant-scoped join; null if no clean PDF yet.
+   *  Authorization is the CALLER's responsibility (gate via getByOrderVisible first — anti-IDOR). */
+  async getCleanPdfKey(tenantId: string, orderId: string): Promise<string | null> {
+    const r = await this.replica.forTenant(tenantId).query<{ s3_key: string }>(
+      `SELECT ma.s3_key FROM trade_invoices ti JOIN media_assets ma ON ma.id = ti.pdf_media_id
+        WHERE ti.tenant_id=$1 AND ti.order_id=$2 AND ma.scan_status='clean'
+        LIMIT 1`, [tenantId, orderId]);
+    return r.rows[0]?.s3_key ?? null;
   }
 }

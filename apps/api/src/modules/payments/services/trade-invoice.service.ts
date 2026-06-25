@@ -8,20 +8,25 @@ import { Inject, Injectable } from '@nestjs/common';
 import { METRICS, Metrics } from '../../../core/observability/metrics';
 import { TxContext } from '../../../core/database/unit-of-work';
 import { uuidv7 } from '../../../core/database/uuid.util';
+import { OBJECT_STORE, ObjectStore } from '../../../core/media/s3-presign.service';
 import { applyBps } from '../domain/commission-rule.entity';
 import { TradeInvoice } from '../domain/trade-invoice.entity';
 import { TaxRuleRepository } from '../repositories/tax-rule.repository';
 import { TradeInvoiceRepository, TradeInvoiceRow } from '../repositories/trade-invoice.repository';
-import { InvoiceNotFoundError } from '../domain/billing.errors';
+import { DocumentPdfService } from './document-pdf.service';
+import { InvoiceNotFoundError, InvoicePdfNotReadyError } from '../domain/billing.errors';
 
 export interface InvoiceActor { userId: string; canModerate: boolean; }
+const PDF_URL_TTL_SEC = 300; // short-lived signed GET (5 min) — re-request to refresh
 
 @Injectable()
 export class TradeInvoiceService {
   constructor(
     @Inject(METRICS) private readonly metrics: Metrics,
+    @Inject(OBJECT_STORE) private readonly store: ObjectStore,
     private readonly tax: TaxRuleRepository,
     private readonly invoices: TradeInvoiceRepository,
+    private readonly documentPdf: DocumentPdfService,
   ) {}
 
   /** Generate the order's invoice within the caller's tx (called by the order-completed handler). */
@@ -53,5 +58,22 @@ export class TradeInvoiceService {
     const inv = await this.invoices.getByOrderVisible(tenantId, orderId, actor.userId, actor.canModerate);
     if (!inv) throw new InvoiceNotFoundError();
     return inv;
+  }
+
+  /** A short-lived presigned GET URL for the order's invoice PDF. SECURITY: ownership-gated first
+   *  (buyer/seller/finance-moderator → 404 to anyone else, no IDOR/enumeration). Lazily renders + stores
+   *  the PDF if it hasn't been generated yet (flag-gated real S3 PUT), then presigns the CLEAN media only.
+   *  Throws InvoicePdfNotReadyError (409, retryable) when the renderer is disabled or the scan isn't clean. */
+  async downloadUrlForOrder(tenantId: string, actor: InvoiceActor, orderId: string): Promise<{ invoiceNo: string; url: string; expiresInSec: number }> {
+    const inv = await this.invoices.getByOrderVisible(tenantId, orderId, actor.userId, actor.canModerate);
+    if (!inv) throw new InvoiceNotFoundError();                 // 404 — not the caller's invoice
+
+    // Lazily generate the PDF the first time it's requested (no-op unless the document_pdfs flag is on).
+    if (!inv.pdfMediaId) await this.documentPdf.storeInvoicePdf(tenantId, orderId);
+
+    const key = await this.invoices.getCleanPdfKey(tenantId, orderId);
+    if (!key) throw new InvoicePdfNotReadyError();              // renderer off, or scan not clean yet
+    this.metrics.inc('payments.invoice_download_url', { tenant: tenantId });
+    return { invoiceNo: inv.invoiceNo, url: this.store.presignDownload(key, PDF_URL_TTL_SEC), expiresInSec: PDF_URL_TTL_SEC };
   }
 }

@@ -4,19 +4,22 @@
 // (shipments.list by order — degrades to "no shipment yet" if the logistics flag is off or none exist). Money via
 // formatMoneyMinor, timestamps via formatDate (Law 2, Law 12).
 //
-// FLAGGED: the SDK exposes NO invoice resource / download method (no payments.invoices, no orders.invoice), so an
-// "invoice download" can't be built without inventing an endpoint. It's deferred until the SDK adds one.
+// P1-4: a completed order offers a real **invoice PDF download** via `payments.invoices.downloadUrl(orderId)` (a
+// short-lived presigned GET, ownership-gated server-side). We fetch it best-effort and render a download link only
+// when the PDF is actually available — if the invoice isn't generated yet (renderer disabled / not completed) the
+// SDK throws and we simply omit the link (no fabricated download). Filenames via the pure invoiceFileName helper.
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { formatMoneyMinor, formatDate } from '@krishi-verse/i18n';
-import type { OrderDetail, Shipment } from '@krishi-verse/sdk-js';
+import type { OrderDetail, Shipment, InvoiceDownload } from '@krishi-verse/sdk-js';
 import { SdkError } from '@krishi-verse/sdk-js';
 import { serverClient } from '../../../lib/api-client';
 import { requireSession } from '../../../lib/session';
 import { getTranslator, getLang } from '../../../lib/i18n';
 import { OrderTimeline } from '../../../components/OrderTimeline';
 import { orderTimeline, ORDER_STEPS } from '../../../features/orders/timeline';
+import { invoiceFileName } from '../../../features/orders/invoice';
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const t = getTranslator();
@@ -40,6 +43,10 @@ export default async function OrderDetailPage({ params, searchParams }: { params
   // Shipment tracking is optional/flagged on the API — never let its absence break the order page.
   let shipments: Shipment[] = [];
   try { shipments = (await serverClient().shipments.list({ orderId: order.id })).items; } catch { shipments = []; }
+
+  // Invoice PDF (P1-4): best-effort presigned download — omitted when the invoice/PDF isn't available yet.
+  let invoice: InvoiceDownload | null = null;
+  try { invoice = await serverClient().payments.invoices.downloadUrl(order.id); } catch { invoice = null; }
 
   const cur = order.currencyCode;
   const ts = (v?: string | null) => (v ? formatDate(v, lang) : null);
@@ -70,6 +77,14 @@ export default async function OrderDetailPage({ params, searchParams }: { params
           <p className="kv-confirm__row"><span>{t.t('checkout.tax')}</span> <span>{formatMoneyMinor(order.taxMinor, cur, lang)}</span></p>
           <p className="kv-confirm__row kv-confirm__row--total"><span>{t.t('checkout.total')}</span> <strong>{formatMoneyMinor(order.totalMinor, cur, lang)}</strong></p>
         </div>
+        {invoice && (
+          <p className="kv-order__invoice">
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages — external presigned S3 URL, not an app route */}
+            <a href={invoice.url} className="kv-link" download={invoiceFileName(invoice.invoiceNo)} target="_blank" rel="noopener noreferrer">
+              {t.t('order.downloadInvoice', { no: invoice.invoiceNo })}
+            </a>
+          </p>
+        )}
       </section>
 
       <section className="kv-order__section" aria-labelledby="ship-h">

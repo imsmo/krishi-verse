@@ -3,10 +3,27 @@
 // the client only polls status. Both money-moving POSTs require an Idempotency-Key (Law 3). Money is bigint
 // minor-unit strings (Law 2). Gated server-side by the `online_payments` flag.
 import { HttpClient } from '../http';
-import { PaymentIntent, PaymentSummary, PayoutSummary, WalletBalance, WalletLedgerEntry, WalletInsights, AutopayMandate, Page } from '../types';
+import { PaymentIntent, PaymentSummary, PayoutSummary, WalletBalance, WalletLedgerEntry, WalletInsights, AutopayMandate, InvoiceSummary, InvoiceDownload, Page } from '../types';
+
+/** Buyer-facing GST trade invoices for orders. Read-only + ownership-gated server-side (the order's buyer/seller
+ *  or a finance moderator — a foreign order is 404, never enumerable). Hangs off `payments.invoices`. */
+export class InvoicesResource {
+  constructor(private readonly http: HttpClient) {}
+  /** The invoice record for an order (totals + GST split). 404 if none / not the caller's order. */
+  async getByOrder(orderId: string, signal?: AbortSignal): Promise<InvoiceSummary> {
+    return (await this.http.request<InvoiceSummary>('GET', `invoices/order/${encodeURIComponent(orderId)}`, { signal })).data;
+  }
+  /** A short-lived presigned PDF download URL for the order's invoice. Throws if the PDF isn't ready yet
+   *  (INVOICE_PDF_NOT_READY, retryable) or the order has no invoice (404). */
+  async downloadUrl(orderId: string, signal?: AbortSignal): Promise<InvoiceDownload> {
+    return (await this.http.request<InvoiceDownload>('GET', `invoices/order/${encodeURIComponent(orderId)}/download`, { signal })).data;
+  }
+}
 
 export class PaymentsResource {
-  constructor(private readonly http: HttpClient) {}
+  /** GST trade-invoice sub-resource: `client.payments.invoices.getByOrder(...) / .downloadUrl(...)`. */
+  readonly invoices: InvoicesResource;
+  constructor(private readonly http: HttpClient) { this.invoices = new InvoicesResource(http); }
 
   /** Create a payment intent (e.g. purpose 'wallet_recharge'). Returns the gateway order id to open checkout. */
   async createIntent(input: { purpose: string; amountMinor: string; currencyCode?: string; referenceType?: string; referenceId?: string }, idempotencyKey: string): Promise<PaymentIntent> {

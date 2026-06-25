@@ -9,7 +9,7 @@ export type { OfferBox } from './resources/offers';
 export type { WorkerPrefsInput, CreateBookingInput } from './resources/labour';
 export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, ListingAnalytics, ProductCard, TraceProvenance, AuthTokens, UserProfile,
   MediaKind, MediaUploadTicket, MediaConfirmResult, MediaDownloadLink,
-  PaymentPurpose, PaymentIntent, PaymentSummary, PayoutSummary, BankAccount, KycStatus, KycDocument, KycDocType,
+  PaymentPurpose, PaymentIntent, PaymentSummary, InvoiceSummary, InvoiceDownload, PayoutSummary, BankAccount, KycStatus, KycDocument, KycDocType,
   NotificationItem, NotificationPreference, QuietHours,
   OrderListItem, OrderItemLine, OrderDetail, Shipment, ReviewSummary,
   CartItem, Cart, CheckoutResult, CheckoutPreview, CheckoutPreviewSeller, DeliveryMethod, DeliveryMethodsResult, WalletPaymentResult, Address,

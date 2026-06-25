@@ -62,6 +62,10 @@ export type PaymentPurpose = 'wallet_recharge' | 'direct_order' | 'subscription'
 /** Returned by createIntent — feed gatewayOrderId into the gateway SDK (Razorpay), then poll status. */
 export interface PaymentIntent { paymentId: string; gatewayOrderId: string; provider: string; amountMinor: string; status: string; }
 export interface PaymentSummary { id: string; status: string; amountMinor: string; currencyCode: string; purpose?: string; createdAt?: string; }
+/** A GST trade invoice for an order (totals minor-unit strings; tax split in taxBreakup). NON-PII. */
+export interface InvoiceSummary { id: string; invoiceNo: string; orderId: string; sellerGstin: string | null; buyerGstin: string | null; totalMinor: string; taxBreakup: Record<string, unknown>; pdfMediaId: string | null; createdAt: string; }
+/** A short-lived presigned PDF download URL for an invoice. */
+export interface InvoiceDownload { invoiceNo: string; url: string; expiresInSec: number; }
 export interface PayoutSummary { id: string; status: string; amountMinor: string; currencyCode: string; purpose?: string; createdAt?: string; }
 /** Reconciled wallet balance (server-truth, bigint minor-unit strings). */
 export interface WalletBalance { userId: string; currencyCode: string; availableMinor: string; heldMinor: string; isFrozen: boolean; }
