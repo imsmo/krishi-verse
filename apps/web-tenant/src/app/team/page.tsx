@@ -4,9 +4,9 @@
 // The UI reflects RBAC; the server authorises every change within the caller's own tenant (not god-mode). All
 // copy via i18n; degrades to empty/error; noindex.
 //
-// SDK-GAP (flagged, not faked): the SDK exposes assignments + approveAssignment + users.create only — there is NO
-// role catalogue read and NO direct assign-role / revoke-role method. So the console approves pending join
-// requests + adds members, and does not fake an assign/revoke matrix. Unblocked when the SDK adds those methods.
+// This page is the roster + approval queue + admin-add. The full role→permission matrix (assign/revoke roles,
+// per-assignment overrides) lives at /team/roles (P1-11), wired to rbac.roles/permissions/assign/revoke/setOverride
+// — all escalation-guarded SERVER-SIDE (platform roles not assignable; UNGRANTABLE perms blocked; granter-subset).
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireSession } from '../../lib/session';
@@ -40,6 +40,7 @@ export default async function TeamPage({ searchParams }: { searchParams: { pendi
   return (
     <section>
       <h1>{t.t('team.title')}</h1>
+      <p className="kv-muted"><Link href="/team/roles">{t.t('team.manageRoles')}</Link></p>
       {okKey && <p className="kv-success" role="status">{t.t(`team.ok.${okKey}`)}</p>}
       {errorKey && <p className="kv-error" role="alert">{t.t(`team.error.${errorKey}`)}</p>}
 

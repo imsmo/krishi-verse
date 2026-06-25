@@ -24,3 +24,31 @@ export async function applyPlanAction(formData: FormData): Promise<void> {
   revalidatePath('/billing');
   redirect('/billing?ok=applied');
 }
+
+export async function changePlanAction(formData: FormData): Promise<void> {
+  await requireSession('/billing');
+  const subscriptionId = String(formData.get('subscriptionId') ?? '').trim();
+  const planId = String(formData.get('planId') ?? '').trim();
+  if (!subscriptionId || !planId) redirect('/billing?error=apply');
+  try {
+    await tenantClient().tenancy.changePlan(subscriptionId, planId);
+  } catch (e) {
+    redirect(`/billing?error=${encodeURIComponent(e instanceof SdkError ? (e.code || 'apply') : 'apply')}`);
+  }
+  revalidatePath('/billing');
+  redirect('/billing?ok=changed');
+}
+
+export async function cancelSubscriptionAction(formData: FormData): Promise<void> {
+  await requireSession('/billing');
+  const subscriptionId = String(formData.get('subscriptionId') ?? '').trim();
+  const atPeriodEnd = String(formData.get('atPeriodEnd') ?? 'true') !== 'false';
+  if (!subscriptionId) redirect('/billing?error=apply');
+  try {
+    await tenantClient().tenancy.cancelSubscription(subscriptionId, atPeriodEnd);
+  } catch (e) {
+    redirect(`/billing?error=${encodeURIComponent(e instanceof SdkError ? (e.code || 'cancel') : 'cancel')}`);
+  }
+  revalidatePath('/billing');
+  redirect(`/billing?ok=${atPeriodEnd ? 'cancelScheduled' : 'cancelled'}`);
+}

@@ -4,6 +4,7 @@
 // authority for money + privilege — Law 2/11; platform-default commission rows render read-only). Money via
 // formatMoneyMinor (Law 2); all copy via i18n; noindex.
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
@@ -49,7 +50,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: { o
   return (
     <section>
       <h1>{t.t('settings.title')}</h1>
-      <p className="kv-muted">{t.t('settings.subtitle')}</p>
+      <p className="kv-muted">{t.t('settings.subtitle')} · <Link href="/settings/integrations">{t.t('integrations.title')} →</Link> · <Link href="/settings/webhooks">{t.t('webhooks.title')} →</Link></p>
       {okKey && <p className="kv-success" role="status">{t.t('settings.ok')}</p>}
       {errorKey && <p className="kv-error" role="alert">{t.t('settings.error')}: {errorKey}</p>}
 

@@ -139,3 +139,4 @@ details.kv-card > summary { cursor: pointer; }
 .kv-fieldset { border: 1px solid var(--kv-neutral-200, #e5e5e5); border-radius: 8px; padding: 8px 12px; margin: 8px 0; }
 .kv-fieldset > legend { font-size: 13px; color: var(--kv-neutral-500, #737373); padding: 0 4px; }
 .kv-btn--sm { padding: 4px 10px; font-size: 13px; min-height: 32px; }
+.kv-fine { font-size: 12px; }

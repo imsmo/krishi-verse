@@ -23,6 +23,14 @@ export class TenancyResource {
   async apply(input: { planId: string; billingCycle?: 'monthly' | 'annual' }, idempotencyKey: string): Promise<Subscription> {
     return (await this.http.request<Subscription>('POST', 'subscriptions', { idempotencyKey, body: input })).data;
   }
+  /** Change the plan on an existing subscription (server prices it; the app never computes money — Law 2/11). */
+  async changePlan(subscriptionId: string, planId: string): Promise<Subscription> {
+    return (await this.http.request<Subscription>('POST', `subscriptions/${encodeURIComponent(subscriptionId)}/change-plan`, { body: { planId } })).data;
+  }
+  /** Cancel a subscription — at period end (default, keeps access until renewal) or immediately. */
+  async cancelSubscription(subscriptionId: string, atPeriodEnd = true): Promise<Subscription> {
+    return (await this.http.request<Subscription>('POST', `subscriptions/${encodeURIComponent(subscriptionId)}/cancel`, { body: { atPeriodEnd } })).data;
+  }
 
   // --- analytics + broadcast (API-W10) ---
   /** The calling tenant's own analytics dashboard over a window (default last 30 days). Money is bigint minor. */

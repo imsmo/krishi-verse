@@ -214,6 +214,14 @@ When the last box is ticked, `web-tenant` flips to ✅.
 > the `sdk-js` `tenantConfig` resource now exposes them and `/settings` wires all four (Server Actions → the audited,
 > RBAC-gated API; platform-default commission rows shown read-only; money stays server-authoritative). See
 > `docs/production-backlog/P1-GA-completeness.md` → P1-10.
+>
+> **P1-11 (partial):** the **staff-permissions matrix** is no longer SDK-gap-flagged — `sdk-js` `rbac` now exposes
+> `roles`/`permissions`/`assign`/`revoke`/`setOverride` and `/team/roles` wires the matrix (platform roles excluded
+> from the picker, UNGRANTABLE perms hidden, escalation blocked client-side AND server-side; a server 403 surfaces as
+> "escalation not allowed"). **integrations, webhooks, billing-config stay FLAGGED** — their tables exist
+> (`0002_tenancy_billing.sql`) but the only controllers today are admin `providers-ops` + inbound `payment-webhooks`;
+> tenant self-serve needs NEW `apps/api` modules (vault-ref credentials, HMAC-signed outbound delivery + retry,
+> subscription-update endpoints), tracked as P1-11-followup-A/B/C in `docs/production-backlog/P1-GA-completeness.md`.
 
 ---
 

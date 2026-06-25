@@ -12,6 +12,8 @@ import { PaymentsResource, PayoutsResource, WalletResource, AutopayResource } fr
 import { KycResource, BankAccountsResource, AddressesResource } from './resources/identity';
 import { TenancyResource } from './resources/tenancy';
 import { TenantConfigResource } from './resources/tenant-config';
+import { IntegrationsResource } from './resources/integrations';
+import { WebhooksResource } from './resources/webhooks';
 import { RbacResource, DisputesResource, UsersResource } from './resources/admin';
 import { NotificationsResource } from './resources/notifications';
 import { OrdersResource } from './resources/orders';
@@ -64,6 +66,8 @@ export class KrishiVerseClient {
   readonly enrollments: EnrollmentsResource;
   readonly tenancy: TenancyResource;
   readonly tenantConfig: TenantConfigResource;
+  readonly integrations: IntegrationsResource;
+  readonly webhooks: WebhooksResource;
   readonly rbac: RbacResource;
   readonly disputes: DisputesResource;
   readonly users: UsersResource;
@@ -108,6 +112,8 @@ export class KrishiVerseClient {
     this.enrollments = new EnrollmentsResource(this.http);
     this.tenancy = new TenancyResource(this.http);
     this.tenantConfig = new TenantConfigResource(this.http);
+    this.integrations = new IntegrationsResource(this.http);
+    this.webhooks = new WebhooksResource(this.http);
     this.rbac = new RbacResource(this.http);
     this.disputes = new DisputesResource(this.http);
     this.users = new UsersResource(this.http);

@@ -119,6 +119,10 @@ export class AppConfig {
   get port()       { return this.env.PORT; }
   get isProd()     { return this.env.NODE_ENV === 'production'; }
   get shardCount() { return this.env.SHARD_COUNT; }
+  /** Tenant-integration credential vault (P1-11). backend 'local' = dev no-op; 'aws' = Secrets Manager. */
+  get integrationSecrets() { return { backend: this.env.INTEGRATION_SECRETS_BACKEND, region: this.env.AWS_REGION, prefix: this.env.INTEGRATION_SECRET_PREFIX }; }
+  /** Tenant-webhook signing-secret encryption key (P1-11). Empty = unset (fail-closed in prod). */
+  get webhookSigningKek() { return this.env.WEBHOOK_SIGNING_KEK; }
   get trustProxyHops() { return this.env.TRUST_PROXY_HOPS; }
 
   get db() {

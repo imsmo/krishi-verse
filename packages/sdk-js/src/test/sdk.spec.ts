@@ -531,4 +531,92 @@ describe('HttpClient via resources', () => {
     expect(JSON.parse(calls[0].init.body as string)).toEqual({ key: 'branding.primary_color', value: '#1B5E20' });
     expect(r.key).toBe('branding.primary_color');
   });
+
+  it('rbac matrix: roles/permissions GET, assign POST (idem), revoke DELETE, setOverride POST (P1-11)', async () => {
+    const { fn, calls } = fakeFetch((_c, n) =>
+      n === 1 ? { body: { data: [{ id: 'r1', code: 'manager', defaultName: 'Manager', scope: 'tenant', requiresKyc: false, requiresApproval: false, moduleCode: null, isActive: true }] } }
+      : n === 2 ? { body: { data: [{ code: 'listing.publish', defaultName: 'Publish listing', moduleCode: 'catalogue' }] } }
+      : n === 3 ? { body: { data: { id: 'utr1' } } }
+      : n === 4 ? { body: { data: { ok: true } } }
+      : { body: { data: { ok: true } } });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const roles = await c.rbac.roles({ activeOnly: true });
+    expect(calls[0].url).toBe('https://api.test/v1/rbac/roles?activeOnly=true');
+    expect(roles[0].scope).toBe('tenant');
+    await c.rbac.permissions('catalogue');
+    expect(calls[1].url).toBe('https://api.test/v1/rbac/permissions?moduleCode=catalogue');
+    const a = await c.rbac.assign({ userId: 'u1', roleCode: 'manager' }, 'idem-rbac-1');
+    expect(calls[2].url).toBe('https://api.test/v1/rbac/assignments');
+    expect(calls[2].init.method).toBe('POST');
+    expect((calls[2].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-rbac-1');
+    expect(a.id).toBe('utr1');
+    await c.rbac.revoke('utr1');
+    expect(calls[3].url).toBe('https://api.test/v1/rbac/assignments/utr1');
+    expect(calls[3].init.method).toBe('DELETE');
+    await c.rbac.setOverride({ userTenantRoleId: 'utr1', permissionCode: 'listing.publish', isGranted: true });
+    expect(calls[4].url).toBe('https://api.test/v1/rbac/overrides');
+    expect(JSON.parse(calls[4].init.body as string)).toEqual({ userTenantRoleId: 'utr1', permissionCode: 'listing.publish', isGranted: true });
+  });
+
+  it('tenancy.changePlan / cancelSubscription hit the subscription sub-routes (P1-11 billing-config)', async () => {
+    const sub = { id: 's1', tenantId: 't1', planId: 'p2', status: 'active', billingCycle: 'monthly', priceMinor: '990000', currencyCode: 'INR', currentPeriodStart: null, currentPeriodEnd: null, cancelAtPeriodEnd: false };
+    const { fn, calls } = fakeFetch(() => ({ body: { data: sub } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    await c.tenancy.changePlan('s1', 'p2');
+    expect(calls[0].url).toBe('https://api.test/v1/subscriptions/s1/change-plan');
+    expect(JSON.parse(calls[0].init.body as string)).toEqual({ planId: 'p2' });
+    await c.tenancy.cancelSubscription('s1', true);
+    expect(calls[1].url).toBe('https://api.test/v1/subscriptions/s1/cancel');
+    expect(JSON.parse(calls[1].init.body as string)).toEqual({ atPeriodEnd: true });
+  });
+
+  it('integrations: providers/list GET; connect POST (idem) sends the credential; disconnect DELETE (P1-11)', async () => {
+    const { fn, calls } = fakeFetch((_c, n) =>
+      n === 1 ? { body: { data: [{ code: 'razorpay', defaultName: 'Razorpay', category: 'payment', isActive: true }] } }
+      : n === 2 ? { body: { data: [{ id: 'i1', providerCode: 'razorpay', providerName: 'Razorpay', category: 'payment', config: {}, connected: true, isActive: true }] } }
+      : n === 3 ? { body: { data: { id: 'i2', providerCode: 'msg91', connected: true } } }
+      : { body: { data: { providerCode: 'msg91', connected: false } } });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    await c.integrations.providers();
+    expect(calls[0].url).toBe('https://api.test/v1/integrations/providers');
+    const list = await c.integrations.list();
+    expect(calls[1].url).toBe('https://api.test/v1/integrations');
+    expect(list[0].connected).toBe(true);
+    expect('secretRef' in (list[0] as Record<string, unknown>)).toBe(false);
+    await c.integrations.connect({ providerCode: 'msg91', credential: 'rzp_live_secret', config: { sandbox: false } }, 'idem-int-1');
+    expect(calls[2].url).toBe('https://api.test/v1/integrations');
+    expect(calls[2].init.method).toBe('POST');
+    expect((calls[2].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-int-1');
+    expect(JSON.parse(calls[2].init.body as string).credential).toBe('rzp_live_secret');
+    await c.integrations.disconnect('msg91');
+    expect(calls[3].url).toBe('https://api.test/v1/integrations/msg91');
+    expect(calls[3].init.method).toBe('DELETE');
+  });
+
+  it('webhooks: register returns the secret once; list masked; rotate/update/delete hit the right paths (P1-11)', async () => {
+    const ep = { id: 'w1', url: 'https://hooks.acme.in/kv', eventTypes: ['order.created'], isActive: true };
+    const { fn, calls } = fakeFetch((_c, n) =>
+      n === 1 ? { body: { data: { ...ep, secret: 'whsec_ONCE' } } }
+      : n === 2 ? { body: { data: [ep] } }
+      : n === 3 ? { body: { data: { id: 'w1', secret: 'whsec_NEW' } } }
+      : n === 4 ? { body: { data: { id: 'w1', ok: true } } }
+      : { body: { data: { id: 'w1', ok: true } } });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const created = await c.webhooks.register({ url: 'https://hooks.acme.in/kv', eventTypes: ['order.created'] });
+    expect(calls[0].url).toBe('https://api.test/v1/webhooks');
+    expect(calls[0].init.method).toBe('POST');
+    expect(created.secret).toBe('whsec_ONCE');
+    const list = await c.webhooks.list();
+    expect(calls[1].url).toBe('https://api.test/v1/webhooks');
+    expect('secret' in (list[0] as Record<string, unknown>)).toBe(false); // masked on reads
+    const rot = await c.webhooks.rotateSecret('w1');
+    expect(calls[2].url).toBe('https://api.test/v1/webhooks/w1/rotate-secret');
+    expect(rot.secret).toBe('whsec_NEW');
+    await c.webhooks.update('w1', { isActive: false });
+    expect(calls[3].url).toBe('https://api.test/v1/webhooks/w1');
+    expect(calls[3].init.method).toBe('PATCH');
+    await c.webhooks.remove('w1');
+    expect(calls[4].url).toBe('https://api.test/v1/webhooks/w1');
+    expect(calls[4].init.method).toBe('DELETE');
+  });
 });

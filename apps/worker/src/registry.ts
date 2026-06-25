@@ -8,6 +8,7 @@ import { retentionEnforcerJob } from './jobs/retention-enforcer.job';
 import { idempotencyPurgeJob } from './jobs/idempotency-purge.job';
 import { dpdpErasureCoolingJob } from './jobs/dpdp-erasure-cooling.job';
 import { outboxGaugeJob } from './jobs/outbox-gauge.job';
+import { webhookDeliveryJob } from './jobs/webhook-delivery.job';
 
 export const JOBS: Job[] = [
   reconZeroSumJob,
@@ -16,4 +17,5 @@ export const JOBS: Job[] = [
   idempotencyPurgeJob,
   dpdpErasureCoolingJob,
   outboxGaugeJob,
+  webhookDeliveryJob, // P1-11: signed outbound webhook delivery (decrypts per-endpoint secret, HMAC, backoff)
 ];

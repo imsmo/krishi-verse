@@ -44,9 +44,11 @@ import { AiGovernanceModule } from './modules/ai-governance/ai-governance.module
 import { IdentityModule } from './modules/identity/identity.module';
 import { CatalogueModule } from './modules/catalogue/catalogue.module';
 import { LookupsModule } from './modules/lookups/lookups.module';
+import { TenantIntegrationsModule } from './modules/tenant-integrations/tenant-integrations.module';
+import { TenantWebhooksModule } from './modules/tenant-webhooks/tenant-webhooks.module';
 
 @Module({
-  imports: [CoreModule, IdentityModule, CatalogueModule, LookupsModule, ListingsModule, OrdersModule, BuyerModule, PaymentsModule, MediaModule, BulkModule, AuctionsModule, OffersModule, RequirementsModule, LogisticsModule, ReviewsModule, DisputesModule, PromotionsModule, MembershipsModule, TenancyModule, LabourModule, LivestockModule, DairyModule, EquipmentModule, WarehousingModule, ContractFarmingModule, ExportsModule, LandSoilWeatherModule, FintechModule, SchemesModule, ServicesMarketplaceModule, CommunicationModule, EducationModule, AmbassadorsModule, SupportModule, CmsModule, MarketIntelModule, TraceabilityModule, AiGovernanceModule],
+  imports: [CoreModule, IdentityModule, CatalogueModule, LookupsModule, ListingsModule, OrdersModule, BuyerModule, PaymentsModule, MediaModule, BulkModule, AuctionsModule, OffersModule, RequirementsModule, LogisticsModule, ReviewsModule, DisputesModule, PromotionsModule, MembershipsModule, TenancyModule, TenantIntegrationsModule, TenantWebhooksModule, LabourModule, LivestockModule, DairyModule, EquipmentModule, WarehousingModule, ContractFarmingModule, ExportsModule, LandSoilWeatherModule, FintechModule, SchemesModule, ServicesMarketplaceModule, CommunicationModule, EducationModule, AmbassadorsModule, SupportModule, CmsModule, MarketIntelModule, TraceabilityModule, AiGovernanceModule],
 })
 export class AppModule implements NestModule {
   // request-id THEN tenant-context (Law 1) on every route.

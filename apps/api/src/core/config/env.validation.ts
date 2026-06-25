@@ -43,6 +43,11 @@ export const EnvSchema = z.object({
   WALLET_GRPC_URL: z.string().default(''),
   AWS_REGION: z.string().default('ap-south-1'),
   S3_MEDIA_BUCKET: z.string().default(''),
+  // tenant-integrations credential vault (P1-11). 'local' = dev no-op (discards plaintext); 'aws' = Secrets Manager.
+  INTEGRATION_SECRETS_BACKEND: z.enum(['local', 'aws']).default('local'),
+  INTEGRATION_SECRET_PREFIX: z.string().default('krishi/tenant-integrations'),
+  // tenant-webhooks signing-secret encryption key (P1-11). 32 bytes (hex or base64); fail-closed in prod if unset.
+  WEBHOOK_SIGNING_KEK: z.string().default(''),
   S3_ACCESS_KEY_ID: z.string().default(''),             // empty ⇒ use the instance IAM role (no static keys)
   S3_SECRET_ACCESS_KEY: z.string().default(''),
   S3_ENDPOINT: z.string().optional(),                   // set for MinIO/LocalStack; absent ⇒ AWS S3

@@ -405,6 +405,14 @@ export interface Subscription {
 }
 /** A role assignment (the tenant's roster + approval queue). Pending = not yet approved (approvedAt null). */
 export interface RoleAssignment { id: string; userId: string; roleId?: string; roleCode: string; kycStatus: string; isActive: boolean; approvedAt: string | null; }
+/** A role in the tenant's catalogue. `scope:'platform'` roles are NOT assignable via the tenant API (Law 11). */
+export interface RoleDef { id: string; code: string; defaultName: string; scope: 'tenant' | 'platform'; requiresKyc: boolean; requiresApproval: boolean; moduleCode: string | null; isActive: boolean; }
+/** A permission in the catalogue (for the role→permission matrix). */
+export interface PermissionDef { code: string; defaultName: string; moduleCode: string | null; }
+/** Assign a role to a member. `roleData` carries role-specific config (e.g. region scoping). */
+export interface AssignRoleInput { userId: string; roleCode: string; roleData?: Record<string, unknown>; }
+/** A per-assignment permission override (grant or deny one permission). */
+export interface StaffOverrideInput { userTenantRoleId: string; permissionCode: string; isGranted: boolean; }
 /** The tenant's own analytics dashboard over a window. All money is bigint minor STRINGS (Law 2). */
 export interface TenantAnalytics {
   windowFrom: string; windowTo: string; currencyCode: string;
@@ -443,6 +451,14 @@ export interface UpdateDeliveryZoneInput { defaultName?: string; pincodes?: stri
 export interface TenantSetting { key: string; value: unknown; }
 /** A read-only feature override the tenant inherits from its plan (cannot self-grant — Law 11). */
 export interface TenantFeature { key: string; isEnabled: boolean; }
+
+// --- tenant integrations (P1-11) — credentials are vaulted server-side; the SDK never sees a secret ---
+/** A connectable third-party provider (global catalogue). */
+export interface IntegrationProvider { code: string; defaultName: string; category: string; isActive: boolean; }
+/** A tenant's connection to a provider. `connected` = a vaulted credential exists; the secret ref is NEVER returned. */
+export interface TenantIntegration { id: string; providerCode: string; providerName: string | null; category: string | null; config: Record<string, unknown>; connected: boolean; isActive: boolean; createdAt?: string | null; }
+/** A tenant webhook endpoint (masked — the signing secret is returned ONLY on register/rotate, never on reads). */
+export interface WebhookEndpoint { id: string; url: string; eventTypes: string[]; isActive: boolean; createdAt?: string | null; }
 // --- market-intel (mandi prices) + weather (P-19) — money is bigint minor STRINGS (Law 2) ---
 /** A mandi (market yard). lat/lng for map/nearest; no PII. */
 export interface Mandi { id: string; defaultName: string; regionId: string | null; mandiCode: string | null; lat: number | null; lng: number | null; isActive: boolean; }

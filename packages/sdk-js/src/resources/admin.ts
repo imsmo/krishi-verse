@@ -5,7 +5,7 @@
 // their own tenant, the server re-checks tenant membership + permission on each call. Mutations carry an
 // Idempotency-Key (Law 3). Money is bigint minor strings (Law 2).
 import { HttpClient } from '../http';
-import { RoleAssignment, Dispute, UserProfile, Page } from '../types';
+import { RoleAssignment, RoleDef, PermissionDef, AssignRoleInput, StaffOverrideInput, Dispute, UserProfile, Page } from '../types';
 
 export class RbacResource {
   constructor(private readonly http: HttpClient) {}
@@ -16,6 +16,31 @@ export class RbacResource {
   /** Approve a pending assignment (e.g. a farmer joining the tenant). Needs identity.approve. */
   async approveAssignment(id: string): Promise<{ ok: boolean }> {
     return (await this.http.request<{ ok: boolean }>('POST', `rbac/assignments/${encodeURIComponent(id)}/approve`, {})).data;
+  }
+
+  // --- staff-permissions matrix (P1-11) ---
+  // The catalogue + assign/revoke/override. EVERY guard is SERVER-authoritative (Law 11): platform/owner roles are
+  // NOT assignable via the tenant API; a staff override can never hand out `*`/money/god perms (UNGRANTABLE) nor
+  // exceed what the granter holds. The app mirrors the *static* guards for UX only — it never relaxes the server.
+  /** The tenant's role catalogue (platform-scope roles are returned but NOT assignable via this API). */
+  async roles(params: { scope?: 'tenant' | 'platform'; activeOnly?: boolean } = {}, signal?: AbortSignal): Promise<RoleDef[]> {
+    return (await this.http.request<RoleDef[]>('GET', 'rbac/roles', { query: { scope: params.scope, activeOnly: params.activeOnly }, signal })).data;
+  }
+  /** The permission catalogue (optionally one module). Used to render the role→permission matrix. */
+  async permissions(moduleCode?: string, signal?: AbortSignal): Promise<PermissionDef[]> {
+    return (await this.http.request<PermissionDef[]>('GET', 'rbac/permissions', { query: { moduleCode }, signal })).data;
+  }
+  /** Assign a (non-platform) role to a member. Idempotent (Law 3). Needs identity.approve. */
+  async assign(input: AssignRoleInput, idempotencyKey: string): Promise<{ id: string }> {
+    return (await this.http.request<{ id: string }>('POST', 'rbac/assignments', { idempotencyKey, body: input })).data;
+  }
+  /** Revoke a role assignment. Needs identity.approve. */
+  async revoke(assignmentId: string): Promise<{ ok: boolean }> {
+    return (await this.http.request<{ ok: boolean }>('DELETE', `rbac/assignments/${encodeURIComponent(assignmentId)}`, {})).data;
+  }
+  /** Grant/deny a single permission on one assignment (a staff override). Server enforces the no-escalation rules. */
+  async setOverride(input: StaffOverrideInput): Promise<{ ok: boolean }> {
+    return (await this.http.request<{ ok: boolean }>('POST', 'rbac/overrides', { body: input })).data;
   }
 }
 
