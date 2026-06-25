@@ -9,8 +9,9 @@
 // read-model (its urls expire in minutes; embedding them in a revalidate=60 card would serve dead links). We
 // fetch it alongside the listing and render a real gallery; an empty/unavailable gallery shows nothing (never a
 // placeholder image).
-// STILL FLAGGED — the ListingCard read-model carries no trace qrToken and no auctionId, so a /trace/[qrToken]
-// provenance deep-link and a place-bid-from-listing CTA remain out of scope (we link to the /help explainer).
+// P1-2: the detail read (GET listings/:id) now exposes NON-PII public links — the farm-to-fork trace `qrToken`
+// and the `auctionId`/status — so this page deep-links to the real /trace/[qrToken] provenance page and shows a
+// place-bid CTA to the live auction. Both degrade to the prior copy when the listing has neither (no fabrication).
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -19,6 +20,8 @@ import type { ListingCard, ReviewSummary, GalleryItem } from '@krishi-verse/sdk-
 import { SdkError } from '@krishi-verse/sdk-js';
 import { publicClient } from '../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../lib/i18n';
+import { env } from '../../../../lib/env';
+import { listingLinks } from '../../../../features/listing/links';
 import { BuyerActions } from '../../../../components/BuyerActions';
 import { ListingGallery } from '../../../../components/ListingGallery';
 
@@ -80,6 +83,10 @@ export default async function ListingDetail(
     safeGallery(params.tenantSlug, l.id),
   ]);
 
+  const { trace: traceLink, auction } = listingLinks(l);
+  // The auction CTA is also gated by the storefront's auctions flag (kill-switch parity with /auctions).
+  const showAuction = env.featureAuctions && auction !== null;
+
   const status = searchParams.status;
   const notice =
     status === 'added' ? { kind: 'ok', msg: t.t('listing.statusAdded'), cta: true } :
@@ -115,6 +122,18 @@ export default async function ListingDetail(
 
       <BuyerActions listing={l} tenantSlug={params.tenantSlug} />
 
+      {showAuction && auction && (
+        <section className="kv-detail__section" aria-labelledby="auction-h">
+          <h2 id="auction-h">{t.t('listing.auctionTitle')}</h2>
+          <p className="kv-detail__muted">
+            {auction.live ? t.t('listing.auctionLiveNote') : t.t('listing.auctionEndedNote')}
+          </p>
+          <Link href={auction.href} className={auction.live ? 'kv-btn' : 'kv-btn kv-btn--ghost'}>
+            {auction.live ? t.t('listing.auctionBidCta') : t.t('listing.auctionViewCta')}
+          </Link>
+        </section>
+      )}
+
       <section className="kv-detail__section" aria-labelledby="seller-h">
         <h2 id="seller-h">{t.t('listing.sellerTitle')}</h2>
         <Stars
@@ -136,7 +155,9 @@ export default async function ListingDetail(
       <section className="kv-detail__section" aria-labelledby="trace-h">
         <h2 id="trace-h">{t.t('listing.traceTitle')}</h2>
         <p className="kv-detail__muted">{t.t('listing.traceNote')}</p>
-        <Link href="/help" className="kv-link">{t.t('listing.traceLink')}</Link>
+        {traceLink
+          ? <Link href={traceLink} className="kv-link">{t.t('listing.traceScanLink')}</Link>
+          : <Link href="/help" className="kv-link">{t.t('listing.traceLink')}</Link>}
       </section>
     </article>
   );

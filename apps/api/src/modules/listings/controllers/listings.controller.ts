@@ -15,6 +15,7 @@ import { ListingService } from '../services/listing.service';
 import { ListingSearchReadModel } from '../read-models/listing-search.read-model';
 import { ListingAnalyticsReadModel } from '../read-models/listing-analytics.read-model';
 import { ListingGalleryReadModel } from '../read-models/listing-gallery.read-model';
+import { ListingLinksReadModel } from '../read-models/listing-links.read-model';
 import { ListingBoostService } from '../services/listing-boost.service';
 import { CreateListingDto, CreateListingSchema } from '../dto/create-listing.dto';
 import { ChangePriceDto, ChangePriceSchema } from '../dto/change-price.dto';
@@ -30,6 +31,7 @@ export class ListingsController {
     private readonly searchRM: ListingSearchReadModel,
     private readonly analyticsRM: ListingAnalyticsReadModel,
     private readonly galleryRM: ListingGalleryReadModel,
+    private readonly linksRM: ListingLinksReadModel,
     private readonly boosts: ListingBoostService,
   ) {}
 
@@ -49,7 +51,11 @@ export class ListingsController {
   async getOne(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
     // visibility-gated: non-owners only see published+public listings (no draft scraping)
     const l = await this.service.getPublicById(ctx.tenantId, id, { userId: ctx.userId, canModerate: canModerate(ctx) });
-    return { data: l };
+    // Enrich the detail read with NON-PII public links (trace QR token + auction). Read fresh from the replica
+    // (not the cached entity) so auction status reflects the live lifecycle. getPublicById already authorized
+    // the viewer for this listing; the links read-model independently re-checks public visibility.
+    const links = await this.linksRM.forListing(ctx.tenantId, id);
+    return { data: { ...l, ...links } };
   }
 
   /** Signed photo gallery for a PUBLIC listing (short-lived presigned GET urls; clean assets only). Public. */

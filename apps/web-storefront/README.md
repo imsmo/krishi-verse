@@ -72,10 +72,13 @@ url-less rows; `<ListingGallery>` renders nothing when there are no real images 
 gallery is intentionally **not** embedded in the cacheable `ListingCard` read-model — its urls expire in minutes
 and `ListingCard` is `revalidate=60`, so embedding them would serve dead links.
 
-**Still not built (read-model has no field — flagged, not faked):** the `ListingCard` read-model carries no trace
-`qrToken` and no `auctionId`, so a direct **`/trace/[qrToken]` provenance deep-link** (we link to the `/help`
-traceability explainer instead) and a **place-bid-from-listing** CTA can't be built without inventing data
-(tracked as **P1-2**). Auction and service listings show a localized "opens in the app" note instead of a button.
+**Trace + auction links (P1-2):** the detail read (`GET listings/:id`) now exposes NON-PII public links. When the
+listing has a farm-to-fork trace lot, the provenance section deep-links to the real **`/trace/[qrToken]`** page
+(falling back to the `/help` explainer when there's no token). When the listing is auctioned, a **place-bid CTA**
+links to **`/auctions/[auctionId]`** — labelled "bid" while the auction is live and "view results" once it's
+ended/settled — gated by the storefront `auctions` flag. Both are derived from the SDK card's optional
+`qrToken`/`auctionId`/`auctionStatus` fields via pure, unit-tested helpers; a listing with neither falls back to
+the prior copy (no fabricated links). This closes the last listing-detail flag.
 
 ## Cart
 

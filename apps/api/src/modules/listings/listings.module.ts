@@ -25,6 +25,7 @@ import { MandiBandReadModel } from './read-models/mandi-band.read-model';
 import { ListingAnalyticsReadModel } from './read-models/listing-analytics.read-model';
 import { SellerProfileReadModel } from './read-models/seller-profile.read-model';
 import { ListingGalleryReadModel } from './read-models/listing-gallery.read-model';
+import { ListingLinksReadModel } from './read-models/listing-links.read-model';
 
 // Repositories (write/read SQL)
 import { ListingRepository } from './repositories/listing.repository';
@@ -49,7 +50,7 @@ import { PublishScheduledJob } from './jobs/publish-scheduled.job';
   controllers: [ListingsController, BoostsController, GroupLotsController, SellersController],
   providers: [
     ListingService, ListingBoostService, ListingAttributeService, GroupLotService, GroupLotPledgeService,
-    ListingSearchReadModel, MandiBandReadModel, ListingAnalyticsReadModel, SellerProfileReadModel, ListingGalleryReadModel,
+    ListingSearchReadModel, MandiBandReadModel, ListingAnalyticsReadModel, SellerProfileReadModel, ListingGalleryReadModel, ListingLinksReadModel,
     ListingRepository, PriceHistoryRepository, ListingAttributeRepository,
     ListingBoostRepository, GroupLotRepository, GroupLotPledgeRepository, ListingMediaRepository,
     OrderCompletedHandler, AuctionSettledHandler,

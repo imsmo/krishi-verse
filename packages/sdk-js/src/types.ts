@@ -9,6 +9,12 @@ export interface ListingCard {
   /** Present on owner/detail reads (optimistic-concurrency token for price edits). */
   version?: number;
   status?: string;
+  /** Detail-read (GET listings/:id) NON-PII public links. `null` = none for this listing; `undefined` on list reads.
+   *  qrToken → /trace/:qrToken provenance page; auctionId/status/endsAt → the live auction. */
+  qrToken?: string | null;
+  auctionId?: string | null;
+  auctionStatus?: string | null;
+  auctionEndsAt?: string | null;
 }
 export interface ListingQuery {
   q?: string; categoryId?: string; regionId?: string; saleType?: string; organic?: boolean;
