@@ -1,0 +1,28 @@
+# .github/workflows/dast-zap.yml · OWASP ZAP baseline DAST against STAGING. Non-blocking signal that complements
+# the commissioned pen-test (P0-7). Runs nightly + on demand. Findings are uploaded as an artifact + summarised.
+name: dast-zap
+on:
+  schedule: [{ cron: '0 2 * * *' }]   # nightly 02:00 UTC
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Base URL to scan"
+        default: "https://api.staging.krishiverse.ai"
+        required: true
+
+permissions:
+  contents: read
+  issues: write   # ZAP action can open issues for new alerts
+
+jobs:
+  zap-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: ${{ github.event.inputs.target || 'https://api.staging.krishiverse.ai' }}
+          # rules file lets us downgrade known-accepted alerts; -I = don't fail the build (signal, not gate)
+          rules_file_name: .zap/rules.tsv
+          cmd_options: '-I -a'
