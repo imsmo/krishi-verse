@@ -4,27 +4,34 @@
 // reviews.summary aggregate — degrade silently if unavailable), the buyer CTAs (BuyerActions), a farm-to-fork
 // note, and rich OpenGraph metadata for sharing. Money via formatMoneyMinor from minor-unit strings (Law 2).
 //
-// FLAGGED — the listing read-model (`ListingCard`) carries no media ids, no trace qrToken, and no auctionId, so:
-//   • a media gallery,
-//   • a direct /trace/[qrToken] provenance deep-link, and
-//   • a place-bid-from-listing CTA
-// cannot be built without fabricating data. They are out of scope until the SDK listing read-model exposes those
-// fields. We link to the /help traceability explainer instead of inventing a QR token.
+// P1-1: the listing photo gallery is served by the dedicated signed endpoint `listings/:id/media` (short-lived
+// presigned GET urls, CLEAN assets only, public listings only) — NOT embedded in the cacheable ListingCard
+// read-model (its urls expire in minutes; embedding them in a revalidate=60 card would serve dead links). We
+// fetch it alongside the listing and render a real gallery; an empty/unavailable gallery shows nothing (never a
+// placeholder image).
+// STILL FLAGGED — the ListingCard read-model carries no trace qrToken and no auctionId, so a /trace/[qrToken]
+// provenance deep-link and a place-bid-from-listing CTA remain out of scope (we link to the /help explainer).
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { formatMoneyMinor } from '@krishi-verse/i18n';
-import type { ListingCard, ReviewSummary } from '@krishi-verse/sdk-js';
+import type { ListingCard, ReviewSummary, GalleryItem } from '@krishi-verse/sdk-js';
 import { SdkError } from '@krishi-verse/sdk-js';
 import { publicClient } from '../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../lib/i18n';
 import { BuyerActions } from '../../../../components/BuyerActions';
+import { ListingGallery } from '../../../../components/ListingGallery';
 
 export const revalidate = 60;
 
 async function load(tenantSlug: string, id: string): Promise<ListingCard | null> {
   try { return await publicClient(tenantSlug).listings.get(id); }
   catch (e) { if (e instanceof SdkError && e.isNotFound) return null; throw e; }
+}
+
+/** The signed photo gallery degrades to [] — a flaky/empty media service never breaks the product page. */
+async function safeGallery(tenantSlug: string, id: string): Promise<GalleryItem[]> {
+  try { return await publicClient(tenantSlug).listings.media(id); } catch { return []; }
 }
 
 /** Public review aggregates degrade to null — a flaky/optional reviews service never breaks the product page. */
@@ -67,9 +74,10 @@ export default async function ListingDetail(
   const t = getTranslator();
   const lang = getLang();
 
-  const [listingReviews, sellerReviews] = await Promise.all([
+  const [listingReviews, sellerReviews, gallery] = await Promise.all([
     safeSummary(params.tenantSlug, { listingId: l.id }),
     safeSummary(params.tenantSlug, { targetUserId: l.sellerUserId }),
+    safeGallery(params.tenantSlug, l.id),
   ]);
 
   const status = searchParams.status;
@@ -87,6 +95,14 @@ export default async function ListingDetail(
       )}
 
       <h1>{l.title}</h1>
+
+      <ListingGallery
+        items={gallery}
+        title={l.title}
+        heading={t.t('listing.galleryTitle')}
+        alt={(index, total) => t.t('listing.photoAlt', { title: l.title, index: String(index), total: String(total) })}
+      />
+
       <p className="kv-card__price kv-detail__price">
         {formatMoneyMinor(l.priceMinor, l.currencyCode, lang)} <span className="kv-card__unit">/ {l.unitCode}</span>
       </p>

@@ -148,6 +148,8 @@ export const hi: Messages = {
   'listing.statusOfferSent': 'आपका ऑफ़र विक्रेता को भेज दिया गया है।',
   'listing.statusError': 'कुछ ठीक नहीं लगा। कृपया अपनी प्रविष्टि जाँचें और फिर प्रयास करें।',
   'listing.viewCart': 'कार्ट देखें',
+  'listing.galleryTitle': 'तस्वीरें',
+  'listing.photoAlt': '{title} — तस्वीर {index}/{total}',
   'listing.sellerTitle': 'विक्रेता',
   'listing.sellerRating': '5 में से {avg} ({count} रेटिंग)',
   'listing.sellerNoRatings': 'अभी कोई विक्रेता रेटिंग नहीं।',

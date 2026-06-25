@@ -124,6 +124,12 @@ a { color: inherit; text-decoration: none; }
 .kv-detail__section { margin-top: 24px; padding-top: var(--kv-space); border-top: 1px solid var(--kv-neutral-100); }
 .kv-detail__section h2 { font-size: 18px; margin: 0 0 8px; }
 .kv-detail__muted { color: var(--kv-neutral-600); }
+.kv-gallery { border-top: 0; padding-top: 0; margin-top: 12px; }
+.kv-gallery__grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+.kv-gallery__item { margin: 0; }
+.kv-gallery__item:first-child { grid-column: 1 / -1; }
+.kv-gallery__img { width: 100%; height: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--kv-radius); background: var(--kv-neutral-100); display: block; }
+.kv-gallery__item:first-child .kv-gallery__img { aspect-ratio: 16 / 9; }
 .kv-link { color: var(--kv-brand-700); font-weight: 600; }
 .kv-link:hover { text-decoration: underline; }
 .kv-rating { display: flex; gap: 8px; align-items: center; margin: 0; }

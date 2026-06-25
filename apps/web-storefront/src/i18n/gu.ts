@@ -147,6 +147,8 @@ export const gu: Messages = {
   'listing.statusOfferSent': 'તમારી ઓફર વેચનારને મોકલાઈ ગઈ છે.',
   'listing.statusError': 'કંઈક બરાબર ન લાગ્યું. કૃપા કરી તમારી એન્ટ્રી તપાસો અને ફરી પ્રયાસ કરો.',
   'listing.viewCart': 'કાર્ટ જુઓ',
+  'listing.galleryTitle': 'ફોટા',
+  'listing.photoAlt': '{title} — ફોટો {index}/{total}',
   'listing.sellerTitle': 'વેચનાર',
   'listing.sellerRating': '5 માંથી {avg} ({count} રેટિંગ)',
   'listing.sellerNoRatings': 'હજુ કોઈ વેચનાર રેટિંગ નથી.',

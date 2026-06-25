@@ -55,20 +55,27 @@ is unblocked once the SDK adds e.g. `catalogue.categories()` / `geo.regions()`.
 
 ## Listing detail
 
-`/[tenantSlug]/listings/[id]` (SSR + ISR, `notFound()` on miss) is enriched with a price/quantity block, the
-localized sale type, a **seller trust card** and **listing reviews summary** (both via the public
-`reviews.summary` aggregate — they degrade silently if unavailable), buyer CTAs, a farm-to-fork note, and rich
-**OpenGraph / Twitter / canonical** metadata. `BuyerActions` picks the CTA by sale type: purchasable listings
-get an **add-to-cart** form (`cart.addItem`) and offer-capable listings a **make-an-offer** form (`offers.make`,
-Idempotency-Keyed). Both are authed Server Actions — `requireSession` redirects anonymous users to login with a
-return path, the mutation runs through `serverClient(tenantSlug)`, qty/price are validated server-side, and the
-page shows a localized `?status=` notice (works without client JS).
+`/[tenantSlug]/listings/[id]` (SSR + ISR, `notFound()` on miss) is enriched with a **real photo gallery**, a
+price/quantity block, the localized sale type, a **seller trust card** and **listing reviews summary** (both via
+the public `reviews.summary` aggregate — they degrade silently if unavailable), buyer CTAs, a farm-to-fork note,
+and rich **OpenGraph / Twitter / canonical** metadata. `BuyerActions` picks the CTA by sale type: purchasable
+listings get an **add-to-cart** form (`cart.addItem`) and offer-capable listings a **make-an-offer** form
+(`offers.make`, Idempotency-Keyed). Both are authed Server Actions — `requireSession` redirects anonymous users
+to login with a return path, the mutation runs through `serverClient(tenantSlug)`, qty/price are validated
+server-side, and the page shows a localized `?status=` notice (works without client JS).
 
-**Not built (read-model has no field — flagged, not faked):** the `ListingCard` read-model carries no media ids,
-no trace `qrToken`, and no `auctionId`, so a **media gallery**, a direct **`/trace/[qrToken]` provenance
-deep-link** (we link to the `/help` traceability explainer instead), and a **place-bid-from-listing** CTA can't
-be built without inventing data. These unblock once the SDK listing read-model exposes media / trace-token /
-auction-link fields. Auction and service listings show a localized "opens in the app" note instead of a button.
+**Media gallery (P1-1):** the page fetches `listings.media(id)` (anonymous public read of the dedicated signed
+`GET listings/:id/media` endpoint — short-lived presigned GET urls, `clean`-scanned assets only, public listings
+only) via `safeGallery`, which degrades to `[]` on any failure so a flaky media service never breaks the page.
+The pure, unit-tested `orderedGallery`/`hasGallery` helpers dedupe by `mediaId`, sort by `sortOrder`, and drop
+url-less rows; `<ListingGallery>` renders nothing when there are no real images (never a placeholder). The
+gallery is intentionally **not** embedded in the cacheable `ListingCard` read-model — its urls expire in minutes
+and `ListingCard` is `revalidate=60`, so embedding them would serve dead links.
+
+**Still not built (read-model has no field — flagged, not faked):** the `ListingCard` read-model carries no trace
+`qrToken` and no `auctionId`, so a direct **`/trace/[qrToken]` provenance deep-link** (we link to the `/help`
+traceability explainer instead) and a **place-bid-from-listing** CTA can't be built without inventing data
+(tracked as **P1-2**). Auction and service listings show a localized "opens in the app" note instead of a button.
 
 ## Cart
 

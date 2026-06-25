@@ -149,6 +149,8 @@ export const en: Messages = {
   'listing.statusOfferSent': 'Your offer has been sent to the seller.',
   'listing.statusError': 'Something didn’t look right. Please check your entry and try again.',
   'listing.viewCart': 'View cart',
+  'listing.galleryTitle': 'Photos',
+  'listing.photoAlt': '{title} — photo {index} of {total}',
   'listing.sellerTitle': 'Seller',
   'listing.sellerRating': '{avg} out of 5 ({count} ratings)',
   'listing.sellerNoRatings': 'No seller ratings yet.',
