@@ -1,0 +1,22 @@
+# Root .dockerignore — keeps build context small + prevents shipping secrets/junk into images.
+# Build context for ALL service images is the repo root (docker build -f infra/docker/<x>.Dockerfile .).
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+**/coverage
+**/.git
+.git
+**/.env
+**/.env.*
+!**/.env.example
+**/*.log
+**/.DS_Store
+**/__tests__
+**/*.spec.ts
+**/*.test.ts
+infra/terraform/**/.terraform
+**/*.tfstate*
+docs
+**/*.md
+apps/mobile

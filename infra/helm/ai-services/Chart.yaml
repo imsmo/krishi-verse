@@ -1,1 +1,10 @@
-# infra/helm/ai-services/Chart.yaml · helm: ai-services (GPU node pool optional) · [P2]
+apiVersion: v2
+name: ai-services
+description: Krishi-Verse AI inference (FastAPI)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+dependencies:
+  - name: krishiverse-common
+    version: 0.1.0
+    repository: "file://../krishiverse-common"

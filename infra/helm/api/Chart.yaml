@@ -1,1 +1,10 @@
-# infra/helm/api/Chart.yaml · helm: api · [P1]
+apiVersion: v2
+name: api
+description: Krishi-Verse tenant REST API
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+dependencies:
+  - name: krishiverse-common
+    version: 0.1.0
+    repository: "file://../krishiverse-common"

@@ -1,1 +1,94 @@
-# infra/helm/worker/values.yaml · helm: worker · [P1]
+# infra/helm/worker/values.yaml · background worker (no inbound port; exec liveness; fixed replicas; kv_relay).
+# COMPLETE value set (library-chart defaults do NOT propagate to a parent, so all keys live here).
+nameOverride: ''
+fullnameOverride: ''
+image:
+  repository: REPLACE_ECR/krishiverse-worker
+  tag: latest
+  pullPolicy: IfNotPresent
+replicaCount: 2
+revisionHistoryLimit: 5
+service:
+  enabled: false
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+  grpc: false
+  sessionAffinity: ''
+serviceAccount:
+  create: true
+  name: ''
+  roleArn: REPLACE_IRSA_WORKER_ROLE_ARN
+env:
+- name: NODE_ENV
+  value: production
+- name: LOG_LEVEL
+  value: info
+envFromSecretNames:
+- krishiverse-worker-env
+secretEnv: []
+command: []
+args: []
+livenessProbe:
+  type: exec
+  path: /healthz
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+  command:
+  - sh
+  - -c
+  - pgrep -f dist/main.js >/dev/null
+readinessProbe:
+  type: none
+  path: /healthz
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 2
+  targetCPUUtilizationPercentage: 80
+pdb:
+  enabled: true
+  minAvailable: 1
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+    - ALL
+nodeSelector: {}
+tolerations: []
+affinity: {}
+topologySpreadConstraints:
+- maxSkew: 1
+  topologyKey: topology.kubernetes.io/zone
+  whenUnsatisfiable: ScheduleAnyway
+  labelSelector: {}
+extraVolumes: []
+extraVolumeMounts: []
+ingress:
+  enabled: false
+  className: alb
+  groupName: krishiverse-edge
+  certArn: REPLACE_ACM_CERT_ARN
+  wafArn: REPLACE_WAF_ACL_ARN
+  healthcheckPath: /healthz
+  hosts: []
+  annotations: {}

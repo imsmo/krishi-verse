@@ -1,0 +1,94 @@
+# Library-chart default values. Service charts override these. Documented contract — see templates/_helpers.tpl.
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: ""        # e.g. 123.dkr.ecr.ap-south-1.amazonaws.com/krishiverse-api
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+revisionHistoryLimit: 5
+
+# container port + Service. service.enabled=false for workers (no inbound port).
+service:
+  enabled: true
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+  grpc: false           # true -> name port "grpc", h2c
+  sessionAffinity: ""   # "ClientIP" for sticky (realtime-gateway)
+
+serviceAccount:
+  create: true
+  name: ""
+  roleArn: ""           # IRSA: eks.amazonaws.com/role-arn annotation
+
+# plain env vars
+env: []                 # [{name: PORT, value: "3000"}]
+# whole-secret envFrom (Secrets Manager synced via External Secrets / CSI to a k8s Secret)
+envFromSecretNames: []  # ["krishiverse-api-env"]
+# individual keys from a k8s secret
+secretEnv: []           # [{name: JWT_ACCESS_SECRET, secretName: krishiverse-jwt, secretKey: access}]
+
+command: []
+args: []
+
+# probes (HTTP by default). Set type: tcp for gRPC, or exec for workers.
+livenessProbe:
+  type: http            # http | tcp | exec | none
+  path: /healthz
+  initialDelaySeconds: 20
+  periodSeconds: 15
+  timeoutSeconds: 3
+  failureThreshold: 3
+readinessProbe:
+  type: http
+  path: /healthz
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi        # no CPU limit (avoid throttling); memory limit prevents noisy-neighbour OOM
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+
+pdb:
+  enabled: true
+  minAvailable: 1
+
+# hardened pod/container security context (non-root, read-only fs, drop caps)
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+# spread replicas across AZs/nodes by default
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector: {}   # filled by template with selector labels
+
+extraVolumes: []
+extraVolumeMounts: []

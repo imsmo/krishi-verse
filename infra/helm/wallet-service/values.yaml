@@ -1,1 +1,94 @@
-# infra/helm/wallet-service/values.yaml · helm: wallet-service · [P1]
+# infra/helm/wallet-service/values.yaml · wallet-service gRPC (kv_wallet only). tcp probe.
+# COMPLETE value set (library-chart defaults do NOT propagate to a parent, so all keys live here).
+nameOverride: ''
+fullnameOverride: ''
+image:
+  repository: REPLACE_ECR/krishiverse-wallet-service
+  tag: latest
+  pullPolicy: IfNotPresent
+replicaCount: 2
+revisionHistoryLimit: 5
+service:
+  enabled: true
+  type: ClusterIP
+  port: 50051
+  targetPort: 50051
+  grpc: true
+  sessionAffinity: ''
+serviceAccount:
+  create: true
+  name: ''
+  roleArn: REPLACE_IRSA_WALLET_ROLE_ARN
+env:
+- name: NODE_ENV
+  value: production
+- name: GRPC_PORT
+  value: '50051'
+- name: HOT_ACCOUNT_STRIPES
+  value: '16'
+- name: LOG_LEVEL
+  value: info
+envFromSecretNames:
+- krishiverse-wallet-env
+secretEnv: []
+command: []
+args: []
+livenessProbe:
+  type: tcp
+  path: ''
+  initialDelaySeconds: 20
+  periodSeconds: 15
+  timeoutSeconds: 3
+  failureThreshold: 3
+readinessProbe:
+  type: tcp
+  path: ''
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 65
+pdb:
+  enabled: true
+  minAvailable: 1
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+    - ALL
+nodeSelector: {}
+tolerations: []
+affinity: {}
+topologySpreadConstraints:
+- maxSkew: 1
+  topologyKey: topology.kubernetes.io/zone
+  whenUnsatisfiable: ScheduleAnyway
+  labelSelector: {}
+extraVolumes: []
+extraVolumeMounts: []
+ingress:
+  enabled: false
+  className: alb
+  groupName: krishiverse-edge
+  certArn: REPLACE_ACM_CERT_ARN
+  wafArn: REPLACE_WAF_ACL_ARN
+  healthcheckPath: /healthz
+  hosts: []
+  annotations: {}

@@ -1,1 +1,92 @@
-# infra/helm/ai-services/values.yaml · helm: ai-services (GPU node pool optional) · [P2]
+# infra/helm/ai-services/values.yaml · FastAPI inference. Degrades to needs_review without model keys.
+# COMPLETE value set (library-chart defaults do NOT propagate to a parent, so all keys live here).
+nameOverride: ''
+fullnameOverride: ''
+image:
+  repository: REPLACE_ECR/krishiverse-ai-services
+  tag: latest
+  pullPolicy: IfNotPresent
+replicaCount: 2
+revisionHistoryLimit: 5
+service:
+  enabled: true
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+  grpc: false
+  sessionAffinity: ''
+serviceAccount:
+  create: true
+  name: ''
+  roleArn: REPLACE_IRSA_AI_ROLE_ARN
+env:
+- name: APP_ENV
+  value: production
+- name: AI_HTTP_TIMEOUT_MS
+  value: '8000'
+- name: AI_REQUEST_MAX_BYTES
+  value: '262144'
+envFromSecretNames:
+- krishiverse-ai-env
+secretEnv: []
+command: []
+args: []
+livenessProbe:
+  type: http
+  path: /healthz
+  initialDelaySeconds: 25
+  periodSeconds: 15
+  timeoutSeconds: 3
+  failureThreshold: 3
+readinessProbe:
+  type: http
+  path: /healthz
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    memory: 1Gi
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 75
+pdb:
+  enabled: true
+  minAvailable: 1
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+    - ALL
+nodeSelector: {}
+tolerations: []
+affinity: {}
+topologySpreadConstraints:
+- maxSkew: 1
+  topologyKey: topology.kubernetes.io/zone
+  whenUnsatisfiable: ScheduleAnyway
+  labelSelector: {}
+extraVolumes: []
+extraVolumeMounts: []
+ingress:
+  enabled: false
+  className: alb
+  groupName: krishiverse-edge
+  certArn: REPLACE_ACM_CERT_ARN
+  wafArn: REPLACE_WAF_ACL_ARN
+  healthcheckPath: /healthz
+  hosts: []
+  annotations: {}
