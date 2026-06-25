@@ -21,6 +21,14 @@ export class ChargePricingService {
     return computeCharge(def.calcMethod, def.config, base);
   }
 
+  /** Quote a SPECIFIC charge definition by id (e.g. a delivery zone's charge_definition_id). Returns 0n when
+   *  the definition is missing/expired/inactive (a zone with no fee is free, not an error). */
+  async quoteByDefinitionId(tx: TxContext, tenantId: string, definitionId: string, base: { amountMinor: bigint; qty?: number }, onDate?: string): Promise<bigint> {
+    const def = await this.defs.resolveById(tx, tenantId, definitionId, onDate);
+    if (!def) return 0n;
+    return computeCharge(def.calcMethod, def.config, base);
+  }
+
   /** The two buyer-side charges applied at checkout, computed on the order subtotal. */
   async checkoutCharges(tx: TxContext, tenantId: string, subtotalMinor: bigint): Promise<CheckoutCharges> {
     const [deliveryFeeMinor, platformFeeMinor] = await Promise.all([

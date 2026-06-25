@@ -28,6 +28,7 @@ import { CartItemRepository } from './repositories/cart-item.repository';
 import { CheckoutGroupRepository } from './repositories/checkout-group.repository';
 import { OrderRepository } from './repositories/order.repository';
 import { OrderItemRepository } from './repositories/order-item.repository';
+import { DeliveryZoneRepository } from '../logistics/repositories/delivery-zone.repository'; // read-only serviceability for delivery-methods lookup (stateless, READ_REPLICA only — provided here to avoid a module cycle)
 import { SellerConfirmTimeoutJob } from './jobs/seller-confirm-timeout.job';
 import { AutoCompleteQualityWindowJob } from './jobs/auto-complete-quality-window.job';
 import { AbandonedCartsJob } from './jobs/abandoned-carts.job';
@@ -44,7 +45,7 @@ import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handl
   providers: [
     CartService, CartItemService, CheckoutService, CheckoutGroupService, OrderService, OrderPaymentService, OrderItemService,
     OrderTimelineReadModel, TenantOrderStatsReadModel, OrdersPublisher,
-    CartRepository, CartItemRepository, CheckoutGroupRepository, OrderRepository, OrderItemRepository,
+    CartRepository, CartItemRepository, CheckoutGroupRepository, OrderRepository, OrderItemRepository, DeliveryZoneRepository,
     SellerConfirmTimeoutJob, AutoCompleteQualityWindowJob, AbandonedCartsJob,
     PaymentSucceededHandler, OfferAcceptedHandler, QuoteAcceptedHandler, ShipmentDeliveredHandler, DisputeOpenedHandler, DisputeResolvedHandler,
   ],

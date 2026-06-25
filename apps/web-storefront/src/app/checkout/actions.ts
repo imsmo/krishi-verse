@@ -20,13 +20,15 @@ export async function placeOrderAction(formData: FormData): Promise<void> {
   if (!idempotencyKey) redirect('/checkout?status=err');
 
   const addrRaw = String(formData.get('deliveryAddressId') ?? '');
+  const methodRaw = String(formData.get('deliveryMethodId') ?? '');
   const couponRaw = String(formData.get('couponCode') ?? '').trim();
   const deliveryAddressId = isUuidish(addrRaw) ? addrRaw : undefined;
+  const deliveryMethodId = isUuidish(methodRaw) ? methodRaw : undefined; // buyer's chosen serviceable method
   const couponCode = couponRaw ? couponRaw.slice(0, 40) : undefined;
 
   let primaryOrderId: string | null = null;
   try {
-    const result = await serverClient().checkout.checkout({ deliveryAddressId, couponCode }, idempotencyKey);
+    const result = await serverClient().checkout.checkout({ deliveryAddressId, deliveryMethodId, couponCode }, idempotencyKey);
     primaryOrderId = result.orders[0]?.id ?? null;
   } catch {
     // Invalid coupon / empty cart / stock race / transient — never auto-retry a money mutation; send the buyer

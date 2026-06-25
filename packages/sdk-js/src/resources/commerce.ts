@@ -4,7 +4,7 @@
 // (Law 3) so a retried "place order" can't double-create. Money is bigint minor-unit strings (Law 2); the final
 // charges/discount/tax are computed SERVER-SIDE and read back on the order.
 import { HttpClient } from '../http';
-import { Cart, CheckoutResult, CheckoutPreview } from '../types';
+import { Cart, CheckoutResult, CheckoutPreview, DeliveryMethodsResult } from '../types';
 
 export class CartResource {
   constructor(private readonly http: HttpClient) {}
@@ -27,6 +27,15 @@ export class CheckoutResource {
    *  coupon (DRY-RUN) for the active cart. No order is created and no money moves — show the bill first. */
   async preview(input: { couponCode?: string } = {}): Promise<CheckoutPreview> {
     return (await this.http.request<CheckoutPreview>('POST', 'checkout/preview', { body: input })).data;
+  }
+  /** Read-only delivery-methods lookup for the active cart + destination (Indian pincode and/or region id).
+   *  Returns the serviceable delivery options + their server-computed fee. No order, no money moved; placement
+   *  always recomputes server-side. At least one of pincode/regionId must be provided. */
+  async deliveryMethods(input: { pincode?: string; regionId?: string }, signal?: AbortSignal): Promise<DeliveryMethodsResult> {
+    const qs = new URLSearchParams();
+    if (input.pincode) qs.set('pincode', input.pincode);
+    if (input.regionId) qs.set('regionId', input.regionId);
+    return (await this.http.request<DeliveryMethodsResult>('GET', `checkout/delivery-methods?${qs.toString()}`, { signal })).data;
   }
   /** Convert the active cart into orders. Idempotency-keyed (Law 3). `couponCode` is validated + redeemed
    * SERVER-SIDE against the primary order (the client never computes the discount). */

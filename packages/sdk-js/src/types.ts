@@ -145,6 +145,11 @@ export interface CheckoutPreview {
   subtotalMinor: string; deliveryFeeMinor: string; platformFeeMinor: string; discountMinor: string; grandTotalMinor: string;
   couponCode: string | null;
 }
+/** One serviceable delivery option for the destination, with its server-computed fee (minor-unit string). */
+export interface DeliveryMethod { id: string; name: string; feeMinor: string; }
+/** Read-only delivery-methods lookup for the active cart + destination (no order, no money moved). When empty,
+ *  no zone serves the destination — the storefront falls back to the preview's generic delivery fee. */
+export interface DeliveryMethodsResult { currencyCode: string; subtotalMinor: string; methods: DeliveryMethod[]; }
 /** Result of paying an order from the buyer's wallet (the order confirms shortly after, async). */
 export interface WalletPaymentResult { orderId: string; paymentId: string; status: string; amountMinor: string; currencyCode: string; }
 

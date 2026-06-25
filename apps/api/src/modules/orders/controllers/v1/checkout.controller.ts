@@ -1,13 +1,13 @@
 // modules/orders/controllers/v1/checkout.controller.ts · convert the active cart into orders.
-import { Controller, Headers, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
-import { ZodBody } from '../../../../core/http/zod.pipe';
+import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { CheckoutService } from '../../services/checkout.service';
-import { CheckoutSchema, CheckoutDto, CheckoutPreviewSchema, CheckoutPreviewDto } from '../../dto/create-order.dto';
+import { CheckoutSchema, CheckoutDto, CheckoutPreviewSchema, CheckoutPreviewDto, DeliveryMethodsQuerySchema, DeliveryMethodsQueryDto } from '../../dto/create-order.dto';
 import { OrderPermissions } from '../../policies/orders.policies';
 
 @Controller({ path: 'checkout', version: '1' })
@@ -19,6 +19,13 @@ export class CheckoutController {
   @Post('preview') @RequirePermissions(OrderPermissions.Create)
   preview(@CurrentContext() ctx: RequestContext, @ZodBody(CheckoutPreviewSchema) dto: CheckoutPreviewDto) {
     return this.checkout.previewTotals(ctx.tenantId, ctx.userId, dto).then((data) => ({ data }));
+  }
+
+  // Read-only delivery-methods lookup for the active cart + destination (no order, no money moved). Lets the
+  // buyer see their serviceable delivery options + fees before paying; placement always recomputes server-side.
+  @Get('delivery-methods') @RequirePermissions(OrderPermissions.Create)
+  deliveryMethods(@CurrentContext() ctx: RequestContext, @ZodQuery(DeliveryMethodsQuerySchema) q: DeliveryMethodsQueryDto) {
+    return this.checkout.deliveryMethods(ctx.tenantId, ctx.userId, q).then((data) => ({ data }));
   }
   // Idempotency is owned by CheckoutService (it wraps the whole cart→orders tx under this key).
   // The controller MUST NOT also wrap it — a second remember() with the same scoped key would see

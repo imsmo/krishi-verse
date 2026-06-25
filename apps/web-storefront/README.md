@@ -94,9 +94,10 @@ The checkout CTA points to `/checkout` (built in SF-W3-02; degrades to the local
 
 ## Checkout & payment
 
-`/checkout` (protected, dynamic) reviews the cart, lets the buyer pick a saved address and enter an optional
-coupon, then `placeOrderAction` calls `checkout.checkout` under a **stable per-render Idempotency-Key** (hidden
-field) so a refresh/double-submit can't double-create orders. It redirects to `/checkout/pay`, where `PayButton`
+`/checkout` (protected, dynamic) reviews the cart, lets the buyer pick a saved address, apply a coupon, and choose
+a delivery option, then `placeOrderAction` calls `checkout.checkout` (with `deliveryMethodId` + `couponCode`)
+under a **stable per-render Idempotency-Key** (hidden field) so a refresh/double-submit can't double-create
+orders. It redirects to `/checkout/pay`, where `PayButton`
 (the only client component in the money path) runs the real Razorpay flow: a server action creates the payment
 intent from the order's **authoritative** total (`payments.createIntent`, purpose `direct_order`, referencing the
 order) under a **stable `order-pay:<orderId>` key** so re-clicks reuse the same gateway order — never a
@@ -107,10 +108,14 @@ subtotal/delivery/discount/tax/total breakdown and line items. Money is minor-un
 `formatMoneyMinor`. **Fail-closed:** no publishable key → "online payments unavailable"; a failed or cancelled
 payment offers retry (never auto-retried); a pending capture shows "we'll confirm shortly".
 
-**Not available in the SDK (flagged):** there is no coupon **discount-preview** endpoint and no **delivery-methods**
-lookup, so the discount/charges/tax are computed at order placement and shown on the confirmation (the checkout
-page states this), and `deliveryMethodId` is omitted. Multi-seller checkout creates one order per seller; the pay
-step settles the primary order and confirmation links to "my orders" (SF-W3-03) for any others.
+**Pre-placement bill + delivery options (P1-3):** the page shows a **server-authoritative bill** from
+`checkout.preview({couponCode})` (a DRY-RUN: subtotal · delivery · platform fee · coupon discount · grand total —
+no order, no money moved). Applying a coupon submits a `?coupon=` GET that re-previews server-side (no client JS),
+surfacing the server's reason if the code doesn't apply. Serviceable **delivery options** for the address's
+pincode come from `checkout.deliveryMethods({pincode})` and render as radios (cheapest pre-selected via the pure
+`pickDefaultMethod`), carried to placement as `deliveryMethodId`. **Placement always recomputes + redeems the
+coupon server-side** — the client never sets a total (Law 2/3). Multi-seller checkout creates one order per seller;
+the pay step settles the primary order and confirmation links to "my orders" (SF-W3-03) for any others.
 
 ## Orders
 

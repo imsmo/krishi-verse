@@ -16,6 +16,7 @@ import { ListingService } from '../../listings/services/listing.service';
 import { ChargePricingService } from '../../payments/services/charge-pricing.service';
 import { CouponService } from '../../promotions/services/coupon.service';
 import { UserMembershipService } from '../../memberships/services/user-membership.service';
+import { DeliveryZoneRepository } from '../../logistics/repositories/delivery-zone.repository';
 import { CartRepository } from '../repositories/cart.repository';
 import { OrderRepository } from '../repositories/order.repository';
 import { CheckoutGroupRepository } from '../repositories/checkout-group.repository';
@@ -46,7 +47,43 @@ export class CheckoutService {
     private readonly charges: ChargePricingService,
     private readonly coupons: CouponService,
     private readonly memberships: UserMembershipService,
+    private readonly zones: DeliveryZoneRepository,
   ) {}
+
+  /** READ-ONLY delivery-methods lookup for the active cart + a destination (pincode and/or regionId). Returns
+   *  the serviceable delivery zones with their REAL per-zone fee (resolved from each zone's charge_definition
+   *  against the live cart subtotal, so slab fees are accurate). No order, no money moved. When no zone serves
+   *  the destination the list is empty — the storefront falls back to the preview's generic delivery fee
+   *  (placement always recomputes server-side). Never fabricates a method or a fee. */
+  async deliveryMethods(tenantId: string, buyerUserId: string, q: { pincode?: string; regionId?: string }) {
+    const cartId = await this.carts.activeId(tenantId, buyerUserId);
+    if (!cartId) throw new CartNotFoundError();
+    const cartItems = await this.carts.items(tenantId, cartId);
+    if (cartItems.length === 0) throw new CartEmptyError();
+
+    // server-truth subtotal (price snapshot exactly as checkout would), so slab delivery fees are accurate.
+    let subtotalMinor = 0n;
+    for (const ci of cartItems) {
+      const l: any = await this.listings.getById(tenantId, ci.listing_id);
+      if (!l || l.status !== 'published') throw new ListingNotPurchasableError(ci.listing_id);
+      subtotalMinor += BigInt(l.priceMinor) * BigInt(Number(ci.quantity));
+    }
+
+    const serviceable = await this.zones.listServiceable(tenantId, { pincode: q.pincode, regionId: q.regionId, limit: 25 });
+    const methods = await this.uow.run(tenantId, async (tx) => {
+      const out: Array<{ id: string; name: string; feeMinor: string }> = [];
+      for (const z of serviceable) {
+        const p = z.toProps();
+        const feeMinor = p.chargeDefinitionId
+          ? await this.charges.quoteByDefinitionId(tx, tenantId, p.chargeDefinitionId, { amountMinor: subtotalMinor })
+          : 0n;
+        out.push({ id: p.id, name: p.defaultName, feeMinor: feeMinor.toString() });
+      }
+      return out;
+    }, { userId: buyerUserId });
+
+    return { currencyCode: 'INR', subtotalMinor: subtotalMinor.toString(), methods };
+  }
 
   async checkout(tenantId: string, buyerUserId: string, idemKey: string, dto: CheckoutDto) {
     return this.idem.remember(idemKey, buyerUserId, 'orders.checkout', () =>

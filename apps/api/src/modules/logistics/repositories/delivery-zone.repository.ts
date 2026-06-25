@@ -52,6 +52,24 @@ export class DeliveryZoneRepository {
     } catch (e: any) { if (e?.code === '23503') throw new UnknownZoneRouteReferenceError('charge_definition'); throw e; }
   }
 
+  /** Buyer-facing serviceability read: active zones whose pincodes contain the destination pin OR whose
+   *  region_ids contain the destination region. Tenant-scoped + RLS; capped. Used by the checkout
+   *  delivery-methods lookup so a buyer sees their delivery options before paying. */
+  async listServiceable(tenantId: string, q: { pincode?: string; regionId?: string; limit: number }): Promise<DeliveryZone[]> {
+    const params: unknown[] = [tenantId];
+    const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
+    const ors: string[] = [];
+    if (q.pincode) ors.push(`pincodes @> ${p(JSON.stringify([q.pincode]))}::jsonb`);
+    if (q.regionId) ors.push(`region_ids @> ${p(JSON.stringify([q.regionId]))}::jsonb`);
+    if (ors.length === 0) return []; // no destination → nothing to resolve (never list every zone)
+    const lp = p(q.limit);
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT ${COLS} FROM delivery_zones
+        WHERE tenant_id=$1 AND is_active = true AND (${ors.join(' OR ')})
+        ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
+    return r.rows.map(toDomain);
+  }
+
   async list(tenantId: string, q: ZoneListQuery): Promise<DeliveryZone[]> {
     const params: unknown[] = [tenantId];
     const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
