@@ -113,3 +113,36 @@ resource "aws_iam_role_policy_attachment" "media_rw" {
   role       = aws_iam_role.app[each.value].name
   policy_arn = aws_iam_policy.media_rw.arn
 }
+
+# ---- External Secrets Operator controller role (syncs Secrets Manager -> k8s Secrets) ----
+data "aws_iam_policy_document" "eso_trust" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    principals {
+      type        = "Federated"
+      identifiers = [var.oidc_provider_arn]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_host}:sub"
+      values   = ["system:serviceaccount:${var.eso_namespace}:${var.eso_service_account}"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_host}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "eso" {
+  name               = "${var.name}-irsa-external-secrets"
+  assume_role_policy = data.aws_iam_policy_document.eso_trust.json
+  tags               = local.tags
+}
+
+resource "aws_iam_role_policy_attachment" "eso_secrets_read" {
+  role       = aws_iam_role.eso.name
+  policy_arn = aws_iam_policy.secrets_read.arn
+}

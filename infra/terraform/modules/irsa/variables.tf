@@ -53,3 +53,13 @@ variable "tags" {
   type    = map(string)
   default = {}
 }
+
+# The External Secrets Operator controller SA (reads ALL krishiverse-prod/* secrets to sync into k8s).
+variable "eso_namespace" {
+  type    = string
+  default = "external-secrets"
+}
+variable "eso_service_account" {
+  type    = string
+  default = "external-secrets"
+}

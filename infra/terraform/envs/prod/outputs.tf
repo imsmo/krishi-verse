@@ -72,3 +72,8 @@ output "app_hostnames" {
     realtime   = "rt.${var.root_domain}"
   }
 }
+
+output "external_secrets_role_arn" {
+  description = "Annotate the ESO controller SA (external-secrets/external-secrets) with this IRSA role."
+  value       = module.irsa.external_secrets_role_arn
+}

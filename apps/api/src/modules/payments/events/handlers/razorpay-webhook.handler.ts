@@ -24,6 +24,7 @@ import { PayoutRepository } from '../../repositories/payout.repository';
 import { PaymentsPublisher } from '../payments.publisher';
 import { PayoutWebhookSignatureError } from '../../domain/payments.errors';
 import { BadRequestError } from '../../../../shared/errors/app-error';
+import { AppConfig } from '../../../../core/config/app-config';
 
 type PayoutOutcome = 'processed' | 'failed' | 'reversed';
 interface ParsedPayoutEvent { eventId: string; outcome: PayoutOutcome; gatewayPayoutId: string; tenantId: string; failureCode: string | null; }
@@ -38,9 +39,16 @@ export class RazorpayPayoutWebhookHandler {
     private readonly audit: AuditWriter,
     private readonly repo: PayoutRepository,
     private readonly publisher: PaymentsPublisher,
+    private readonly config: AppConfig,
   ) {}
 
-  private secret(): string { return process.env.RAZORPAYX_WEBHOOK_SECRET || process.env.SANDBOX_WEBHOOK_SECRET || 'sandbox-secret'; }
+  // Resolved via AppConfig (the only place env is read). In production this NEVER falls back to a shared
+  // literal — an unconfigured payout webhook secret throws here, so a forged callback can't be accepted.
+  private secret(): string {
+    const s = this.config.payments.payoutWebhookSecret;
+    if (!s) throw new Error('FATAL: payout webhook secret not configured (RAZORPAYX_WEBHOOK_SECRET)');
+    return s;
+  }
 
   /** Sign a body the way the gateway/sandbox would — exported shape used by tests to craft webhooks. */
   sign(rawBody: string): string { return createHmac('sha256', this.secret()).update(rawBody).digest('hex'); }

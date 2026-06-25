@@ -51,7 +51,17 @@ export const EnvSchema = z.object({
   MEDIA_SCAN_SECRET: z.string().default(''),            // HMAC secret for the AV scan-result webhook
   MEDIA_MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(52428800), // 50 MiB default cap
   RAZORPAY_KEY_ID: z.string().default(''),
+  RAZORPAY_KEY_SECRET: z.string().default(''),
   RAZORPAY_WEBHOOK_SECRET: z.string().default(''),
+  RAZORPAY_BASE_URL: z.string().optional(),
+  PAYMENTS_DEFAULT_PROVIDER: z.string().default('razorpay'),
+  // money-OUT (RazorpayX). Empty ⇒ deterministic sandbox payout gateway (non-prod only).
+  RAZORPAYX_KEY_ID: z.string().default(''),
+  RAZORPAYX_KEY_SECRET: z.string().default(''),
+  RAZORPAYX_ACCOUNT_NUMBER: z.string().default(''),
+  RAZORPAYX_BASE_URL: z.string().optional(),
+  RAZORPAYX_WEBHOOK_SECRET: z.string().default(''),
+  SANDBOX_WEBHOOK_SECRET: z.string().default(''),
   MSG91_AUTH_KEY: z.string().default(''),
   SMS_DAILY_BUDGET_PAISE: z.coerce.number().nonnegative().default(0),
   NOTIFY_GATEWAY_URL: z.string().default(''),           // external notification product base URL; absent ⇒ noop gateway

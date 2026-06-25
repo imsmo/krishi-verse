@@ -1,1 +1,41 @@
-# .github/workflows/security-scan.yml · ZAP weekly + dependency audit · [P1]
+# .github/workflows/security-scan.yml · secret scanning + dependency audit. Fails the build on a committed
+# secret or a high/critical advisory. Runs on every PR/push + weekly.
+name: security-scan
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 3 * * 1' # Mondays 03:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so gitleaks scans all commits
+      - name: gitleaks (committed-secret scan)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_CONFIG: .gitleaks.toml
+      - name: grep guard — no tracked .env (only .env.example allowed)
+        run: |
+          bad=$(git ls-files | grep -E '(^|/)\.env($|\.)' | grep -v '\.env\.example$' || true)
+          if [ -n "$bad" ]; then echo "FATAL: tracked .env files:"; echo "$bad"; exit 1; fi
+          echo "OK: no tracked .env files."
+
+  dep-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile=false
+      - name: pnpm audit (fail on high/critical)
+        run: pnpm audit --audit-level high || (echo "High/critical advisories found — triage before release." && exit 1)

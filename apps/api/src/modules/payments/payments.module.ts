@@ -1,4 +1,5 @@
 // modules/payments/payments.module.ts
+import { AppConfig } from '../../core/config/app-config';
 // Money-IN vertical: payment intents + signed gateway webhooks → wallet ledger (via WALLET_SERVICE)
 // + refunds. The gateway registry wires the deterministic sandbox (always) and Razorpay (when
 // RAZORPAY_* env is configured); the default provider is config-driven so swapping PSP is config.
@@ -80,33 +81,39 @@ import { WalletController } from './controllers/v1/wallet.controller';
     WalletLedgerReadModel,
     {
       provide: GatewayRegistry,
-      useFactory: (resilience: ResilienceService) => {
+      useFactory: (resilience: ResilienceService, config: AppConfig) => {
         const reg = new GatewayRegistry();
-        const sandboxOnly = !process.env.RAZORPAY_KEY_ID;
-        reg.register(new SandboxGateway(process.env.SANDBOX_WEBHOOK_SECRET || 'sandbox-secret'), sandboxOnly);
-        if (process.env.RAZORPAY_KEY_ID) {
+        const pay = config.payments;
+        // The deterministic sandbox gateway is ONLY registered outside production (Law: no fake money rails live).
+        // In prod, assertProductionSecurity has already guaranteed a real Razorpay gateway is configured.
+        if (pay.allowSandbox) {
+          reg.register(new SandboxGateway(pay.payoutWebhookSecret), !pay.razorpay.configured);
+        }
+        if (pay.razorpay.configured) {
           reg.register(new RazorpayGateway({
-            keyId: process.env.RAZORPAY_KEY_ID!, keySecret: process.env.RAZORPAY_KEY_SECRET || '',
-            webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '', baseUrl: process.env.RAZORPAY_BASE_URL,
-          }, resilience), (process.env.PAYMENTS_DEFAULT_PROVIDER ?? 'razorpay') === 'razorpay');
+            keyId: pay.razorpay.keyId, keySecret: pay.razorpay.keySecret,
+            webhookSecret: pay.razorpay.webhookSecret, baseUrl: pay.razorpay.baseUrl,
+          }, resilience), pay.defaultProvider === 'razorpay');
         }
         // tune the razorpay dependency policy (money calls: no auto-retry without idempotency)
         resilience.configure('razorpay', { timeoutMs: 8000, retries: 1, circuit: { failureThreshold: 5, resetMs: 15_000, halfOpenMax: 2 }, bulkhead: { maxConcurrent: 16, maxQueue: 64 } });
         return reg;
       },
-      inject: [ResilienceService],
+      inject: [ResilienceService, AppConfig],
     },
     {
-      // money-OUT gateway: RazorpayX when configured, else the deterministic sandbox.
+      // money-OUT gateway: RazorpayX when configured, else the deterministic sandbox (NON-prod only).
       provide: PAYOUT_GATEWAY,
-      useFactory: (resilience: ResilienceService) => {
-        if (process.env.RAZORPAYX_KEY_ID) {
+      useFactory: (resilience: ResilienceService, config: AppConfig) => {
+        const x = config.payments.razorpayx;
+        if (x.configured) {
           resilience.configure('razorpayx', { timeoutMs: 8000, retries: 0, circuit: { failureThreshold: 5, resetMs: 15_000, halfOpenMax: 2 }, bulkhead: { maxConcurrent: 16, maxQueue: 64 } });
-          return new RazorpayXGateway({ keyId: process.env.RAZORPAYX_KEY_ID!, keySecret: process.env.RAZORPAYX_KEY_SECRET || '', accountNumber: process.env.RAZORPAYX_ACCOUNT_NUMBER || '', baseUrl: process.env.RAZORPAYX_BASE_URL }, resilience);
+          return new RazorpayXGateway({ keyId: x.keyId, keySecret: x.keySecret, accountNumber: x.accountNumber, baseUrl: x.baseUrl }, resilience);
         }
+        if (config.payments.isProd) throw new Error('FATAL: RAZORPAYX_KEY_ID must be configured in production (no sandbox payout gateway for real money)');
         return new SandboxPayoutGateway('success');
       },
-      inject: [ResilienceService],
+      inject: [ResilienceService, AppConfig],
     },
   ],
   exports: [PaymentService, PayoutService, PayoutBatchService, ChargePricingService, WalletBalanceReadModel],

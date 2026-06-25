@@ -1,0 +1,22 @@
+# .gitleaks.toml · secret-scan config. Uses gitleaks' built-in rules + allowlists our intentional placeholders.
+title = "krishi-verse gitleaks"
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documented non-secret placeholders + example envs"
+paths = [
+  '''.*\.env\.example$''',
+  '''.*/__tests__/.*''',
+  '''docs/.*''',
+  '''infra/.*\.(md|tf|yaml)$''',
+]
+regexes = [
+  '''SET_ME_VIA_CLI''',
+  '''REPLACE_[A-Z_]+''',
+  '''change-?me''',
+  '''dev-secret[a-z0-9-]*''',
+  '''sandbox-secret''',
+  '''dev-pepper[a-z0-9-]*''',
+  '''test-access-secret[a-z0-9-]*''',
+]

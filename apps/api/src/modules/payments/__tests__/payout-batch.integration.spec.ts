@@ -79,7 +79,8 @@ run('payout batch + wage lane + async webhook (integration, real Postgres + RLS)
     batchRepo = new PayoutBatchRepository(pools);
     publisher = new PaymentsPublisher(outbox);
     batches = new PayoutBatchService(metrics, batchRepo, svc('success'), publisher);
-    webhook = new RazorpayPayoutWebhookHandler(uow, idem, metrics, wallet, audit, repo, publisher);
+    const webhookConfig = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: process.env.DATABASE_URL ?? 'postgres://localhost/test', JWT_ACCESS_SECRET: 'test-access-secret-min-16-chars', SANDBOX_WEBHOOK_SECRET: 'sandbox-secret' });
+    webhook = new RazorpayPayoutWebhookHandler(uow, idem, metrics, wallet, audit, repo, publisher, webhookConfig);
 
     inspect = new Pool({ connectionString: APP_URL });
     isSuperuser = (await inspect.query(`SELECT rolsuper FROM pg_roles WHERE rolname=current_user`)).rows[0]?.rolsuper === true;
