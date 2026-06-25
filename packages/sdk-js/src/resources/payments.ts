@@ -3,7 +3,7 @@
 // the client only polls status. Both money-moving POSTs require an Idempotency-Key (Law 3). Money is bigint
 // minor-unit strings (Law 2). Gated server-side by the `online_payments` flag.
 import { HttpClient } from '../http';
-import { PaymentIntent, PaymentSummary, PayoutSummary, WalletBalance, WalletLedgerEntry, Page } from '../types';
+import { PaymentIntent, PaymentSummary, PayoutSummary, WalletBalance, WalletLedgerEntry, WalletInsights, AutopayMandate, Page } from '../types';
 
 export class PaymentsResource {
   constructor(private readonly http: HttpClient) {}
@@ -50,5 +50,36 @@ export class WalletResource {
   async ledger(cursor?: string, limit = 20, currency = 'INR', signal?: AbortSignal): Promise<Page<WalletLedgerEntry>> {
     const r = await this.http.request<WalletLedgerEntry[]>('GET', 'wallet/ledger', { query: { cursor, limit, currency }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  /** The caller's OWN earnings (credits) aggregated by month + txn type over a bounded window (defaults ~12mo). */
+  async earnings(opts: { from?: string; to?: string; currency?: string } = {}, signal?: AbortSignal): Promise<WalletInsights> {
+    return (await this.http.request<WalletInsights>('GET', 'wallet/earnings', { query: { from: opts.from, to: opts.to, currency: opts.currency ?? 'INR' }, signal })).data;
+  }
+  /** The caller's OWN spending (debits, positive magnitudes) aggregated by month + txn type over a bounded window. */
+  async spendingInsights(opts: { from?: string; to?: string; currency?: string } = {}, signal?: AbortSignal): Promise<WalletInsights> {
+    return (await this.http.request<WalletInsights>('GET', 'wallet/spending-insights', { query: { from: opts.from, to: opts.to, currency: opts.currency ?? 'INR' }, signal })).data;
+  }
+}
+
+// UPI AutoPay mandates (standing instructions). Always the AUTHENTICATED caller's OWN mandates (no userId param,
+// zero IDOR). Registering needs an Idempotency-Key (Law 3). NO money moves on these calls — the raw VPA is masked
+// server-side. Gated server-side by the `online_payments` flag.
+export class AutopayResource {
+  constructor(private readonly http: HttpClient) {}
+  /** Register a pending UPI autopay mandate (one live mandate per purpose). vpa is "handle@psp"; never logged. */
+  async register(input: { vpa: string; purpose: 'membership' | 'loan_emi' | 'general'; maxAmountMinor: string; currencyCode?: string; frequency?: 'as_presented' | 'daily' | 'weekly' | 'monthly'; validUntil?: string }, idempotencyKey: string): Promise<AutopayMandate> {
+    return (await this.http.request<AutopayMandate>('POST', 'wallet/autopay', { idempotencyKey, body: input })).data;
+  }
+  /** The caller's own autopay mandates, keyset-paginated. */
+  async list(cursor?: string, limit = 20, signal?: AbortSignal): Promise<Page<AutopayMandate>> {
+    const r = await this.http.request<AutopayMandate[]>('GET', 'wallet/autopay', { query: { cursor, limit }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  async get(id: string, signal?: AbortSignal): Promise<AutopayMandate> {
+    return (await this.http.request<AutopayMandate>('GET', `wallet/autopay/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  /** Cancel (revoke) a mandate the caller owns. */
+  async cancel(id: string, reason?: string): Promise<AutopayMandate> {
+    return (await this.http.request<AutopayMandate>('DELETE', `wallet/autopay/${encodeURIComponent(id)}`, { body: reason ? { reason } : {} })).data;
   }
 }

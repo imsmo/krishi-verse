@@ -62,6 +62,12 @@ export interface WalletBalance { userId: string; currencyCode: string; available
 /** One ledger entry in the caller's wallet statement. amountMinor is SIGNED (+credit / −debit). */
 export interface WalletLedgerEntry { entryId: string; txnId: string; txnType: string | null; accountCode: string; amountMinor: string; balanceAfterMinor: string; currencyCode: string; referenceType: string | null; referenceId: string | null; description: string | null; createdAt: string; }
 export interface BankAccount { id: string; accountKind: 'bank' | 'upi'; upiId?: string | null; accountLast4?: string | null; ifsc?: string | null; holderName?: string | null; isPrimary: boolean; }
+/** A money-insights bucket: a month ('YYYY-MM') or a txn-type code, with the total (bigint minor-unit string). */
+export interface InsightBucket { key: string; amountMinor: string; count: number; }
+/** Aggregated earnings (credits) or spending (debits, positive magnitudes) over a bounded window. */
+export interface WalletInsights { fromIso: string; toIso: string; currencyCode: string; totalMinor: string; byMonth: InsightBucket[]; byType: InsightBucket[]; }
+/** A UPI AutoPay mandate (standing instruction). vpaMasked is "ab***@psp" — never the raw VPA. No money lives here. */
+export interface AutopayMandate { id: string; status: 'pending' | 'active' | 'paused' | 'cancelled' | 'expired'; purpose: string; vpaMasked: string; provider: string; maxAmountMinor: string; currencyCode: string; frequency: string; validUntil: string | null; createdAt: string; }
 
 // --- KYC (module 1, identity) — never carries raw doc numbers, only masked + media refs ---
 export type KycStatus = 'pending' | 'verified' | 'rejected' | 'expired';

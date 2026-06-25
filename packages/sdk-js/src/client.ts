@@ -7,7 +7,7 @@ import { CatalogueResource } from './resources/catalogue';
 import { TraceabilityResource } from './resources/traceability';
 import { AuthResource } from './resources/auth';
 import { MediaResource } from './resources/media';
-import { PaymentsResource, PayoutsResource, WalletResource } from './resources/payments';
+import { PaymentsResource, PayoutsResource, WalletResource, AutopayResource } from './resources/payments';
 import { KycResource, BankAccountsResource, AddressesResource } from './resources/identity';
 import { TenancyResource } from './resources/tenancy';
 import { RbacResource, DisputesResource, UsersResource } from './resources/admin';
@@ -40,6 +40,7 @@ export class KrishiVerseClient {
   readonly payments: PaymentsResource;
   readonly payouts: PayoutsResource;
   readonly wallet: WalletResource;
+  readonly autopay: AutopayResource;
   readonly kyc: KycResource;
   readonly bankAccounts: BankAccountsResource;
   readonly notifications: NotificationsResource;
@@ -81,6 +82,7 @@ export class KrishiVerseClient {
     this.payments = new PaymentsResource(this.http);
     this.payouts = new PayoutsResource(this.http);
     this.wallet = new WalletResource(this.http);
+    this.autopay = new AutopayResource(this.http);
     this.kyc = new KycResource(this.http);
     this.bankAccounts = new BankAccountsResource(this.http);
     this.notifications = new NotificationsResource(this.http);

@@ -43,6 +43,8 @@ export default function Wallet() {
         {walletEnabled ? <Button title={t('wallet.withdraw')} variant="outline" onPress={() => router.push('/(farmer)/wallet/withdraw')} /> : null}
         {walletEnabled ? <Button title={t('wallet.transactions')} variant="outline" onPress={() => router.push('/(farmer)/wallet/transactions')} /> : null}
         {walletEnabled ? <Button title={t('wallet.payouts')} variant="outline" onPress={() => router.push('/(farmer)/wallet/payouts')} /> : null}
+        {walletEnabled ? <Button title={t('wallet.insights')} variant="outline" onPress={() => router.push('/(farmer)/wallet/earnings')} /> : null}
+        {walletEnabled ? <Button title={t('wallet.autopay')} variant="outline" onPress={() => router.push('/(farmer)/wallet/autopay')} /> : null}
       </View>
 
       {failed ? <View style={{ marginTop: space[3] }}><Button title={t('common.retry')} variant="outline" onPress={load} /></View> : null}

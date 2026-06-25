@@ -1,0 +1,21 @@
+// modules/payments/dto/create-mandate.dto.ts · zod .strict() (rejects unknown keys → no mass-assignment).
+// The per-debit cap is a string of minor units (bigint-safe over JSON). The raw `vpa` is validated for shape
+// here but is NEVER persisted raw nor logged — the domain masks it before storage (DPDP minimisation).
+import { z } from 'zod';
+
+const minorUnits = z.string().regex(/^[1-9]\d{0,15}$/, 'maxAmountMinor must be a positive integer string of minor units');
+
+export const RegisterMandateSchema = z.object({
+  vpa: z.string().regex(/^[a-zA-Z0-9.\-_]{2,64}@[a-zA-Z][a-zA-Z0-9.\-]{1,30}$/, 'vpa must look like handle@psp'),
+  purpose: z.enum(['membership', 'loan_emi', 'general']),
+  maxAmountMinor: minorUnits,
+  currencyCode: z.string().length(3).default('INR'),
+  frequency: z.enum(['as_presented', 'daily', 'weekly', 'monthly']).default('as_presented'),
+  validUntil: z.string().datetime().optional(),     // ISO; optional open-ended mandate
+}).strict();
+export type RegisterMandateDto = z.infer<typeof RegisterMandateSchema>;
+
+export const CancelMandateSchema = z.object({
+  reason: z.string().max(280).optional(),
+}).strict();
+export type CancelMandateDto = z.infer<typeof CancelMandateSchema>;

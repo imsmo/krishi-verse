@@ -10,6 +10,7 @@ import { CurrentContext } from '../../../../core/tenancy-context/current-context
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { WalletBalanceReadModel } from '../../read-models/wallet-balance.read-model';
 import { WalletLedgerReadModel } from '../../read-models/wallet-ledger.read-model';
+import { WalletInsightsReadModel } from '../../read-models/wallet-insights.read-model';
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
 const CCY = /^[A-Z]{3}$/;
@@ -21,6 +22,7 @@ export class WalletController {
   constructor(
     private readonly balance: WalletBalanceReadModel,
     private readonly ledger: WalletLedgerReadModel,
+    private readonly insights: WalletInsightsReadModel,
   ) {}
 
   /** The caller's reconciled wallet balance (available + held), server-truth, bigint minor units. */
@@ -35,5 +37,17 @@ export class WalletController {
     const lim = Math.min(Math.max(Number(limit) || 20, 1), 100);
     return this.ledger.forUser(ctx.userId, ctx.userId, false, { cursor: decodeCursor(cursor), limit: lim, currencyCode: currencyOf(currency) })
       .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
+  }
+
+  /** The caller's OWN earnings (credits to their wallet) aggregated by month + txn type over a bounded window. */
+  @Get('earnings')
+  getEarnings(@CurrentContext() ctx: RequestContext, @Query('from') from?: string, @Query('to') to?: string, @Query('currency') currency?: string) {
+    return this.insights.earnings(ctx.userId, ctx.userId, false, { from, to, currencyCode: currencyOf(currency) }).then((data) => ({ data }));
+  }
+
+  /** The caller's OWN spending (debits from their wallet) aggregated by month + txn type over a bounded window. */
+  @Get('spending-insights')
+  getSpending(@CurrentContext() ctx: RequestContext, @Query('from') from?: string, @Query('to') to?: string, @Query('currency') currency?: string) {
+    return this.insights.spending(ctx.userId, ctx.userId, false, { from, to, currencyCode: currencyOf(currency) }).then((data) => ({ data }));
   }
 }

@@ -18,7 +18,8 @@ function priceHarness(opts: { matching?: PriceAlert[] } = {}) {
   const metrics = { inc: jest.fn(), observe: jest.fn() };
   const prices = { insert: jest.fn(), recentModals: jest.fn() };
   const alerts = { matchActive: jest.fn(async () => opts.matching ?? []) };
-  const svc = new MandiPriceService(uow as any, outbox as any, idem as any, metrics as any, prices as any, alerts as any);
+  const names = { resolveCommodityName: jest.fn(), resolveMandiName: jest.fn() }; // MarketNamesReadModel stub (7th dep)
+  const svc = new MandiPriceService(uow as any, outbox as any, idem as any, metrics as any, prices as any, alerts as any, names as any);
   return { svc, writes, prices };
 }
 const ops = { userId: 'ops', canManage: true };

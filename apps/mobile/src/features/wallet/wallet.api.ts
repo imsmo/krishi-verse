@@ -10,10 +10,14 @@
 //  • There is NO unified wallet-ledger "transactions" endpoint. The real money movements the user CAN see are
 //    payments (money-in) and payouts (money-out), so the Transactions screen lists payments and Payout history
 //    lists payouts — both keyset-paged real endpoints. A single ledger-entry feed awaits a wallet read-model.
-//  • Earnings (settlement credits), spending-insights, and autopay/mandates have no endpoint yet → flagged, not
-//    shipped. Adding a bank/UPI payout destination (tokenised vaultRef) is the P-03 flagged gap — withdrawal
-//    works against destinations already on file.
-import type { PaymentSummary, PayoutSummary, BankAccount } from '@krishi-verse/sdk-js';
+//  • Earnings (settlement credits) + spending-insights are now LIVE (P0-8): GET /v1/wallet/earnings and
+//    /v1/wallet/spending-insights — the caller's OWN wallet, aggregated float-free (bigint-minor strings).
+//  • UPI autopay mandates are now LIVE (P0-8): register / list / cancel against /v1/wallet/autopay. The actual
+//    auto-debit COLLECTION still awaits a UPI-AutoPay PSP + webhook + worker (flagged in the API) — registering a
+//    mandate records the standing instruction; it does not yet pull money.
+//    Adding a bank/UPI payout destination (tokenised vaultRef) is the P-03 flagged gap — withdrawal works against
+//    destinations already on file.
+import type { PaymentSummary, PayoutSummary, BankAccount, WalletInsights, AutopayMandate } from '@krishi-verse/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 
@@ -57,4 +61,28 @@ export async function listBankAccounts(): Promise<BankAccount[]> {
  * the SERVER is the authority on whether it's allowed. `amountMinor` is paise (Law 2). */
 export async function requestWithdrawal(amountMinor: string, bankAccountId: string): Promise<PayoutSummary> {
   return apiClient().payouts.request({ amountMinor, bankAccountId, purpose: 'wallet_withdrawal' }, newId());
+}
+
+// --- Money insights (P0-8, LIVE) — caller's OWN wallet, float-free bigint-minor strings. Degrade to a safe
+// empty view on failure (read screens never crash). The window defaults to ~12 months server-side. ---
+const EMPTY_INSIGHTS: WalletInsights = { fromIso: '', toIso: '', currencyCode: 'INR', totalMinor: '0', byMonth: [], byType: [] };
+
+export async function walletEarnings(opts: { from?: string; to?: string } = {}): Promise<WalletInsights> {
+  try { return await apiClient().wallet.earnings(opts); } catch { return EMPTY_INSIGHTS; }
+}
+export async function walletSpending(opts: { from?: string; to?: string } = {}): Promise<WalletInsights> {
+  try { return await apiClient().wallet.spendingInsights(opts); } catch { return EMPTY_INSIGHTS; }
+}
+
+// --- UPI autopay mandates (P0-8, LIVE setup; auto-debit COLLECTION still PSP-gated) ---
+export async function listAutopayMandates(cursor?: string): Promise<Keyset<AutopayMandate>> {
+  try { return await apiClient().autopay.list(cursor); } catch { return { items: [], nextCursor: null }; }
+}
+/** Register a pending mandate. REAL + idempotent (Law 3). Throws on a real error so the screen shows a precise
+ * message (e.g. a live mandate already exists for this purpose). The raw VPA is masked server-side — never logged. */
+export async function registerAutopayMandate(input: { vpa: string; purpose: 'membership' | 'loan_emi' | 'general'; maxAmountMinor: string; frequency?: 'as_presented' | 'daily' | 'weekly' | 'monthly' }): Promise<AutopayMandate> {
+  return apiClient().autopay.register(input, newId());
+}
+export async function cancelAutopayMandate(id: string, reason?: string): Promise<AutopayMandate> {
+  return apiClient().autopay.cancel(id, reason);
 }

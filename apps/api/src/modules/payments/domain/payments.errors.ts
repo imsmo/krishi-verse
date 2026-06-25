@@ -43,3 +43,16 @@ export class PayoutNotFoundError extends NotFoundError {
 export class PayoutWebhookSignatureError extends AppError {
   constructor() { super('PAYOUT_WEBHOOK_BAD_SIGNATURE', 'Invalid payout webhook signature', 401); }
 }
+
+/** A UPI autopay mandate was not found in the caller's scope (404, never 403 — no enumeration). */
+export class MandateNotFoundError extends NotFoundError {
+  constructor(id: string) { super('Mandate not found'); (this as any).details = { id }; }
+}
+/** The caller already holds a live (pending/active/paused) mandate for this purpose. */
+export class MandateAlreadyExistsError extends AppError {
+  constructor(purpose: string) { super('MANDATE_ALREADY_EXISTS', 'A live autopay mandate already exists for this purpose', 409, { purpose }); }
+}
+/** A submitted VPA failed the handle@psp shape check — never store/parse an unvalidated VPA. */
+export class InvalidVpaError extends DomainError {
+  constructor() { super('MANDATE_INVALID_VPA', 'VPA must look like handle@psp', 422); }
+}

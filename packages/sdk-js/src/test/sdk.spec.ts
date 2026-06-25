@@ -330,4 +330,38 @@ describe('HttpClient via resources', () => {
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok', getHeaders: async () => { throw new Error('attest failed'); } });
     await expect(c.schemes.list()).resolves.toEqual([]);
   });
+
+  it('wallet.earnings / spendingInsights build the right GET URLs with window + currency, money stays string', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { fromIso: '2026-01-01T00:00:00.000Z', toIso: '2026-06-01T00:00:00.000Z', currencyCode: 'INR', totalMinor: '123456789012345', byMonth: [{ key: '2026-05', amountMinor: '1000', count: 2 }], byType: [] } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const e = await c.wallet.earnings({ from: '2026-01-01', to: '2026-06-01' });
+    expect(calls[0].url).toBe('https://api.test/v1/wallet/earnings?from=2026-01-01&to=2026-06-01&currency=INR');
+    expect(calls[0].init.method).toBe('GET');
+    expect(e.totalMinor).toBe('123456789012345');
+    expect(typeof e.byMonth[0].amountMinor).toBe('string');
+    await c.wallet.spendingInsights();
+    expect(calls[1].url).toBe('https://api.test/v1/wallet/spending-insights?currency=INR');
+  });
+
+  it('autopay.register POSTs to wallet/autopay with an Idempotency-Key; cancel DELETEs by id', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'm1', status: 'pending', purpose: 'membership', vpaMasked: 'fa***@okhdfcbank', provider: 'razorpay', maxAmountMinor: '50000', currencyCode: 'INR', frequency: 'monthly', validUntil: null, createdAt: '2026-06-01T00:00:00.000Z' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const m = await c.autopay.register({ vpa: 'farmer.kumar@okhdfcbank', purpose: 'membership', maxAmountMinor: '50000', frequency: 'monthly' }, 'idem-ap-1');
+    expect(calls[0].url).toBe('https://api.test/v1/wallet/autopay');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-ap-1');
+    expect(m.vpaMasked).toBe('fa***@okhdfcbank');
+    await c.autopay.cancel('m1', 'no longer needed');
+    expect(calls[1].url).toBe('https://api.test/v1/wallet/autopay/m1');
+    expect(calls[1].init.method).toBe('DELETE');
+  });
+
+  it('autopay.list builds the keyset GET URL and unwraps the page', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: [{ id: 'm1', status: 'active', purpose: 'general', vpaMasked: 'ab***@upi', provider: 'razorpay', maxAmountMinor: '1000', currencyCode: 'INR', frequency: 'as_presented', validUntil: null, createdAt: 'x' }], meta: { nextCursor: 'c2' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const page = await c.autopay.list(undefined, 50);
+    expect(calls[0].url).toBe('https://api.test/v1/wallet/autopay?limit=50');
+    expect(page.items[0].id).toBe('m1');
+    expect(page.nextCursor).toBe('c2');
+  });
 });
