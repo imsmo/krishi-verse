@@ -5,7 +5,7 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import type { Auction } from '@krishi-verse/sdk-js';
-import { EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import { Button, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { listAuctions } from '../../features/auctions/auctions.api';
@@ -40,6 +40,9 @@ export default function Auctions() {
             </Pressable>
           );
         })}
+      </View>
+      <View style={{ marginTop: space[2] }}>
+        <Button title={t('auction.myBids')} variant="outline" onPress={() => router.push('/(buyer)/auctions/my-bids')} />
       </View>
       {loading ? <View style={{ gap: space[3], marginTop: space[3] }}><SkeletonCard /><SkeletonCard /></View> : (
         <FlatList

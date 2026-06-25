@@ -14,7 +14,7 @@ import { useFlag } from '../../../core/flags/useFlag';
 import { useAuth } from '../../../core/auth/auth.store';
 import { getAuction, bidHistory, isWatchingAuction, watchAuction, unwatchAuction } from '../../../features/auctions/auctions.api';
 import { getPublicListing } from '../../../features/buyer/browse.api';
-import { auctionStatusTone, isBiddable, currentPriceMinor, minNextBidMinor, isOutbid } from '../../../features/auctions/auction-status';
+import { auctionStatusTone, isBiddable, currentPriceMinor, minNextBidMinor, isOutbid, emdRequirement } from '../../../features/auctions/auction-status';
 
 const POLL_MS = 4000;
 
@@ -90,6 +90,12 @@ export default function AuctionDetail() {
             <Text style={styles.label}>{t('auction.currentPrice')}</Text>
             <MoneyText minor={current} langCode={lang} size="3xl" />
             {biddable ? <Text style={styles.minNext}>{t('auction.minNext')} <MoneyText minor={minNext} langCode={lang} size="sm" /></Text> : null}
+            {(() => {
+              const emd = emdRequirement(auction);
+              if (emd.kind === 'flat') return <Text style={styles.emdAmt}>{t('auction.emdAmount')} <MoneyText minor={emd.minor} langCode={lang} size="sm" /></Text>;
+              if (emd.kind === 'pct') return <Text style={styles.emdAmt}>{t('auction.emdPct', { pct: String(emd.pctBps / 100) })}</Text>;
+              return null;
+            })()}
             <Text style={styles.emd}>{t('auction.emdNote')}</Text>
             <View style={styles.watchRow}>
               <Button title={watching ? t('auction.unwatch') : t('auction.watch')} variant="outline" loading={watchBusy} onPress={toggleWatch} />
@@ -125,6 +131,7 @@ const styles = StyleSheet.create({
   endsIn: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink500 },
   label: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink500 },
   minNext: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink600, marginTop: space[2] },
+  emdAmt: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink600, marginTop: space[2] },
   emd: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink400, marginTop: space[3] },
   watchRow: { marginTop: space[3], gap: space[1] },
   watchHint: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink400 },

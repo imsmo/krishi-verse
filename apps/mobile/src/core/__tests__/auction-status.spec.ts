@@ -1,6 +1,6 @@
 // Unit tests for the PURE auction logic (features/auctions/auction-status). No React/native deps (SDK/ui types are
 // type-only). Money is bigint minor strings (Law 2) — current price / min-next / bid validation use BigInt.
-import { auctionStatusTone, isBiddable, currentPriceMinor, minNextBidMinor, validateBidRupees, isOutbid } from '../../features/auctions/auction-status';
+import { auctionStatusTone, isBiddable, currentPriceMinor, minNextBidMinor, validateBidRupees, isOutbid, emdRequirement } from '../../features/auctions/auction-status';
 import type { BidHistoryItem } from '@krishi-verse/sdk-js';
 
 const bid = (over: Partial<BidHistoryItem>): BidHistoryItem => ({ id: 'b', bidderUserId: 'u', amountMinor: '10000', createdAt: '2026-06-01T00:00:00Z', ...over });
@@ -51,6 +51,24 @@ describe('validateBidRupees', () => {
   it('rejects non-integer / empty input', () => {
     expect(validateBidRupees('12.5', '100')).toEqual({ ok: false, reason: 'invalid' });
     expect(validateBidRupees('', '100')).toEqual({ ok: false, reason: 'invalid' });
+  });
+});
+
+describe('emdRequirement (P1-8)', () => {
+  it('prefers a flat emdMinor when > 0', () => {
+    expect(emdRequirement({ emdMinor: '50000', emdPctBps: 200 })).toEqual({ kind: 'flat', minor: '50000' });
+    expect(emdRequirement({ emdMinor: '9007199254740993', emdPctBps: null })).toEqual({ kind: 'flat', minor: '9007199254740993' });
+  });
+  it('falls back to a percentage when there is no flat amount', () => {
+    expect(emdRequirement({ emdMinor: '0', emdPctBps: 500 })).toEqual({ kind: 'pct', pctBps: 500 });
+  });
+  it('returns none when neither is set', () => {
+    expect(emdRequirement({ emdMinor: '0', emdPctBps: null })).toEqual({ kind: 'none' });
+    expect(emdRequirement({ emdMinor: '0', emdPctBps: 0 })).toEqual({ kind: 'none' });
+  });
+  it('degrades a non-numeric emdMinor to none/pct (never throws)', () => {
+    expect(emdRequirement({ emdMinor: 'x', emdPctBps: null })).toEqual({ kind: 'none' });
+    expect(emdRequirement({ emdMinor: 'x', emdPctBps: 300 })).toEqual({ kind: 'pct', pctBps: 300 });
   });
 });
 

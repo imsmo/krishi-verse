@@ -4,12 +4,19 @@
 // money via the EMD hold and needs live auction state; blind replay of a stale bid is wrong). The EMD hold + the
 // loser-refund + winner→settlement are entirely SERVER-SIDE (the app never moves money — Law 11). Money is bigint
 // minor-unit strings (Law 2).
-import type { Auction, BidHistoryItem, PlaceBidResult } from '@krishi-verse/sdk-js';
+import type { Auction, BidHistoryItem, MyBid, PlaceBidResult } from '@krishi-verse/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 
 export interface AuctionsPage { items: Auction[]; nextCursor: string | null }
 export interface BidsPage { items: BidHistoryItem[]; nextCursor: string | null }
+export interface MyBidsPage { items: MyBid[]; nextCursor: string | null }
+
+/** The caller's OWN bids across ALL auctions (screen 18), each with its EMD hold + winning flag. Keyset;
+ * degrades to an empty page on failure (read screens never crash). */
+export async function listMyBids(cursor?: string): Promise<MyBidsPage> {
+  try { return await apiClient().auctions.myBids({ cursor }); } catch { return { items: [], nextCursor: null }; }
+}
 
 export async function listAuctions(params: { status?: string; cursor?: string } = {}): Promise<AuctionsPage> {
   try { return await apiClient().auctions.list(params); } catch { return { items: [], nextCursor: null }; }

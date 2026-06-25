@@ -355,6 +355,8 @@ export const hi: Messages = {
   'auctions.watchOn': 'अब आप इस नीलामी पर नज़र रख रहे हैं।',
   'auctions.watchOff': 'आपने इस नीलामी पर नज़र रखना बंद कर दिया।',
   'auctions.watchError': 'हम अभी आपकी नज़र अपडेट नहीं कर सके। कृपया फिर से प्रयास करें।',
+  'auctions.emd': 'बोली के लिए जमा (EMD)',
+  'auctions.emdPct': 'आपकी बोली का {pct}%',
   'auctions.detailTitle': 'नीलामी',
   'auctions.currentBid': 'वर्तमान बोली',
   'auctions.noBids': 'अभी कोई बोली नहीं — पहले बनें।',

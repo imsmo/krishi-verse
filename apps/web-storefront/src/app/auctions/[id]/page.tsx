@@ -15,7 +15,7 @@ import { resolveSessionToken } from '../../../lib/session';
 import { env } from '../../../lib/env';
 import { getTranslator, getLang } from '../../../lib/i18n';
 import { Countdown, type CountdownLabels } from '../../../components/Countdown';
-import { currentHighMinor, minNextBidMinor } from '../../../features/auctions/bid';
+import { currentHighMinor, minNextBidMinor, emdRequirement } from '../../../features/auctions/bid';
 import { placeBidAction, toggleWatchAction } from './actions';
 
 /** The caller's watch state for this auction — null when anonymous (no session), boolean when authed. Degrades
@@ -86,6 +86,12 @@ export default async function AuctionDetailPage({ params, searchParams }: { para
         <div><dt>{t.t('auctions.startPrice')}</dt><dd>{formatMoneyMinor(auction.startPriceMinor, 'INR', lang)}</dd></div>
         <div><dt>{t.t('auctions.minNext')}</dt><dd>{formatMoneyMinor(minNext, 'INR', lang)}</dd></div>
         {auction.reservePriceMinor && <div><dt>{t.t('auctions.reserve')}</dt><dd>{formatMoneyMinor(auction.reservePriceMinor, 'INR', lang)}</dd></div>}
+        {(() => {
+          const emd = emdRequirement(auction);
+          if (emd.kind === 'flat') return <div><dt>{t.t('auctions.emd')}</dt><dd>{formatMoneyMinor(emd.minor, 'INR', lang)}</dd></div>;
+          if (emd.kind === 'pct') return <div><dt>{t.t('auctions.emd')}</dt><dd>{t.t('auctions.emdPct', { pct: String(emd.pctBps / 100) })}</dd></div>;
+          return null;
+        })()}
       </dl>
 
       {isOpen ? (

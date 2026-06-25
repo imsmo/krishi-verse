@@ -21,3 +21,20 @@ export function minNextBidMinor(auction: Pick<Auction, 'startPriceMinor' | 'minI
   if (high === null) return auction.startPriceMinor;
   return (BigInt(high) + BigInt(auction.minIncrementMinor || '0')).toString();
 }
+
+/** P1-8: classify the auction's EMD (earnest-money deposit) requirement for display — a flat `emdMinor` (> 0) wins,
+ * else a percentage of the bid via `emdPctBps`, else none. Pure (BigInt for the flat amount). The SERVER computes
+ * the actual hold; this is display only. */
+export type EmdRequirement =
+  | { kind: 'flat'; minor: string }
+  | { kind: 'pct'; pctBps: number }
+  | { kind: 'none' };
+
+export function emdRequirement(auction: Pick<Auction, 'emdMinor' | 'emdPctBps'>): EmdRequirement {
+  let flat = 0n;
+  try { flat = BigInt(auction.emdMinor ?? '0'); } catch { flat = 0n; }
+  if (flat > 0n) return { kind: 'flat', minor: flat.toString() };
+  const bps = auction.emdPctBps ?? 0;
+  if (Number.isFinite(bps) && bps > 0) return { kind: 'pct', pctBps: bps };
+  return { kind: 'none' };
+}

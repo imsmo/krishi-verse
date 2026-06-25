@@ -174,8 +174,9 @@ it's off.
 **Watch/follow (P1-7, LIVE):** the auction detail now shows a **Watch / Unwatch** toggle (authed server actions;
 anonymous viewers are sent to `/login?next=`). The current state is read per-auction via `auctions.isWatching(id)`
 (optional-session — hidden when anonymous). Watchers are notified server-side when the auction closes (the
-`auction.ended` notification, fanned out via the notification spine). The `Auction` read-model still carries no EMD
-amount, so EMD is surfaced as a behaviour note rather than a figure (tracked in P1-8).
+`auction.ended` notification, fanned out via the notification spine). **EMD (P1-8, LIVE):** the `Auction` read-model
+now carries `emdMinor`/`emdPctBps`, so the detail shows the deposit-to-bid figure (flat amount or "% of your bid")
+via the pure `emdRequirement` helper, in addition to the behaviour note.
 
 ## Notifications
 

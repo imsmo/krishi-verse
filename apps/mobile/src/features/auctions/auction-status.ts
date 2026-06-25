@@ -53,6 +53,23 @@ export function validateBidRupees(rupees: string, minNextMinor: string): BidChec
   return { ok: true };
 }
 
+/** P1-8: classify an auction's EMD (earnest-money deposit) requirement for display. A flat `emdMinor` (> 0) takes
+ * precedence; else a percentage of the bid via `emdPctBps`; else none. Pure (BigInt for the flat amount, integer
+ * basis points for the pct) — the SERVER computes the actual hold (emdForBid); this is display only. */
+export type EmdRequirement =
+  | { kind: 'flat'; minor: string }
+  | { kind: 'pct'; pctBps: number }
+  | { kind: 'none' };
+
+export function emdRequirement(auction: Pick<Auction, 'emdMinor' | 'emdPctBps'>): EmdRequirement {
+  let flat = 0n;
+  try { flat = BigInt(auction.emdMinor ?? '0'); } catch { flat = 0n; }
+  if (flat > 0n) return { kind: 'flat', minor: flat.toString() };
+  const bps = auction.emdPctBps ?? 0;
+  if (Number.isFinite(bps) && bps > 0) return { kind: 'pct', pctBps: bps };
+  return { kind: 'none' };
+}
+
 /** Am I outbid? True when the most-recent (highest) visible bid is not mine but I have bid before. Drives the
  * "you've been outbid" banner (server push P-04 is the authoritative notify; this is the in-screen reflection). */
 export function isOutbid(bids: BidHistoryItem[], myUserId: string): boolean {

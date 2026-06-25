@@ -354,6 +354,8 @@ export const gu: Messages = {
   'auctions.watchOn': 'હવે તમે આ હરાજી પર નજર રાખી રહ્યા છો.',
   'auctions.watchOff': 'તમે આ હરાજી પર નજર રાખવાનું બંધ કર્યું.',
   'auctions.watchError': 'અમે હમણાં તમારી નજર અપડેટ કરી શક્યા નહીં. કૃપા કરી ફરી પ્રયાસ કરો.',
+  'auctions.emd': 'બોલી માટે થાપણ (EMD)',
+  'auctions.emdPct': 'તમારી બોલીના {pct}%',
   'auctions.detailTitle': 'હરાજી',
   'auctions.currentBid': 'વર્તમાન બોલી',
   'auctions.noBids': 'હજુ કોઈ બોલી નથી — પ્રથમ બનો.',

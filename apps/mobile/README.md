@@ -613,6 +613,10 @@ unit-tested.
 
 ## Auction discovery + bidding + live (`features/auctions`, roadmap P-11)
 
+P1-8: the detail now shows the **EMD** (deposit-to-bid: flat amount or "% of your bid", pure `emdRequirement`), and
+**My bids** (screen 18) lists the caller's bids **across all auctions** (`auctions.myBids`, keyset) with each bid's
+EMD hold + winning badge.
+
 Wave 4. Browse **auctions** (Live/Ended), open the **detail** which **polls every 4s** (watch-live; degrades to
 pull-to-refresh), and **place a bid** — the bid holds an **EMD (earnest-money deposit) on the bidder's wallet
 SERVER-SIDE**, and the loser's EMD is refunded + the winner→settlement run entirely server-side (the app never

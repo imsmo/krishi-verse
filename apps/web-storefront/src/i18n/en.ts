@@ -356,6 +356,8 @@ export const en: Messages = {
   'auctions.watchOn': 'You’re now watching this auction.',
   'auctions.watchOff': 'You’ve stopped watching this auction.',
   'auctions.watchError': 'We couldn’t update your watch just now. Please try again.',
+  'auctions.emd': 'Deposit to bid (EMD)',
+  'auctions.emdPct': '{pct}% of your bid',
   'auctions.detailTitle': 'Auction',
   'auctions.currentBid': 'Current bid',
   'auctions.noBids': 'No bids yet — be the first.',

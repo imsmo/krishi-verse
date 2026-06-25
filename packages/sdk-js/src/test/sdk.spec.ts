@@ -450,4 +450,22 @@ describe('HttpClient via resources', () => {
     expect(page.items[0].auctionId).toBe('au1');
     expect(page.nextCursor).toBe('w2');
   });
+
+  it('auctions.get exposes the EMD requirement (emdMinor/emdPctBps) as money-safe strings (P1-8)', async () => {
+    const { fn } = fakeFetch(() => ({ body: { data: { auctionId: 'au1', listingId: 'l1', kind: 'english_open', status: 'live', startPriceMinor: '100000', reservePriceMinor: null, minIncrementMinor: '10000', emdMinor: '50000', emdPctBps: null, startsAt: 's', endsAt: 'e', winningBidId: null } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const a = await c.auctions.get('au1');
+    expect(typeof a.emdMinor).toBe('string');
+    expect(a.emdMinor).toBe('50000');
+    expect(a.emdPctBps).toBeNull();
+  });
+
+  it('auctions.myBids GETs the cross-auction keyset feed with the EMD hold per bid (P1-8)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: [{ bidId: 'b1', auctionId: 'au1', listingId: 'l1', amountMinor: '120000', emdHeldMinor: '50000', auctionStatus: 'live', endsAt: 'e', isWinning: true, createdAt: 'c' }], meta: { nextCursor: 'm2' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const page = await c.auctions.myBids({ limit: 20 });
+    expect(calls[0].url).toBe('https://api.test/v1/auctions/my-bids?limit=20');
+    expect(page.items[0].emdHeldMinor).toBe('50000');
+    expect(page.items[0].isWinning).toBe(true);
+  });
 });

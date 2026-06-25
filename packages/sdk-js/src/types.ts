@@ -202,6 +202,9 @@ export type AuctionKind = 'english_open' | 'sealed';
 export interface Auction {
   auctionId: string; listingId: string; kind: string; status: string;
   startPriceMinor: string; reservePriceMinor: string | null; minIncrementMinor: string;
+  /** EMD (earnest-money deposit) the bidder must have held to bid: a flat `emdMinor` (bigint minor-unit string)
+   * when > "0", else a percentage of the bid via `emdPctBps` (basis points). Both can be "0"/null (no EMD). */
+  emdMinor: string; emdPctBps: number | null;
   startsAt: string; endsAt: string; winningBidId: string | null; createdAt?: string;
 }
 /** One bid in the history. `amountMinor` is null when a sealed auction masks another bidder's amount

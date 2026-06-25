@@ -1,7 +1,7 @@
 // apps/web-storefront/src/test/auctions-bid.spec.ts · auction bid math is BigInt-only (Law 2). Pins that the high
 // bid + suggested minimum are computed without float drift, and that sealed (null-amount) bids are ignored.
 import type { Auction, BidHistoryItem } from '@krishi-verse/sdk-js';
-import { currentHighMinor, minNextBidMinor } from '../features/auctions/bid';
+import { currentHighMinor, minNextBidMinor, emdRequirement } from '../features/auctions/bid';
 
 const bid = (id: string, amountMinor: string | null): BidHistoryItem => ({ id, bidderUserId: 'u', amountMinor });
 const auction = (start: string, inc: string): Pick<Auction, 'startPriceMinor' | 'minIncrementMinor'> => ({ startPriceMinor: start, minIncrementMinor: inc });
@@ -28,5 +28,18 @@ describe('minNextBidMinor', () => {
   });
   it('handles a zero/blank increment safely', () => {
     expect(minNextBidMinor(auction('10000', ''), [bid('a', '12000')])).toBe('12000');
+  });
+});
+
+describe('emdRequirement (P1-8)', () => {
+  it('prefers a flat emdMinor when > 0', () => {
+    expect(emdRequirement({ emdMinor: '50000', emdPctBps: 200 })).toEqual({ kind: 'flat', minor: '50000' });
+  });
+  it('falls back to pct when no flat amount', () => {
+    expect(emdRequirement({ emdMinor: '0', emdPctBps: 500 })).toEqual({ kind: 'pct', pctBps: 500 });
+  });
+  it('none when neither set / bad input', () => {
+    expect(emdRequirement({ emdMinor: '0', emdPctBps: null })).toEqual({ kind: 'none' });
+    expect(emdRequirement({ emdMinor: 'x', emdPctBps: 0 })).toEqual({ kind: 'none' });
   });
 });

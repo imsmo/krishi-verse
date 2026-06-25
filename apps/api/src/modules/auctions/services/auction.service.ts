@@ -191,6 +191,9 @@ export class AuctionService {
   private serialize(p: ReturnType<Auction['toProps']>) {
     return { auctionId: p.id, listingId: p.listingId, kind: p.kind, status: p.status, startPriceMinor: p.startPriceMinor.toString(),
       reservePriceMinor: p.reservePriceMinor?.toString() ?? null, minIncrementMinor: p.minIncrementMinor.toString(),
+      // P1-8: expose the EMD requirement so a bidder sees the hold before bidding — flat emdMinor (minor-unit string)
+      // or emdPctBps (% of the bid) — exactly as the server computes it (emdForBid). No money moves on a read (Law 2/11).
+      emdMinor: p.emdMinor.toString(), emdPctBps: p.emdPctBps,
       startsAt: p.startsAt, endsAt: p.endsAt, winningBidId: p.winningBidId, createdAt: p.createdAt };
   }
 
