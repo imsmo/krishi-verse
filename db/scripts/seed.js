@@ -33,8 +33,15 @@ const DEMO = ['demo/0901_demo_tenants.sql','demo/0902_demo_users_listings.sql'];
 
 function arg(name) { return process.argv.includes(name); }
 
+// Belt-and-suspenders: even if NODE_ENV is mis-set, NEVER load demo data against a managed/cloud DB endpoint.
+// Demo tenants/users are a dev affordance (P0-13) — they must be provably absent from any production database.
+function looksLikeProdDb() {
+  const url = process.env.DATABASE_URL || '';
+  return /amazonaws\.com|rds\.|\.azure\.|cloudsql|neon\.tech|supabase\.co|render\.com/i.test(url);
+}
+
 function plan() {
-  const includeDemo = arg('--demo') && process.env.NODE_ENV !== 'production';
+  const includeDemo = arg('--demo') && process.env.NODE_ENV !== 'production' && !looksLikeProdDb();
   const files = includeDemo ? [...ORDER, ...DEMO] : ORDER;
   return files.map((rel) => {
     const full = path.join(SEEDS_DIR, rel);
@@ -50,6 +57,7 @@ async function main() {
     console.log(`Seed plan (${files.length} files):`);
     for (const f of files) console.log(`  ${f.rel}${f.sql ? '' : '   [MISSING]'}`);
     if (arg('--demo') && process.env.NODE_ENV === 'production') console.log('(demo seeds skipped: NODE_ENV=production)');
+    else if (arg('--demo') && looksLikeProdDb()) console.log('(demo seeds skipped: DATABASE_URL looks like a managed/prod endpoint)');
     return;
   }
 

@@ -14,7 +14,7 @@ A module is **✅ only when**: domain invariants + state machine, repo (tenant_i
 | quota / idempotency / cache / metrics | ✅ | Pg + Redis/in-memory + Prom |
 | auth guards + tenant-context + RBAC guard | ✅ | JWT verify; perms DB-resolved at mint (RoleCache) |
 | http (exception filter, response envelope, request-id, zod) | ✅ | |
-| config / health | ✅ | |
+| config / health | ✅ | `assertProductionSecurity` fails CLOSED at boot on any weak/dev/sandbox value. **P0-13 dev-affordance decommission:** prod boot also refuses MEDIA_SCAN_SECRET weak/empty + PAYMENTS_DEFAULT_PROVIDER=sandbox; demo seeds skip on prod NODE_ENV **and** managed-DB host. Full matrix → docs/production-backlog/P0-13-dev-affordances-checklist.md |
 | audit-log writer | ✅ | built with identity |
 | rate-limit guard | ✅ | global edge limit + per-route (auth) |
 | feature-flags | ✅ | DB-backed, kill-switch, rollout, @FeatureFlag guard |

@@ -88,6 +88,14 @@ export class AppConfig {
     if ((env.EKYC_PROVIDER_KIND ?? 'sandbox') === 'sandbox') p.push('EKYC_PROVIDER_KIND must be a real provider (e.g. digilocker) in production — the sandbox accepts a fixed test OTP');
     if (env.EKYC_PROVIDER_KIND && env.EKYC_PROVIDER_KIND !== 'sandbox' && (!env.EKYC_PROVIDER_URL || weak16(env.EKYC_PROVIDER_API_KEY))) p.push('EKYC_PROVIDER_URL + strong EKYC_PROVIDER_API_KEY required when a real EKYC_PROVIDER_KIND is set');
 
+    // --- P0-13 decommission dev affordances: catch these at BOOT, not at the first upload/intent ---
+    // Media downloads are gated on a CLEAN AV scan; the scan-result webhook is HMAC-verified with MEDIA_SCAN_SECRET.
+    // An empty/weak secret means the webhook rejects every scan (no media ever clears) — fail at boot, not silently.
+    if (weak16(env.MEDIA_SCAN_SECRET)) p.push('MEDIA_SCAN_SECRET (strong; verifies the AV scan-result webhook) required in production');
+    // The deterministic sandbox payment gateway is never registered in prod — selecting it as the default would
+    // break new intents (or, worse, route real money through a fake). Forbid it at boot.
+    if (env.PAYMENTS_DEFAULT_PROVIDER === 'sandbox') p.push('PAYMENTS_DEFAULT_PROVIDER must not be "sandbox" in production (no fake money rail)');
+
     return p;
   }
 

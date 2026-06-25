@@ -23,6 +23,7 @@ const SECURE_RAW: Record<string, string> = {
   EKYC_PROVIDER_KIND: 'digilocker',                 // sandbox is forbidden in prod (fixed-OTP backdoor)
   EKYC_PROVIDER_URL: 'https://ekyc.provider.example.com',
   EKYC_PROVIDER_API_KEY: 'ekyc-live-strong-api-key-0123456789',
+  MEDIA_SCAN_SECRET: 'media-scan-hmac-strong-secret-0123456789',  // P0-13: AV scan-result webhook HMAC
 };
 
 const envWith = (overrides: Record<string, string | undefined>): Env => {
@@ -69,6 +70,9 @@ describe('AppConfig.collectProductionProblems (fail-closed)', () => {
     ['Twilio without creds', { SMS_PROVIDER: 'twilio', TWILIO_ACCOUNT_SID: undefined }, /TWILIO_/],
     ['eKYC sandbox in prod (fixed-OTP backdoor)', { EKYC_PROVIDER_KIND: 'sandbox' }, /EKYC_PROVIDER_KIND must be a real provider/],
     ['eKYC real provider without url/key', { EKYC_PROVIDER_URL: undefined, EKYC_PROVIDER_API_KEY: undefined }, /EKYC_PROVIDER_URL \+ strong EKYC_PROVIDER_API_KEY/],
+    ['media-scan secret missing (AV webhook unverifiable)', { MEDIA_SCAN_SECRET: undefined }, /MEDIA_SCAN_SECRET/],
+    ['media-scan secret weak/dev', { MEDIA_SCAN_SECRET: 'dev-secret' }, /MEDIA_SCAN_SECRET/],
+    ['payments default = sandbox (fake money rail)', { PAYMENTS_DEFAULT_PROVIDER: 'sandbox' }, /PAYMENTS_DEFAULT_PROVIDER must not be "sandbox"/],
   ])('flags %s', (_label, overrides, pattern) => {
     const problems = AppConfig.collectProductionProblems(envWith(overrides));
     expect(problems.length).toBeGreaterThan(0);
