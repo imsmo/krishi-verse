@@ -20,3 +20,14 @@ export const ReviewSummaryQuerySchema = z.object({
   targetId: z.string().uuid(),
 }).strict();
 export type ReviewSummaryQueryDto = z.infer<typeof ReviewSummaryQuerySchema>;
+
+// PUBLIC list of a target's PUBLISHED reviews (anonymous storefront). Required target; keyset cursor; capped.
+// The projection carries NO buyer PII (no reviewer id) — only the rating, body, verified-purchase flag and the
+// seller's public response.
+export const PublicReviewsQuerySchema = z.object({
+  targetType: z.enum(['seller', 'buyer'] as [ReviewTargetType, ReviewTargetType]),
+  targetId: z.string().uuid(),
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+}).strict();
+export type PublicReviewsQueryDto = z.infer<typeof PublicReviewsQuerySchema>;

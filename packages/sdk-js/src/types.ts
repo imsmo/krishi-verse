@@ -125,6 +125,17 @@ export interface Shipment {
 
 // --- reviews (module 5) ---
 export interface ReviewSummary { averageStars: number; count: number; }
+/** One PUBLIC review (PII-free: no reviewer id / order id). Stars 1–5; optional body/sub-ratings/tags; the
+ *  seller's public response if any. Dates are ISO strings. */
+export interface PublicReview {
+  id: string; stars: number; subRatings: Record<string, number>; body: string | null; tags: string[];
+  isVerifiedPurchase: boolean; sellerResponse: string | null; sellerRespondedAt: string | null;
+  helpfulCount: number; createdAt: string;
+}
+/** A review as seen by a party (the reviewed seller/buyer or its author) — includes ids for management. */
+export interface ReviewItem extends PublicReview {
+  orderId: string | null; reviewerUserId: string; targetType: string; targetId: string; status: string;
+}
 
 // --- cart + checkout (module 3) — money is bigint minor-unit STRINGS (Law 2) ---
 export interface CartItem {

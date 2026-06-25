@@ -5,6 +5,7 @@
 import { Controller, Get, Headers, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
+import { Public } from '../../../../core/auth/public.decorator';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
 import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
@@ -14,7 +15,7 @@ import { BadRequestError } from '../../../../shared/errors/app-error';
 import { ReviewService } from '../../services/review.service';
 import { CreateReviewSchema, CreateReviewDto } from '../../dto/create-review.dto';
 import { EditReviewSchema, EditReviewDto, SellerResponseSchema, SellerResponseDto, ModerateReviewSchema, ModerateReviewDto } from '../../dto/update-review.dto';
-import { QueryReviewsSchema, QueryReviewsDto, ReviewSummaryQuerySchema, ReviewSummaryQueryDto } from '../../dto/query-review.dto';
+import { QueryReviewsSchema, QueryReviewsDto, ReviewSummaryQuerySchema, ReviewSummaryQueryDto, PublicReviewsQuerySchema, PublicReviewsQueryDto } from '../../dto/query-review.dto';
 import { ReviewPermissions, canModerateReview } from '../../policies/reviews.policies';
 
 const ipOf = (r: Request) => r.ip || null;
@@ -33,9 +34,18 @@ export class ReviewsController {
     return this.reviews.submit(ctx.tenantId, ctx.userId, key, dto).then((data) => ({ data }));
   }
 
-  @Get('summary')
+  // Public aggregate rating for a target (anonymous storefront) — only published reviews are counted.
+  @Public() @Get('summary')
   summary(@CurrentContext() ctx: RequestContext, @ZodQuery(ReviewSummaryQuerySchema) q: ReviewSummaryQueryDto) {
     return this.reviews.summary(ctx.tenantId, q.targetType, q.targetId).then((data) => ({ data }));
+  }
+
+  // Public individual-reviews list for a target (anonymous storefront). PII-free projection (no reviewer id),
+  // published-only, keyset-paginated. Distinct from the authenticated `GET` list (which a party uses for their own).
+  @Public() @Get('public')
+  publicList(@CurrentContext() ctx: RequestContext, @ZodQuery(PublicReviewsQuerySchema) q: PublicReviewsQueryDto) {
+    return this.reviews.publicList(ctx.tenantId, { targetType: q.targetType, targetId: q.targetId, cursor: decodeCursor(q.cursor), limit: q.limit })
+      .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
 
   @Get()

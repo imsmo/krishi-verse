@@ -135,6 +135,24 @@ export class ReviewService {
     return this.cache.wrap(summaryKey(tenantId, targetType, targetId), 120, () => this.repo.summaryForTarget(tenantId, targetType, targetId));
   }
 
+  /** PUBLIC, anonymous-safe list of a target's PUBLISHED reviews. Carries NO buyer PII (no reviewer id) — only
+   *  the rating, body, verified-purchase flag and the seller's public response. Keyset paginated. */
+  async publicList(tenantId: string, q: { targetType: string; targetId: string; cursor?: { c: string; id: string }; limit: number }) {
+    const rows = await this.repo.listForTarget(tenantId, q.targetType, q.targetId, { cursor: q.cursor, limit: q.limit });
+    const items = rows.map((r) => this.publicSerialize(r.toProps()));
+    const last = items[items.length - 1];
+    const nextCursor = items.length === q.limit && last ? Buffer.from(`${(last as any).createdAt.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;
+    return { items, nextCursor };
+  }
+
+  /** PII-free public projection: explicitly OMITS reviewerUserId/orderId so a public reader can't tie a review to
+   *  a buyer or enumerate their orders. Only published reviews reach this path (listForTarget filters status). */
+  private publicSerialize(p: ReturnType<Review['toProps']>) {
+    return { id: p.id, stars: p.stars, subRatings: p.subRatings, body: p.body, tags: p.tags,
+      isVerifiedPurchase: p.isVerifiedPurchase, sellerResponse: p.sellerResponse, sellerRespondedAt: p.sellerRespondedAt,
+      helpfulCount: p.helpfulCount, createdAt: p.createdAt };
+  }
+
   private serialize(p: ReturnType<Review['toProps']>) {
     return { id: p.id, orderId: p.orderId, reviewerUserId: p.reviewerUserId, targetType: p.targetType, targetId: p.targetId,
       stars: p.stars, subRatings: p.subRatings, body: p.body, tags: p.tags, isVerifiedPurchase: p.isVerifiedPurchase,

@@ -12,6 +12,7 @@ import { revalidatePath } from 'next/cache';
 import { tenantClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
 import { buildResolve } from '../../features/disputes/manage';
+import { validateReviewResponse } from '../../features/reviews/respond';
 import { SdkError } from '@krishi-verse/sdk-js';
 
 function back(id: string, qs: string): never { redirect(`/disputes/${encodeURIComponent(id)}?${qs}`); }
@@ -33,6 +34,24 @@ async function transition(formData: FormData, kind: 'review' | 'escalate'): Prom
 
 export async function reviewDisputeAction(formData: FormData): Promise<void> { return transition(formData, 'review'); }
 export async function escalateDisputeAction(formData: FormData): Promise<void> { return transition(formData, 'escalate'); }
+
+// P1-5: the reviewed party (this seller) posts ONE public response to a review about them. The API gates this to
+// the review's target (anti-IDOR) and rejects a second response server-side; an illegal/raced move (409) degrades
+// to a message (Law 12). Response text is validated client-side (1–4000 chars after trim) before it round-trips.
+export async function respondToReviewAction(formData: FormData): Promise<void> {
+  await requireSession('/disputes');
+  const id = String(formData.get('reviewId') ?? '').trim();
+  if (!id) redirect('/disputes?error=review');
+  const built = validateReviewResponse(String(formData.get('response') ?? ''));
+  if (!built.ok) redirect(`/disputes?error=review_${built.error}`);
+  try {
+    await tenantClient().reviews.respond(id, built.value);
+  } catch (e) {
+    redirect(`/disputes?error=${e instanceof SdkError && e.status === 409 ? 'review_illegal' : 'review'}`);
+  }
+  revalidatePath('/disputes');
+  redirect('/disputes?ok=review');
+}
 
 export async function resolveDisputeAction(formData: FormData): Promise<void> {
   await requireSession('/disputes');

@@ -15,13 +15,14 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
-import type { ListingCard, ReviewSummary, GalleryItem } from '@krishi-verse/sdk-js';
+import { formatMoneyMinor, formatDate } from '@krishi-verse/i18n';
+import type { ListingCard, ReviewSummary, GalleryItem, PublicReview } from '@krishi-verse/sdk-js';
 import { SdkError } from '@krishi-verse/sdk-js';
 import { publicClient } from '../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../lib/i18n';
 import { env } from '../../../../lib/env';
 import { listingLinks } from '../../../../features/listing/links';
+import { starGlyphs } from '../../../../features/reviews/display';
 import { BuyerActions } from '../../../../components/BuyerActions';
 import { ListingGallery } from '../../../../components/ListingGallery';
 
@@ -38,8 +39,13 @@ async function safeGallery(tenantSlug: string, id: string): Promise<GalleryItem[
 }
 
 /** Public review aggregates degrade to null — a flaky/optional reviews service never breaks the product page. */
-async function safeSummary(tenantSlug: string, q: { listingId?: string; targetUserId?: string }): Promise<ReviewSummary | null> {
+async function safeSummary(tenantSlug: string, q: { targetUserId?: string }): Promise<ReviewSummary | null> {
   try { return await publicClient(tenantSlug).reviews.summary(q); } catch { return null; }
+}
+
+/** The seller's PUBLISHED individual reviews (PII-free public read). Degrades to [] — never breaks the page. */
+async function safeReviews(tenantSlug: string, sellerUserId: string): Promise<PublicReview[]> {
+  try { return (await publicClient(tenantSlug).reviews.publicReviews({ targetUserId: sellerUserId, limit: 10 })).items; } catch { return []; }
 }
 
 export async function generateMetadata({ params }: { params: { tenantSlug: string; id: string } }): Promise<Metadata> {
@@ -77,9 +83,9 @@ export default async function ListingDetail(
   const t = getTranslator();
   const lang = getLang();
 
-  const [listingReviews, sellerReviews, gallery] = await Promise.all([
-    safeSummary(params.tenantSlug, { listingId: l.id }),
+  const [sellerReviews, reviews, gallery] = await Promise.all([
     safeSummary(params.tenantSlug, { targetUserId: l.sellerUserId }),
+    safeReviews(params.tenantSlug, l.sellerUserId),
     safeGallery(params.tenantSlug, l.id),
   ]);
 
@@ -145,11 +151,28 @@ export default async function ListingDetail(
 
       <section className="kv-detail__section" aria-labelledby="reviews-h">
         <h2 id="reviews-h">{t.t('listing.reviewsTitle')}</h2>
-        <Stars
-          summary={listingReviews}
-          label={listingReviews && listingReviews.count > 0 ? t.t('listing.reviewsSummary', { avg: String(Math.round(listingReviews.averageStars * 10) / 10), count: String(listingReviews.count) }) : ''}
-          none={t.t('listing.reviewsNone')}
-        />
+        {reviews.length === 0 ? (
+          <p className="kv-rating kv-rating--none">{t.t('listing.reviewsNone')}</p>
+        ) : (
+          <ul className="kv-reviews" role="list">
+            {reviews.map((rv) => (
+              <li key={rv.id} className="kv-review">
+                <p className="kv-review__head">
+                  <span className="kv-rating__stars" aria-label={t.t('listing.reviewStarsLabel', { stars: String(rv.stars) })}>{starGlyphs(rv.stars)}</span>
+                  {rv.isVerifiedPurchase && <span className="kv-badge kv-badge--verified">{t.t('listing.reviewVerified')}</span>}
+                  <span className="kv-detail__muted kv-review__date">{formatDate(rv.createdAt, lang)}</span>
+                </p>
+                {rv.body && <p className="kv-review__body">{rv.body}</p>}
+                {rv.sellerResponse && (
+                  <div className="kv-review__response">
+                    <p className="kv-review__response-label">{t.t('listing.reviewSellerResponse')}</p>
+                    <p>{rv.sellerResponse}</p>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="kv-detail__section" aria-labelledby="trace-h">

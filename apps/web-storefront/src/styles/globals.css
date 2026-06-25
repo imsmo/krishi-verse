@@ -135,6 +135,15 @@ a { color: inherit; text-decoration: none; }
 .kv-rating { display: flex; gap: 8px; align-items: center; margin: 0; }
 .kv-rating--none { color: var(--kv-neutral-600); }
 .kv-rating__stars { color: #f9a825; letter-spacing: 1px; }
+.kv-reviews { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.kv-review { border-top: 1px solid var(--kv-neutral-100); padding-top: 12px; }
+.kv-review:first-child { border-top: 0; padding-top: 0; }
+.kv-review__head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 0 0 4px; }
+.kv-review__date { margin-left: auto; font-size: 13px; }
+.kv-review__body { margin: 4px 0; }
+.kv-badge--verified { background: #e3f2fd; color: #1565c0; }
+.kv-review__response { margin: 8px 0 0; padding: 8px 12px; background: var(--kv-neutral-50, #f7f7f5); border-radius: var(--kv-radius); }
+.kv-review__response-label { font-weight: 700; margin: 0 0 2px; font-size: 13px; }
 .kv-actions { display: flex; flex-wrap: wrap; gap: var(--kv-space); margin: var(--kv-space) 0; }
 .kv-actions__form { display: flex; flex-direction: column; gap: 6px; max-width: 240px; }
 .kv-actions__qty { max-width: 160px; }
