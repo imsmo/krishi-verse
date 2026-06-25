@@ -17,7 +17,7 @@ import { DomainEvent } from '../domain/payments.events';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { GatewayRegistry } from '../gateway/gateway.registry';
 import { CreatePaymentIntentDto, RefundPaymentDto } from '../dto/create-payment.dto';
-import { PaymentNotFoundError, WebhookSignatureError, PaymentAmountMismatchError, InsufficientWalletBalanceError } from '../domain/payments.errors';
+import { PaymentNotFoundError, WebhookSignatureError, PaymentAmountMismatchError, PaymentCurrencyMismatchError, InsufficientWalletBalanceError } from '../domain/payments.errors';
 import { BadRequestError, InfraError } from '../../../shared/errors/app-error';
 
 export interface PaymentActor { userId: string; canModerate: boolean; }
@@ -62,15 +62,18 @@ export class PaymentService {
       }));
   }
 
-  /** Gateway webhook (unauthenticated). Verify signature → idempotent on the event id → move money. */
-  async handleWebhook(providerCode: string, rawBody: string, signature: string) {
+  /** Gateway webhook (unauthenticated). Verify signature → idempotent on the event id → move money.
+   *  `deliveryEventId` is the provider's canonical delivery id (Razorpay `x-razorpay-event-id` header) — the
+   *  most robust dedup key for replays; we prefer it over the body-derived id when present. */
+  async handleWebhook(providerCode: string, rawBody: string, signature: string, deliveryEventId?: string) {
     const gateway = this.gateways.get(providerCode);
     if (!gateway.verifySignature(rawBody, signature)) throw new WebhookSignatureError();   // fail closed
     const event = gateway.parseEvent(rawBody);
     if (event.kind === 'ignored') return { ok: true, ignored: true };
     if (!event.tenantId || !event.gatewayOrderId) throw new BadRequestError('webhook missing tenant/order context');
+    const idemKey = deliveryEventId && deliveryEventId.length > 0 ? deliveryEventId : event.eventId;
 
-    return this.idem.remember(event.eventId, 'system', `payments.webhook.${providerCode}`, () =>
+    return this.idem.remember(idemKey, 'system', `payments.webhook.${providerCode}`, () =>
       timed(this.metrics, 'payments.webhook', { provider: providerCode, kind: event.kind }, async () =>
         this.uow.run(event.tenantId!, async (tx) => {
           const payment = await this.repo.getByGatewayOrderForUpdate(tx, event.tenantId!, event.gatewayOrderId!);
@@ -79,6 +82,9 @@ export class PaymentService {
           if (event.kind === 'payment_captured') {
             if (event.amountMinor !== undefined && event.amountMinor !== payment.amountMinor) {
               throw new PaymentAmountMismatchError(payment.amountMinor, event.amountMinor); // tamper guard
+            }
+            if (event.currencyCode !== undefined && event.currencyCode.toUpperCase() !== payment.currencyCode.toUpperCase()) {
+              throw new PaymentCurrencyMismatchError(payment.currencyCode, event.currencyCode); // tamper guard
             }
             // money arrives: external funds (platform gateway account) → platform escrow. Zero-sum.
             const txn = await this.wallet.post(tx, {

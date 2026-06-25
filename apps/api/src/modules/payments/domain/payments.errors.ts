@@ -12,6 +12,9 @@ export class WebhookSignatureError extends AppError {
 export class PaymentAmountMismatchError extends AppError {
   constructor(expected: bigint, got: bigint) { super('PAYMENT_AMOUNT_MISMATCH', 'Webhook amount does not match the payment', 409, { expected: expected.toString(), got: got.toString() }); }
 }
+export class PaymentCurrencyMismatchError extends AppError {
+  constructor(expected: string, got: string) { super('PAYMENT_CURRENCY_MISMATCH', 'Webhook currency does not match the payment', 409, { expected, got }); }
+}
 export class PaymentConcurrencyError extends AppError {
   constructor(id: string) { super('PAYMENT_CONCURRENCY', 'Payment was modified concurrently; retry', 409, { id }); }
 }

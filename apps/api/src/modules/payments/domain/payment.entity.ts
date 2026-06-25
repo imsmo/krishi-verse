@@ -40,6 +40,7 @@ export class Payment {
   get id() { return this.props.id; }
   get status() { return this.props.status; }
   get amountMinor() { return this.props.amountMinor; }
+  get currencyCode() { return this.props.currencyCode; }
   get refundableMinor() { return this.props.amountMinor - this.props.refundedMinor; }
   get userId() { return this.props.userId; }
   get tenantId() { return this.props.tenantId; }

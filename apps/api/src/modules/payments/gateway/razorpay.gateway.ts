@@ -54,6 +54,7 @@ export class RazorpayGateway implements PaymentGateway {
       gatewayOrderId: entity?.order_id,
       gatewayPaymentId: entity?.id,
       amountMinor: entity?.amount != null ? BigInt(entity.amount) : undefined,
+      currencyCode: entity?.currency ? String(entity.currency).toUpperCase() : undefined,
       method: entity?.method,
       failureCode: entity?.error_code,
       failureReason: entity?.error_description,

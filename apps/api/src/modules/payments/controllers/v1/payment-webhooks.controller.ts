@@ -14,6 +14,10 @@ function signatureOf(req: Request): string {
   const h = req.headers;
   return (h['x-razorpay-signature'] as string) || (h['x-webhook-signature'] as string) || '';
 }
+// Razorpay's canonical per-delivery event id — the most robust webhook dedup key (empty for the sandbox).
+function eventIdOf(req: Request): string {
+  return (req.headers['x-razorpay-event-id'] as string) || '';
+}
 
 @Controller({ path: 'payments/webhooks', version: '1' })
 export class PaymentWebhooksController {
@@ -27,7 +31,7 @@ export class PaymentWebhooksController {
   handle(@Param('provider') provider: string, @Req() req: Request & { rawBody?: Buffer }) {
     const raw = req.rawBody ? req.rawBody.toString('utf8') : JSON.stringify(req.body ?? {});
     if (!raw) throw new BadRequestError('empty webhook body');
-    return this.payments.handleWebhook(provider, raw, signatureOf(req)).then((data) => ({ data }));
+    return this.payments.handleWebhook(provider, raw, signatureOf(req), eventIdOf(req)).then((data) => ({ data }));
   }
 
   /** Async PAYOUT callback (RazorpayX payout.processed/failed/reversed). Same trust model: HMAC over

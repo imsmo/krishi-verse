@@ -18,6 +18,8 @@ export interface GatewayEvent {
   gatewayOrderId?: string;
   gatewayPaymentId?: string;
   amountMinor?: bigint;
+  /** ISO currency from the verified webhook entity — guarded against the payment's currency (tamper). */
+  currencyCode?: string;
   method?: string;
   failureCode?: string;
   failureReason?: string;

@@ -30,7 +30,7 @@ import { PaymentRepository } from '../repositories/payment.repository';
 import { GatewayRegistry } from '../gateway/gateway.registry';
 import { SandboxGateway } from '../gateway/sandbox.gateway';
 import { PaymentService } from '../services/payment.service';
-import { WebhookSignatureError } from '../domain/payments.errors';
+import { WebhookSignatureError, PaymentCurrencyMismatchError } from '../domain/payments.errors';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -55,6 +55,10 @@ run('payments + wallet (integration, real Postgres + RLS)', () => {
     const body = JSON.stringify({ id: `evt_${randomUUID()}`, event, tenant_id: tenantA, ...extra });
     const sig = createHmac('sha256', SECRET).update(body).digest('hex');
     return { body, sig };
+  };
+  const escrowBalance = async (): Promise<string> => {
+    const r = await admin.query(`SELECT COALESCE(cached_balance_minor,0)::bigint b FROM wallet_accounts WHERE owner_kind='platform' AND account_code='escrow'`);
+    return String(r.rows[0]?.b ?? '0');
   };
 
   beforeAll(async () => {
@@ -126,6 +130,31 @@ run('payments + wallet (integration, real Postgres + RLS)', () => {
   it('rejects a forged webhook (bad signature) — fail closed', async () => {
     const body = JSON.stringify({ id: 'evt_forged', event: 'payment.captured', tenant_id: tenantA, order_id: gatewayOrderId, amount: Number(AMOUNT) });
     await expect(payments.handleWebhook('sandbox', body, 'deadbeef')).rejects.toBeInstanceOf(WebhookSignatureError);
+  });
+
+  it('rejects a captured webhook whose CURRENCY differs from the payment — tamper guard', async () => {
+    const intent = await payments.createIntent(tenantA, buyer, `idem-${randomUUID()}`, { purpose: 'direct_order', amountMinor: AMOUNT, currencyCode: 'INR', referenceType: 'order', referenceId: randomUUID() } as any);
+    const { body, sig } = webhook('payment.captured', { order_id: intent.gatewayOrderId, payment_id: `pay_${randomUUID()}`, amount: Number(AMOUNT), currency: 'USD', method: 'upi' });
+    await expect(payments.handleWebhook('sandbox', body, sig)).rejects.toBeInstanceOf(PaymentCurrencyMismatchError);
+    const p = await admin.query(`SELECT status FROM payments WHERE id=$1`, [intent.paymentId]);
+    expect(p.rows[0].status).not.toBe('success');   // money was NOT moved
+  });
+
+  it('dedups on the delivery event-id header — same header, different body, is a no-op', async () => {
+    const intent = await payments.createIntent(tenantA, buyer, `idem-${randomUUID()}`, { purpose: 'direct_order', amountMinor: AMOUNT, currencyCode: 'INR', referenceType: 'order', referenceId: randomUUID() } as any);
+    const before = await escrowBalance();
+    const hdr = `evt_hdr_${randomUUID()}`;
+    const a = webhook('payment.captured', { order_id: intent.gatewayOrderId, payment_id: `pay_${randomUUID()}`, amount: Number(AMOUNT), currency: 'INR', method: 'upi' });
+    const b = webhook('payment.captured', { order_id: intent.gatewayOrderId, payment_id: `pay_${randomUUID()}`, amount: Number(AMOUNT), currency: 'INR', method: 'upi' });
+    await payments.handleWebhook('sandbox', a.body, a.sig, hdr);
+    await payments.handleWebhook('sandbox', b.body, b.sig, hdr);   // same delivery id → deduped, never processed twice
+    const delta = BigInt(await escrowBalance()) - BigInt(before);
+    expect(delta.toString()).toBe(AMOUNT);   // escrow moved EXACTLY once despite two deliveries
+  });
+
+  it('the WHOLE ledger nets to zero (global double-entry invariant — what reconciliation asserts)', async () => {
+    const sum = await admin.query(`SELECT COALESCE(SUM(amount_minor),0)::bigint s FROM ledger_entries`);
+    expect(String(sum.rows[0].s)).toBe('0');
   });
 
   it('RLS: tenant B cannot see tenant A\'s payment', async () => {

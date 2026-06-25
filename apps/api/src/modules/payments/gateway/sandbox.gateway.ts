@@ -28,7 +28,9 @@ export class SandboxGateway implements PaymentGateway {
       eventId: p.id, kind: map[p.event] ?? 'ignored',
       tenantId: p.tenant_id,
       gatewayOrderId: p.order_id, gatewayPaymentId: p.payment_id,
-      amountMinor: p.amount != null ? BigInt(p.amount) : undefined, method: p.method,
+      amountMinor: p.amount != null ? BigInt(p.amount) : undefined,
+      currencyCode: p.currency ? String(p.currency).toUpperCase() : undefined,
+      method: p.method,
       failureCode: p.error_code, failureReason: p.error_reason,
     };
   }
