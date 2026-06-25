@@ -383,6 +383,12 @@ export interface PriceAlert { id: string; productId: string; regionId: string | 
 /** A regional weather advisory (read-only ingested reference data). `advisoryTextKey` is an i18n key. */
 export interface WeatherAlert { id: string; regionId: string; alertTypeId: string | null; severity: string; validFrom: string | null; validTo: string | null; advisoryTextKey: string; payload?: Record<string, unknown> | null; source: string | null; createdAt?: string; }
 
+// --- geocoded forecast (P0-12). Temps °C, precip mm, prob 0-100, wind km/h — provider units normalised server-side.
+export interface ForecastDay { date: string; tempMinC: number; tempMaxC: number; precipMm: number; precipProbPct: number; windKph: number; code: string; }
+export interface NormalisedForecast { lat: number; lng: number; providerCode: string; fetchedAt: string; days: ForecastDay[]; }
+/** Either a real forecast (degraded:false) or — provider down + regionId given — degraded:true with advisories. */
+export interface ForecastResult { degraded: boolean; source: 'forecast' | 'advisory'; providerCode: string | null; forecast: NormalisedForecast | null; advisories: WeatherAlert[]; }
+
 /** A dispute (moderation view for a tenant with dispute.resolve). resolutionAmountMinor is bigint minor. */
 export interface Dispute {
   id: string; orderId: string; raisedBy: string; againstUser: string | null; reasonId: string | null; description: string | null;

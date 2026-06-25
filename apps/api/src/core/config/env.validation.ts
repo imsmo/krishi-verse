@@ -87,6 +87,12 @@ export const EnvSchema = z.object({
   MASKING_WEBHOOK_SECRET: z.string().default(''),       // HMAC secret for the call-status callback
   STREAM_PROVIDER_URL: z.string().default(''),          // external live-streaming provider; absent ⇒ noop
   STREAM_PROVIDER_API_KEY: z.string().default(''),
+  // --- geocoded weather forecast (P0-12) ---
+  WEATHER_PROVIDER_KIND: z.string().default('open-meteo'),   // 'open-meteo' (default, free) | 'imd' | 'none' (degrade)
+  WEATHER_PROVIDER_URL: z.string().default(''),              // override base URL (aggregator); default open-meteo public
+  WEATHER_PROVIDER_API_KEY: z.string().default(''),          // optional api key (aggregators that require one)
+  WEATHER_CACHE_TTL_SEC: z.coerce.number().int().positive().max(86400).default(3600),  // 1h forecast cache (cost cap)
+  WEATHER_FORECAST_DAYS: z.coerce.number().int().min(1).max(16).default(7),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

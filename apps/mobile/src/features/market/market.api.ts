@@ -2,7 +2,7 @@
 // (guide §3). Reads degrade-never-die (null/empty). createAlert is idempotent (Law 3) and throws so the screen
 // shows the precise outcome. Money is bigint minor strings (Law 2). Alert delivery is a server-side PUSH (P-04) —
 // the app only subscribes; the server fires when a price crosses the threshold.
-import type { Mandi, MandiPrice, MandiPulse, PriceAlert, WeatherAlert } from '@krishi-verse/sdk-js';
+import type { Mandi, MandiPrice, MandiPulse, PriceAlert, WeatherAlert, ForecastResult } from '@krishi-verse/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 
@@ -39,6 +39,12 @@ export async function weatherAlerts(regionId: string, activeOnly = true): Promis
   try { return await apiClient().weather.alerts(regionId, { activeOnly }); } catch { return []; }
 }
 
+/** Geocoded forecast for the farmer's location (P0-12). regionId is passed so the server can degrade to that
+ * region's advisories if the provider is down. Returns null on a hard failure (screen falls back to advisories). */
+export async function weatherForecast(lat: number, lng: number, regionId?: string | null): Promise<ForecastResult | null> {
+  try { return await apiClient().weather.forecast({ lat, lng, regionId: regionId ?? undefined }); } catch { return null; }
+}
+
 /** The farmer's region from their default (or first) saved address — "weather by location" without a geocoder.
  * Null if no address has a region (the weather screen then prompts to set one). */
 export async function defaultRegionId(): Promise<string | null> {
@@ -46,5 +52,16 @@ export async function defaultRegionId(): Promise<string | null> {
     const addrs = await apiClient().addresses.list();
     const withRegion = addrs.filter((a) => !!a.regionId);
     return (withRegion.find((a) => a.isDefault)?.regionId ?? withRegion[0]?.regionId ?? null) as string | null;
+  } catch { return null; }
+}
+
+/** The farmer's lat/lng from their default (or first) saved address that has coordinates — the forecast anchor.
+ * Null when no address carries coordinates (the screen then shows advisories only). */
+export async function defaultLatLng(): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const addrs = await apiClient().addresses.list();
+    const withGeo = addrs.filter((a) => typeof a.lat === 'number' && typeof a.lng === 'number');
+    const pick = withGeo.find((a) => a.isDefault) ?? withGeo[0];
+    return pick ? { lat: pick.lat as number, lng: pick.lng as number } : null;
   } catch { return null; }
 }

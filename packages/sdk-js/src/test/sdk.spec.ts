@@ -180,6 +180,15 @@ describe('HttpClient via resources', () => {
     expect(list[0].severity).toBe('severe');
   });
 
+  it('weather.forecast GETs /v1/land/weather-forecast with lat/lng (+ regionId fallback)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { degraded: false, source: 'forecast', providerCode: 'open-meteo', forecast: { lat: 19.076, lng: 72.877, providerCode: 'open-meteo', fetchedAt: 'now', days: [{ date: '2026-06-25', tempMinC: 26, tempMaxC: 33, precipMm: 1, precipProbPct: 20, windKph: 10, code: 'clouds' }] }, advisories: [] } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const r = await c.weather.forecast({ lat: 19.076, lng: 72.877, regionId: 'r1' });
+    expect(calls[0].url).toBe('https://api.test/v1/land/weather-forecast?lat=19.076&lng=72.877&regionId=r1');
+    expect(r.source).toBe('forecast');
+    expect(r.forecast!.days[0].code).toBe('clouds');
+  });
+
   it('resources.list GETs /v1/education/resources with box=browse (approved only)', async () => {
     const { fn, calls } = fakeFetch(() => ({ body: { data: [{ id: 'res1', channelId: null, ownerUserId: 'u1', kind: 'article', title: 'Drip irrigation', externalUrl: null, mediaId: null, topicId: null, languageCode: 'hi', body: 'Save water', status: 'approved' }], meta: { nextCursor: 'c2' } } }));
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });

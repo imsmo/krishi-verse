@@ -950,6 +950,8 @@
   "mandi.alerts.invalid": "Please check the alert details.",
   "mandi.alerts.createFailed": "Couldn't create the alert. Please try again.",
   "weather.title": "Weather",
+  "weather.forecast.title": "5-day forecast",
+  "weather.forecast.degraded": "Live forecast unavailable — showing regional advisories.",
   "weather.detailTitle": "Weather advisory",
   "weather.unavailable": "This advisory is unavailable.",
   "weather.expired": "No longer in effect",

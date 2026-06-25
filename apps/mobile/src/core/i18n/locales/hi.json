@@ -950,6 +950,8 @@
   "mandi.alerts.invalid": "कृपया अलर्ट विवरण जाँचें।",
   "mandi.alerts.createFailed": "अलर्ट नहीं बन सका। कृपया फिर प्रयास करें।",
   "weather.title": "मौसम",
+  "weather.forecast.title": "5-दिन का पूर्वानुमान",
+  "weather.forecast.degraded": "लाइव पूर्वानुमान उपलब्ध नहीं — क्षेत्रीय सलाह दिखाई जा रही है।",
   "weather.detailTitle": "मौसम सलाह",
   "weather.unavailable": "यह सलाह उपलब्ध नहीं है।",
   "weather.expired": "अब प्रभावी नहीं",

@@ -4,7 +4,7 @@
 // display. The SERVER is the authority on prices, predictions, alert firing (push), and advisories — these
 // helpers only drive the UI.
 import type { PillTone } from '@krishi-verse/ui-native';
-import type { MandiPrice, WeatherAlert, PriceAlert } from '@krishi-verse/sdk-js';
+import type { MandiPrice, WeatherAlert, PriceAlert, ForecastDay } from '@krishi-verse/sdk-js';
 
 /** Percent change between two bigint-minor prices, as a number rounded to 1 dp (display only). Uses BigInt so a
  * huge price never loses precision; returns null if old is missing/zero or inputs are malformed. */
@@ -73,4 +73,15 @@ export function isAdvisoryActive(a: Pick<WeatherAlert, 'validFrom' | 'validTo'>,
 export function historyTrendPct(history: Pick<MandiPrice, 'modalMinor'>[]): number | null {
   if (!history || history.length < 2) return null;
   return priceChangePct(history[1].modalMinor, history[0].modalMinor);
+}
+
+// --- forecast (P0-12) ---
+/** A short weekday label for a forecast day's ISO date (e.g. 'Wed'); falls back to the raw date on parse failure. */
+export function forecastDayLabel(day: Pick<ForecastDay, 'date'>): string {
+  const t = Date.parse(day.date);
+  return Number.isNaN(t) ? day.date : new Date(t).toLocaleDateString(undefined, { weekday: 'short' });
+}
+/** Compact one-line summary for a forecast day (display only; numbers come straight from the provider). */
+export function forecastDaySummary(day: ForecastDay): string {
+  return `${Math.round(day.tempMinC)}–${Math.round(day.tempMaxC)}°C · ${day.precipProbPct}%`;
 }

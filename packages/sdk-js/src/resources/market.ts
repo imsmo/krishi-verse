@@ -3,7 +3,7 @@
 // (create → server fires a push when crossed). Weather is regional advisories (read-only, by regionId). Money is
 // bigint minor strings (Law 2). Gated server-side by `market_intel` / `land_soil_weather` flags.
 import { HttpClient } from '../http';
-import { Mandi, MandiPrice, PricePrediction, PriceAlert, MandiPulse, WeatherAlert, Page } from '../types';
+import { Mandi, MandiPrice, PricePrediction, PriceAlert, MandiPulse, WeatherAlert, ForecastResult, Page } from '../types';
 
 export class MarketResource {
   constructor(private readonly http: HttpClient) {}
@@ -48,5 +48,11 @@ export class WeatherResource {
   /** Regional weather advisories (read-only). `regionId` is required by the server. */
   async alerts(regionId: string, params: { activeOnly?: boolean; limit?: number } = {}, signal?: AbortSignal): Promise<WeatherAlert[]> {
     return (await this.http.request<WeatherAlert[]>('GET', 'land/weather-alerts', { query: { regionId, activeOnly: params.activeOnly, limit: params.limit ?? 50 }, signal })).data;
+  }
+
+  /** Geocoded forecast for a coordinate (P0-12). Returns a real provider forecast, or — if the provider is down
+   *  and `regionId` is given — degrades to that region's advisories (`degraded:true`). Never a fabricated forecast. */
+  async forecast(input: { lat: number; lng: number; days?: number; regionId?: string }, signal?: AbortSignal): Promise<ForecastResult> {
+    return (await this.http.request<ForecastResult>('GET', 'land/weather-forecast', { query: { lat: input.lat, lng: input.lng, days: input.days, regionId: input.regionId }, signal })).data;
   }
 }

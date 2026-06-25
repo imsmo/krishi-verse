@@ -235,6 +235,21 @@ export class AppConfig {
       apiKey: this.env.EKYC_PROVIDER_API_KEY || '',
     };
   }
+  get weather() {
+    // Geocoded forecast provider (P0-12). Default Open-Meteo public endpoint (free, no key); an IMD/Skymet
+    // aggregator drops in via WEATHER_PROVIDER_URL + key. `enabled` ⇒ bind the HTTP adapter; otherwise the
+    // noop/degrade adapter (always falls back to regional advisory — a forecast is never fabricated).
+    const kind = (this.env.WEATHER_PROVIDER_KIND || 'open-meteo').toLowerCase();
+    const baseUrl = this.env.WEATHER_PROVIDER_URL || (kind === 'open-meteo' ? 'https://api.open-meteo.com' : '');
+    return {
+      kind,
+      enabled: kind !== 'none' && !!baseUrl,
+      baseUrl,
+      apiKey: this.env.WEATHER_PROVIDER_API_KEY || '',
+      cacheTtlSec: this.env.WEATHER_CACHE_TTL_SEC,   // forecast cache TTL (cost/rate-limit control)
+      forecastDays: this.env.WEATHER_FORECAST_DAYS,
+    };
+  }
   get masking() {
     return {
       providerUrl: this.env.MASKING_PROVIDER_URL || null,   // null ⇒ noop masking provider

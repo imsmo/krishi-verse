@@ -950,6 +950,8 @@
   "mandi.alerts.invalid": "કૃપા કરી ચેતવણીની વિગતો તપાસો.",
   "mandi.alerts.createFailed": "ચેતવણી બની શકી નહીં. કૃપા કરી ફરી પ્રયાસ કરો.",
   "weather.title": "હવામાન",
+  "weather.forecast.title": "5-દિવસનો પૂર્વાનુમાન",
+  "weather.forecast.degraded": "લાઇવ પૂર્વાનુમાન ઉપલબ્ધ નથી — પ્રાદેશિક સલાહ બતાવાઈ રહી છે.",
   "weather.detailTitle": "હવામાન સલાહ",
   "weather.unavailable": "આ સલાહ ઉપલબ્ધ નથી.",
   "weather.expired": "હવે અમલમાં નથી",
