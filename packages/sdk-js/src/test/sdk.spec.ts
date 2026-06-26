@@ -820,4 +820,17 @@ describe('HttpClient via resources', () => {
     expect(calls[3].url).toBe('https://api.test/v1/ai/review-queue/r1/resolve');
     expect(res.status).toBe('rejected');
   });
+
+  it('assistant: ask posts an idempotent governed turn + returns the logged reply (P1-13)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { reply: 'Use neem oil for aphids.', sessionId: 's1', status: 'answered', citations: [{ title: 'ICAR pest guide' }] } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+
+    const r = await c.assistant.ask({ message: 'How do I treat aphids on okra?', languageCode: 'en' }, 'idem-asst-1');
+    expect(calls[0].url).toBe('https://api.test/v1/ai/assistant/messages');
+    expect(calls[0].init.method).toBe('POST');
+    expect(calls[0].init.headers['idempotency-key']).toBe('idem-asst-1');
+    expect(r.status).toBe('answered');
+    expect(r.sessionId).toBe('s1');
+    expect(r.reply).toContain('neem');
+  });
 });

@@ -98,6 +98,12 @@ export const EnvSchema = z.object({
   WEATHER_PROVIDER_API_KEY: z.string().default(''),          // optional api key (aggregators that require one)
   WEATHER_CACHE_TTL_SEC: z.coerce.number().int().positive().max(86400).default(3600),  // 1h forecast cache (cost cap)
   WEATHER_FORECAST_DAYS: z.coerce.number().int().min(1).max(16).default(7),
+  // --- governed farmer AI assistant (P1-13) ---
+  AI_SERVICES_URL: z.string().default(''),                   // base URL of the internal ai-services tier; '' ⇒ degrade
+  AI_SERVICES_SHARED_SECRET: z.string().default(''),         // s2s bearer (must match ai-services API_SHARED_SECRET)
+  AI_SERVICES_TIMEOUT_MS: z.coerce.number().int().positive().max(60000).default(12000),
+  AI_ASSISTANT_DAILY_CAP: z.coerce.number().int().min(1).max(1000).default(50),     // per-user/day message cap (cost guard)
+  AI_ASSISTANT_PER_MINUTE_CAP: z.coerce.number().int().min(1).max(120).default(6),  // per-user/min burst cap (abuse guard)
 });
 
 export type Env = z.infer<typeof EnvSchema>;

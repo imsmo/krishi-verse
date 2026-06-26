@@ -381,7 +381,8 @@ export interface LearningResource {
 // --- AI assistant (P-20 AI-chat) — ASSUMED contract; no farmer-facing endpoint is live yet (flagged) ---
 /** One turn of the assistant's reply. `sessionId` threads a conversation; `citations` are optional source links
  * the server attaches (the app renders only what the server returns — never fabricates an answer). */
-export interface AssistantReply { reply: string; sessionId: string; citations?: Array<{ title: string; url?: string }>; }
+export type AssistantStatus = 'answered' | 'needs_review' | 'blocked';
+export interface AssistantReply { reply: string; sessionId: string; status?: AssistantStatus; citations?: Array<{ title: string; url?: string }>; }
 
 // --- govt schemes (module — global scheme catalogue + the caller's applications + DBT) — money bigint STRINGS (Law 2) ---
 /** A government scheme (GLOBAL catalogue). `benefitSummary`/`eligibilityRules` are opaque JSON the app renders/

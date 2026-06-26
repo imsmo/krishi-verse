@@ -5,6 +5,7 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   ('listing_boost', 'Paid listing visibility boosts', true, 100, '{}'),
   ('group_lots',    'FPO group-lot pooling',          true, 100, '{}'),
   ('audit_trail',   'Read-only audit-trail viewer for the tenant auditor role — OFF until enabled per tenant', false, 100, '{}'),
+  ('ai_assistant',  'Governed farmer AI assistant (P1-13) — s2s ai-services inference + guardrails + cost caps; OFF until a model key is set', false, 100, '{}'),
   ('kyc',           'KYC document submission + review', true, 100, '{}'),
   ('product_batches','Regulated-input store inventory batches', true, 100, '{}'),
   ('online_payments','Online payment at checkout (wallet-service) — OFF until payments lands', false, 100, '{}'),

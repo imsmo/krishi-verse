@@ -262,6 +262,20 @@ export class AppConfig {
       forecastDays: this.env.WEATHER_FORECAST_DAYS,
     };
   }
+  get assistant() {
+    // Governed farmer AI assistant (P1-13). Calls the internal ai-services tier over s2s (shared secret bearer),
+    // resilience-wrapped. `enabled` ⇒ bind the HTTP adapter; otherwise the noop/degrade adapter (returns a
+    // needs_review result — NEVER a fabricated answer). Per-user caps bound cost + abuse.
+    const baseUrl = (this.env.AI_SERVICES_URL || '').replace(/\/$/, '');
+    return {
+      enabled: !!baseUrl && !!this.env.AI_SERVICES_SHARED_SECRET,
+      baseUrl,
+      sharedSecret: this.env.AI_SERVICES_SHARED_SECRET || '',
+      timeoutMs: this.env.AI_SERVICES_TIMEOUT_MS,
+      dailyCap: this.env.AI_ASSISTANT_DAILY_CAP,
+      perMinuteCap: this.env.AI_ASSISTANT_PER_MINUTE_CAP,
+    };
+  }
   get masking() {
     return {
       providerUrl: this.env.MASKING_PROVIDER_URL || null,   // null ⇒ noop masking provider

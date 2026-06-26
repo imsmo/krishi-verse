@@ -32,6 +32,6 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   DairyAnimalType, DairyPaymentCycle, DairyPricingModel, DairyShift, MilkBillStatus,
   CreateMccInput, EnrolMemberInput, CreateRateCardInput, RecordCollectionInput, GenerateBillInput,
   Mandi, MandiPrice, PricePrediction, PriceAlert, MandiPulse, WeatherAlert,
-  LearningResource, ResourceKind, AssistantReply,
+  LearningResource, ResourceKind, AssistantReply, AssistantStatus,
   Scheme, SchemeAuthority, EligibilityResult, ApplicationStatus, SchemeApplication, DbtTransfer,
   SupportTicket, TicketSeverity, TicketStatus, LandParcel, PrivacyRequest } from './types';

@@ -20,6 +20,7 @@ from .price_bands.router import router as price_bands_router
 from .voice_extraction.router import router as voice_router
 from .photo_grading.router import router as photo_router
 from .fraud_signals.router import router as fraud_router
+from .assistant.router import router as assistant_router
 
 log = get_logger()
 
@@ -52,6 +53,7 @@ app.include_router(price_bands_router)
 app.include_router(voice_router)
 app.include_router(photo_router)
 app.include_router(fraud_router)
+app.include_router(assistant_router)
 
 
 @app.middleware("http")
