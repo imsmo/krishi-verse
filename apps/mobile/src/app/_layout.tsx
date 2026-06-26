@@ -13,6 +13,7 @@ import { PlusJakartaSans_400Regular, PlusJakartaSans_600SemiBold, PlusJakartaSan
 import { Hind_400Regular, Hind_600SemiBold } from '@expo-google-fonts/hind';
 import { color, OfflineBanner } from '@krishi-verse/ui-native';
 import { AuthProvider } from '../core/auth/auth.store';
+import { AppErrorBoundary } from '../core/errors/AppErrorBoundary';
 import { hydrateFlags } from '../core/flags/hydrate';
 import { startSyncEngine } from '../core/offline/sync.engine';
 import { useConnectivity } from '../core/connectivity/connectivity';
@@ -63,9 +64,11 @@ export default function RootLayout() {
         <StatusBar style="dark" />
         <AuthProvider>
           <ConnectivityBanner />
-          <ForcedUpdateGate>
-            <Slot />
-          </ForcedUpdateGate>
+          <AppErrorBoundary>
+            <ForcedUpdateGate>
+              <Slot />
+            </ForcedUpdateGate>
+          </AppErrorBoundary>
         </AuthProvider>
       </View>
     </SafeAreaProvider>

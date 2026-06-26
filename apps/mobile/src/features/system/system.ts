@@ -65,6 +65,24 @@ export const PERMISSIONS: PermissionItem[] = [
 export function permissionTitleKey(key: string): string { return `system.permissions.${key}.title`; }
 export function permissionWhyKey(key: string): string { return `system.permissions.${key}.why`; }
 
+// --- degrade-never-die fallback classification (Law 12) ---
+// Drives WHICH global fallback a thrown error should surface. Decoupled from the SDK by NAME (not instanceof) so
+// this stays a pure, framework-free helper: an SdkNetworkError/SdkTimeoutError (the request never reached the API)
+// is an "offline" condition; everything else (5xx, unknown, a render crash) is "server".
+export type FallbackKind = 'offline' | 'server';
+export function classifyFallback(err: unknown): FallbackKind {
+  const name = err && typeof err === 'object' && 'name' in err ? String((err as { name?: unknown }).name) : '';
+  return name === 'SdkNetworkError' || name === 'SdkTimeoutError' ? 'offline' : 'server';
+}
+/** Extract a SAFE support reference from a thrown error (the SDK's requestId, if present). Returns null otherwise —
+ * NEVER the error message, code, stack, or any field that could leak PII/secrets (the SdkError contract guarantees
+ * requestId is safe). Bounded to 64 chars. */
+export function safeErrorRef(err: unknown): string | null {
+  if (!err || typeof err !== 'object') return null;
+  const r = (err as { requestId?: unknown }).requestId;
+  return typeof r === 'string' && r.trim() ? r.trim().slice(0, 64) : null;
+}
+
 // --- DPDP account-delete confirmation (typed phrase guard against accidental taps) ---
 /** The user must type the confirmation word exactly (case-insensitive, trimmed) to enable deletion. The word is
  * the localized `expected` (e.g. "DELETE"/"हटाएँ") — compared verbatim, no regex. */

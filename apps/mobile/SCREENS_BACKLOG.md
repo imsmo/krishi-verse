@@ -9,7 +9,10 @@ Legend: ✅ built this release · 🟡 partial · ⬜ scaffolded (folder exists,
 ## Foundation & onboarding (screens 01–05, +offline/permissions/tutorial) — ✅
 - 01 welcome, 02 language, 03 OTP, 04 role, 05 profile-setup → `src/app/(auth)/*` ✅
 - Shared shell: theme + ui-native primitives, i18n (hi/en/gu), secure token store, offline queue, auth store ✅
-- offline-mode / permissions / server-error / tutorial screens → `src/core/*` infra present; dedicated screens ⬜
+- offline-mode / permissions / server-error / tutorial screens → `src/app/(system)/*` ✅ (P1-17). Plus a GLOBAL
+  render-crash boundary (`core/errors/AppErrorBoundary` → server-error panel, mounted at root `_layout`) and a
+  `+not-found` route so a bad deep-link / failed render NEVER white-screens (Law 12). i18n hi/en/gu parity; pure
+  fallback helpers (`classifyFallback` / `safeErrorRef`) unit-tested.
 
 ## Farmer (≈36 screens) — 🟡 (home + listings vertical built)
 - ✅ 09 home, 10 create-listing (photos + voice), 11 listing-preview→publish, 12 my-listings, 112 my-listing-detail

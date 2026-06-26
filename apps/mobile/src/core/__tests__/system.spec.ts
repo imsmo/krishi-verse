@@ -5,6 +5,7 @@
 import {
   normalizeQuery, mergeSearchResults, compareVersions, isUpdateRequired,
   PERMISSIONS, permissionTitleKey, permissionWhyKey, deleteConfirmationOk,
+  classifyFallback, safeErrorRef,
 } from '../../features/system/system';
 import type { ListingCard, OrderListItem } from '@krishi-verse/sdk-js';
 
@@ -66,5 +67,30 @@ describe('deleteConfirmationOk', () => {
     expect(deleteConfirmationOk('nope', 'DELETE')).toBe(false);
     expect(deleteConfirmationOk('', 'DELETE')).toBe(false);
     expect(deleteConfirmationOk('delete', '')).toBe(false);
+  });
+});
+
+describe('classifyFallback', () => {
+  it('routes network/timeout errors to the offline fallback', () => {
+    expect(classifyFallback({ name: 'SdkNetworkError' })).toBe('offline');
+    expect(classifyFallback({ name: 'SdkTimeoutError' })).toBe('offline');
+  });
+  it('routes everything else (5xx, unknown, render crash) to the server fallback', () => {
+    expect(classifyFallback({ name: 'SdkError', status: 500 })).toBe('server');
+    expect(classifyFallback(new Error('boom'))).toBe('server');
+    expect(classifyFallback(null)).toBe('server');
+    expect(classifyFallback('weird')).toBe('server');
+  });
+});
+
+describe('safeErrorRef', () => {
+  it('returns the SDK requestId when present (bounded), null otherwise — never leaks other fields', () => {
+    expect(safeErrorRef({ requestId: 'req-123' })).toBe('req-123');
+    expect(safeErrorRef({ requestId: '  req-9  ' })).toBe('req-9');
+    expect(safeErrorRef({ requestId: 'x'.repeat(200) })).toHaveLength(64);
+    expect(safeErrorRef({ message: 'secret', code: 'X' })).toBeNull();
+    expect(safeErrorRef({ requestId: '' })).toBeNull();
+    expect(safeErrorRef(null)).toBeNull();
+    expect(safeErrorRef(new Error('boom'))).toBeNull();
   });
 });
