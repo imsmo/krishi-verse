@@ -8,14 +8,17 @@
 //   activeBoost      — the live paid boost's end time, or null (listing_boosts)
 //   boostsPurchased  — total boosts ever bought for this listing
 //   priceChanges     — number of price edits (listing_price_history)
-// NOTE: there is no per-impression VIEW counter yet (that needs the high-volume event pipeline, a
-// separate API wave) — so this read does NOT invent a "views" number. The client shows what's real.
+//   views            — REAL per-impression view count (P1-15), read from listing_view_counts: the counted
+//                      read-model the stream-processor's view_counter consumer feeds off the event pipeline.
+//                      0 until the first view lands; NEVER fabricated. No view-traffic is counted on this read
+//                      path (CQRS — counting happens off-band in the stream-processor).
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 
 export interface ListingAnalytics {
   listingId: string; status: string; publishedAt: string | null;
-  offers: number; priceChanges: number; boostsPurchased: number;
+  offers: number; priceChanges: number; boostsPurchased: number; views: number;
+  lastViewedAt: string | null;
   activeBoost: { endsAt: string } | null;
 }
 
@@ -32,19 +35,25 @@ export class ListingAnalyticsReadModel {
     if (!listing) return null;
     if (!canModerate && listing.seller_user_id !== viewerUserId) return null;   // owner-only (anti-IDOR)
 
-    const [offers, priceChanges, boosts] = await Promise.all([
+    const [offers, priceChanges, boosts, views] = await Promise.all([
       db.query<{ n: string }>(`SELECT count(*)::text AS n FROM listing_offers WHERE listing_id=$1`, [listingId]),
       db.query<{ n: string }>(`SELECT count(*)::text AS n FROM listing_price_history WHERE listing_id=$1`, [listingId]),
       db.query<{ n: string; ends_at: Date | null }>(
         `SELECT count(*)::text AS n, max(ends_at) FILTER (WHERE ends_at > now() AND deleted_at IS NULL) AS ends_at
            FROM listing_boosts WHERE listing_id=$1`, [listingId]),
+      // P1-15: real view count from the counted read-model (0 row ⇒ no views yet, never fabricated).
+      db.query<{ total: string; last_viewed_at: Date | null }>(
+        `SELECT total_views::text AS total, last_viewed_at FROM listing_view_counts WHERE listing_id=$1`, [listingId]),
     ]);
     const activeEnds = boosts.rows[0]?.ends_at;
+    const viewRow = views.rows[0];
     return {
       listingId, status: listing.status, publishedAt: listing.published_at ? listing.published_at.toISOString() : null,
       offers: Number(offers.rows[0]?.n ?? 0),
       priceChanges: Number(priceChanges.rows[0]?.n ?? 0),
       boostsPurchased: Number(boosts.rows[0]?.n ?? 0),
+      views: Number(viewRow?.total ?? 0),
+      lastViewedAt: viewRow?.last_viewed_at ? new Date(viewRow.last_viewed_at).toISOString() : null,
       activeBoost: activeEnds ? { endsAt: new Date(activeEnds).toISOString() } : null,
     };
   }

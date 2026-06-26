@@ -7,6 +7,7 @@ describe('topicForEvent', () => {
     expect(topicForEvent('dairy.collection_recorded')).toBe(TOPICS.dairy);
     expect(topicForEvent('listings.listing_published')).toBe(TOPICS.catalogue);
     expect(topicForEvent('payments.payout_executed')).toBe(TOPICS.payments);
+    expect(topicForEvent('views.listing_viewed')).toBe(TOPICS.views);   // P1-15: own topic, not catalogue
   });
   it('never drops an unmapped family — catch-all', () => {
     expect(topicForEvent('weird.something')).toBe(TOPICS.events);

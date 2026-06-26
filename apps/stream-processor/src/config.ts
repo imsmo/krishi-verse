@@ -38,7 +38,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     notifierApiKey: env.NOTIFIER_API_KEY ?? null,
     tailBatch: Math.max(1, Math.min(1000, Number(env.STREAM_TAIL_BATCH ?? 200))),
     consumerConcurrency: Math.max(1, Math.min(64, Number(env.STREAM_CONSUMER_CONCURRENCY ?? 8))),
-    enabledConsumers: csv(env.STREAM_CONSUMERS, ['search_indexer', 'notification_fanout', 'projection_builder', 'fraud_signal', 'analytics_etl']),
+    enabledConsumers: csv(env.STREAM_CONSUMERS, ['search_indexer', 'notification_fanout', 'projection_builder', 'fraud_signal', 'view_counter', 'analytics_etl']),
   };
 
   const problems: string[] = [];

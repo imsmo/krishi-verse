@@ -848,4 +848,26 @@ describe('HttpClient via resources', () => {
     expect(page.engine).toBe('opensearch');
     expect(page.nextCursor).toBe('CUR');
   });
+
+  it('listings.recordView POSTs /v1/listings/:id/view (fire-and-forget, no idempotency key)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { ok: true } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const r = await c.listings.recordView('l1');
+    expect(calls[0].url).toBe('https://api.test/v1/listings/l1/view');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBeUndefined();
+    expect(r.ok).toBe(true);
+  });
+
+  it('listings.analytics unwraps the real view count (P1-15)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: {
+      listingId: 'l1', status: 'published', publishedAt: '2026-06-01T00:00:00.000Z',
+      offers: 2, priceChanges: 1, boostsPurchased: 0, views: 42, lastViewedAt: '2026-06-25T10:00:00.000Z', activeBoost: null,
+    } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const a = await c.listings.analytics('l1');
+    expect(calls[0].url).toBe('https://api.test/v1/listings/l1/analytics');
+    expect(a.views).toBe(42);
+    expect(a.lastViewedAt).toBe('2026-06-25T10:00:00.000Z');
+  });
 });

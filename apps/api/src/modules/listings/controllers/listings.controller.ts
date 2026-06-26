@@ -11,7 +11,9 @@ import { ZodBody, ZodQuery } from '../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../core/tenancy-context/request-context';
 import { BadRequestError } from '../../../shared/errors/app-error';
+import { FeatureFlag, FeatureFlagGuard } from '../../../core/feature-flags/flags.guard';
 import { ListingService } from '../services/listing.service';
+import { ListingViewService } from '../services/listing-view.service';
 import { ListingSearchReadModel } from '../read-models/listing-search.read-model';
 import { ListingAnalyticsReadModel } from '../read-models/listing-analytics.read-model';
 import { ListingGalleryReadModel } from '../read-models/listing-gallery.read-model';
@@ -24,10 +26,11 @@ import { ListingNotFoundError } from '../domain/listing.errors';
 import { ListingPermissions, canModerate } from '../listings.policies';
 
 @Controller({ path: 'listings', version: '1' })
-@UseGuards(AuthGuard, PermissionsGuard)
+@UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 export class ListingsController {
   constructor(
     private readonly service: ListingService,
+    private readonly views: ListingViewService,
     private readonly searchRM: ListingSearchReadModel,
     private readonly analyticsRM: ListingAnalyticsReadModel,
     private readonly galleryRM: ListingGalleryReadModel,
@@ -84,6 +87,18 @@ export class ListingsController {
     const data = await this.analyticsRM.forSeller(ctx.tenantId, id, ctx.userId, canModerate(ctx));
     if (!data) throw new ListingNotFoundError(id);
     return { data };
+  }
+
+  /** Record ONE per-impression view (P1-15). Authenticated (bounds abuse, gives a clean tenant) + flag-gated
+   *  (`listing_views`, seeded OFF). FIRE-AND-FORGET: emits a single tiny `views.listing_viewed` outbox event onto
+   *  the high-volume pipeline — counting happens off-band in the stream-processor, so there is NO synchronous
+   *  hot-path cost. An emit failure is SWALLOWED (a lost impression is acceptable; never fail the caller — Law 12).
+   *  No Idempotency-Key: redelivery dedup is downstream (consumer runtime, keyed on the outbox event id). */
+  @Post(':id/view')
+  @FeatureFlag('listing_views')
+  async recordView(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    try { await this.views.record(ctx.tenantId, id, ctx.userId); } catch { /* drop the impression, never 5xx */ }
+    return { data: { ok: true } };
   }
 
   @Post(':id/publish')

@@ -19,6 +19,7 @@ import { notificationFanoutConsumer } from './consumers/notification-fanout.cons
 import { projectionBuilderConsumer } from './consumers/projection-builder.consumer';
 import { fraudSignalConsumer } from './consumers/fraud-signal.consumer';
 import { analyticsEtlConsumer } from './consumers/analytics-etl.consumer';
+import { viewCounterConsumer } from './consumers/view-counter.consumer';
 
 async function main(): Promise<void> {
   const cfg = loadConfig();                       // throws → exits on misconfig (fail closed)
@@ -42,6 +43,7 @@ async function main(): Promise<void> {
     notification_fanout: notificationFanoutConsumer(notifier),
     projection_builder: projectionBuilderConsumer(),
     fraud_signal: fraudSignalConsumer(),
+    view_counter: viewCounterConsumer(),
     analytics_etl: analyticsEtlConsumer(),
   };
   const runtime = new ConsumerRuntime(kafka, { db, producer, metrics, idempotency, dlq, log });

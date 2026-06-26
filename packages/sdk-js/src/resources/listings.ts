@@ -66,9 +66,16 @@ export class ListingsResource {
     return (await this.http.request<BoostWalletPayResult>('POST', `listings/${encodeURIComponent(id)}/boosts/pay-from-wallet`, { idempotencyKey, body: { boostTierId, currencyCode } })).data;
   }
 
-  /** Seller engagement analytics for the caller's OWN listing (offers / price changes / boosts). 404 if not owner. */
+  /** Seller engagement analytics for the caller's OWN listing (offers / price changes / boosts / views). 404 if not owner. */
   async analytics(id: string, signal?: AbortSignal): Promise<ListingAnalytics> {
     return (await this.http.request<ListingAnalytics>('GET', `listings/${encodeURIComponent(id)}/analytics`, { signal })).data;
+  }
+
+  /** Record ONE per-impression view (P1-15). FIRE-AND-FORGET: emits onto the event pipeline (counted off-band by
+   *  the stream-processor → listing_view_counts), so there is no hot-path cost. Best-effort telemetry: resolves to
+   *  { ok } when the `listing_views` flag is on, 404 when it's off; a dropped impression is acceptable. */
+  async recordView(id: string): Promise<{ ok: boolean }> {
+    return (await this.http.request<{ ok: boolean }>('POST', `listings/${encodeURIComponent(id)}/view`)).data;
   }
 }
 

@@ -51,7 +51,10 @@ export interface BoostWalletPayResult { ok: boolean; boostId: string; endsAt: st
 /** A seller's own-listing engagement analytics. Real metrics only (no fabricated impression/view count). */
 export interface ListingAnalytics {
   listingId: string; status: string; publishedAt: string | null;
-  offers: number; priceChanges: number; boostsPurchased: number; activeBoost: { endsAt: string } | null;
+  offers: number; priceChanges: number; boostsPurchased: number;
+  /** Real per-impression view count (P1-15), fed by the event pipeline; 0 until the first view lands. */
+  views: number; lastViewedAt: string | null;
+  activeBoost: { endsAt: string } | null;
 }
 
 // --- buyer favourites (module: buyer) ---
@@ -469,6 +472,8 @@ export interface TenantAnalytics {
   windowFrom: string; windowTo: string; currencyCode: string;
   gmvMinor: string; orders: number; commissionMinor: string; platformFeeMinor: string;
   refundedOrders: number; activeListings: number; disputesOpen: number; payoutsPaidMinor: string;
+  /** Tenant-wide per-impression listing views (P1-15), real and fed by the event pipeline; 0 until views land. */
+  listingViews: number;
   topProducts: { productId: string; quantity: string; salesMinor: string }[];
   topSellers: { sellerUserId: string; orders: number; salesMinor: string }[];
 }

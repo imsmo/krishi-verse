@@ -12,13 +12,14 @@ outbox_events (pg, append-only)
    │  OutboxTailer: keyset read from a per-shard checkpoint (never mutates status → no contention with the
    │  in-process dispatcher), publish each row to its ingest topic, keyed by tenant_id
    ▼
-Kafka  kv.orders / kv.auctions / kv.dairy / kv.catalogue / kv.payments / kv.events
+Kafka  kv.orders / kv.auctions / kv.dairy / kv.catalogue / kv.payments / kv.views / kv.events
    │  one consumer GROUP per concern (independent — a slow analytics consumer never blocks search)
    ▼
 consumers ──▶ search_indexer      → OpenSearch upsert/delete by id
           ──▶ notification_fanout → external notifier (HTTP, dedups on idempotency-key)
           ──▶ projection_builder  → stream_read_projections (CQRS read-models, monotonic upsert)
           ──▶ fraud_signal        → score → produce kv.fraud.signals (advisory; human review, never auto-action)
+          ──▶ view_counter        → UPSERT listing_view_counts (P1-15; counted views read-model, kv.views only)
           ──▶ analytics_etl       → flatten → produce kv.analytics.events (analytics-pipeline lands it)
    │  poison/exhausted → stream_dead_letters + kv.dlq
 ```
@@ -48,7 +49,7 @@ key, monotonic projection), so a crash between effect and record is safe.
   service refuses to start without `KAFKA_BROKERS` + `DATABASE_URL`.
 
 ## What's real here vs. owned elsewhere (honest boundaries)
-- **Real:** the tailer, the Kafka producer/consumer runtime, idempotency, retry/DLQ, the 5 consumers, the
+- **Real:** the tailer, the Kafka producer/consumer runtime, idempotency, retry/DLQ, the 6 consumers, the
   OpenSearch writer, the notifier client, the CQRS projections, fraud scoring (pure, unit-tested).
 - **Owned by the consuming side (flagged, not faked):** the **analytics-pipeline** (ClickHouse + dbt) ingests
   `kv.analytics.events`; the **ai-governance** review queue / admin risk tooling consumes `kv.fraud.signals`;

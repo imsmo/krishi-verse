@@ -15,6 +15,7 @@ import { SellersController } from './controllers/sellers.controller';
 // Application services
 import { ListingService } from './services/listing.service';
 import { ListingBoostService } from './services/listing-boost.service';
+import { ListingViewService } from './services/listing-view.service';
 import { ListingAttributeService } from './services/listing-attribute.service';
 import { GroupLotService } from './services/group-lot.service';
 import { GroupLotPledgeService } from './services/group-lot-pledge.service';
@@ -49,7 +50,7 @@ import { PublishScheduledJob } from './jobs/publish-scheduled.job';
   imports: [MediaModule],
   controllers: [ListingsController, BoostsController, GroupLotsController, SellersController],
   providers: [
-    ListingService, ListingBoostService, ListingAttributeService, GroupLotService, GroupLotPledgeService,
+    ListingService, ListingBoostService, ListingViewService, ListingAttributeService, GroupLotService, GroupLotPledgeService,
     ListingSearchReadModel, MandiBandReadModel, ListingAnalyticsReadModel, SellerProfileReadModel, ListingGalleryReadModel, ListingLinksReadModel,
     ListingRepository, PriceHistoryRepository, ListingAttributeRepository,
     ListingBoostRepository, GroupLotRepository, GroupLotPledgeRepository, ListingMediaRepository,

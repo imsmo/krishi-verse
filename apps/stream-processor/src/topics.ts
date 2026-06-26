@@ -16,6 +16,8 @@ export const TOPICS = {
   dairy: 'kv.dairy',
   catalogue: 'kv.catalogue',      // listings/products → search + projections
   payments: 'kv.payments',
+  views: 'kv.views',              // per-impression listing views → counted read-model (P1-15; isolated so the
+                                  // high-volume firehose never shares a topic with search/projection/notification)
   events: 'kv.events',            // catch-all for unmapped aggregate families (never drop)
   // outputs produced by consumers
   fraudSignals: 'kv.fraud.signals',
@@ -35,6 +37,8 @@ const FAMILY_TOPIC: Record<string, TopicName> = {
   catalogue: TOPICS.catalogue,
   products: TOPICS.catalogue,
   payments: TOPICS.payments,
+  views: TOPICS.views,            // 'views.listing_viewed' → kv.views (own topic; not catalogue, so it never
+                                  // feeds the projection-builder/search-indexer that key off 'listings.*')
 };
 
 /** The ingest topic an event_type publishes to. Unknown families go to the catch-all (never dropped). */
@@ -50,7 +54,7 @@ export function partitionKey(tenantId: string | null | undefined): string {
 
 /** The ingest topics the tailer publishes to (every family topic + catch-all). */
 export const INGEST_TOPICS: readonly TopicName[] = [
-  TOPICS.orders, TOPICS.auctions, TOPICS.dairy, TOPICS.catalogue, TOPICS.payments, TOPICS.events,
+  TOPICS.orders, TOPICS.auctions, TOPICS.dairy, TOPICS.catalogue, TOPICS.payments, TOPICS.views, TOPICS.events,
 ];
 
 /** A consumer concern: its Kafka consumer group id + the ingest topics it subscribes to. */
@@ -63,5 +67,6 @@ export const CONSUMER_SUBSCRIPTIONS: Record<string, ConsumerSubscription> = {
   notification_fanout: { concern: 'notification_fanout', groupId: 'sp-notification-fanout', topics: [TOPICS.orders, TOPICS.auctions, TOPICS.payments, TOPICS.events] },
   projection_builder:  { concern: 'projection_builder',  groupId: 'sp-projection-builder',  topics: [TOPICS.orders, TOPICS.catalogue, TOPICS.auctions, TOPICS.dairy] },
   fraud_signal:        { concern: 'fraud_signal',        groupId: 'sp-fraud-signal',        topics: [TOPICS.orders, TOPICS.payments, TOPICS.auctions] },
+  view_counter:        { concern: 'view_counter',        groupId: 'sp-view-counter',        topics: [TOPICS.views] },
   analytics_etl:       { concern: 'analytics_etl',       groupId: 'sp-analytics-etl',       topics: INGEST_TOPICS },
 };
