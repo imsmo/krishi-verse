@@ -15,6 +15,7 @@ import { DairyResource } from './resources/dairy';
 import { GroupLotsResource } from './resources/group-lots';
 import { AuditResource } from './resources/audit';
 import { AiReviewResource } from './resources/ai-review';
+import { SearchResource } from './resources/search';
 import { TenantConfigResource } from './resources/tenant-config';
 import { IntegrationsResource } from './resources/integrations';
 import { WebhooksResource } from './resources/webhooks';
@@ -73,6 +74,7 @@ export class KrishiVerseClient {
   readonly groupLots: GroupLotsResource;
   readonly audit: AuditResource;
   readonly aiReview: AiReviewResource;
+  readonly search: SearchResource;
   readonly tenantConfig: TenantConfigResource;
   readonly integrations: IntegrationsResource;
   readonly webhooks: WebhooksResource;
@@ -123,6 +125,7 @@ export class KrishiVerseClient {
     this.groupLots = new GroupLotsResource(this.http);
     this.audit = new AuditResource(this.http);
     this.aiReview = new AiReviewResource(this.http);
+    this.search = new SearchResource(this.http);
     this.tenantConfig = new TenantConfigResource(this.http);
     this.integrations = new IntegrationsResource(this.http);
     this.webhooks = new WebhooksResource(this.http);

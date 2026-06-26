@@ -7,12 +7,24 @@
 import type { ListingCard, OrderListItem } from '@krishi-verse/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
-import { mergeSearchResults, normalizeQuery, type SearchHit } from './system';
+import { mergeSearchResults, fromUnifiedSearch, normalizeQuery, type SearchHit } from './system';
 
-/** Global search: query the public listings catalogue + the caller's own orders (both roles), merge + filter. */
+/** Global search. Prefers the unified server endpoint (P1-14 — one ranked, tenant-isolated, OpenSearch-or-Postgres
+ * query); if it's disabled (flag OFF → 404) or unreachable, DEGRADES to the legacy client fan-out (public listings
+ * catalogue + the caller's own orders, merged client-side). Either way the app never fabricates a result (Law 12). */
 export async function globalSearch(query: string): Promise<SearchHit[]> {
   const q = normalizeQuery(query);
   if (!q) return [];
+  try {
+    const page = await apiClient().search.query({ q, limit: 20 });
+    return fromUnifiedSearch(page.items);
+  } catch {
+    return fanOutSearch(q);
+  }
+}
+
+/** Legacy client-side fan-out fallback — used only when the unified endpoint is unavailable. */
+async function fanOutSearch(q: string): Promise<SearchHit[]> {
   const [listings, buying, selling] = await Promise.all([
     apiClient().listings.browse({ q, limit: 20 }).then((p) => p.items).catch((): ListingCard[] => []),
     apiClient().orders.list({ role: 'buyer', limit: 20 }).then((p) => p.items).catch((): OrderListItem[] => []),

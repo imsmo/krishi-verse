@@ -3,11 +3,21 @@
 // merge + local ranking (ReDoS-safe), semver compare + forced-update decision, the permission rationale catalog,
 // and DPDP delete-confirmation validation. The SERVER owns search authority, DPDP export/erasure, and the minimum
 // supported version — these helpers only drive the UI.
-import type { ListingCard, OrderListItem } from '@krishi-verse/sdk-js';
+import type { ListingCard, OrderListItem, SearchHit as UnifiedSearchHit } from '@krishi-verse/sdk-js';
 
 // --- global search ---
-export type SearchHitKind = 'listing' | 'order';
+export type SearchHitKind = 'listing' | 'order' | 'product';
 export interface SearchHit { kind: SearchHitKind; id: string; title: string; subtitle?: string }
+
+/** Map the server's unified search hits (P1-14) → the screen's hit shape. Unknown types are dropped (never a
+ * fabricated row). Pure; the fan-out path uses mergeSearchResults instead when the unified endpoint is off. */
+export function fromUnifiedSearch(items: UnifiedSearchHit[], cap = 50): SearchHit[] {
+  const kindOf: Record<string, SearchHitKind> = { listings: 'listing', products: 'product' };
+  return (items ?? [])
+    .map((h) => { const kind = kindOf[String(h.type)]; return kind ? { kind, id: String(h.id), title: h.title } : null; })
+    .filter((h): h is SearchHit => h !== null)
+    .slice(0, cap);
+}
 
 /** Normalize a search query: trim, collapse whitespace, lowercase, cap length (bounded; plain — no regex). */
 export function normalizeQuery(raw: string | null | undefined): string {

@@ -346,6 +346,12 @@ export interface AiReviewItem {
 export interface EnqueueReviewInput { queueKind: AiReviewQueueKind; priority?: number; subjectType?: string | null; subjectId?: string | null; }
 export interface ResolveReviewInput { decision: 'accepted' | 'rejected'; note?: string | null; }
 
+// --- unified cross-entity search (P1-14) ---
+export type SearchEntityType = 'listings' | 'products';
+export type SearchEngine = 'opensearch' | 'postgres';
+/** One ranked cross-entity hit. `ref` carries the type-specific source fields (e.g. price for a listing). */
+export interface SearchHit { type: SearchEntityType | string; id: string; title: string; createdAt: string; score: number; ref?: Record<string, unknown>; }
+
 // --- education (module 9 — courses/lessons/enrollments) — money is bigint minor STRINGS (Law 2) ---
 /** A course (training). `priceMinor` 0 = free. Browse returns published courses. */
 export interface Course {

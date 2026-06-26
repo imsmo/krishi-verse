@@ -833,4 +833,19 @@ describe('HttpClient via resources', () => {
     expect(r.sessionId).toBe('s1');
     expect(r.reply).toContain('neem');
   });
+
+  it('search: unified query returns ranked cross-entity hits + engine + cursor (P1-14)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: {
+      data: [{ type: 'listings', id: 'l1', title: 'Tomato', createdAt: '2026-06-01T00:00:00.000Z', score: 3 }],
+      meta: { engine: 'opensearch', nextCursor: 'CUR' },
+    } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+
+    const page = await c.search.query({ q: 'tomato', types: 'listings,products' });
+    expect(calls[0].url).toBe('https://api.test/v1/search?q=tomato&types=listings%2Cproducts&limit=20');
+    expect(calls[0].init.method).toBe('GET');
+    expect(page.items[0].id).toBe('l1');
+    expect(page.engine).toBe('opensearch');
+    expect(page.nextCursor).toBe('CUR');
+  });
 });
