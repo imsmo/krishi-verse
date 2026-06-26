@@ -6,7 +6,8 @@
 // minor strings (Law 2). The app never enrolls/activates/pays out (those are ambassador.manage / back-office —
 // Law 11). Gated server-side by the `ambassadors` flag.
 import { HttpClient } from '../http';
-import { AmbassadorProfile, Referral, AmbassadorEarning, CommissionPlan, AmbassadorVisit, AmbassadorTarget, LeaderboardEntry, AssistedOnboardingResult, Page } from '../types';
+import { AmbassadorProfile, Referral, AmbassadorEarning, CommissionPlan, AmbassadorVisit, AmbassadorTarget, LeaderboardEntry, AssistedOnboardingResult, Page,
+  EnrollAmbassadorInput, UpdateAmbassadorInput, SetTargetInput, AmbassadorPayoutResult } from '../types';
 
 /** Ambassador-assisted farmer onboarding (the farmer is created on-behalf; DPDP consent is mandatory). */
 export interface AssistedOnboardingInput {
@@ -69,5 +70,45 @@ export class AmbassadorsResource {
   /** The caller-ambassador's own period targets. */
   async myTargets(limit = 50, signal?: AbortSignal): Promise<AmbassadorTarget[]> {
     return (await this.http.request<AmbassadorTarget[]>('GET', 'ambassadors/targets/me', { query: { limit }, signal })).data;
+  }
+
+  // --- admin (tenant-operator; gated server-side by `ambassador.manage`, Law 11) — P1-12 ---
+  /** Enroll a user as an ambassador (back-office; NOT self-grant). */
+  async enroll(input: EnrollAmbassadorInput): Promise<AmbassadorProfile> {
+    return (await this.http.request<AmbassadorProfile>('POST', 'ambassadors', { body: input })).data;
+  }
+  /** List the tenant's ambassadors (keyset). */
+  async list(params: { activeOnly?: boolean; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<AmbassadorProfile>> {
+    const r = await this.http.request<AmbassadorProfile[]>('GET', 'ambassadors', { query: { activeOnly: params.activeOnly, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  async get(id: string, signal?: AbortSignal): Promise<AmbassadorProfile> {
+    return (await this.http.request<AmbassadorProfile>('GET', `ambassadors/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  async update(id: string, patch: UpdateAmbassadorInput): Promise<AmbassadorProfile> {
+    return (await this.http.request<AmbassadorProfile>('PATCH', `ambassadors/${encodeURIComponent(id)}`, { body: patch })).data;
+  }
+  async suspend(id: string): Promise<AmbassadorProfile> {
+    return (await this.http.request<AmbassadorProfile>('POST', `ambassadors/${encodeURIComponent(id)}/suspend`, {})).data;
+  }
+  async reinstate(id: string): Promise<AmbassadorProfile> {
+    return (await this.http.request<AmbassadorProfile>('POST', `ambassadors/${encodeURIComponent(id)}/reinstate`, {})).data;
+  }
+  /** An ambassador's earnings ledger (admin view; keyset). */
+  async earnings(id: string, params: { unpaidOnly?: boolean; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<AmbassadorEarning>> {
+    const r = await this.http.request<AmbassadorEarning[]>('GET', `ambassadors/${encodeURIComponent(id)}/earnings`, { query: { unpaidOnly: params.unpaidOnly, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  /** Pay out an ambassador's unpaid commission (server computes + moves money via the ledger; Law 2/3). Idempotent. */
+  async payout(id: string, idempotencyKey: string): Promise<AmbassadorPayoutResult> {
+    return (await this.http.request<AmbassadorPayoutResult>('POST', `ambassadors/${encodeURIComponent(id)}/payout`, { idempotencyKey })).data;
+  }
+  /** Activate a referral (admin) — accrues attribution commission server-side. */
+  async activateReferral(id: string): Promise<Referral> {
+    return (await this.http.request<Referral>('POST', `ambassadors/referrals/${encodeURIComponent(id)}/activate`, {})).data;
+  }
+  /** Set a per-period target for an ambassador metric. */
+  async setTarget(input: SetTargetInput): Promise<AmbassadorTarget> {
+    return (await this.http.request<AmbassadorTarget>('POST', 'ambassadors/targets', { body: input })).data;
   }
 }

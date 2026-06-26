@@ -50,6 +50,7 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('tenant.settings','Manage tenant settings','M01'),('flag.toggle','Toggle feature flags',NULL),
  ('worker.book','Book worker','M28'),('booking.manage','Manage labour bookings','M28'),
  ('ledger.read','Read ledger (auditor)','M05'),('scheme.process','Process scheme applications','M17'),
+ ('audit.read','Read the append-only audit trail (auditor)',NULL),
  ('ai.review','AI review queue',NULL),('plan.manage','Manage plans (god mode)',NULL),
  ('tenant.manage','Manage tenants (god mode)',NULL),
  ('product.manage','Manage own products + batches','M02'),
@@ -83,7 +84,8 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code='vyapari'       AND p.code IN ('order.create','offer.create','requirement.post','auction.bid','auction.create','wallet.view'))
    OR (r.code='tenant_admin'  AND p.code IN ('listing.approve','listing.moderate','order.manage','user.approve','dispute.resolve','report.view','tenant.settings','payout.approve','wallet.adjust','booking.manage','logistics.manage','promotion.manage','membership.manage'))
    OR (r.code='support_agent' AND p.code IN ('dispute.resolve','report.view'))
-   OR (r.code='auditor'       AND p.code IN ('ledger.read','report.view'))
+   OR (r.code='auditor'       AND p.code IN ('ledger.read','report.view','audit.read'))
+   OR (r.code='tenant_admin'  AND p.code IN ('audit.read'))
    OR (r.code='ai_ops'        AND p.code IN ('ai.review','listing.moderate'))
    OR (r.code='super_admin'   AND p.code IN ('plan.manage','tenant.manage','user.impersonate','flag.toggle'))
    OR (r.code='gov_officer'   AND p.code IN ('scheme.process','report.view'))

@@ -619,4 +619,205 @@ describe('HttpClient via resources', () => {
     expect(calls[4].url).toBe('https://api.test/v1/webhooks/w1');
     expect(calls[4].init.method).toBe('DELETE');
   });
+
+  it('dairy: MCC create (idem) + collection record + bill generate→preview→approve→pay hit the right paths (P1-12)', async () => {
+    const { fn, calls } = fakeFetch((_c, n) =>
+      n === 1 ? { body: { data: { id: 'mcc1', code: 'M1', defaultName: 'Anand MCC', isActive: true } } }
+      : n === 2 ? { body: { data: [{ id: 'mcc1' }], meta: { nextCursor: null } } }
+      : n === 3 ? { body: { data: { id: 'col1', amountMinor: '12345' } } }
+      : n === 4 ? { body: { data: { id: 'b1', status: 'draft', netMinor: '50000' } } }
+      : n === 5 ? { body: { data: { id: 'b1', status: 'previewed' } } }
+      : n === 6 ? { body: { data: { id: 'b1', status: 'approved' } } }
+      : { body: { data: { id: 'b1', status: 'paid' } } });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+
+    const mcc = await c.dairy.createMcc({ code: 'M1', defaultName: 'Anand MCC' }, 'idem-1');
+    expect(calls[0].url).toBe('https://api.test/v1/dairy/mccs');
+    expect(calls[0].init.method).toBe('POST');
+    expect(calls[0].init.headers['idempotency-key']).toBe('idem-1');
+    expect(mcc.id).toBe('mcc1');
+
+    await c.dairy.listMccs({ activeOnly: true });
+    expect(calls[1].url).toBe('https://api.test/v1/dairy/mccs?activeOnly=true&limit=50');
+
+    await c.dairy.recordCollection({ membershipId: 'm1', shift: 'morning', collectedOn: '2026-06-20', weightKg: '12.5', fatPct: '4.2', snfPct: '8.5' }, 'idem-2');
+    expect(calls[2].url).toBe('https://api.test/v1/dairy/collections');
+    expect(calls[2].init.headers['idempotency-key']).toBe('idem-2');
+
+    await c.dairy.generateBill({ membershipId: 'm1', periodStart: '2026-06-01', periodEnd: '2026-06-15' }, 'idem-3');
+    expect(calls[3].url).toBe('https://api.test/v1/dairy/milk-bills/generate');
+    await c.dairy.previewBill('b1');
+    expect(calls[4].url).toBe('https://api.test/v1/dairy/milk-bills/b1/preview');
+    await c.dairy.approveBill('b1');
+    expect(calls[5].url).toBe('https://api.test/v1/dairy/milk-bills/b1/approve');
+    const paid = await c.dairy.payBill('b1', 'idem-4');
+    expect(calls[6].url).toBe('https://api.test/v1/dairy/milk-bills/b1/pay');
+    expect(calls[6].init.headers['idempotency-key']).toBe('idem-4');
+    expect(paid.status).toBe('paid');
+  });
+
+  it('labour employer flow: createBooking (idem) → assign → start → complete → pay; bookingAssignments uses box=booking (P1-12)', async () => {
+    const { fn, calls } = fakeFetch((_c, n) =>
+      n === 1 ? { body: { data: { id: 'b1', bookingNo: 'LB-1', status: 'open' } } }
+      : n === 2 ? { body: { data: { id: 'a1', bookingId: 'b1', workerId: 'w1', status: 'pending_worker', wageMinor: '50000' } } }
+      : n === 3 ? { body: { data: { id: 'b1', status: 'in_progress' } } }
+      : n === 4 ? { body: { data: { id: 'b1', status: 'completed' } } }
+      : n === 5 ? { body: { data: { id: 'b1', status: 'paid', totalPaidMinor: '50000', workersPaid: 1 } } }
+      : { body: { data: [{ id: 'a1', bookingId: 'b1', workerId: 'w1', status: 'accepted', wageMinor: '50000' }] } });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+
+    await c.labour.createBooking({ demandTypeCode: 'harvest', taskSkillId: 's1', regionId: 'r1', skillLevel: 'unskilled', workersNeeded: 2, startDate: '2026-07-01', endDate: '2026-07-03', wageOfferedMinor: '50000', farmLat: 22.3, farmLng: 70.8 }, 'idem-b1');
+    expect(calls[0].url).toBe('https://api.test/v1/labour/bookings');
+    expect(calls[0].init.method).toBe('POST');
+    expect(calls[0].init.headers['idempotency-key']).toBe('idem-b1');
+
+    await c.labour.assignWorker('b1', { workerId: 'w1', wageMinor: '50000' }, 'idem-a1');
+    expect(calls[1].url).toBe('https://api.test/v1/labour/bookings/b1/assignments');
+    expect(calls[1].init.headers['idempotency-key']).toBe('idem-a1');
+
+    await c.labour.startBooking('b1');
+    expect(calls[2].url).toBe('https://api.test/v1/labour/bookings/b1/start');
+    await c.labour.completeBooking('b1');
+    expect(calls[3].url).toBe('https://api.test/v1/labour/bookings/b1/complete');
+    const paid = await c.labour.payWages('b1', 'idem-pay');
+    expect(calls[4].url).toBe('https://api.test/v1/labour/bookings/b1/pay');
+    expect(calls[4].init.headers['idempotency-key']).toBe('idem-pay');
+    expect(paid.workersPaid).toBe(1);
+
+    await c.labour.bookingAssignments('b1', { status: 'accepted' });
+    expect(calls[5].url).toBe('https://api.test/v1/labour/assignments?box=booking&bookingId=b1&status=accepted&limit=50');
+  });
+
+  it('ambassadors admin: enroll → list → suspend → reinstate → earnings → payout (idem) → activateReferral → setTarget (P1-12)', async () => {
+    const { fn, calls } = fakeFetch((_c, n) =>
+      n === 1 ? { body: { data: { id: 'amb1', userId: 'u1', isActive: true } } }
+      : n === 2 ? { body: { data: [{ id: 'amb1', userId: 'u1', isActive: true }], meta: { nextCursor: null } } }
+      : n === 3 ? { body: { data: { id: 'amb1', isActive: false } } }
+      : n === 4 ? { body: { data: { id: 'amb1', isActive: true } } }
+      : n === 5 ? { body: { data: [{ id: 'e1', ambassadorId: 'amb1', amountMinor: '12000', payoutId: null }], meta: { nextCursor: null } } }
+      : n === 6 ? { body: { data: { payoutId: 'po1', ambassadorId: 'amb1', paidMinor: '12000', earningCount: 1 } } }
+      : n === 7 ? { body: { data: { id: 'r1', code: 'KV-ABC', status: 'activated' } } }
+      : { body: { data: { id: 't1', ambassadorId: 'amb1', metric: 'onboardings', periodStart: '2026-07-01', periodEnd: '2026-07-31', targetValue: '25' } } });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+
+    await c.ambassadors.enroll({ userId: 'u1', monthlyStipendMinor: '0' });
+    expect(calls[0].url).toBe('https://api.test/v1/ambassadors');
+    expect(calls[0].init.method).toBe('POST');
+    await c.ambassadors.list({ activeOnly: true });
+    expect(calls[1].url).toBe('https://api.test/v1/ambassadors?activeOnly=true&limit=50');
+    await c.ambassadors.suspend('amb1');
+    expect(calls[2].url).toBe('https://api.test/v1/ambassadors/amb1/suspend');
+    await c.ambassadors.reinstate('amb1');
+    expect(calls[3].url).toBe('https://api.test/v1/ambassadors/amb1/reinstate');
+    const earn = await c.ambassadors.earnings('amb1', { unpaidOnly: true });
+    expect(calls[4].url).toBe('https://api.test/v1/ambassadors/amb1/earnings?unpaidOnly=true&limit=50');
+    expect(earn.items[0].amountMinor).toBe('12000');
+    const po = await c.ambassadors.payout('amb1', 'idem-po');
+    expect(calls[5].url).toBe('https://api.test/v1/ambassadors/amb1/payout');
+    expect(calls[5].init.headers['idempotency-key']).toBe('idem-po');
+    expect(po.paidMinor).toBe('12000');
+    await c.ambassadors.activateReferral('r1');
+    expect(calls[6].url).toBe('https://api.test/v1/ambassadors/referrals/r1/activate');
+    await c.ambassadors.setTarget({ ambassadorId: 'amb1', metric: 'onboardings', periodStart: '2026-07-01', periodEnd: '2026-07-31', targetValue: '25' });
+    expect(calls[7].url).toBe('https://api.test/v1/ambassadors/targets');
+    expect(calls[7].init.method).toBe('POST');
+  });
+
+  it('schemes operator: queue → verify → clarify → approve → recordDbt hit the right paths (P1-12)', async () => {
+    const { fn, calls } = fakeFetch((_c, n) =>
+      n === 1 ? { body: { data: [{ id: 'ap1', schemeId: 's1', status: 'submitted' }], meta: { nextCursor: null } } }
+      : n === 2 ? { body: { data: { id: 'ap1', status: 'under_verification' } } }
+      : n === 3 ? { body: { data: { id: 'ap1', status: 'clarification_needed' } } }
+      : n === 4 ? { body: { data: { id: 'ap1', status: 'approved', govtAppRef: 'GOV-99' } } }
+      : n === 5 ? { body: { data: { id: 'ap1', status: 'rejected', rejectionReason: 'ineligible' } } }
+      : { body: { data: { id: 'dbt1', applicationId: 'ap1', amountMinor: '600000', creditedOn: '2026-07-10' } } });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+
+    const q = await c.schemes.listApplications({ box: 'queue', status: 'submitted' });
+    expect(calls[0].url).toBe('https://api.test/v1/schemes/applications?box=queue&status=submitted&limit=50');
+    expect(q.items[0].id).toBe('ap1');
+    await c.schemes.verifyApplication('ap1');
+    expect(calls[1].url).toBe('https://api.test/v1/schemes/applications/ap1/verify');
+    await c.schemes.requestClarification('ap1', 'need land record');
+    expect(calls[2].url).toBe('https://api.test/v1/schemes/applications/ap1/clarify');
+    const ap = await c.schemes.approveApplication('ap1', 'GOV-99');
+    expect(calls[3].url).toBe('https://api.test/v1/schemes/applications/ap1/approve');
+    expect(ap.govtAppRef).toBe('GOV-99');
+    await c.schemes.rejectApplication('ap1', 'ineligible');
+    expect(calls[4].url).toBe('https://api.test/v1/schemes/applications/ap1/reject');
+    const dbt = await c.schemes.recordDbt('ap1', { amountMinor: '600000', creditedOn: '2026-07-10', instalmentNo: 1, pfmsRef: 'PFMS-1' });
+    expect(calls[5].url).toBe('https://api.test/v1/schemes/applications/ap1/dbt');
+    expect(calls[5].init.method).toBe('POST');
+    expect(dbt.amountMinor).toBe('600000');
+  });
+
+  it('group-lots: create(idem) → pledge(idem) → ready → settle hit the right paths (P1-12)', async () => {
+    const { fn, calls } = fakeFetch((_c, n) =>
+      n === 1 ? { body: { data: [{ id: 'g1', status: 'pledging', productId: 'p1' }], meta: { nextCursor: null } } }
+      : n === 2 ? { body: { data: { id: 'g1', status: 'pledging', pledges: [] } } }
+      : n === 3 ? { body: { data: { id: 'g1', status: 'pledging', pledgedQuantity: '0.000' } } }
+      : n === 4 ? { body: { data: { id: 'g1', status: 'pledging', pledgedQuantity: '25.000', progressBps: 2500 } } }
+      : n === 5 ? { body: { data: { id: 'g1', status: 'ready' } } }
+      : { body: { data: { id: 'g1', status: 'settled', settlement: { grossMinor: '100000', coordinationFeeMinor: '5000', netMinor: '95000', shares: [{ pledgeId: 'pl1', shareMinor: '95000' }] } } } });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+
+    const lots = await c.groupLots.list({ box: 'mine', status: 'pledging' });
+    expect(calls[0].url).toBe('https://api.test/v1/group-lots?box=mine&status=pledging&limit=50');
+    expect(lots.items[0].id).toBe('g1');
+    await c.groupLots.get('g1');
+    expect(calls[1].url).toBe('https://api.test/v1/group-lots/g1');
+    await c.groupLots.create({ productId: 'p1', targetQuantity: '100.000', unitCode: 'kg', pledgeDeadline: '2026-08-01T00:00:00.000Z', coordinationFeeBps: 500 }, 'idem-gl');
+    expect(calls[2].url).toBe('https://api.test/v1/group-lots');
+    expect(calls[2].init.method).toBe('POST');
+    expect(calls[2].init.headers['idempotency-key']).toBe('idem-gl');
+    const pledged = await c.groupLots.pledge('g1', { farmerUserId: 'f1', quantity: '25' }, 'idem-pl');
+    expect(calls[3].url).toBe('https://api.test/v1/group-lots/g1/pledges');
+    expect(calls[3].init.headers['idempotency-key']).toBe('idem-pl');
+    expect(pledged.progressBps).toBe(2500);
+    await c.groupLots.markReady('g1');
+    expect(calls[4].url).toBe('https://api.test/v1/group-lots/g1/ready');
+    const s = await c.groupLots.settle('g1', '100000');
+    expect(calls[5].url).toBe('https://api.test/v1/group-lots/g1/settle');
+    expect(calls[5].init.method).toBe('POST');
+    expect(s.settlement.netMinor).toBe('95000');
+    expect(s.settlement.shares[0].shareMinor).toBe('95000');
+  });
+
+  it('audit: list (filtered, keyset) + get hit the right read-only paths (P1-12)', async () => {
+    const { fn, calls } = fakeFetch((_c, n) =>
+      n === 1 ? { body: { data: [{ id: '42', action: 'kyc.approved', actorUserId: 'u1', createdAt: '2026-06-24T10:00:00.000Z' }], meta: { nextCursor: 'CUR' } } }
+      : { body: { data: { id: '42', action: 'kyc.approved', entityType: 'user', entityId: 'u9', oldValue: null, newValue: { status: 'approved' }, createdAt: '2026-06-24T10:00:00.000Z' } } });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+
+    const page = await c.audit.list({ action: 'kyc.approved', entityType: 'user', from: '2026-06-01T00:00:00.000Z' });
+    expect(calls[0].url).toBe('https://api.test/v1/audit/entries?action=kyc.approved&entityType=user&from=2026-06-01T00%3A00%3A00.000Z&limit=50');
+    expect(calls[0].init.method).toBe('GET');
+    expect(page.items[0].id).toBe('42');
+    expect(page.nextCursor).toBe('CUR');
+    const e = await c.audit.get('42');
+    expect(calls[1].url).toBe('https://api.test/v1/audit/entries/42');
+    expect((e.newValue as { status: string }).status).toBe('approved');
+  });
+
+  it('ai-review: list (open) → get → claim → resolve hit the right paths (P1-12)', async () => {
+    const { fn, calls } = fakeFetch((_c, n) =>
+      n === 1 ? { body: { data: [{ id: 'r1', queueKind: 'low_confidence_grade', status: 'pending', priority: 100 }], meta: { nextCursor: 'CUR' } } }
+      : n === 2 ? { body: { data: { id: 'r1', queueKind: 'low_confidence_grade', status: 'pending', inferenceId: 'inf1' } } }
+      : n === 3 ? { body: { data: { id: 'r1', status: 'in_review', reviewerUserId: 'u1' } } }
+      : { body: { data: { id: 'r1', status: 'rejected', decisionNote: 'bad grade', resolvedAt: '2026-06-24T10:00:00.000Z' } } });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+
+    const q = await c.aiReview.list({ box: 'open', queueKind: 'low_confidence_grade' });
+    expect(calls[0].url).toBe('https://api.test/v1/ai/review-queue?box=open&queueKind=low_confidence_grade&limit=50');
+    expect(q.items[0].id).toBe('r1');
+    expect(q.nextCursor).toBe('CUR');
+    await c.aiReview.get('r1');
+    expect(calls[1].url).toBe('https://api.test/v1/ai/review-queue/r1');
+    await c.aiReview.claim('r1');
+    expect(calls[2].url).toBe('https://api.test/v1/ai/review-queue/r1/claim');
+    expect(calls[2].init.method).toBe('POST');
+    const res = await c.aiReview.resolve('r1', { decision: 'rejected', note: 'bad grade' });
+    expect(calls[3].url).toBe('https://api.test/v1/ai/review-queue/r1/resolve');
+    expect(res.status).toBe('rejected');
+  });
 });

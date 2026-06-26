@@ -10,4 +10,25 @@ export const env = {
   /** Console visibility switch for the auctions surface (hidden when 'false'). Enabled by default; the API's own
    *  `auctions` flag is the authoritative gate (if it's off, the reads simply degrade to an empty state). */
   featureAuctions: process.env.NEXT_PUBLIC_FEATURE_AUCTIONS !== 'false',
+  /** Console visibility switch for the dairy MCC-operator surface. OFF by default (a vertical only some tenants
+   *  run); the API's own `dairy` flag + `dairy.manage` perm remain the authoritative gates. */
+  featureDairy: process.env.NEXT_PUBLIC_FEATURE_DAIRY === 'true',
+  /** Console visibility switch for the labour employer-admin surface. OFF by default; the API's own `labour` flag
+   *  + `worker.book`/`booking.manage` perms remain the authoritative gates. */
+  featureLabour: process.env.NEXT_PUBLIC_FEATURE_LABOUR === 'true',
+  /** Console visibility switch for the ambassadors admin surface. OFF by default; the API's own `ambassadors` flag
+   *  + `ambassador.manage` perm remain the authoritative gates. */
+  featureAmbassadors: process.env.NEXT_PUBLIC_FEATURE_AMBASSADORS === 'true',
+  /** Console visibility switch for the scheme-assistant officer surface. OFF by default; the API's own `schemes`
+   *  flag + `scheme.process` perm remain the authoritative gates. */
+  featureSchemes: process.env.NEXT_PUBLIC_FEATURE_SCHEMES === 'true',
+  /** Console visibility switch for the FPO group-lot coordinator surface. OFF by default; the API's own `group_lots`
+   *  flag + `group_lot.coordinate` perm remain the authoritative gates. */
+  featureGroupLots: process.env.NEXT_PUBLIC_FEATURE_GROUP_LOTS === 'true',
+  /** Console visibility switch for the read-only auditor (audit-trail) surface. OFF by default; the API's own
+   *  `audit_trail` flag + `audit.read` perm remain the authoritative gates. */
+  featureAuditor: process.env.NEXT_PUBLIC_FEATURE_AUDITOR === 'true',
+  /** Console visibility switch for the AI review-queue (human-in-the-loop) surface. OFF by default; the API's own
+   *  `ai_governance` flag + `ai.review` perm remain the authoritative gates. */
+  featureAiReview: process.env.NEXT_PUBLIC_FEATURE_AI_REVIEW === 'true',
 } as const;

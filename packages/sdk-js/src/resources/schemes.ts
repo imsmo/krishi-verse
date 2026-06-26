@@ -4,7 +4,7 @@
 // + DBT credits are owner-scoped server-side (no IDOR). Money is bigint minor strings (Law 2). Gated server-side
 // by the `schemes` flag.
 import { HttpClient } from '../http';
-import { Scheme, SchemeAuthority, EligibilityResult, SchemeApplication, DbtTransfer, Page } from '../types';
+import { Scheme, SchemeAuthority, EligibilityResult, SchemeApplication, DbtTransfer, ApplicationStatus, Page } from '../types';
 
 export class SchemesResource {
   constructor(private readonly http: HttpClient) {}
@@ -46,5 +46,36 @@ export class SchemesResource {
   /** Observed DBT/PFMS credits for an application (owner-scoped). Money is bigint minor (Law 2). */
   async dbtTransfers(id: string, signal?: AbortSignal): Promise<DbtTransfer[]> {
     return (await this.http.request<DbtTransfer[]>('GET', `schemes/applications/${encodeURIComponent(id)}/dbt`, { signal })).data;
+  }
+
+  // --- operator / officer (scheme.process; gated server-side — P1-12) ---
+  /** List applications: `queue` = the officer's verification queue, `all` = admin, `mine` = applicant's own. */
+  async listApplications(params: { box?: 'mine' | 'queue' | 'all'; status?: ApplicationStatus; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<SchemeApplication>> {
+    const r = await this.http.request<SchemeApplication[]>('GET', 'schemes/applications', { query: { box: params.box ?? 'queue', status: params.status, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  /** Move a submitted application into verification. */
+  async verifyApplication(id: string): Promise<SchemeApplication> {
+    return (await this.http.request<SchemeApplication>('POST', `schemes/applications/${encodeURIComponent(id)}/verify`, {})).data;
+  }
+  /** Ask the applicant for clarification (optionally with a note). */
+  async requestClarification(id: string, note?: string): Promise<SchemeApplication> {
+    return (await this.http.request<SchemeApplication>('POST', `schemes/applications/${encodeURIComponent(id)}/clarify`, { body: { note } })).data;
+  }
+  /** Approve an application (optionally stamping the government application reference). */
+  async approveApplication(id: string, govtAppRef?: string): Promise<SchemeApplication> {
+    return (await this.http.request<SchemeApplication>('POST', `schemes/applications/${encodeURIComponent(id)}/approve`, { body: { govtAppRef } })).data;
+  }
+  /** Reject an application with a reason. */
+  async rejectApplication(id: string, reason?: string): Promise<SchemeApplication> {
+    return (await this.http.request<SchemeApplication>('POST', `schemes/applications/${encodeURIComponent(id)}/reject`, { body: { reason } })).data;
+  }
+  /** Close a decided application. */
+  async closeApplication(id: string): Promise<SchemeApplication> {
+    return (await this.http.request<SchemeApplication>('POST', `schemes/applications/${encodeURIComponent(id)}/close`, {})).data;
+  }
+  /** Record an observed DBT/PFMS credit against an application. amountMinor is bigint minor (Law 2). */
+  async recordDbt(id: string, input: { amountMinor: string; creditedOn: string; instalmentNo?: number; pfmsRef?: string }): Promise<DbtTransfer> {
+    return (await this.http.request<DbtTransfer>('POST', `schemes/applications/${encodeURIComponent(id)}/dbt`, { body: input })).data;
   }
 }

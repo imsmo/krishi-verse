@@ -301,6 +301,50 @@ export interface AmbassadorTarget { id: string; ambassadorId: string; metric: st
 export interface LeaderboardEntry { ambassadorId: string; userId: string; tierId: string | null; earnedMinor: string; events: number; rank: number; }
 /** The result of an assisted onboarding: the created/resolved farmer + the attribution referral id. */
 export interface AssistedOnboardingResult { user: { id: string; [k: string]: unknown }; ambassadorId: string; referralId: string | null; }
+// --- ambassadors admin (P1-12) — tenant-operator surface; money is bigint minor STRINGS, moved server-side (Law 2/11) ---
+export type AmbassadorTargetMetric = 'onboardings' | 'sales_facilitated' | 'earnings_minor' | 'visits';
+export interface EnrollAmbassadorInput { userId: string; clusterRegionIds?: string[]; tierId?: string | null; mentorAmbassadorId?: string | null; kioskEnabled?: boolean; aepsEnabled?: boolean; monthlyStipendMinor?: string; }
+export interface UpdateAmbassadorInput { clusterRegionIds?: string[]; tierId?: string | null; mentorAmbassadorId?: string | null; kioskEnabled?: boolean; aepsEnabled?: boolean; monthlyStipendMinor?: string; trainingCompleted?: boolean; }
+export interface SetTargetInput { ambassadorId: string; metric: AmbassadorTargetMetric; periodStart: string; periodEnd: string; targetValue: string; }
+/** The result of an ambassador commission payout (server-computed, wallet-moved). */
+export interface AmbassadorPayoutResult { payoutId: string; ambassadorId: string; paidMinor: string; earningCount: number; }
+// --- group lots (FPO pooling, P1-12) — quantities are decimal STRINGS; money bigint minor STRINGS (Law 2) ---
+export type GroupLotStatus = 'pledging' | 'ready' | 'listed' | 'sold' | 'settled' | 'cancelled';
+/** A pooled FPO lot. progressBps = pledged ÷ target in integer basis points. */
+export interface GroupLot {
+  id: string; coordinatorUserId: string; productId: string; targetQuantity: string; pledgedQuantity: string;
+  unitCode: string; pledgeDeadline: string; status: GroupLotStatus; coordinationFeeBps: number; progressBps: number; createdAt?: string | null;
+}
+export interface GroupLotPledge { id: string; farmerUserId: string; quantity: string; qualityOk: boolean | null; settledShareMinor: string | null; }
+export interface GroupLotDetail extends GroupLot { pledges: GroupLotPledge[]; }
+export interface CreateGroupLotInput { productId: string; targetQuantity: string; unitCode: string; pledgeDeadline: string; coordinationFeeBps?: number; }
+/** The proportional settlement breakdown (float-free, sums exactly to net — Law 2). Money is NOT moved by this call. */
+export interface GroupLotSettlement extends GroupLot {
+  settlement: { grossMinor: string; coordinationFeeMinor: string; netMinor: string; shares: { pledgeId: string; shareMinor: string }[] };
+}
+
+// --- audit trail (read-only auditor surface — P1-12) ---
+/** One append-only audit_log entry (read-only). `id` is a bigint as a string. oldValue/newValue are arbitrary
+ *  JSON snapshots of the change. ip/user_agent are intentionally NOT exposed. */
+export interface AuditEntry {
+  id: string; actorUserId: string | null; actorRole: string | null; action: string;
+  entityType: string | null; entityId: string | null; oldValue: unknown; newValue: unknown;
+  reason: string | null; requestId: string | null; createdAt: string;
+}
+
+// --- AI review queue (human-in-the-loop ops surface — P1-12) ---
+export type AiReviewStatus = 'pending' | 'in_review' | 'accepted' | 'rejected';
+export type AiReviewQueueKind = 'fraud_flag' | 'low_confidence_grade' | 'price_anomaly' | 'dispute_triage' | 'drift' | 'manual';
+/** A human-in-the-loop review item. `inferenceId` links the AI decision under review (null for manual items).
+ *  A reviewer claims a pending item then resolves it accepted/rejected; the resolution drives the originating
+ *  module server-side. */
+export interface AiReviewItem {
+  id: string; inferenceId: string | null; queueKind: AiReviewQueueKind | string; priority: number;
+  status: AiReviewStatus; reviewerUserId: string | null; decisionNote: string | null;
+  resolvedAt: string | null; createdAt?: string | null;
+}
+export interface EnqueueReviewInput { queueKind: AiReviewQueueKind; priority?: number; subjectType?: string | null; subjectId?: string | null; }
+export interface ResolveReviewInput { decision: 'accepted' | 'rejected'; note?: string | null; }
 
 // --- education (module 9 — courses/lessons/enrollments) — money is bigint minor STRINGS (Law 2) ---
 /** A course (training). `priceMinor` 0 = free. Browse returns published courses. */
@@ -459,6 +503,44 @@ export interface IntegrationProvider { code: string; defaultName: string; catego
 export interface TenantIntegration { id: string; providerCode: string; providerName: string | null; category: string | null; config: Record<string, unknown>; connected: boolean; isActive: boolean; createdAt?: string | null; }
 /** A tenant webhook endpoint (masked — the signing secret is returned ONLY on register/rotate, never on reads). */
 export interface WebhookEndpoint { id: string; url: string; eventTypes: string[]; isActive: boolean; createdAt?: string | null; }
+// --- dairy (MCC operator console, P1-12) — money is bigint minor STRINGS; weight/fat/snf are decimal STRINGS (Law 2) ---
+export type DairyAnimalType = 'cow' | 'buffalo' | 'mixed';
+export type DairyPaymentCycle = 'daily' | 'weekly' | 'fortnightly' | 'monthly';
+export type DairyPricingModel = 'two_axis' | 'fat_pooled' | 'snf_pooled';
+export type DairyShift = 'morning' | 'evening';
+export type MilkBillStatus = 'draft' | 'previewed' | 'disputed' | 'approved' | 'paid';
+/** A Milk Collection Centre (cooperative branch). lat/lng are decimal strings; no PII. */
+export interface DairyMcc {
+  id: string; code: string; defaultName: string; regionId: string | null; lat: string | null; lng: string | null;
+  operatorUserId: string | null; capacityLitresShift: string | null; isActive: boolean; createdAt?: string | null;
+}
+/** A farmer's membership at an MCC. */
+export interface DairyMembership {
+  id: string; farmerUserId: string; mccId: string; memberCode: string;
+  paymentCycle: DairyPaymentCycle; defaultAnimalType: DairyAnimalType | null; isActive: boolean; createdAt?: string | null;
+}
+/** A milk rate card. Rates are bigint minor-unit strings (Law 2). */
+export interface DairyRateCard {
+  id: string; defaultName: string; animalType: DairyAnimalType; pricingModel: DairyPricingModel;
+  ratePerKgFatMinor: string | null; ratePerKgSnfMinor: string | null; baseRatePerLitreMinor: string | null;
+  effectiveFrom: string; effectiveTo: string | null; isActive: boolean;
+}
+/** A counter milk-collection row. amountMinor is server-priced from the rate card (float-free). */
+export interface DairyCollection {
+  id: string; membershipId: string; mccId: string; shift: DairyShift; collectedOn: string;
+  amountMinor: string; rateCardId: string; waterFlag: boolean; milkBillId: string | null; createdAt?: string | null;
+}
+/** A per-cycle milk settlement bill. All money bigint minor strings; totalLitres is a 3-dp string. */
+export interface MilkBill {
+  id: string; membershipId: string; periodStart: string; periodEnd: string; totalLitres: string;
+  grossMinor: string; deductions: Array<{ type: string; amountMinor: string }>; deductionsMinor: string;
+  netMinor: string; status: MilkBillStatus; disputeWindowEnds: string | null; payoutId: string | null; createdAt?: string | null;
+}
+export interface CreateMccInput { code: string; defaultName: string; regionId?: string; lat?: string; lng?: string; operatorUserId?: string; capacityLitresShift?: string; analyzerModel?: string; analyzerSerial?: string; }
+export interface EnrolMemberInput { farmerUserId: string; mccId: string; memberCode: string; paymentCycle?: DairyPaymentCycle; defaultAnimalType?: DairyAnimalType; }
+export interface CreateRateCardInput { defaultName: string; animalType: DairyAnimalType; pricingModel: DairyPricingModel; ratePerKgFatMinor?: string; ratePerKgSnfMinor?: string; baseRatePerLitreMinor?: string; effectiveFrom: string; effectiveTo?: string; }
+export interface RecordCollectionInput { membershipId: string; shift: DairyShift; collectedOn: string; weightKg: string; fatPct: string; snfPct: string; waterFlag?: boolean; adulterationFlags?: string[]; }
+export interface GenerateBillInput { membershipId: string; periodStart: string; periodEnd: string; deductions?: Array<{ type: string; amountMinor: string }>; }
 // --- market-intel (mandi prices) + weather (P-19) — money is bigint minor STRINGS (Law 2) ---
 /** A mandi (market yard). lat/lng for map/nearest; no PII. */
 export interface Mandi { id: string; defaultName: string; regionId: string | null; mandiCode: string | null; lat: number | null; lng: number | null; isActive: boolean; }
