@@ -13,6 +13,8 @@ import { Module, OnModuleInit, Inject } from '@nestjs/common';
 import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
 import { IdentityModule } from '../identity/identity.module';
+import { ListingsModule } from '../listings/listings.module';
+import { OnBehalfListingService } from './services/on-behalf-listing.service';
 import { AmbassadorsController } from './controllers/v1/ambassadors.controller';
 import { ReferralsController } from './controllers/v1/referrals.controller';
 import { EarningsController } from './controllers/v1/earnings.controller';
@@ -34,11 +36,11 @@ import { AmbassadorTargetRepository } from './repositories/ambassador-target.rep
 import { OrderCompletedHandler } from './events/handlers/order-completed.handler';
 
 @Module({
-  imports: [IdentityModule],   // UserService.adminCreate + ConsentService.grant for assisted onboarding (Law 11 reuse)
+  imports: [IdentityModule, ListingsModule],   // ConsentService + UserService (assisted onboarding) + ListingService (on-behalf listing) — Law 11 reuse
   controllers: [AmbassadorsController, ReferralsController, EarningsController, FieldOpsController],
   providers: [
     AmbassadorProfileService, CommissionPlanService, ReferralService, AmbassadorEarningService,
-    AssistedOnboardingService, AmbassadorVisitService, AmbassadorTargetService, LeaderboardReadModel,
+    AssistedOnboardingService, AmbassadorVisitService, AmbassadorTargetService, OnBehalfListingService, LeaderboardReadModel,
     AmbassadorProfileRepository, CommissionPlanRepository, AmbassadorEarningRepository, ReferralRepository,
     AmbassadorVisitRepository, AmbassadorTargetRepository,
   ],

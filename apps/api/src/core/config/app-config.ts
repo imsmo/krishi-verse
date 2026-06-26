@@ -88,6 +88,10 @@ export class AppConfig {
     if ((env.EKYC_PROVIDER_KIND ?? 'sandbox') === 'sandbox') p.push('EKYC_PROVIDER_KIND must be a real provider (e.g. digilocker) in production — the sandbox accepts a fixed test OTP');
     if (env.EKYC_PROVIDER_KIND && env.EKYC_PROVIDER_KIND !== 'sandbox' && (!env.EKYC_PROVIDER_URL || weak16(env.EKYC_PROVIDER_API_KEY))) p.push('EKYC_PROVIDER_URL + strong EKYC_PROVIDER_API_KEY required when a real EKYC_PROVIDER_KIND is set');
 
+    // --- bank fund-account tokeniser (P1-16): the sandbox returns a fake vault ref — it must NEVER run in production.
+    if ((env.BANK_VAULT_KIND ?? 'sandbox') === 'sandbox') p.push('BANK_VAULT_KIND must be a real tokeniser (razorpayx) in production — the sandbox returns a fake vault ref');
+    if (env.BANK_VAULT_KIND === 'razorpayx' && (!env.RAZORPAYX_KEY_ID || weak16(env.RAZORPAYX_KEY_SECRET))) p.push('RAZORPAYX_KEY_ID + strong RAZORPAYX_KEY_SECRET required when BANK_VAULT_KIND=razorpayx');
+
     // --- P0-13 decommission dev affordances: catch these at BOOT, not at the first upload/intent ---
     // Media downloads are gated on a CLEAN AV scan; the scan-result webhook is HMAC-verified with MEDIA_SCAN_SECRET.
     // An empty/weak secret means the webhook rejects every scan (no media ever clears) — fail at boot, not silently.
@@ -245,6 +249,16 @@ export class AppConfig {
       kind: (this.env.EKYC_PROVIDER_KIND || 'sandbox').toLowerCase(),   // 'sandbox' | 'digilocker' | …
       baseUrl: this.env.EKYC_PROVIDER_URL || '',
       apiKey: this.env.EKYC_PROVIDER_API_KEY || '',
+    };
+  }
+  get bankVault() {
+    // Bank fund-account tokeniser (P1-16). Default 'sandbox' (dev/test only — returns a local token;
+    // assertProductionSecurity forbids it in prod). The real adapter (razorpayx) reuses the RAZORPAYX_* creds.
+    return {
+      kind: (this.env.BANK_VAULT_KIND || 'sandbox').toLowerCase(),      // 'sandbox' | 'razorpayx'
+      baseUrl: this.env.RAZORPAYX_BASE_URL ?? undefined,
+      keyId: this.env.RAZORPAYX_KEY_ID,
+      keySecret: this.env.RAZORPAYX_KEY_SECRET,
     };
   }
   get weather() {

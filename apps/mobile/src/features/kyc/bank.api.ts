@@ -2,9 +2,9 @@
 // tokenised accounts (read, degrade) and adds one (idempotent). An account stores a gateway-tokenised `vaultRef`
 // + last-4/IFSC only — the raw account number / VPA is tokenised at the gateway and NEVER sent here in the clear.
 //
-// FLAGGED BACKEND GAP: adding requires a `vaultRef` from a gateway fund-account tokenisation step that the app
-// can't perform yet (no exposed tokenisation endpoint). So the bank-ADD screen is deferred to the payouts
-// vertical (roadmap P-06) where that integration lands; listBanks() (read) is real and usable now.
+// Two add paths: a UPI / pre-tokenised destination via addBank() (caller already holds a vaultRef), and a FULL
+// bank account via addFullBank() (P1-16) — the raw account number + IFSC are sent ONCE and the SERVER tokenises
+// them at the gateway, persisting only the vault ref + last-4 (raw number never stored/logged on device or server).
 import type { BankAccount } from '@krishi-verse/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
@@ -14,7 +14,13 @@ export async function listBanks(): Promise<BankAccount[]> {
   catch { return []; }
 }
 
-/** Add a tokenised payout destination. `vaultRef` must come from the gateway tokenisation step (see P-06). */
+/** Add a tokenised payout destination (UPI, or a vaultRef the caller already holds). Idempotent (Law 3). */
 export async function addBank(input: { accountKind: 'bank' | 'upi'; vaultRef: string; upiId?: string; accountLast4?: string; ifsc?: string; holderName?: string; isPrimary?: boolean }): Promise<BankAccount> {
   return apiClient().bankAccounts.add(input, newId());
+}
+
+/** P1-16 · add a FULL bank account: the server tokenises the raw account number + IFSC at the gateway and stores
+ * only the vault ref + last-4. The raw number leaves the device once over TLS and is never persisted. Idempotent. */
+export async function addFullBank(input: { accountNumber: string; ifsc: string; holderName: string; isPrimary?: boolean }): Promise<{ id: string }> {
+  return apiClient().bankAccounts.addFull(input, newId());
 }

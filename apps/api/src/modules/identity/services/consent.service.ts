@@ -24,4 +24,13 @@ export class ConsentService {
     return { ok: true, version };
   }
   list(tenantId: string, userId: string) { return this.repo.latestByUser(tenantId, userId); }
+
+  /** Is the user's LATEST decision for `purposeCode` a grant? Optionally require it was assisted by a specific
+   *  user (on-behalf consent: the farmer granted it with this ambassador as assistedBy). DPDP authority check. */
+  async isGranted(tenantId: string, userId: string, purposeCode: string, assistedBy?: string): Promise<boolean> {
+    const latest = await this.repo.latestForPurpose(tenantId, userId, purposeCode);
+    if (!latest || !latest.granted) return false;
+    if (assistedBy && latest.assistedBy !== assistedBy) return false;
+    return true;
+  }
 }

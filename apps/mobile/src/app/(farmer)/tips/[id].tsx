@@ -1,6 +1,6 @@
 // apps/mobile/src/app/(farmer)/tips/[id].tsx · screen 101 (tip detail). Thin screen (guide §3): a tip's title,
-// body, and asset link. No get-by-id endpoint → reads the cached list and finds it. A bookmark toggle persists a
-// device-local snapshot (no server bookmark endpoint — flagged). Behind `tips_assistant`. Degrade-never-die.
+// body, and asset link. No get-by-id endpoint → reads the cached list and finds it. The bookmark toggle is now
+// SERVER-persisted (buyer/saves entityType='tip', P1-16) with an offline mirror. Behind `tips_assistant`. Degrade-never-die.
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Linking, Alert } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -8,8 +8,8 @@ import type { LearningResource } from '@krishi-verse/sdk-js';
 import { Button, Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
-import { getTip, tipMediaUrl, loadSavedTips, persistSavedTips } from '../../../features/content/content.api';
-import { kindLabelKey, kindTone, tipSnapshot, toggleSaved, isSaved, type TipSnapshot } from '../../../features/content/content';
+import { getTip, tipMediaUrl, loadSavedTips, saveTip, unsaveTip } from '../../../features/content/content.api';
+import { kindLabelKey, kindTone, tipSnapshot, isSaved, type TipSnapshot } from '../../../features/content/content';
 
 export default function TipDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -32,9 +32,7 @@ export default function TipDetail() {
   const bookmarked = tip ? isSaved(saved, tip.id) : false;
   const toggle = async () => {
     if (!tip) return;
-    const next = toggleSaved(saved, tipSnapshot(tip));
-    setSaved(next);
-    await persistSavedTips(next);
+    setSaved(bookmarked ? await unsaveTip(tip.id, saved) : await saveTip(tipSnapshot(tip), saved));
   };
   const openAsset = async () => {
     if (!tip) return;

@@ -52,7 +52,7 @@ export function groupByKind<T extends Pick<LearningResource, 'kind'>>(items: T[]
     .filter((s) => s.items.length > 0);
 }
 
-// --- saved tips (device-local bookmarks) ---
+// --- saved tips (server-persisted via buyer/saves entityType='tip'; AsyncStorage mirror for offline render) ---
 export interface TipSnapshot { id: string; title: string; kind: ResourceKind; savedAt: number }
 /** Build a minimal snapshot to persist (so the saved screen renders offline without a fetch). */
 export function tipSnapshot(r: Pick<LearningResource, 'id' | 'title' | 'kind'>, now: number = Date.now()): TipSnapshot {
@@ -66,6 +66,18 @@ export function toggleSaved(saved: TipSnapshot[], snap: TipSnapshot, max = 300):
   const exists = saved.some((s) => s.id === snap.id);
   if (exists) return saved.filter((s) => s.id !== snap.id);
   return [snap, ...saved.filter((s) => s.id !== snap.id)].slice(0, max);
+}
+/** Reconcile the local snapshot mirror against the SERVER's authoritative set of saved tip ids (P1-16).
+ *  The server owns WHICH tips are saved; the local mirror carries title/kind so the saved screen renders offline.
+ *  Drops local snapshots the server no longer has; keeps a minimal placeholder for any server id missing locally
+ *  (title resolves when its detail loads). Order: newest-first by the local savedAt, server-only ids appended.
+ *  Pure — no I/O. */
+export function reconcileSavedTips(local: TipSnapshot[], serverIds: string[], now: number = Date.now(), max = 300): TipSnapshot[] {
+  const ids = new Set(serverIds);
+  const byId = new Map(local.map((s) => [s.id, s]));
+  const kept = local.filter((s) => ids.has(s.id));                       // drop locals the server dropped
+  const missing = serverIds.filter((id) => !byId.has(id)).map((id): TipSnapshot => ({ id, title: id, kind: 'article', savedAt: now }));
+  return [...kept, ...missing].sort((a, b) => b.savedAt - a.savedAt).slice(0, max);
 }
 
 // --- AI assistant input ---

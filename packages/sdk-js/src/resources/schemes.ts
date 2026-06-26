@@ -4,7 +4,7 @@
 // + DBT credits are owner-scoped server-side (no IDOR). Money is bigint minor strings (Law 2). Gated server-side
 // by the `schemes` flag.
 import { HttpClient } from '../http';
-import { Scheme, SchemeAuthority, EligibilityResult, SchemeApplication, DbtTransfer, ApplicationStatus, Page } from '../types';
+import { Scheme, SchemeAuthority, EligibilityResult, SchemeApplication, SchemeApplicationDocument, DbtTransfer, ApplicationStatus, Page } from '../types';
 
 export class SchemesResource {
   constructor(private readonly http: HttpClient) {}
@@ -46,6 +46,20 @@ export class SchemesResource {
   /** Observed DBT/PFMS credits for an application (owner-scoped). Money is bigint minor (Law 2). */
   async dbtTransfers(id: string, signal?: AbortSignal): Promise<DbtTransfer[]> {
     return (await this.http.request<DbtTransfer[]>('GET', `schemes/applications/${encodeURIComponent(id)}/dbt`, { signal })).data;
+  }
+
+  // --- supporting documents (P1-16) — applicant attaches clean media against the scheme's required doc types ---
+  /** The application's attached documents (owner or officer). */
+  async listDocuments(id: string, signal?: AbortSignal): Promise<SchemeApplicationDocument[]> {
+    return (await this.http.request<SchemeApplicationDocument[]>('GET', `schemes/applications/${encodeURIComponent(id)}/documents`, { signal })).data;
+  }
+  /** Attach a clean, caller-owned media asset (from the media pipeline). Editable only pre-decision. */
+  async attachDocument(id: string, input: { mediaId: string; docTypeId?: string; note?: string }): Promise<SchemeApplicationDocument> {
+    return (await this.http.request<SchemeApplicationDocument>('POST', `schemes/applications/${encodeURIComponent(id)}/documents`, { body: input })).data;
+  }
+  /** Detach (soft-delete) an attached document. Editable only pre-decision. */
+  async detachDocument(id: string, documentId: string): Promise<{ ok: boolean }> {
+    return (await this.http.request<{ ok: boolean }>('DELETE', `schemes/applications/${encodeURIComponent(id)}/documents/${encodeURIComponent(documentId)}`)).data;
   }
 
   // --- operator / officer (scheme.process; gated server-side — P1-12) ---

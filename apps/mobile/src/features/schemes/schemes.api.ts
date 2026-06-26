@@ -4,7 +4,7 @@
 // the screen shows the precise outcome (idempotent — Law 3; a paid scheme fee / DBT moves money SERVER-SIDE, never
 // here — Law 11). Document upload reuses the core/media pipeline (P-01: pick → process/EXIF-drop → presign → PUT →
 // confirm) and returns a mediaId. Reads degrade-never-die (empty/null). Money is bigint minor strings (Law 2).
-import type { Scheme, SchemeApplication, EligibilityResult, DbtTransfer } from '@krishi-verse/sdk-js';
+import type { Scheme, SchemeApplication, EligibilityResult, DbtTransfer, SchemeApplicationDocument } from '@krishi-verse/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { cache } from '../../core/offline/sqlite.db';
 import { POLICY } from '../../core/offline/cache-policies';
@@ -74,4 +74,18 @@ export async function uploadSchemeDocument(picked: PickedImage): Promise<string 
     const outcome = await uploadProcessed(processed, { kind: 'document' });
     return outcome.mediaId;
   } catch { return null; }
+}
+
+// --- supporting documents (P1-16): link uploaded media to the application against a required doc type ---
+/** The application's attached documents. Degrades to [] (offline / not yet live). */
+export async function applicationDocuments(id: string): Promise<SchemeApplicationDocument[]> {
+  try { return await apiClient().schemes.listDocuments(id); } catch { return []; }
+}
+/** Attach an uploaded document (mediaId) to the application. Throws on a real error so the screen shows the outcome. */
+export function attachSchemeDocument(applicationId: string, mediaId: string, docTypeId?: string): Promise<SchemeApplicationDocument> {
+  return apiClient().schemes.attachDocument(applicationId, { mediaId, docTypeId });
+}
+/** Detach a previously-attached document (only while the application is still editable). */
+export async function detachSchemeDocument(applicationId: string, documentId: string): Promise<boolean> {
+  try { const r = await apiClient().schemes.detachDocument(applicationId, documentId); return r.ok; } catch { return false; }
 }

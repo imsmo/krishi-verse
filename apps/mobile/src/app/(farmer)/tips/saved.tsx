@@ -1,14 +1,14 @@
 // apps/mobile/src/app/(farmer)/tips/saved.tsx · screen 103 (saved tips). Thin screen (guide §3): the farmer's
-// DEVICE-LOCAL bookmarks (AsyncStorage, scoped per user — no server bookmark endpoint yet, flagged). Renders from
-// the stored snapshots so it works fully offline. Tap to open; remove to unsave. Behind `tips_assistant`.
+// saved tips are now SERVER-persisted (buyer/saves entityType='tip', P1-16) with an AsyncStorage mirror so the
+// list renders instantly + offline. Tap to open; remove to unsave (write-through). Behind `tips_assistant`.
 import React, { useCallback, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
-import { loadSavedTips, persistSavedTips } from '../../../features/content/content.api';
-import { toggleSaved, kindLabelKey, kindTone, type TipSnapshot } from '../../../features/content/content';
+import { loadSavedTips, unsaveTip } from '../../../features/content/content.api';
+import { kindLabelKey, kindTone, type TipSnapshot } from '../../../features/content/content';
 
 export default function SavedTips() {
   const { t } = useTranslation();
@@ -22,7 +22,7 @@ export default function SavedTips() {
 
   if (!enabled) return <ScreenScaffold title={t('content.saved.title')}><EmptyState title={t('common.unavailable')} /></ScreenScaffold>;
 
-  const remove = async (snap: TipSnapshot) => { const next = toggleSaved(items, snap); setItems(next); await persistSavedTips(next); };
+  const remove = async (snap: TipSnapshot) => { setItems(await unsaveTip(snap.id, items)); };
 
   return (
     <ScreenScaffold title={t('content.saved.title')}>

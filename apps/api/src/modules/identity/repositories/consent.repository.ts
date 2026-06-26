@@ -25,4 +25,12 @@ export class ConsentRepository {
          FROM consents WHERE user_id=$1 ORDER BY purpose_code, created_at DESC`, [userId]);
     return r.rows;
   }
+  /** The user's LATEST decision for one purpose (granted + who assisted). Null if never recorded. */
+  async latestForPurpose(tenantId: string, userId: string, purposeCode: string): Promise<{ granted: boolean; channel: string | null; assistedBy: string | null } | null> {
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT granted, channel, assisted_by FROM consents
+         WHERE user_id=$1 AND purpose_code=$2 ORDER BY created_at DESC LIMIT 1`, [userId, purposeCode]);
+    const row = r.rows[0];
+    return row ? { granted: !!row.granted, channel: row.channel ?? null, assistedBy: row.assisted_by ?? null } : null;
+  }
 }

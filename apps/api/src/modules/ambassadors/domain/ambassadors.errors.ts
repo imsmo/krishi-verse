@@ -14,5 +14,6 @@ export class AmbassadorsForbiddenError extends DomainError { constructor(detail 
 export class NotAnAmbassadorError extends DomainError { constructor() { super('NOT_AN_AMBASSADOR', 'You must be an active ambassador to perform this action', 403, {}); } }
 /** Assisted onboarding REQUIRES the farmer's recorded consent (DPDP) — refuse to create an account without it. */
 export class ConsentRequiredError extends DomainError { constructor() { super('CONSENT_REQUIRED', 'Assisted onboarding requires the farmer to grant the data-processing consent', 422, {}); } }
+export class OnBehalfConsentRequiredError extends DomainError { constructor() { super('ON_BEHALF_CONSENT_REQUIRED', 'The farmer must grant on-behalf-listing consent to this ambassador first', 403, {}); } }
 /** A target for this ambassador + metric + period already exists (UNIQUE(ambassador_id, metric, period_start)). */
 export class DuplicateTargetError extends DomainError { constructor() { super('TARGET_EXISTS', 'A target for this metric + period already exists', 409, {}); } }

@@ -3,7 +3,7 @@
 // assistant input validation. The server stays the authority on which resources exist + on AI answers.
 import {
   RESOURCE_KINDS, kindLabelKey, kindTone, normalizeQuery, matchesQuery, searchResources,
-  groupByKind, tipSnapshot, isSaved, toggleSaved, buildAssistantDraft, appendTurn, type TipSnapshot, type ChatTurn,
+  groupByKind, tipSnapshot, isSaved, toggleSaved, reconcileSavedTips, buildAssistantDraft, appendTurn, type TipSnapshot, type ChatTurn,
 } from '../../features/content/content';
 import type { LearningResource } from '@krishi-verse/sdk-js';
 
@@ -78,6 +78,13 @@ describe('saved-tips set math', () => {
     let saved: TipSnapshot[] = [];
     for (let i = 0; i < 5; i++) saved = toggleSaved(saved, snap(`s${i}`), 3);
     expect(saved.length).toBe(3);
+  });
+  it('reconcileSavedTips: server is authoritative — drops removed, adds server-only, keeps local title', () => {
+    const local: TipSnapshot[] = [{ id: 'a', title: 'Aphids', kind: 'article', savedAt: 30 }, { id: 'b', title: 'Blight', kind: 'blog', savedAt: 20 }];
+    const merged = reconcileSavedTips(local, ['a', 'c'], 10);
+    expect(merged.map((s) => s.id)).toEqual(['a', 'c']);            // 'b' dropped (server removed), 'c' added
+    expect(merged.find((s) => s.id === 'a')!.title).toBe('Aphids'); // local snapshot title preserved
+    expect(merged.find((s) => s.id === 'c')!.title).toBe('c');      // server-only placeholder (resolves on detail)
   });
 });
 

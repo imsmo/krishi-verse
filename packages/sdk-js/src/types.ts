@@ -414,6 +414,12 @@ export interface SchemeApplication {
   eligibilityCheck: Record<string, unknown> | null; submittedAt: string | null; decidedAt: string | null;
   rejectionReason: string | null; createdAt?: string;
 }
+/** A supporting document attached to a scheme application (P1-16). `mediaId` is a clean media-pipeline asset;
+ *  `docTypeId` is one of the scheme's required doc types (null = supplementary). No raw file here, only the ref. */
+export interface SchemeApplicationDocument {
+  id: string; applicationId: string; mediaId: string; docTypeId: string | null; note: string | null;
+  uploadedBy: string; createdAt: string;
+}
 /** An observed PFMS/DBT credit against an application. `amountMinor` is bigint minor (Law 2). Read-only for the app. */
 export interface DbtTransfer {
   id: string; applicationId: string | null; userId: string; schemeId: string; amountMinor: string;

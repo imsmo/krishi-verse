@@ -13,7 +13,7 @@ import { POLICY } from '../../core/offline/cache-policies';
 import { asyncStorageKv as kv } from '../../core/offline/kv';
 import { currentScope } from '../../core/offline/scope';
 import { newId } from '../../core/util/ids';
-import { searchResources, type TipSnapshot } from './content';
+import { searchResources, reconcileSavedTips, type TipSnapshot } from './content';
 
 export interface TipsPage { items: LearningResource[]; nextCursor: string | null }
 const TIPS_SCOPE = 'public'; // approved tips are the same catalogue for everyone (not user-private)
@@ -46,14 +46,45 @@ export async function tipMediaUrl(mediaId: string): Promise<string | null> {
   try { return (await apiClient().media.downloadUrl(mediaId)).url; } catch { return null; }
 }
 
-// --- saved tips (device-local bookmarks; scoped per user) ---
+// --- saved tips (SERVER-persisted via buyer/saves entityType='tip'; AsyncStorage mirror for offline render) ---
+// P1-16: saves now live on the server (cross-device, survives reinstall). The local mirror keeps the snapshot
+// title/kind so the saved screen renders instantly + offline; the SERVER is authoritative for which ids are saved.
 const savedKey = () => `content.savedTips:${currentScope()}`;
-export async function loadSavedTips(): Promise<TipSnapshot[]> {
+async function readMirror(): Promise<TipSnapshot[]> {
   try { const raw = await kv.get(savedKey()); return raw ? (JSON.parse(raw) as TipSnapshot[]) : []; }
   catch { return []; }
 }
-export async function persistSavedTips(list: TipSnapshot[]): Promise<void> {
+async function writeMirror(list: TipSnapshot[]): Promise<void> {
   try { await kv.set(savedKey(), JSON.stringify(list)); } catch { /* best-effort; degrade-never-die */ }
+}
+
+/** Load saved tips. Server-first (authoritative set of saved 'tip' ids), reconciled with the local snapshot mirror
+ *  for offline title/kind; on any failure (offline) falls back to the mirror alone. Never throws. */
+export async function loadSavedTips(): Promise<TipSnapshot[]> {
+  const mirror = await readMirror();
+  try {
+    const page = await apiClient().buyer.listSaves({ entityType: 'tip', limit: 100 });
+    const serverIds = page.items.map((s) => s.entityId);
+    const merged = reconcileSavedTips(mirror, serverIds);
+    await writeMirror(merged);
+    return merged;
+  } catch { return mirror; }                                   // offline → render the mirror
+}
+
+/** Save a tip: write-through (optimistic local mirror + best-effort server POST). Returns the new mirror list. */
+export async function saveTip(snap: TipSnapshot, current: TipSnapshot[]): Promise<TipSnapshot[]> {
+  const next = [snap, ...current.filter((s) => s.id !== snap.id)].slice(0, 300);
+  await writeMirror(next);
+  try { await apiClient().buyer.save('tip', snap.id); } catch { /* offline → the mutation queue/next load reconciles */ }
+  return next;
+}
+
+/** Un-save a tip: write-through (optimistic local mirror + best-effort server DELETE). Returns the new mirror list. */
+export async function unsaveTip(id: string, current: TipSnapshot[]): Promise<TipSnapshot[]> {
+  const next = current.filter((s) => s.id !== id);
+  await writeMirror(next);
+  try { await apiClient().buyer.unsave('tip', id); } catch { /* offline → reconciled on next load */ }
+  return next;
 }
 
 // --- AI assistant (assumed endpoint; degrade honestly) ---

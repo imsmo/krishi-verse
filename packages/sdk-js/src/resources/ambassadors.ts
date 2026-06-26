@@ -8,6 +8,7 @@
 import { HttpClient } from '../http';
 import { AmbassadorProfile, Referral, AmbassadorEarning, CommissionPlan, AmbassadorVisit, AmbassadorTarget, LeaderboardEntry, AssistedOnboardingResult, Page,
   EnrollAmbassadorInput, UpdateAmbassadorInput, SetTargetInput, AmbassadorPayoutResult } from '../types';
+import type { CreateListingInput } from './listings';
 
 /** Ambassador-assisted farmer onboarding (the farmer is created on-behalf; DPDP consent is mandatory). */
 export interface AssistedOnboardingInput {
@@ -53,6 +54,11 @@ export class AmbassadorsResource {
    * accrues only when an admin activates the referral. Idempotent (Law 3). */
   async assistedOnboard(input: AssistedOnboardingInput, idempotencyKey: string): Promise<AssistedOnboardingResult> {
     return (await this.http.request<AssistedOnboardingResult>('POST', 'ambassadors/assisted-onboarding', { idempotencyKey, body: input })).data;
+  }
+  /** P1-16 · create a listing ON BEHALF of an onboarded farmer. Consent-gated server-side: the farmer must have
+   * granted 'on_behalf_listing' consent to the caller-ambassador (403 otherwise). Idempotency-keyed (Law 3). */
+  async createListingOnBehalf(farmerUserId: string, listing: CreateListingInput, idempotencyKey: string): Promise<{ id: string }> {
+    return (await this.http.request<{ id: string }>('POST', 'ambassadors/on-behalf/listings', { idempotencyKey, body: { farmerUserId, listing } })).data;
   }
   /** Log a geo-stamped field visit the caller-ambassador made. */
   async logVisit(input: { purpose?: string; visitedUserId?: string; notes?: string; lat?: number; lng?: number; regionId?: string }): Promise<AmbassadorVisit> {

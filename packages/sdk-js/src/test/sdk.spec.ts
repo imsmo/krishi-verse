@@ -870,4 +870,44 @@ describe('HttpClient via resources', () => {
     expect(a.views).toBe(42);
     expect(a.lastViewedAt).toBe('2026-06-25T10:00:00.000Z');
   });
+
+  it('schemes.attachDocument POSTs the application documents path (P1-16)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'd1', applicationId: 'app1', mediaId: 'm1', docTypeId: 'aadhaar', note: null, uploadedBy: 'u1', createdAt: '2026-06-26T00:00:00.000Z' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const d = await c.schemes.attachDocument('app1', { mediaId: 'm1', docTypeId: 'aadhaar' });
+    expect(calls[0].url).toBe('https://api.test/v1/schemes/applications/app1/documents');
+    expect(calls[0].init.method).toBe('POST');
+    expect(d.mediaId).toBe('m1');
+    expect(d.docTypeId).toBe('aadhaar');
+  });
+
+  it('schemes.detachDocument DELETEs the specific document (P1-16)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { ok: true } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const r = await c.schemes.detachDocument('app1', 'd1');
+    expect(calls[0].url).toBe('https://api.test/v1/schemes/applications/app1/documents/d1');
+    expect(calls[0].init.method).toBe('DELETE');
+    expect(r.ok).toBe(true);
+  });
+
+  it('bankAccounts.addFull POSTs /v1/bank-accounts/tokenise with an idempotency key (P1-16)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'ba1' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const r = await c.bankAccounts.addFull({ accountNumber: '000111222333', ifsc: 'HDFC0001234', holderName: 'Ramesh' }, 'idem-bank-1');
+    expect(calls[0].url).toBe('https://api.test/v1/bank-accounts/tokenise');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-bank-1');
+    expect(r.id).toBe('ba1');
+  });
+
+  it('ambassadors.createListingOnBehalf POSTs the on-behalf path with an idempotency key (P1-16)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'lst1' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const r = await c.ambassadors.createListingOnBehalf('farmer-1', { productId: 'p1', categoryId: 'c1', title: 'Tomatoes', quantityTotal: 100, unitCode: 'kg', priceMinor: '4500' } as any, 'idem-ob-1');
+    expect(calls[0].url).toBe('https://api.test/v1/ambassadors/on-behalf/listings');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-ob-1');
+    expect(JSON.parse(calls[0].init.body as string).farmerUserId).toBe('farmer-1');
+    expect(r.id).toBe('lst1');
+  });
 });

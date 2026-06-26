@@ -9,3 +9,6 @@ export class SchemeInactiveError extends DomainError { constructor(code: string)
 export class InvalidApplicationError extends DomainError { constructor(message: string) { super('SCHEME_APPLICATION_INVALID', message, 422); } }
 export class InvalidDbtError extends DomainError { constructor(message: string) { super('DBT_TRANSFER_INVALID', message, 422); } }
 export class SchemesForbiddenError extends AppError { constructor(message = 'Not allowed on this scheme resource') { super('SCHEMES_FORBIDDEN', message, 403); } }
+export class DocumentsNotEditableError extends DomainError { constructor(status: string) { super('SCHEME_DOCS_NOT_EDITABLE', `Documents cannot be changed while the application is '${status}'`, 409, { status }); } }
+export class DocumentMediaInvalidError extends DomainError { constructor(message = 'Media not found, not yours, or not clean — cannot attach') { super('SCHEME_DOC_MEDIA_INVALID', message, 422); } }
+export class DocumentNotFoundError extends NotFoundError { constructor(id: string) { super('Scheme application document not found'); (this as any).code = 'SCHEME_APPLICATION_DOCUMENT_NOT_FOUND'; (this as any).details = { id }; } }

@@ -22,6 +22,7 @@ import { PermissionService } from './services/permission.service';
 import { KycDocumentService } from './services/kyc-document.service';
 import { EkycService } from './services/ekyc.service';
 import { ekycProviderProvider } from './gateway/ekyc-provider.provider';
+import { fundAccountTokeniserProvider } from './gateway/fund-account-tokeniser.provider';
 import { AddressService } from './services/address.service';
 import { BankAccountService } from './services/bank-account.service';
 import { ConsentService } from './services/consent.service';
@@ -59,6 +60,7 @@ import { RiskScoreRecomputeJob } from './jobs/risk-score-recompute.job';
     AuthService, UserService, UserTenantRoleService, RoleService, PermissionService,
     KycDocumentService, EkycService, AddressService, BankAccountService, ConsentService, SessionService, PrivacyService, ChangePhoneService,
     ekycProviderProvider,
+    fundAccountTokeniserProvider,
     UserRepository, RoleRepository, PermissionRepository, UserTenantRoleRepository, KycDocumentRepository, EkycSessionRepository,
     AddressRepository, BankAccountRepository, DeviceRepository, SessionRepository, LoginEventRepository,
     ConsentRepository, DataSubjectRequestRepository, RiskScoreRepository,

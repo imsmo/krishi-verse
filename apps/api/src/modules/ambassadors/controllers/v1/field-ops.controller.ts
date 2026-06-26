@@ -13,11 +13,13 @@ import { BadRequestError } from '../../../../shared/errors/app-error';
 import { AssistedOnboardingService } from '../../services/assisted-onboarding.service';
 import { AmbassadorVisitService } from '../../services/ambassador-visit.service';
 import { AmbassadorTargetService } from '../../services/ambassador-target.service';
+import { OnBehalfListingService } from '../../services/on-behalf-listing.service';
 import { LeaderboardReadModel } from '../../read-models/leaderboard.read-model';
 import { AmbassadorsPermissions, canManageAmbassadors } from '../../policies/ambassadors.policies';
 import { AssistedOnboardingSchema, AssistedOnboardingDto } from '../../dto/assisted-onboarding.dto';
 import { CreateVisitSchema, CreateVisitDto, QueryVisitsSchema, QueryVisitsDto } from '../../dto/create-visit.dto';
 import { SetTargetSchema, SetTargetDto, QueryLeaderboardSchema, QueryLeaderboardDto } from '../../dto/create-target.dto';
+import { OnBehalfListingSchema, OnBehalfListingDto } from '../../dto/on-behalf-listing.dto';
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
 
@@ -29,9 +31,17 @@ export class FieldOpsController {
     private readonly assisted: AssistedOnboardingService,
     private readonly visits: AmbassadorVisitService,
     private readonly targets: AmbassadorTargetService,
+    private readonly onBehalf: OnBehalfListingService,
     private readonly leaderboard: LeaderboardReadModel,
   ) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageAmbassadors(ctx) }; }
+
+  /** Active ambassador creates a listing ON BEHALF of an onboarded farmer — consent-gated + audited (P1-16). */
+  @Post('on-behalf/listings')
+  onBehalfListing(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(OnBehalfListingSchema) dto: OnBehalfListingDto) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.onBehalf.createListing(ctx.tenantId, this.actor(ctx), key, dto, null).then((data) => ({ data }));
+  }
 
   /** Active ambassador onboards a farmer on-behalf (consent-gated, audited). Idempotent (Law 3). */
   @Post('assisted-onboarding')

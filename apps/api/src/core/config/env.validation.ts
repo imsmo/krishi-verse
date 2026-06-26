@@ -84,6 +84,7 @@ export const EnvSchema = z.object({
   EKYC_PROVIDER_KIND: z.string().default('sandbox'),    // eKYC: 'sandbox' (dev) | 'digilocker'… (prod fail-closed)
   EKYC_PROVIDER_URL: z.string().default(''),            // external eKYC base URL (required for a real provider)
   EKYC_PROVIDER_API_KEY: z.string().default(''),        // eKYC api key (secret; never logged)
+  BANK_VAULT_KIND: z.string().default('sandbox'),       // bank fund-account tokeniser (P1-16): 'sandbox' (dev) | 'razorpayx' (prod fail-closed)
   PUSH_PROVIDER: z.string().default('expo'),            // first-party push sender: 'expo' (default) | 'none' (noop)
   EXPO_PUSH_URL: z.string().default(''),                // Expo push base (default https://exp.host)
   EXPO_ACCESS_TOKEN: z.string().default(''),            // optional Expo access token (raises rate limits + auth)

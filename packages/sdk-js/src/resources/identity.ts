@@ -51,6 +51,11 @@ export class BankAccountsResource {
   async add(input: { accountKind: 'bank' | 'upi'; vaultRef: string; upiId?: string; accountLast4?: string; ifsc?: string; holderName?: string; isPrimary?: boolean }, idempotencyKey: string): Promise<BankAccount> {
     return (await this.http.request<BankAccount>('POST', 'bank-accounts', { idempotencyKey, body: input })).data;
   }
+  /** P1-16 · add a FULL bank account: send the raw account number + IFSC ONCE; the SERVER tokenises it at the
+   * gateway and persists ONLY the vault ref + last-4 (raw number never stored/logged). Idempotency-keyed (Law 3). */
+  async addFull(input: { accountNumber: string; ifsc: string; holderName: string; isPrimary?: boolean }, idempotencyKey: string): Promise<{ id: string }> {
+    return (await this.http.request<{ id: string }>('POST', 'bank-accounts/tokenise', { idempotencyKey, body: input })).data;
+  }
 }
 
 /** The buyer's delivery address book (owner-scoped server-side). Used by checkout. Contact phone/name are PII —

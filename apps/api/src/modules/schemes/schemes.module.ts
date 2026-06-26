@@ -21,14 +21,16 @@ import { ApplicationsController } from './controllers/v1/applications.controller
 import { SchemeService } from './services/scheme.service';
 import { SchemeApplicationService } from './services/scheme-application.service';
 import { DbtTransferService } from './services/dbt-transfer.service';
+import { SchemeDocumentService } from './services/scheme-document.service';
 import { SchemeRepository } from './repositories/scheme.repository';
 import { SchemeAuthorityRepository } from './repositories/scheme-authority.repository';
 import { SchemeApplicationRepository } from './repositories/scheme-application.repository';
 import { DbtTransferRepository } from './repositories/dbt-transfer.repository';
+import { SchemeDocumentRepository } from './repositories/scheme-document.repository';
 
 @Module({
   controllers: [SchemesController, EligibilityController, ApplicationsController],
-  providers: [SchemeService, SchemeApplicationService, DbtTransferService, SchemeRepository, SchemeAuthorityRepository, SchemeApplicationRepository, DbtTransferRepository],
+  providers: [SchemeService, SchemeApplicationService, DbtTransferService, SchemeDocumentService, SchemeRepository, SchemeAuthorityRepository, SchemeApplicationRepository, DbtTransferRepository, SchemeDocumentRepository],
   exports: [SchemeService, SchemeApplicationService, DbtTransferService],
 })
 export class SchemesModule {}

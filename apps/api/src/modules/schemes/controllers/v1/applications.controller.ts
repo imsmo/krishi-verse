@@ -1,7 +1,7 @@
 // modules/schemes/controllers/v1/applications.controller.ts · scheme application lifecycle + DBT records. `schemes` flag.
 // apply/submit/resubmit/appeal = applicant (scheme.apply); verify/clarify/approve/reject/close + DBT record
 // = officer (scheme.process). Money route (submit, collects the processing fee) requires an Idempotency-Key.
-import { Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
@@ -12,9 +12,11 @@ import { RequestContext } from '../../../../core/tenancy-context/request-context
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { SchemeApplicationService } from '../../services/scheme-application.service';
 import { DbtTransferService } from '../../services/dbt-transfer.service';
+import { SchemeDocumentService } from '../../services/scheme-document.service';
 import { ApplySchemeSchema, ApplySchemeDto, ClarifySchema, ClarifyDto, ApproveSchema, ApproveDto, RejectSchema, RejectDto } from '../../dto/create-scheme-application.dto';
 import { QueryApplicationsSchema, QueryApplicationsDto } from '../../dto/query-scheme-application.dto';
 import { RecordDbtSchema, RecordDbtDto } from '../../dto/create-dbt-transfer.dto';
+import { AttachDocumentSchema, AttachDocumentDto } from '../../dto/attach-document.dto';
 import { SchemesPermissions, canApply, canProcess } from '../../policies/schemes.policies';
 
 const ipOf = (r: Request) => r.ip || null;
@@ -24,7 +26,7 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('schemes')
 export class ApplicationsController {
-  constructor(private readonly svc: SchemeApplicationService, private readonly dbt: DbtTransferService) {}
+  constructor(private readonly svc: SchemeApplicationService, private readonly dbt: DbtTransferService, private readonly docs: SchemeDocumentService) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canApply: canApply(ctx), canProcess: canProcess(ctx) }; }
 
   @Post() @RequirePermissions(SchemesPermissions.Apply)
@@ -38,6 +40,14 @@ export class ApplicationsController {
   }
   @Get(':id')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
+
+  // --- supporting documents (P1-16): applicant attaches clean media against required doc types; editable pre-decision ---
+  @Get(':id/documents')
+  listDocs(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.docs.list(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
+  @Post(':id/documents') @RequirePermissions(SchemesPermissions.Apply)
+  attachDoc(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(AttachDocumentSchema) dto: AttachDocumentDto) { return this.docs.attach(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data })); }
+  @Delete(':id/documents/:docId') @RequirePermissions(SchemesPermissions.Apply)
+  detachDoc(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Param('docId') docId: string) { return this.docs.detach(ctx.tenantId, this.actor(ctx), id, docId).then((data) => ({ data })); }
 
   @Post(':id/submit') @RequirePermissions(SchemesPermissions.Apply)
   submit(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Headers('idempotency-key') key: string) {

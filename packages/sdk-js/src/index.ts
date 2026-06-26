@@ -34,5 +34,5 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   CreateMccInput, EnrolMemberInput, CreateRateCardInput, RecordCollectionInput, GenerateBillInput,
   Mandi, MandiPrice, PricePrediction, PriceAlert, MandiPulse, WeatherAlert,
   LearningResource, ResourceKind, AssistantReply, AssistantStatus,
-  Scheme, SchemeAuthority, EligibilityResult, ApplicationStatus, SchemeApplication, DbtTransfer,
+  Scheme, SchemeAuthority, EligibilityResult, ApplicationStatus, SchemeApplication, SchemeApplicationDocument, DbtTransfer,
   SupportTicket, TicketSeverity, TicketStatus, LandParcel, PrivacyRequest } from './types';
