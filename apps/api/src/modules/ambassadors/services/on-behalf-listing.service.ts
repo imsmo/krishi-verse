@@ -11,9 +11,11 @@ import { AuditWriter } from '../../../core/audit/audit.writer';
 import { ListingService } from '../../listings/services/listing.service';
 import { ConsentService } from '../../identity/services/consent.service';
 import { AmbassadorProfileRepository } from '../repositories/ambassador-profile.repository';
+import { DOC_EXTRACTION, DocExtractionProvider, SuggestedListingDraft } from '../gateway/doc-extraction.port';
 import { AmbassadorActor } from './ambassador-profile.service';
 import { NotAnAmbassadorError, OnBehalfConsentRequiredError } from '../domain/ambassadors.errors';
 import { OnBehalfListingDto } from '../dto/on-behalf-listing.dto';
+import { SuggestFromDocsDto } from '../dto/suggest-from-docs.dto';
 
 export const ON_BEHALF_LISTING_PURPOSE = 'on_behalf_listing';
 
@@ -21,11 +23,25 @@ export const ON_BEHALF_LISTING_PURPOSE = 'on_behalf_listing';
 export class OnBehalfListingService {
   constructor(
     @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork,
+    @Inject(DOC_EXTRACTION) private readonly docExtraction: DocExtractionProvider,
     private readonly audit: AuditWriter,
     private readonly listings: ListingService,
     private readonly consents: ConsentService,
     private readonly profiles: AmbassadorProfileRepository,
   ) {}
+
+  /** P1-16-AI · AI-suggest listing fields from a farmer's document (OCR'd upstream). ADVISORY — never creates a
+   *  listing; the ambassador reviews/edits then calls createListing to confirm. Same gates as the create
+   *  (active ambassador + the farmer's on-behalf consent to this ambassador), so AI prefill can't widen authority.
+   *  The model tier logs the inference (ai_inferences); we never persist the raw doc text. Degrades to an empty
+   *  draft + needsReview when the model tier is unavailable (Law 12). */
+  async suggestFromDocs(tenantId: string, actor: AmbassadorActor, dto: SuggestFromDocsDto): Promise<SuggestedListingDraft> {
+    const me = await this.profiles.findByUser(tenantId, actor.userId);
+    if (!me || !me.toProps().isActive) throw new NotAnAmbassadorError();
+    const ok = await this.consents.isGranted(tenantId, dto.farmerUserId, ON_BEHALF_LISTING_PURPOSE, actor.userId);
+    if (!ok) throw new OnBehalfConsentRequiredError();
+    return this.docExtraction.suggest({ tenantId, docText: dto.docText, locale: dto.locale, docType: 'listing', mediaIds: dto.mediaIds ?? [] });
+  }
 
   /** Create a listing for `farmerUserId` as `actor` (the ambassador). Consent-gated + audited. Idempotent via key. */
   async createListing(tenantId: string, actor: AmbassadorActor, idemKey: string, dto: OnBehalfListingDto, ip: string | null) {

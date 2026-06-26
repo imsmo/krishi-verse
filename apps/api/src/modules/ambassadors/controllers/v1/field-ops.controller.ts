@@ -20,6 +20,7 @@ import { AssistedOnboardingSchema, AssistedOnboardingDto } from '../../dto/assis
 import { CreateVisitSchema, CreateVisitDto, QueryVisitsSchema, QueryVisitsDto } from '../../dto/create-visit.dto';
 import { SetTargetSchema, SetTargetDto, QueryLeaderboardSchema, QueryLeaderboardDto } from '../../dto/create-target.dto';
 import { OnBehalfListingSchema, OnBehalfListingDto } from '../../dto/on-behalf-listing.dto';
+import { SuggestFromDocsSchema, SuggestFromDocsDto } from '../../dto/suggest-from-docs.dto';
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
 
@@ -41,6 +42,14 @@ export class FieldOpsController {
   onBehalfListing(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(OnBehalfListingSchema) dto: OnBehalfListingDto) {
     if (!key) throw new BadRequestError('Idempotency-Key header required');
     return this.onBehalf.createListing(ctx.tenantId, this.actor(ctx), key, dto, null).then((data) => ({ data }));
+  }
+
+  /** P1-16-AI · AI-suggest listing fields from a farmer's document (OCR'd upstream). ADVISORY — the ambassador
+   *  reviews + edits, then confirms via `on-behalf/listings`. Same consent gate; behind `assisted_doc_prefill`. */
+  @Post('on-behalf/listings/suggest')
+  @FeatureFlag('assisted_doc_prefill')
+  suggestFromDocs(@CurrentContext() ctx: RequestContext, @ZodBody(SuggestFromDocsSchema) dto: SuggestFromDocsDto) {
+    return this.onBehalf.suggestFromDocs(ctx.tenantId, this.actor(ctx), dto).then((data) => ({ data }));
   }
 
   /** Active ambassador onboards a farmer on-behalf (consent-gated, audited). Idempotent (Law 3). */

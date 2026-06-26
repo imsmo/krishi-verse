@@ -15,6 +15,7 @@ import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
 import { IdentityModule } from '../identity/identity.module';
 import { ListingsModule } from '../listings/listings.module';
 import { OnBehalfListingService } from './services/on-behalf-listing.service';
+import { docExtractionProvider } from './gateway/doc-extraction.provider';
 import { AmbassadorsController } from './controllers/v1/ambassadors.controller';
 import { ReferralsController } from './controllers/v1/referrals.controller';
 import { EarningsController } from './controllers/v1/earnings.controller';
@@ -40,7 +41,7 @@ import { OrderCompletedHandler } from './events/handlers/order-completed.handler
   controllers: [AmbassadorsController, ReferralsController, EarningsController, FieldOpsController],
   providers: [
     AmbassadorProfileService, CommissionPlanService, ReferralService, AmbassadorEarningService,
-    AssistedOnboardingService, AmbassadorVisitService, AmbassadorTargetService, OnBehalfListingService, LeaderboardReadModel,
+    AssistedOnboardingService, AmbassadorVisitService, AmbassadorTargetService, OnBehalfListingService, docExtractionProvider, LeaderboardReadModel,
     AmbassadorProfileRepository, CommissionPlanRepository, AmbassadorEarningRepository, ReferralRepository,
     AmbassadorVisitRepository, AmbassadorTargetRepository,
   ],

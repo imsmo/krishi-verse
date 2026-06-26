@@ -3,7 +3,7 @@
 // so the screen shows the precise outcome (409 duplicate code / 403 not-allowed). Money is bigint minor strings
 // (Law 2); the app never moves money — commission accrues + pays out SERVER-SIDE (Law 11). The ambassador only
 // ever sees/acts on their OWN profile/earnings/referrals (server resolves the caller — no IDOR).
-import type { AmbassadorProfile, Referral, AmbassadorEarning } from '@krishi-verse/sdk-js';
+import type { AmbassadorProfile, Referral, AmbassadorEarning, SuggestedListingDraft } from '@krishi-verse/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 
@@ -27,4 +27,18 @@ export async function myEarnings(unpaidOnly?: boolean, cursor?: string): Promise
  * is taken / 403 not allowed) so the screen can show a precise message. */
 export function createReferral(code: string): Promise<Referral> {
   return apiClient().ambassadors.createReferral(code, newId());
+}
+
+/** P1-16-AI · ask the AI tier to SUGGEST listing fields from a farmer's document (OCR'd upstream). ADVISORY only:
+ * the suggestion is NEVER auto-submitted — the ambassador reviews/edits the draft and confirms via the consent-gated
+ * on-behalf create. Degrade-never-die: returns null when the flag is off (404) or the model tier is unavailable, so
+ * the screen falls back to manual entry rather than blocking or fabricating a value. */
+export async function suggestListingFromDocs(
+  farmerUserId: string,
+  docText: string,
+  locale?: 'hi' | 'en' | 'gu',
+  mediaIds?: string[],
+): Promise<SuggestedListingDraft | null> {
+  try { return await apiClient().ambassadors.suggestListingFromDocs({ farmerUserId, docText, locale, mediaIds }); }
+  catch { return null; }
 }

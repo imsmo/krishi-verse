@@ -304,6 +304,13 @@ export interface AmbassadorTarget { id: string; ambassadorId: string; metric: st
 export interface LeaderboardEntry { ambassadorId: string; userId: string; tierId: string | null; earnedMinor: string; events: number; rank: number; }
 /** The result of an assisted onboarding: the created/resolved farmer + the attribution referral id. */
 export interface AssistedOnboardingResult { user: { id: string; [k: string]: unknown }; ambassadorId: string; referralId: string | null; }
+/** P1-16-AI · AI-suggested listing fields from a farmer's document. ADVISORY — never auto-applied; the ambassador
+ *  edits + confirms. `draft` carries the model's normalised fields; `needsReview`/`degraded` flag low-confidence
+ *  or model-unavailable so the UI shows manual entry. Money fields inside `draft` stay STRING minor units (Law 2). */
+export interface SuggestedListingDraft {
+  draft: Record<string, unknown>; confidence: number; needsReview: boolean;
+  modelCode: string; modelId: string | null; degraded: boolean;
+}
 // --- ambassadors admin (P1-12) — tenant-operator surface; money is bigint minor STRINGS, moved server-side (Law 2/11) ---
 export type AmbassadorTargetMetric = 'onboardings' | 'sales_facilitated' | 'earnings_minor' | 'visits';
 export interface EnrollAmbassadorInput { userId: string; clusterRegionIds?: string[]; tierId?: string | null; mentorAmbassadorId?: string | null; kioskEnabled?: boolean; aepsEnabled?: boolean; monthlyStipendMinor?: string; }

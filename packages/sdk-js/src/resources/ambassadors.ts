@@ -6,7 +6,7 @@
 // minor strings (Law 2). The app never enrolls/activates/pays out (those are ambassador.manage / back-office —
 // Law 11). Gated server-side by the `ambassadors` flag.
 import { HttpClient } from '../http';
-import { AmbassadorProfile, Referral, AmbassadorEarning, CommissionPlan, AmbassadorVisit, AmbassadorTarget, LeaderboardEntry, AssistedOnboardingResult, Page,
+import { AmbassadorProfile, Referral, AmbassadorEarning, CommissionPlan, AmbassadorVisit, AmbassadorTarget, LeaderboardEntry, AssistedOnboardingResult, SuggestedListingDraft, Page,
   EnrollAmbassadorInput, UpdateAmbassadorInput, SetTargetInput, AmbassadorPayoutResult } from '../types';
 import type { CreateListingInput } from './listings';
 
@@ -59,6 +59,13 @@ export class AmbassadorsResource {
    * granted 'on_behalf_listing' consent to the caller-ambassador (403 otherwise). Idempotency-keyed (Law 3). */
   async createListingOnBehalf(farmerUserId: string, listing: CreateListingInput, idempotencyKey: string): Promise<{ id: string }> {
     return (await this.http.request<{ id: string }>('POST', 'ambassadors/on-behalf/listings', { idempotencyKey, body: { farmerUserId, listing } })).data;
+  }
+  /** P1-16-AI · ask the AI tier to SUGGEST listing fields from a farmer's document text (OCR'd upstream). ADVISORY:
+   * the suggestion is never auto-submitted — the ambassador edits + confirms via createListingOnBehalf. Same
+   * consent gate; behind the `assisted_doc_prefill` flag (404 when off). Degrades to an empty draft when the model
+   * tier is unavailable — never a fabricated value. */
+  async suggestListingFromDocs(input: { farmerUserId: string; docText: string; locale?: 'hi' | 'en' | 'gu'; mediaIds?: string[] }): Promise<SuggestedListingDraft> {
+    return (await this.http.request<SuggestedListingDraft>('POST', 'ambassadors/on-behalf/listings/suggest', { body: input })).data;
   }
   /** Log a geo-stamped field visit the caller-ambassador made. */
   async logVisit(input: { purpose?: string; visitedUserId?: string; notes?: string; lat?: number; lng?: number; regionId?: string }): Promise<AmbassadorVisit> {

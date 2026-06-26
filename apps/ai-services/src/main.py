@@ -21,6 +21,7 @@ from .voice_extraction.router import router as voice_router
 from .photo_grading.router import router as photo_router
 from .fraud_signals.router import router as fraud_router
 from .assistant.router import router as assistant_router
+from .doc_extraction.router import router as doc_extraction_router
 
 log = get_logger()
 
@@ -54,6 +55,7 @@ app.include_router(voice_router)
 app.include_router(photo_router)
 app.include_router(fraud_router)
 app.include_router(assistant_router)
+app.include_router(doc_extraction_router)
 
 
 @app.middleware("http")

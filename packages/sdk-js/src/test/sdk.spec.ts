@@ -910,4 +910,15 @@ describe('HttpClient via resources', () => {
     expect(JSON.parse(calls[0].init.body as string).farmerUserId).toBe('farmer-1');
     expect(r.id).toBe('lst1');
   });
+
+  it('ambassadors.suggestListingFromDocs POSTs the suggest path; advisory draft + needsReview (P1-16-AI)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { draft: { crop_name: 'Tomato', price_minor: '4500' }, confidence: 0.72, needsReview: false, modelCode: 'doc_listing_extract', modelId: 'm1', degraded: false } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const r = await c.ambassadors.suggestListingFromDocs({ farmerUserId: 'farmer-1', docText: 'Tomato 100kg @ 45/kg', locale: 'en' });
+    expect(calls[0].url).toBe('https://api.test/v1/ambassadors/on-behalf/listings/suggest');
+    expect(calls[0].init.method).toBe('POST');
+    expect(r.draft.crop_name).toBe('Tomato');
+    expect(r.confidence).toBe(0.72);
+    expect(r.needsReview).toBe(false);
+  });
 });
