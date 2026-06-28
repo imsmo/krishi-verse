@@ -4,9 +4,9 @@
   "private": true,
   "description": "Tenant admin panel: support inbox, auditor, AI review, configuration.",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3002",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3002",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "jest"

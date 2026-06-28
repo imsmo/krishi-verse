@@ -4,9 +4,9 @@
   "private": true,
   "description": "Bank/NBFC/insurer partner portal (loan queues, claims).",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3004",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3004",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "jest"

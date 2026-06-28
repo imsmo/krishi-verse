@@ -2,6 +2,7 @@
 // Postgres pool → the outbox TAILER (pg → Kafka) → the enabled consumer groups (Kafka → work) → an HTTP
 // /healthz + /metrics endpoint. Each consumer runs in its own group so a slow concern never blocks another.
 // Graceful shutdown on SIGTERM/SIGINT: stop the tailer, disconnect consumers + producer, drain the pool.
+import 'dotenv/config'; // load apps/stream-processor/.env BEFORE loadConfig reads it (local dev; no-ops in prod where env is injected)
 import http from 'node:http';
 import { Kafka, logLevel } from 'kafkajs';
 import { loadConfig } from './config';

@@ -1,6 +1,7 @@
 // apps/admin-api/src/main.ts · the god-mode plane process. Separate app/pods/WAF from apps/api (Law 11). URI
 // versioning (/v1/...), JSON body limits, trust-proxy for accurate source IPs (the IP allowlist depends on it).
 // Boot fails closed if AdminConfig.assertProductionSecurity rejects the environment.
+import 'dotenv/config'; // load apps/admin-api/.env BEFORE AdminConfig reads it (local dev; no-ops in prod where env is injected)
 import { NestFactory } from '@nestjs/core';
 import { VersioningType } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';

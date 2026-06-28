@@ -4,7 +4,7 @@
 // the client bundle — only the public API origin and the default tenant slug.
 import Constants from 'expo-constants';
 
-interface RawExtra { apiUrl?: string; tenantSlug?: string; appEnv?: string; razorpayKeyId?: string; tenantConsoleUrl?: string; appVersion?: string; minSupportedVersion?: string; androidStoreUrl?: string; iosStoreUrl?: string; privacyUrl?: string; termsUrl?: string }
+interface RawExtra { apiUrl?: string; tenantSlug?: string; tenantId?: string; appEnv?: string; razorpayKeyId?: string; tenantConsoleUrl?: string; appVersion?: string; minSupportedVersion?: string; androidStoreUrl?: string; iosStoreUrl?: string; privacyUrl?: string; termsUrl?: string }
 const extra = ((Constants.expoConfig?.extra ?? {}) as RawExtra);
 
 const apiUrl = extra.apiUrl ?? process.env.EXPO_PUBLIC_API_URL;
@@ -17,6 +17,8 @@ export const config = Object.freeze({
   apiUrl,
   /** Optional default tenant slug for single-tenant white-label builds; multi-tenant builds set it post-login. */
   tenantSlug: extra.tenantSlug ?? process.env.EXPO_PUBLIC_TENANT_SLUG ?? undefined,
+  /** The tenant this build signs into. The API scopes OTP verify/refresh to a tenant, so it must be sent. */
+  tenantId: extra.tenantId ?? process.env.EXPO_PUBLIC_TENANT_ID ?? undefined,
   appEnv: extra.appEnv ?? process.env.EXPO_PUBLIC_APP_ENV ?? 'development',
   isProduction: (extra.appEnv ?? process.env.EXPO_PUBLIC_APP_ENV) === 'production',
   /** Razorpay PUBLISHABLE key id (rzp_…). Public by design (not a secret); only needed for the checkout flow.

@@ -2,6 +2,7 @@
 // ledger core (wallet.module), loads wallet.proto, and serves the Wallet gRPC service. The ledger engine is the
 // ONLY writer of money (Law 2); this process owns it. Graceful shutdown drains the gRPC server then the pool.
 // Imports @grpc/* (declared deps, installed in CI/runtime).
+import 'dotenv/config'; // load apps/wallet-service/.env BEFORE WalletConfig reads it (local dev; no-ops in prod where env is injected)
 import * as path from 'node:path';
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';

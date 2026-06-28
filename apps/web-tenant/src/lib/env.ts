@@ -7,6 +7,9 @@ export const env = {
   publicApiUrl,
   serverApiUrl: process.env.API_URL_INTERNAL || publicApiUrl,   // server-side SSR origin (never shipped)
   appName: 'Krishi-Verse Console',
+  /** The tenant this console instance serves. The API scopes login to a tenant, so the verify step must send it.
+   *  In production this is derived from the host/subdomain; locally it's set explicitly via NEXT_PUBLIC_TENANT_ID. */
+  tenantId: process.env.NEXT_PUBLIC_TENANT_ID,
   /** Console visibility switch for the auctions surface (hidden when 'false'). Enabled by default; the API's own
    *  `auctions` flag is the authoritative gate (if it's off, the reads simply degrade to an empty state). */
   featureAuctions: process.env.NEXT_PUBLIC_FEATURE_AUCTIONS !== 'false',

@@ -157,8 +157,8 @@ describe('HttpClient via resources', () => {
     const pulse = await c.market.pulse('p1', 'r1');
     expect(calls[0].url).toBe('https://api.test/v1/market/pulse?productId=p1&regionId=r1');
     expect(calls[0].init.method).toBe('GET');
-    expect(typeof pulse.latest.modalMinor).toBe('string');
-    expect(pulse.band.p50Minor).toBe('100000');
+    expect(typeof pulse.latest!.modalMinor).toBe('string');
+    expect(pulse.band!.p50Minor).toBe('100000');
   });
 
   it('market.createAlert POSTs /v1/market/alerts with an idempotency key + bigint-minor threshold', async () => {
@@ -582,7 +582,7 @@ describe('HttpClient via resources', () => {
     const list = await c.integrations.list();
     expect(calls[1].url).toBe('https://api.test/v1/integrations');
     expect(list[0].connected).toBe(true);
-    expect('secretRef' in (list[0] as Record<string, unknown>)).toBe(false);
+    expect('secretRef' in (list[0] as unknown as Record<string, unknown>)).toBe(false);
     await c.integrations.connect({ providerCode: 'msg91', credential: 'rzp_live_secret', config: { sandbox: false } }, 'idem-int-1');
     expect(calls[2].url).toBe('https://api.test/v1/integrations');
     expect(calls[2].init.method).toBe('POST');
@@ -608,7 +608,7 @@ describe('HttpClient via resources', () => {
     expect(created.secret).toBe('whsec_ONCE');
     const list = await c.webhooks.list();
     expect(calls[1].url).toBe('https://api.test/v1/webhooks');
-    expect('secret' in (list[0] as Record<string, unknown>)).toBe(false); // masked on reads
+    expect('secret' in (list[0] as unknown as Record<string, unknown>)).toBe(false); // masked on reads
     const rot = await c.webhooks.rotateSecret('w1');
     expect(calls[2].url).toBe('https://api.test/v1/webhooks/w1/rotate-secret');
     expect(rot.secret).toBe('whsec_NEW');

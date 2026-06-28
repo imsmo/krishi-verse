@@ -44,7 +44,7 @@ export class SchemeDocumentService {
         // If the scheme declares required doc types, a provided docTypeId must be one of them.
         if (dto.docTypeId) {
           const scheme = await this.schemes.getById(tenantId, app.schemeId, tx);
-          const required = scheme?.requiredDocTypeIds ?? [];
+          const required = scheme ? scheme.toJSON().requiredDocTypeIds : [];
           if (required.length > 0 && !required.includes(dto.docTypeId)) {
             throw new InvalidApplicationError(`docTypeId '${dto.docTypeId}' is not required by this scheme`);
           }

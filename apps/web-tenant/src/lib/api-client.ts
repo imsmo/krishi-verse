@@ -7,7 +7,15 @@ import { env } from './env';
 import { getAccessToken } from './auth';
 
 export function tenantClient(): KrishiVerseClient {
-  return createClient({ baseUrl: env.serverApiUrl, getToken: () => getAccessToken(), userAgent: 'kv-web-tenant', timeoutMs: 8000 });
+  return createClient({
+    baseUrl: env.serverApiUrl,
+    getToken: () => getAccessToken(),
+    // The API scopes tenant-data reads/writes by tenant context. Send the console's tenant on every authed call
+    // (the API still enforces the caller's RBAC + RLS membership from the token). Locally this is NEXT_PUBLIC_TENANT_ID.
+    ...(env.tenantId ? { getHeaders: () => ({ 'x-tenant-id': env.tenantId as string }) } : {}),
+    userAgent: 'kv-web-tenant',
+    timeoutMs: 8000,
+  });
 }
 export function anonClient(): KrishiVerseClient {
   return createClient({ baseUrl: env.serverApiUrl, userAgent: 'kv-web-tenant', timeoutMs: 8000 });

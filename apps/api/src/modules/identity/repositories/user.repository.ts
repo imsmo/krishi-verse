@@ -28,7 +28,7 @@ export class UserRepository {
   async insert(tx: TxContext, u: User): Promise<void> {
     const p = u.toProps();
     await tx.query(
-      `INSERT INTO users (${COLS}) VALUES (,,,,,,,,,0,1,2,3,4,5,6,7)`,
+      `INSERT INTO users (${COLS}) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
       [p.id, p.phone, p.phoneVerifiedAt, p.fullName, p.gender, p.dob, p.languageCode, p.countryCode, p.email,
        p.emailVerifiedAt, p.photoMediaId, p.status, p.aadhaarLast4, p.aadhaarVaultRef, p.panVaultRef, p.isTest, p.lastActiveAt],
     );
@@ -37,10 +37,10 @@ export class UserRepository {
   async update(tx: TxContext, u: User): Promise<void> {
     const p = u.toProps();
     await tx.query(
-      `UPDATE users SET full_name=, gender=, dob=, language_code=, email=, email_verified_at=,
-         photo_media_id=, status=, aadhaar_last4=0, aadhaar_vault_ref=1, pan_vault_ref=2,
-         phone_verified_at=3, last_active_at=4
-       WHERE id= AND deleted_at IS NULL`,
+      `UPDATE users SET full_name=$2, gender=$3, dob=$4, language_code=$5, email=$6, email_verified_at=$7,
+         photo_media_id=$8, status=$9, aadhaar_last4=$10, aadhaar_vault_ref=$11, pan_vault_ref=$12,
+         phone_verified_at=$13, last_active_at=$14
+       WHERE id=$1 AND deleted_at IS NULL`,
       [p.id, p.fullName, p.gender, p.dob, p.languageCode, p.email, p.emailVerifiedAt, p.photoMediaId, p.status,
        p.aadhaarLast4, p.aadhaarVaultRef, p.panVaultRef, p.phoneVerifiedAt, p.lastActiveAt],
     );
@@ -66,22 +66,22 @@ export class UserRepository {
   }
 
   async getForUpdate(tx: TxContext, id: string): Promise<User | null> {
-    const r = await tx.query<Row>(`SELECT ${COLS} FROM users WHERE id= AND deleted_at IS NULL FOR UPDATE`, [id]);
+    const r = await tx.query<Row>(`SELECT ${COLS} FROM users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE`, [id]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
   async findById(tenantId: string, id: string): Promise<User | null> {
-    const r = await this.replica.forTenant(tenantId).query<Row>(`SELECT ${COLS} FROM users WHERE id= AND deleted_at IS NULL`, [id]);
+    const r = await this.replica.forTenant(tenantId).query<Row>(`SELECT ${COLS} FROM users WHERE id=$1 AND deleted_at IS NULL`, [id]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
   async findByPhone(tenantId: string, phone: string): Promise<User | null> {
-    const r = await this.replica.forTenant(tenantId).query<Row>(`SELECT ${COLS} FROM users WHERE phone= AND deleted_at IS NULL`, [phone]);
+    const r = await this.replica.forTenant(tenantId).query<Row>(`SELECT ${COLS} FROM users WHERE phone=$1 AND deleted_at IS NULL`, [phone]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
   async getByPhoneForUpdate(tx: TxContext, phone: string): Promise<User | null> {
-    const r = await tx.query<Row>(`SELECT ${COLS} FROM users WHERE phone= AND deleted_at IS NULL FOR UPDATE`, [phone]);
+    const r = await tx.query<Row>(`SELECT ${COLS} FROM users WHERE phone=$1 AND deleted_at IS NULL FOR UPDATE`, [phone]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
   async softDelete(tx: TxContext, id: string): Promise<void> {
-    await tx.query(`UPDATE users SET deleted_at=now(), status='soft_deleted' WHERE id=`, [id]);
+    await tx.query(`UPDATE users SET deleted_at=now(), status='soft_deleted' WHERE id=$1`, [id]);
   }
 }

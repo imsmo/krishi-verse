@@ -4,9 +4,9 @@
   "private": true,
   "description": "Super-admin (god-mode) console.",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3003",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3003",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "jest"

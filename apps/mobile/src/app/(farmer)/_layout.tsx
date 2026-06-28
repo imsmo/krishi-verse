@@ -56,6 +56,9 @@ export default function FarmerTabsLayout() {
       <Tabs.Screen name="wallet/transactions" options={{ href: null }} />
       <Tabs.Screen name="wallet/payouts" options={{ href: null }} />
       <Tabs.Screen name="wallet/txn-detail" options={{ href: null }} />
+      <Tabs.Screen name="wallet/autopay" options={{ href: null }} />
+      <Tabs.Screen name="wallet/earnings" options={{ href: null }} />
+      <Tabs.Screen name="wallet/statement" options={{ href: null }} />
       <Tabs.Screen name="orders/[id]" options={{ href: null }} />
       <Tabs.Screen name="orders/pod" options={{ href: null }} />
       <Tabs.Screen name="orders/track" options={{ href: null }} />

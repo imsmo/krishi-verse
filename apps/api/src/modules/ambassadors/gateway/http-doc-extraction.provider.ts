@@ -41,6 +41,6 @@ export class HttpDocExtractionProvider implements DocExtractionProvider {
       } finally {
         clearTimeout(t);
       }
-    }, { fallback: degraded });
+    }, { fallback: () => degraded });
   }
 }

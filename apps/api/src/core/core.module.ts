@@ -49,6 +49,7 @@ import { RealtimeFanoutRegistrar } from './realtime/realtime.registrar';
 import { AuthGuard } from './auth/auth.guard';
 import { PermissionsGuard } from './auth/permissions.guard';
 import { TenantResolver } from './tenancy-context/tenant-resolver';
+import { TenantSlugResolver } from './tenancy-context/tenant-slug-resolver';
 import { TenantContextMiddleware } from './tenancy-context/tenant-context.middleware';
 import { RequestIdMiddleware } from './http/request-id.middleware';
 import { AllExceptionsFilter } from './http/exception.filter';
@@ -85,7 +86,7 @@ import { MetricsController } from './observability/metrics.controller';
     },
     RealtimeFanoutRegistrar,
     AuthGuard, PermissionsGuard,
-    TenantResolver, TenantContextMiddleware, RequestIdMiddleware,
+    TenantResolver, TenantSlugResolver, TenantContextMiddleware, RequestIdMiddleware,
     // auth + RBAC platform services (used by the identity module's auth flow)
     TokenService, { provide: TOKEN_SERVICE, useExisting: TokenService },
     OtpService, { provide: OTP_SERVICE, useExisting: OtpService },
@@ -115,7 +116,7 @@ import { MetricsController } from './observability/metrics.controller';
     ResilienceService, RESILIENCE,
     WALLET_SERVICE, InProcessWalletClient, LedgerRepository, ReconciliationService,
     OutboxHandlerRegistry, OUTBOX_HANDLER_REGISTRY,
-    AuthGuard, PermissionsGuard, TenantResolver, TenantContextMiddleware, RequestIdMiddleware,
+    AuthGuard, PermissionsGuard, TenantResolver, TenantSlugResolver, TenantContextMiddleware, RequestIdMiddleware,
     TokenService, TOKEN_SERVICE, OtpService, OTP_SERVICE, RefreshTokenService,
     RoleCacheService, ROLE_CACHE_SERVICE, SMS_SENDER,
     ConfigModule, DatabaseModule, CacheModule, SearchModule, AuditModule, FeatureFlagsModule, I18nModule,

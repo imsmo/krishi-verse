@@ -46,14 +46,7 @@ BEGIN
   END LOOP;
 END $$;
 
--- The notification EVENT + default templates the broadcast fan-out renders. Promotional priority, opt-out-able
--- (a tenant blast is not a critical/transactional alert). The admin's free text flows in via the payload
--- ({{title}}/{{body}}); push + in-app by default. Idempotent.
-INSERT INTO notification_events (code, default_name, priority, default_channels, user_can_opt_out, batchable) VALUES
- ('tenant.broadcast', 'Announcement', 'promotional', '["push","inapp"]', true, false)
-ON CONFLICT (code) DO NOTHING;
-
-INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
- ('tenant.broadcast', 'push',  'en', NULL, '{{title}}', '{{body}}', NULL, true),
- ('tenant.broadcast', 'inapp', 'en', NULL, '{{title}}', '{{body}}', NULL, true)
-ON CONFLICT (event_code, channel, language_code, tenant_id) DO NOTHING;
+-- The `tenant.broadcast` notification EVENT + default templates the broadcast fan-out renders are REFERENCE DATA,
+-- not schema — and the templates carry a language_code FK to `languages`, which is populated by seeds. So they live
+-- in the seed `db/seeds/core/0007_notification_events_templates.sql` (which runs AFTER `0001_languages.sql`), NOT
+-- here. Keeping them in this migration would fail the FK on a fresh DB (migrations run before seeds).

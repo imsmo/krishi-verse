@@ -3,6 +3,7 @@
 // correct and testable: phone normalization to E.164 (the API requires it), a stable per-attempt idempotency
 // key, and the resend-cooldown clock. Pure functions where possible (see __tests__/otp.flow.spec.ts).
 import { anonClient } from '../api/client';
+import { config } from '../config';
 export { normalizeIndianPhone, resendSecondsRemaining, RESEND_COOLDOWN_SEC } from './otp.helpers';
 
 /** Request an OTP. Throws only on a hard transport error; the API response is enumeration-safe either way. */
@@ -12,5 +13,5 @@ export async function requestOtp(phoneE164: string, idempotencyKey: string): Pro
 
 /** Verify an OTP → tokens. Lets SdkError propagate so the screen can map invalid/too-many to a friendly message. */
 export async function verifyOtp(phoneE164: string, code: string, idempotencyKey: string) {
-  return anonClient().auth.verifyOtp(phoneE164, code, idempotencyKey);
+  return anonClient().auth.verifyOtp(phoneE164, code, idempotencyKey, config.tenantId);
 }

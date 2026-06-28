@@ -8,6 +8,16 @@ import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { QueryListingDto } from '../dto/query-listing.dto';
+import { DomainError } from '../../../shared/errors/app-error';
+
+// Browse/search is tenant-scoped (a storefront belongs to a tenant). A blank/invalid tenant is a CLIENT error,
+// not a server fault: reject it with a clean 400 before it reaches the DB (where binding '' as a uuid would 500).
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function requireTenant(tenantId: string): void {
+  if (!UUID_RE.test(tenantId)) {
+    throw new DomainError('TENANT_REQUIRED', 'A tenant context (X-Tenant-Id) is required for this request.', 400);
+  }
+}
 
 export interface ListingCard {
   id: string; title: string; priceMinor: string; currencyCode: string;
@@ -27,6 +37,7 @@ export class ListingSearchReadModel {
   ) {}
 
   async query(tenantId: string, q: QueryListingDto): Promise<SearchResult> {
+    requireTenant(tenantId);
     return timed(this.metrics, 'listing.search', { tenant: tenantId }, async () => {
       const params: unknown[] = [tenantId];
       const where: string[] = [

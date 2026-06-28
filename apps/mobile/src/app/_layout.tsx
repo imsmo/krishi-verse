@@ -39,7 +39,9 @@ function ConnectivityBanner() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  // `error` matters as much as `loaded`: if a font asset can't be fetched (e.g. a Metro/pnpm asset hiccup in
+  // Expo Go), we must still render — falling back to the system font — rather than hang forever on the splash.
+  const [fontsLoaded, fontError] = useFonts({
     Fraunces: Fraunces_700Bold,
     PlusJakartaSans: PlusJakartaSans_400Regular,
     PlusJakartaSans_Semibold: PlusJakartaSans_600SemiBold,
@@ -56,7 +58,7 @@ export default function RootLayout() {
     const stop = startSyncEngine();
     return stop;
   }, []);
-  if (!fontsLoaded) return <View style={{ flex: 1, backgroundColor: color.page }} />;
+  if (!fontsLoaded && !fontError) return <View style={{ flex: 1, backgroundColor: color.page }} />;
 
   return (
     <SafeAreaProvider>

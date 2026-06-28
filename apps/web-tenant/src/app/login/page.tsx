@@ -6,6 +6,7 @@ import type { Metadata } from 'next';
 import { randomUUID } from 'node:crypto';
 import { redirect } from 'next/navigation';
 import { anonClient } from '../../lib/api-client';
+import { env } from '../../lib/env';
 import { setSession } from '../../lib/auth';
 import { safeNext } from '../../features/nav/safe-next';
 import { getTranslator } from '../../lib/i18n';
@@ -29,7 +30,7 @@ async function verifyOtp(formData: FormData) {
   const code = String(formData.get('code') ?? '').trim();
   const next = safeNext(String(formData.get('next') ?? '/dashboard'));
   try {
-    const tk = await anonClient().auth.verifyOtp(phone, code, randomUUID());
+    const tk = await anonClient().auth.verifyOtp(phone, code, randomUUID(), env.tenantId);
     setSession(tk.accessToken, tk.refreshToken, tk.expiresInSec);
   } catch (e) {
     const msg = e instanceof SdkError ? e.code : 'LOGIN_FAILED';

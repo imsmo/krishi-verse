@@ -21,6 +21,12 @@ dev = ["pytest>=8.3", "ruff>=0.6", "mypy>=1.11"]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+# The code is run as `src.main:app` (see Dockerfile/README), so the importable package IS the `src/`
+# directory. Hatchling can't auto-detect that from the project name, so we point it at `src` explicitly.
+# This makes both `pip install -e .` (local dev) and `pip install .` (Docker) work.
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"

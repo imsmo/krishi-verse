@@ -10,6 +10,8 @@ export class NoopSmsSender extends SmsSender {
   constructor(private readonly config: AppConfig) { super(); }
   async send(phone: string, message: string): Promise<void> {
     if (this.config.isProd) this.log.warn(`SMS not configured; dropped message to ${phone}`);
-    else this.log.debug(`[dev SMS] ${phone}: ${message}`);
+    // DEV ONLY: log at INFO so the OTP is always visible locally (Nest's default logger suppresses `debug`).
+    // Gated on !isProd; assertProductionSecurity refuses to boot prod on the noop sender, so this can never leak live.
+    else this.log.log(`[dev SMS] ${phone}: ${message}`);
   }
 }

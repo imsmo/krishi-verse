@@ -28,7 +28,7 @@ export default async function NewListingPage({ searchParams }: { searchParams: {
 
   let products: ProductCard[] = []; let loadFailed = false;
   try { products = (await tenantClient().catalogue.browseProducts({ q: q || undefined, limit: 50 })).items; }
-  catch { loadFailed = true; }
+  catch (e) { loadFailed = true; console.error('[new-listing] catalogue load failed:', e); }
 
   const errorKey = searchParams.error;
   const knownErrors = new Set(['errorProduct', 'errorTitle', 'errorQty', 'errorPrice']);

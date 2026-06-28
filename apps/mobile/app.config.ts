@@ -48,6 +48,7 @@ const config: ExpoConfig = {
   extra: {
     apiUrl: process.env.EXPO_PUBLIC_API_URL,
     tenantSlug: process.env.EXPO_PUBLIC_TENANT_SLUG,
+    tenantId: process.env.EXPO_PUBLIC_TENANT_ID,
     appEnv: process.env.EXPO_PUBLIC_APP_ENV ?? 'development',
     appVersion: '0.1.0',
     minSupportedVersion: process.env.EXPO_PUBLIC_MIN_VERSION,

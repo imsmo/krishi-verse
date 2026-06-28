@@ -1,21 +1,21 @@
 # Local development stack — mirrors production shape on your laptop
 services:
-  postgres:
-    image: postgres:16
-    environment: { POSTGRES_PASSWORD: dev, POSTGRES_DB: krishiverse }
-    ports: ["5432:5432"]
-    volumes: ["pgdata:/var/lib/postgresql/data"]
-  redis:
-    image: redis:7
-    ports: ["6379:6379"]
+  # postgres:
+  #   image: postgres:16
+  #   environment: { POSTGRES_PASSWORD: dev, POSTGRES_DB: krishiverse }
+  #   ports: ["5432:5432"]
+  #   volumes: ["pgdata:/var/lib/postgresql/data"]
+  # redis:
+  #   image: redis:7
+  #   ports: ["6379:6379"]
   opensearch:
     image: opensearchproject/opensearch:2
-    environment: { discovery.type: single-node, DISABLE_SECURITY_PLUGIN: "true" }
-    ports: ["9200:9200"]
-  localstack:                      # S3 + SQS emulation
+    environment: { discovery.type: single-node, DISABLE_SECURITY_PLUGIN: 'true' }
+    ports: ['9200:9200']
+  localstack: # S3 + SQS emulation
     image: localstack/localstack
-    environment: { SERVICES: "s3,sqs,events" }
-    ports: ["4566:4566"]
+    environment: { SERVICES: 's3,sqs,events' }
+    ports: ['4566:4566']
 volumes: { pgdata: {} }
 #  clickhouse:                    # uncomment in Phase 2 (analytics-pipeline dev)
 #    image: clickhouse/clickhouse-server:24

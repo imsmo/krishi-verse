@@ -39,6 +39,8 @@ export default function VerifyScreen() {
       await signIn(tokens);
       router.replace('/(auth)/role');
     } catch (e) {
+      // Log the real cause to the Metro terminal (status/code/message) so failures are diagnosable; UI stays friendly.
+      console.error('[verify] verifyOtp failed:', JSON.stringify({ message: (e as any)?.message, code: (e as any)?.code, status: (e as any)?.status }), e);
       const code = e instanceof SdkError ? e.code : '';
       setError(/too many|rate|throttle/i.test(code) ? t('otp.error.tooMany') : t('otp.error.invalid'));
       setCode('');

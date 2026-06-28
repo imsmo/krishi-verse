@@ -16,13 +16,21 @@ export function getAccessToken(): string | undefined { return cookies().get(ACCE
 /** Server-only: the current refresh token (used only to mint a new access token server-side). */
 export function getRefreshToken(): string | undefined { return cookies().get(REFRESH_COOKIE)?.value; }
 
-/** Persist a freshly-issued token pair (after login / refresh). Access cookie lifetime tracks the token's TTL. */
+/** Persist a freshly-issued token pair (after login / refresh). Access cookie lifetime tracks the token's TTL.
+ *  Next.js only permits cookie mutation inside a Server Action / Route Handler. During a silent refresh that runs
+ *  while rendering a protected page, the write throws — we swallow it so the request still proceeds with the new
+ *  in-memory token; the cookie persists on the next Server Action / navigation. */
 export function setSession(accessToken: string, refreshToken: string, accessMaxAgeSec: number): void {
-  const c = cookies();
-  c.set(ACCESS_COOKIE, accessToken, { ...OPTS, maxAge: Math.max(1, accessMaxAgeSec) });
-  c.set(REFRESH_COOKIE, refreshToken, { ...OPTS, maxAge: REFRESH_MAX_AGE_SEC });
+  try {
+    const c = cookies();
+    c.set(ACCESS_COOKIE, accessToken, { ...OPTS, maxAge: Math.max(1, accessMaxAgeSec) });
+    c.set(REFRESH_COOKIE, refreshToken, { ...OPTS, maxAge: REFRESH_MAX_AGE_SEC });
+  } catch { /* called during render — cookie write deferred to next action (token still used for this request) */ }
 }
-export function clearSession(): void { const c = cookies(); c.delete(ACCESS_COOKIE); c.delete(REFRESH_COOKIE); }
+export function clearSession(): void {
+  try { const c = cookies(); c.delete(ACCESS_COOKIE); c.delete(REFRESH_COOKIE); }
+  catch { /* called during render — safe to ignore; the next action/redirect will clear */ }
+}
 
 /** Cheap presence check (no network) — true if either cookie is set. Used by the shell to pick chrome vs bare. */
 export function hasSessionCookie(): boolean { return !!getAccessToken() || !!getRefreshToken(); }

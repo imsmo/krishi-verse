@@ -29,7 +29,7 @@ export default async function DashboardPage() {
     <section>
       <h1>{t.t('dashboard.title')}</h1>
       <p className="kv-muted">
-        {me ? t.t('dashboard.greeting', { name: me.displayName ?? me.id, roles: me.roles.join(', ') }) : t.t('dashboard.welcome')}
+        {me ? t.t('dashboard.greeting', { name: me.displayName ?? me.id, roles: (me.roles ?? []).join(', ') }) : t.t('dashboard.welcome')}
       </p>
       <div className="kv-cards">
         {cards.map((c) => <Link key={c.href} href={c.href} className="kv-card">{c.label} →</Link>)}

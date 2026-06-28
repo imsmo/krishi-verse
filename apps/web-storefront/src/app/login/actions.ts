@@ -12,6 +12,7 @@
 import { randomUUID } from 'crypto';
 import { redirect } from 'next/navigation';
 import { publicClient } from '../../lib/api-client';
+import { env } from '../../lib/env';
 import { setSession, clearSession } from '../../lib/auth';
 import { safeNext } from '../../lib/session';
 import { getTranslator } from '../../lib/i18n';
@@ -50,7 +51,7 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   if (!phone) return { step: 'phone', error: t.t('auth.errInvalidPhone') };
   if (!/^\d{4,8}$/.test(code)) return { step: 'code', phone, error: t.t('auth.errInvalidCode') };
   try {
-    const tokens = await publicClient().auth.verifyOtp(phone, code, randomUUID());
+    const tokens = await publicClient().auth.verifyOtp(phone, code, randomUUID(), env.tenantId);
     setSession(tokens);
   } catch {
     // Wrong/expired code, or a transient failure — one generic message (never distinguish, never echo the code).

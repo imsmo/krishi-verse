@@ -2,10 +2,18 @@
 // tenant_id in EVERY tenant query (Law 1) + RLS. secret_hash holds the ENCRYPTED signing secret (never selected
 // into a wire shape). Endpoint reads on the replica; the fanout enqueue + the delivery-claim run inside a tx.
 import { Inject, Injectable } from '@nestjs/common';
-import { v7 as uuidv7 } from 'uuid';
+import { uuidv7 } from '../../../core/database/uuid.util';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
 import { WebhookEndpoint } from '../domain/webhook-endpoint.entity';
+
+/** A webhook delivery claimed by the worker for sending: the delivery row joined with its endpoint's URL +
+ *  (encrypted) signing secret. `secretEnc` is the at-rest ciphertext — decrypted only at send time, never put on a
+ *  wire/response shape. */
+export interface DueDelivery {
+  id: string; createdAt: string; tenantId: string; endpointId: string;
+  eventType: string; payload: unknown; attempt: number; url: string; secretEnc: string;
+}
 
 @Injectable()
 export class WebhookRepository {

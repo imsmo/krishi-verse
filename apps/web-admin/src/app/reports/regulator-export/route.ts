@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   const q = buildReportQuery({ from: sp.get('from') ?? undefined, to: sp.get('to') ?? undefined, currency: sp.get('currency') ?? undefined });
 
   try {
-    const res = await adminGet<Record<string, unknown>>('reports/regulator-export', q);
+    const res = await adminGet<Record<string, unknown>>('reports/regulator-export', q as unknown as Record<string, string | undefined>);
     const body = JSON.stringify(res.data, null, 2);
     const stamp = new Date().toISOString().slice(0, 10);
     return new NextResponse(body, {

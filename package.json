@@ -1,7 +1,7 @@
 {
   "name": "krishi-verse",
   "private": true,
-  "packageManager": "pnpm@9",
+  "packageManager": "pnpm@9.15.9",
   "engines": { "node": ">=20" },
   "scripts": {
     "dev": "turbo dev",
@@ -26,5 +26,10 @@
   },
   "devDependencies": {
     "turbo": "^2"
+  },
+  "pnpm": {
+    "overrides": {
+      "@expo/config-plugins": "8.0.11"
+    }
   }
 }

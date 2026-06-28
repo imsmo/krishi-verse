@@ -22,7 +22,7 @@ export default async function ListingsPage({ searchParams }: { searchParams: { c
   const lang = getLang();
   let items: ListingCard[] = []; let nextCursor: string | null = null; let failed = false;
   try { const p = await tenantClient().listings.browse({ cursor: searchParams.cursor, limit: 50 }); items = p.items; nextCursor = p.nextCursor; }
-  catch { failed = true; }
+  catch (e) { failed = true; console.error('[listings] load failed:', e); }
 
   return (
     <section>

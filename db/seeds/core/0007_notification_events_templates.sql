@@ -27,7 +27,10 @@ INSERT INTO notification_events (code,default_name,priority,default_channels,use
  ('requirement.reminder','Your requirement is still open','informational','["push","inapp"]',true,true),
  ('review.prompt','Rate your recent purchase','informational','["push","inapp"]',true,true),
  -- P1-7 auction watch/follow: notify watchers when an auction they follow closes
- ('auction.ended','An auction you watched has ended','informational','["push","inapp"]',true,true)
+ ('auction.ended','An auction you watched has ended','informational','["push","inapp"]',true,true),
+ -- API-W10 tenant broadcast: an admin blast (not a transactional alert) → push + in-app, opt-out-able. Free text
+ -- flows in via the payload ({{title}}/{{body}}). Moved here from migration 0048 (templates FK languages → seed).
+ ('tenant.broadcast','Announcement','promotional','["push","inapp"]',true,false)
 ON CONFLICT (code) DO NOTHING;
 
 INSERT INTO notification_templates (event_code,channel,language_code,tenant_id,subject,body,provider_template_ref,is_active) VALUES

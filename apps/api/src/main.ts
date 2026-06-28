@@ -3,7 +3,17 @@
 // listing payloads, graceful shutdown so in-flight transactions finish on deploy.
 // Env is validated at construction of AppConfig — a bad/missing var crashes here,
 // loudly, not at 2 AM mid-request.
+// Load the local .env into process.env BEFORE anything reads it (AppConfig validates env at construction). In
+// staging/prod there is no .env file — env is injected by the platform/Secrets Manager — and dotenv simply no-ops.
+import 'dotenv/config';
 import 'reflect-metadata';
+
+// Money columns (price_minor etc.) are bigint in Postgres and modelled as JS BigInt in the domain. JSON.stringify
+// cannot serialize a BigInt and throws ("Do not know how to serialize a BigInt") — which would break both the
+// Redis cache write and the HTTP response. Money crosses the wire as a STRING of minor units anyway (the read
+// models already String() it), so teach BigInt to serialize as its decimal string. Process-wide, set once at boot.
+(BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function () { return this.toString(); };
+
 import { Logger, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';

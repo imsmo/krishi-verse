@@ -47,6 +47,6 @@ export class AwsSecretWriter implements SecretWriter {
     const client = await this.sm();
     await this.resilience.run('aws.secretsmanager.delete', async () => {
       await client.send(new this._mod.DeleteSecretCommand({ SecretId: secretRef, ForceDeleteWithoutRecovery: false }));
-    }, { retries: 1, fallback: { value: undefined } }).catch(() => undefined);
+    }, { retries: 1, fallback: () => undefined }).catch(() => undefined);
   }
 }

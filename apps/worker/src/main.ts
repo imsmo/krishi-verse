@@ -1,6 +1,7 @@
 // apps/worker/src/main.ts · worker-runtime host. Boots fail-closed (WorkerConfig), connects as kv_relay, exposes
 // /metrics + /healthz, and runs the scheduler loop: every tick, each DUE job runs under its Postgres advisory
 // leader-lock (N replicas are safe), timed + metered, with failures isolated. Graceful shutdown drains the pool.
+import 'dotenv/config'; // load apps/worker/.env into process.env BEFORE WorkerConfig reads it (local dev; no-ops in prod where env is injected)
 import { WorkerConfig } from './config';
 import { makePool, withClient } from './db';
 import { WorkerMetrics } from './metrics';

@@ -7,6 +7,9 @@ import { TxContext } from '../../../core/database/unit-of-work';
 import { Category } from '../domain/category.entity';
 
 const COLS = `id, parent_id, code, default_name, path::text AS path, depth, commerce_kind, requires_license, requires_certificate, min_age, is_active, sort_order`;
+// Same columns, qualified to the `c` alias for the tree() join. Written out explicitly (not regex-derived from COLS)
+// because the `path::text AS path` alias must NOT be prefixed — `AS c.path` is invalid SQL (a syntax error at ".").
+const COLS_C = `c.id, c.parent_id, c.code, c.default_name, c.path::text AS path, c.depth, c.commerce_kind, c.requires_license, c.requires_certificate, c.min_age, c.is_active, c.sort_order`;
 const toDomain = (r: any): Category => new Category({ id: r.id, parentId: r.parent_id, code: r.code, defaultName: r.default_name, path: r.path, depth: r.depth, commerceKind: r.commerce_kind, requiresLicense: r.requires_license, requiresCertificate: r.requires_certificate, minAge: r.min_age, isActive: r.is_active, sortOrder: r.sort_order });
 
 @Injectable()
@@ -14,16 +17,18 @@ export class CategoryRepository {
   constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
 
   async tree(tenantId: string, opts: { activeOnly: boolean; rootCode?: string; parentId?: string; enabledForTenant: boolean }): Promise<Category[]> {
-    const params: unknown[] = [tenantId];
+    // Bind params ONLY for clauses actually present. tenantId is used solely by the tenant-categories join, so it
+    // must NOT be pre-seeded — an unused $1 makes pg reject the bind ("1 parameter, statement requires 0").
+    const params: unknown[] = [];
     const where: string[] = ['c.deleted_at IS NULL'];
     const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
     if (opts.activeOnly) where.push('c.is_active');
     if (opts.rootCode) where.push(`c.path <@ (SELECT path FROM categories WHERE code = ${p(opts.rootCode)})`);
     if (opts.parentId) where.push(`c.parent_id = ${p(opts.parentId)}`);
     const join = opts.enabledForTenant
-      ? `JOIN tenant_categories tc ON tc.category_id = c.id AND tc.tenant_id = $1 AND tc.is_enabled` : '';
+      ? `JOIN tenant_categories tc ON tc.category_id = c.id AND tc.tenant_id = ${p(tenantId)} AND tc.is_enabled` : '';
     const r = await this.replica.forTenant(tenantId).query(
-      `SELECT ${COLS.replace(/\b(id|parent_id|code|default_name|path|depth|commerce_kind|requires_license|requires_certificate|min_age|is_active|sort_order)\b/g, 'c.$1')}
+      `SELECT ${COLS_C}
          FROM categories c ${join} WHERE ${where.join(' AND ')} ORDER BY c.path LIMIT 2000`, params);
     return r.rows.map(toDomain);
   }

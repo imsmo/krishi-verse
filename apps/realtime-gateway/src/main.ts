@@ -1,6 +1,7 @@
 // apps/realtime-gateway/src/main.ts · process entry. Boots: fail-closed config → HTTP server (health +
 // /metrics) → WebSocketServer (upgrade) → Redis subscriber → RedisPubSubAdapter wiring Redis → ws fan-out.
 // Stateless pod behind a sticky LB; scale = add pods. Graceful shutdown on SIGTERM/SIGINT.
+import 'dotenv/config'; // load apps/realtime-gateway/.env BEFORE loadConfig reads it (local dev; no-ops in prod where env is injected)
 import http from 'node:http';
 import { WebSocketServer } from 'ws';
 import Redis from 'ioredis';

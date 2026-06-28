@@ -1,25 +1,27 @@
-// apps/mobile/src/app/(farmer)/home.tsx · screen 09 (farmer home). Thin screen (guide §3): it calls the
-// feature data layer (features/farmer/dashboard.api) and renders ui-native components — no direct API/fetch, no
-// business logic. Marquee "sell in 60s" voice/photo CTAs, My-Listings + Wallet tiles, mandi pulse (hidden on
-// failure — never faked), today's tip. Money via MoneyText from bigint-minor (Law 2). Pull-to-refresh.
+// apps/mobile/src/app/(farmer)/home.tsx · screen 09 (Farmer Home) — rebuilt to match the Phase-1 design
+// (Krishi_Verse_Design_System/screens/09-farmer-home.html): avatar + bilingual greeting header, the ⚡AI-POWERED
+// green hero with a gold "Speak to Sell" + glass "Photo", My-Listings/Wallet stat cards, horizontal "Today's Mandi
+// Pulse", and "Today's Tip". Thin screen (guide §3): all data via features/farmer/dashboard.api; money via
+// MoneyText (Law 2); sections that fail simply HIDE rather than show fakes (Law 12). Pull-to-refresh.
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Card, MoneyText, VoiceButton, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
+import { MoneyText, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useAuth } from '../../core/auth/auth.store';
 import { useFlag } from '../../core/flags/useFlag';
-import { loadFarmerHome, type MandiRow } from '../../features/farmer/dashboard.api';
+import { loadFarmerHome, type MandiRow, type HomeTip } from '../../features/farmer/dashboard.api';
 
 export default function FarmerHome() {
   const router = useRouter();
   const { t, lang } = useTranslation();
   const { state, loadProfile } = useAuth();
   const notifOn = useFlag('notifications');
-  const hireOn = useFlag('labour_hire');
   const [listingCount, setListingCount] = useState<number | null>(null);
   const [mandi, setMandi] = useState<MandiRow[] | null>(null);
+  const [walletMinor, setWalletMinor] = useState<string | null>(null);
+  const [tip, setTip] = useState<HomeTip | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
@@ -27,69 +29,106 @@ export default function FarmerHome() {
     const home = await loadFarmerHome();
     setListingCount(home.listingCount);
     setMandi(home.mandi);
+    setWalletMinor(home.walletBalanceMinor);
+    setTip(home.tip);
   }, [loadProfile]);
 
   useEffect(() => { load(); }, [load]);
   const onRefresh = useCallback(async () => { setRefreshing(true); try { await load(); } finally { setRefreshing(false); } }, [load]);
 
   const name = state.profile?.displayName ?? t('home.defaultName');
+  const initial = (name.trim()[0] ?? 'K').toUpperCase();
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.primary600} />}>
-        <View style={styles.greetRow}>
-          <Text style={styles.greeting}>{t('home.greeting', { name })}</Text>
-          {notifOn ? (
-            <Pressable onPress={() => router.push('/(farmer)/notifications')} accessibilityRole="button" accessibilityLabel={t('notifications.title')} hitSlop={8}>
-              <Text style={styles.bell}>🔔</Text>
-            </Pressable>
-          ) : null}
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      {/* Header — avatar · bilingual greeting · notification bell */}
+      <View style={styles.top}>
+        <View style={styles.avatar}><Text style={styles.avatarTxt}>{initial}</Text></View>
+        <View style={styles.greet}>
+          <Text style={styles.greetLine} numberOfLines={1}>
+            <Text style={styles.greetVern}>नमस्ते, </Text>{name}
+          </Text>
+          <Text style={styles.greetSub}>{t('home.welcomeBack')}</Text>
         </View>
+        {notifOn ? (
+          <Pressable onPress={() => router.push('/(farmer)/notifications')} accessibilityRole="button" accessibilityLabel={t('notifications.title')} hitSlop={8} style={styles.bell}>
+            <Text style={{ fontSize: 18 }}>🔔</Text>
+          </Pressable>
+        ) : null}
+      </View>
 
-        <Card style={styles.hero}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.primary600} />}>
+
+        {/* AI hero */}
+        <View style={styles.hero}>
+          <View style={styles.heroGlow} />
+          <View style={styles.heroTag}><Text style={styles.heroTagTxt}>⚡ {t('home.aiPowered')}</Text></View>
           <Text style={styles.heroTitle}>{t('home.sellIn60')}</Text>
-          <View style={{ marginTop: space[3], gap: space[3] }}>
-            <VoiceButton label={t('home.speakToSell')} hint={t('home.aiPowered')} onPress={() => router.push('/(farmer)/listings/new')} />
-            <Pressable onPress={() => router.push('/(farmer)/listings/new')} style={styles.photoBtn} accessibilityRole="button" accessibilityLabel={t('home.photo')}>
-              <Text style={styles.photoBtnText}>📷 {t('home.photo')}</Text>
+          <Text style={styles.heroVern}>अपनी फसल बेचें</Text>
+          <View style={styles.heroActions}>
+            <Pressable style={styles.ctaMic} onPress={() => router.push('/(farmer)/listings/new')} accessibilityRole="button" accessibilityLabel={t('home.speakToSell')}>
+              <Text style={styles.ctaMicTxt}>🎤  {t('home.speakToSell')}</Text>
+            </Pressable>
+            <Pressable style={styles.ctaPhoto} onPress={() => router.push('/(farmer)/listings/new')} accessibilityRole="button" accessibilityLabel={t('home.photo')}>
+              <Text style={styles.ctaPhotoTxt}>📷  {t('home.photo')}</Text>
             </Pressable>
           </View>
-        </Card>
-
-        <View style={styles.tiles}>
-          <Card style={styles.tile} onPress={() => router.push('/(farmer)/listings')} accessibilityLabel={t('home.myListings')}>
-            <Text style={styles.tileLabel}>{t('home.myListings')}</Text>
-            <Text style={styles.tileValue}>{listingCount ?? '—'}</Text>
-          </Card>
-          <Card style={styles.tile} onPress={() => router.push('/(farmer)/wallet')} accessibilityLabel={t('home.wallet')}>
-            <Text style={styles.tileLabel}>{t('home.wallet')}</Text>
-            <MoneyText minor={'0'} langCode={lang} size="2xl" />
-          </Card>
         </View>
 
-        {hireOn ? (
-          <Card style={styles.tile} onPress={() => router.push('/(farmer)/hire/bookings')} accessibilityLabel={t('hire.title')}>
-            <Text style={styles.tileLabel}>{t('hire.title')}</Text>
-            <Text style={styles.tileValue}>👷</Text>
-          </Card>
-        ) : null}
+        {/* Stat cards */}
+        <View style={styles.stats}>
+          <Pressable style={styles.stat} onPress={() => router.push('/(farmer)/listings')} accessibilityRole="button" accessibilityLabel={t('home.myListings')}>
+            <View style={[styles.statIcon, { backgroundColor: color.primary50 }]}><Text style={{ fontSize: 18 }}>🌾</Text></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.statLabel}>{t('home.myListings')}</Text>
+              <Text style={styles.statVal}>{listingCount == null ? '—' : t('home.active', { count: listingCount })}</Text>
+            </View>
+          </Pressable>
+          <Pressable style={styles.stat} onPress={() => router.push('/(farmer)/wallet')} accessibilityRole="button" accessibilityLabel={t('home.wallet')}>
+            <View style={[styles.statIcon, { backgroundColor: color.accent50 }]}><Text style={{ fontSize: 18 }}>💰</Text></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.statLabel}>{t('home.wallet')}</Text>
+              {walletMinor == null ? <Text style={styles.statVal}>—</Text> : <MoneyText minor={walletMinor} langCode={lang} size="lg" />}
+            </View>
+          </Pressable>
+        </View>
 
+        {/* Today's Mandi Pulse */}
         {mandi && mandi.length > 0 ? (
-          <View>
-            <Text style={styles.sectionTitle}>{t('home.mandiPulse')}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space[3], paddingVertical: space[2] }}>
+          <>
+            <View style={styles.sectionHead}>
+              <Text style={styles.sectionTitle}>{t('home.mandiPulse')}</Text>
+              <Pressable onPress={() => router.push('/(farmer)/mandi')} hitSlop={8}><Text style={styles.sectionLink}>{t('home.viewAll')} →</Text></Pressable>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.mandiList}>
               {mandi.map((m) => (
-                <View key={m.id} style={styles.mandiCard}>
-                  <Text style={styles.mandiName}>{m.commodity}</Text>
+                <Pressable key={m.id} style={styles.mandiCard} onPress={() => router.push('/(farmer)/mandi')}>
+                  <Text style={styles.mandiName} numberOfLines={1}>{m.commodity}</Text>
                   <MoneyText minor={m.modalPriceMinor} langCode={lang} size="lg" />
-                  <Text style={styles.perQtl}>{t('home.perQtl')}</Text>
-                  <Text style={[styles.change, { color: m.changePct >= 0 ? color.successDark : color.dangerDark }]}>
+                  <Text style={styles.mandiUnit}>{t('home.perQtl')}</Text>
+                  <Text style={[styles.mandiDelta, { color: m.changePct >= 0 ? color.successDark : color.danger }]}>
                     {m.changePct >= 0 ? '▲' : '▼'} {Math.abs(m.changePct).toFixed(1)}%
                   </Text>
-                </View>
+                </Pressable>
               ))}
             </ScrollView>
-          </View>
+          </>
+        ) : null}
+
+        {/* Today's Tip */}
+        {tip ? (
+          <>
+            <View style={styles.sectionHead}><Text style={styles.sectionTitle}>{t('home.todaysTip')}</Text></View>
+            <Pressable style={styles.tipCard} onPress={() => router.push(`/(farmer)/tips/${tip.id}`)} accessibilityRole="button" accessibilityLabel={tip.title}>
+              <View style={styles.tipIcon}><Text style={{ fontSize: 22 }}>💡</Text></View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.tipLabel}>{tip.kind.toUpperCase()}</Text>
+                <Text style={styles.tipTitle} numberOfLines={2}>{tip.title}</Text>
+                {tip.body ? <Text style={styles.tipDesc} numberOfLines={2}>{tip.body}</Text> : null}
+              </View>
+            </Pressable>
+          </>
         ) : null}
       </ScrollView>
     </SafeAreaView>
@@ -98,21 +137,48 @@ export default function FarmerHome() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: color.page },
-  content: { padding: space[5], gap: space[4] },
-  greetRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  greeting: { fontFamily: font.display, fontSize: font.size['2xl'], fontWeight: font.weight.bold, color: color.ink800, flex: 1 },
-  bell: { fontSize: 24 },
-  hero: { backgroundColor: color.primary600 },
-  heroTitle: { fontFamily: font.display, fontSize: font.size.xl, fontWeight: font.weight.bold, color: color.white },
-  photoBtn: { backgroundColor: color.primary700, borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center' },
-  photoBtnText: { fontFamily: font.body, fontSize: font.size.lg, fontWeight: font.weight.semibold, color: color.white },
-  tiles: { flexDirection: 'row', gap: space[4] },
-  tile: { flex: 1 },
-  tileLabel: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink500 },
-  tileValue: { fontFamily: font.display, fontSize: font.size['2xl'], fontWeight: font.weight.bold, color: color.ink800, marginTop: space[1] },
-  sectionTitle: { fontFamily: font.body, fontSize: font.size.lg, fontWeight: font.weight.semibold, color: color.ink700, marginBottom: space[1] },
-  mandiCard: { width: 130, backgroundColor: color.card, borderRadius: radius.lg, padding: space[3], ...shadow.card },
-  mandiName: { fontFamily: font.body, fontSize: font.size.md, fontWeight: font.weight.semibold, color: color.ink700, marginBottom: space[1] },
-  perQtl: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink400 },
-  change: { fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.semibold, marginTop: space[1] },
+  // Header
+  top: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingHorizontal: space[5], paddingVertical: space[4] },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: color.primary600, alignItems: 'center', justifyContent: 'center' },
+  avatarTxt: { color: color.white, fontFamily: font.display, fontWeight: font.weight.bold, fontSize: font.size.lg },
+  greet: { flex: 1, minWidth: 0 },
+  greetLine: { fontFamily: font.display, fontSize: font.size.xl, fontWeight: font.weight.bold, color: color.ink800, letterSpacing: -0.3 },
+  greetVern: { fontFamily: font.body, color: color.primary700, fontWeight: font.weight.semibold },
+  greetSub: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink500, marginTop: 2 },
+  bell: { width: 40, height: 40, borderRadius: 20, backgroundColor: color.earth100, alignItems: 'center', justifyContent: 'center' },
+  scroll: { paddingBottom: space[8] },
+  // Hero
+  hero: { marginHorizontal: space[5], marginBottom: space[4], borderRadius: radius.xl, padding: space[5], backgroundColor: color.primary700, overflow: 'hidden', ...shadow.card },
+  heroGlow: { position: 'absolute', top: -40, right: -40, width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(243,156,18,0.18)' },
+  heroTag: { alignSelf: 'flex-start', backgroundColor: 'rgba(243,156,18,0.25)', borderRadius: radius.pill, paddingVertical: 4, paddingHorizontal: 10 },
+  heroTagTxt: { color: color.accent200, fontFamily: font.body, fontSize: 11, fontWeight: font.weight.bold, letterSpacing: 0.5 },
+  heroTitle: { fontFamily: font.display, fontSize: font.size['2xl'], fontWeight: font.weight.bold, color: color.white, marginTop: space[2], letterSpacing: -0.3 },
+  heroVern: { fontFamily: font.body, fontSize: font.size.md, color: 'rgba(255,255,255,0.9)', marginTop: 2 },
+  heroActions: { flexDirection: 'row', gap: space[2], marginTop: space[4] },
+  ctaMic: { flex: 2, backgroundColor: color.accent500, borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center', justifyContent: 'center' },
+  ctaMicTxt: { fontFamily: font.body, fontWeight: font.weight.bold, color: color.ink900, fontSize: font.size.md },
+  ctaPhoto: { flex: 1, backgroundColor: 'rgba(255,255,255,0.16)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)', borderRadius: radius.md, paddingVertical: space[3], alignItems: 'center', justifyContent: 'center' },
+  ctaPhotoTxt: { fontFamily: font.body, fontWeight: font.weight.semibold, color: color.white, fontSize: font.size.md },
+  // Stats
+  stats: { flexDirection: 'row', gap: space[2], paddingHorizontal: space[5], marginBottom: space[3] },
+  stat: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: color.card, borderWidth: 1, borderColor: color.earth200, borderRadius: radius.md, padding: space[3] },
+  statIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  statLabel: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink500 },
+  statVal: { fontFamily: font.display, fontSize: font.size.lg, fontWeight: font.weight.bold, color: color.ink800, letterSpacing: -0.3 },
+  // Section heads
+  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space[5], paddingVertical: space[2] },
+  sectionTitle: { fontFamily: font.display, fontSize: font.size.lg, fontWeight: font.weight.bold, color: color.ink800 },
+  sectionLink: { fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.semibold, color: color.primary700 },
+  // Mandi
+  mandiList: { gap: space[2], paddingHorizontal: space[5], paddingBottom: space[3] },
+  mandiCard: { width: 130, backgroundColor: color.card, borderWidth: 1, borderColor: color.earth200, borderRadius: radius.md, padding: space[3] },
+  mandiName: { fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.bold, color: color.ink800 },
+  mandiUnit: { fontFamily: font.body, fontSize: 10, color: color.ink400, marginTop: 2 },
+  mandiDelta: { fontFamily: font.body, fontSize: 11, fontWeight: font.weight.semibold, marginTop: 4 },
+  // Tip
+  tipCard: { flexDirection: 'row', gap: space[3], marginHorizontal: space[5], marginBottom: space[4], padding: space[4], backgroundColor: color.accent50, borderWidth: 1, borderColor: color.accent200, borderRadius: radius.lg },
+  tipIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: color.accent500, alignItems: 'center', justifyContent: 'center' },
+  tipLabel: { fontFamily: font.body, fontSize: 10, fontWeight: font.weight.bold, color: color.accent700, letterSpacing: 0.5 },
+  tipTitle: { fontFamily: font.body, fontSize: font.size.md, fontWeight: font.weight.bold, color: color.ink800, marginTop: 2 },
+  tipDesc: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink600, marginTop: 2 },
 });

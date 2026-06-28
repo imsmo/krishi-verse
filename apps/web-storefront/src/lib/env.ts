@@ -10,6 +10,9 @@ export const env = {
   publicApiUrl,
   /** Server-side API origin for SSR (internal DNS if set, else the public one). Never sent to the browser. */
   serverApiUrl: process.env.API_URL_INTERNAL || publicApiUrl,
+  /** The tenant a buyer signs into from this storefront. The API scopes OTP verify/refresh to a tenant, so it must
+   *  be sent. Locally set via NEXT_PUBLIC_TENANT_ID (demo-fpo); in prod derive from the storefront's host/slug. */
+  tenantId: process.env.NEXT_PUBLIC_TENANT_ID,
   /** Origin of the seller/tenant console (web-tenant); the "Sell on Krishi-Verse" CTA links here. An origin,
    *  not a secret — safe to expose. Null when unset → the CTA falls back to in-app sign-in. */
   tenantAppUrl: process.env.NEXT_PUBLIC_TENANT_APP_URL || null,

@@ -24,7 +24,9 @@ export default function PhoneScreen() {
     try {
       await requestOtp(phone, newId());
       router.push({ pathname: '/(auth)/verify', params: { phone } });
-    } catch {
+    } catch (e) {
+      // Surface the real cause to the Metro terminal so we can diagnose (status/code/message); UI stays friendly.
+      console.error('[phone] requestOtp failed:', JSON.stringify({ message: (e as any)?.message, code: (e as any)?.code, status: (e as any)?.status }), e);
       setError(t('common.error.generic'));
     } finally { setBusy(false); }
   };

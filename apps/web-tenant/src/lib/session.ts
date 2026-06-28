@@ -9,6 +9,7 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
 import { anonClient } from './api-client';
+import { env } from './env';
 import { getAccessToken, getRefreshToken, setSession, clearSession } from './auth';
 import { safeNext } from '../features/nav/safe-next';
 
@@ -19,7 +20,7 @@ export async function refreshSession(): Promise<string | null> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) return null;
   try {
-    const tokens = await anonClient().auth.refresh(refreshToken);
+    const tokens = await anonClient().auth.refresh(refreshToken, env.tenantId);
     setSession(tokens.accessToken, tokens.refreshToken, tokens.expiresInSec);
     return tokens.accessToken;
   } catch {
