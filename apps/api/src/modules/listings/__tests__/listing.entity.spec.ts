@@ -1,7 +1,8 @@
 // modules/listings/__tests__/listing.entity.spec.ts
 // Pure unit tests for the aggregate's business invariants. No DB, no framework.
 import { Listing, ListingProps } from '../domain/listing.entity';
-import { InsufficientStockError, InvalidPriceError, ListingNotEditableError } from '../domain/listing.errors';
+import { InsufficientStockError, InvalidPriceError, ListingNotEditableError, InvalidRepostDurationError } from '../domain/listing.errors';
+import { IllegalListingTransitionError } from '../domain/listing.errors';
 
 const baseCreate = {
   id: 'L1', tenantId: 't1', sellerUserId: 'u1', productId: 'p1', categoryId: 'c1',
@@ -62,5 +63,35 @@ describe('Listing aggregate', () => {
   it('changePrice() forbidden in non-editable state', () => {
     const l = Listing.create({ ...baseCreate }); l.publish(); l.reduceStock(50); // sold_out
     expect(() => l.changePrice(999n)).toThrow(ListingNotEditableError);
+  });
+
+  it('repost() brings an EXPIRED listing back to published with a fresh expiry window', () => {
+    const l = Listing.create({ ...baseCreate }); l.publish(); l.expire(); l.pullEvents();
+    const now = new Date('2026-06-30T00:00:00Z');
+    l.repost(7, now);
+    expect(l.status).toBe('published');
+    const p = l.toProps();
+    expect(p.publishedAt).toEqual(now);
+    expect(p.expiresAt).toEqual(new Date('2026-07-07T00:00:00Z')); // +7 days, not the stale past expiry
+    expect(l.pullEvents().map((e) => e.type)).toContain('listing.published');
+  });
+
+  it('repost() can update the price atomically and emits price_changed', () => {
+    const l = Listing.create({ ...baseCreate }); l.publish(); l.expire(); l.pullEvents();
+    l.repost(7, new Date('2026-06-30T00:00:00Z'), 1_460_000n);
+    expect(l.toProps().priceMinor).toBe(1_460_000n);
+    expect(l.pullEvents().map((e) => e.type)).toContain('listing.price_changed');
+  });
+
+  it('repost() rejects an invalid duration and a non-positive price', () => {
+    const mk = () => { const l = Listing.create({ ...baseCreate }); l.publish(); l.expire(); return l; };
+    expect(() => mk().repost(0)).toThrow(InvalidRepostDurationError);
+    expect(() => mk().repost(61)).toThrow(InvalidRepostDurationError);
+    expect(() => mk().repost(7, new Date(), 0n)).toThrow(InvalidPriceError);
+  });
+
+  it('repost() refuses an illegal source state (e.g. a live published listing)', () => {
+    const l = Listing.create({ ...baseCreate }); l.publish(); // published → published is illegal
+    expect(() => l.repost(7)).toThrow(IllegalListingTransitionError);
   });
 });

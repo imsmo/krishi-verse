@@ -85,3 +85,43 @@ export function forecastDayLabel(day: Pick<ForecastDay, 'date'>): string {
 export function forecastDaySummary(day: ForecastDay): string {
   return `${Math.round(day.tempMinC)}–${Math.round(day.tempMaxC)}°C · ${day.precipProbPct}%`;
 }
+
+/** Active/total counts for the price-alerts dashboard header. Pure — triggered-today / this-week counts need a
+ * trigger-history read-model the contract doesn't expose yet (§13), so the screen degrades those to "—". */
+export function alertSummary(alerts: readonly Pick<PriceAlert, 'isActive'>[]): { active: number; total: number } {
+  let active = 0;
+  for (const a of alerts) if (a.isActive) active++;
+  return { active, total: alerts.length };
+}
+
+/** Emoji for a server-normalised weather condition code (clear|clouds|fog|rain|snow|thunder|unknown). Presentation
+ * only — the code is real server data; an unknown code degrades to a neutral glyph, never a guessed condition. */
+export function weatherEmoji(code: string | null | undefined): string {
+  switch (code) {
+    case 'clear': return '☀️';
+    case 'clouds': return '⛅';
+    case 'fog': return '🌫️';
+    case 'rain': return '🌧️';
+    case 'snow': return '❄️';
+    case 'thunder': return '⛈️';
+    default: return '🌡️';
+  }
+}
+
+/** i18n key suffix for a condition code → `weather.cond.<key>`. Pure. */
+export function weatherConditionKey(code: string | null | undefined): string {
+  const known = ['clear', 'clouds', 'fog', 'rain', 'snow', 'thunder'];
+  return known.includes(code ?? '') ? (code as string) : 'unknown';
+}
+
+const SEVERITY_RANK: Record<string, number> = { extreme: 5, red: 5, severe: 4, orange: 4, moderate: 3, yellow: 2, minor: 1, advisory: 1 };
+/** The single most-severe ACTIVE advisory to feature in the alert banner, or null. Pure (nowMs injectable). */
+export function pickPrimaryAdvisory(advisories: readonly WeatherAlert[], nowMs: number = Date.now()): WeatherAlert | null {
+  let best: WeatherAlert | null = null; let bestRank = -1;
+  for (const a of advisories) {
+    if (!isAdvisoryActive(a, nowMs)) continue;
+    const rank = SEVERITY_RANK[a.severity] ?? 0;
+    if (rank > bestRank) { best = a; bestRank = rank; }
+  }
+  return best;
+}

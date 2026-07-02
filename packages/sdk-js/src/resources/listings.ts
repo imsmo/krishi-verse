@@ -50,6 +50,12 @@ export class ListingsResource {
     return (await this.http.request<{ ok: boolean }>('PATCH', `listings/${encodeURIComponent(id)}/price`, { body: { priceMinor, expectedVersion } })).data;
   }
 
+  /** Repost an expired/sold-out listing back to 'published' for a fresh window (keeps photos/details). Optional
+   *  new price (bigint minor string — Law 2) + durationDays (server defaults to 7). Owner-only (server-enforced). */
+  async repost(id: string, opts: { newPriceMinor?: string; durationDays?: number } = {}): Promise<{ ok: boolean }> {
+    return (await this.http.request<{ ok: boolean }>('POST', `listings/${encodeURIComponent(id)}/repost`, { body: opts })).data;
+  }
+
   /** The paid-boost tier catalogue (id + name + server price/days). Show real prices; submit a real tier id. */
   async boostTiers(signal?: AbortSignal): Promise<BoostTier[]> {
     return (await this.http.request<BoostTier[]>('GET', 'listings/boost-tiers', { signal })).data;

@@ -7,8 +7,8 @@ import { View, Text, StyleSheet } from 'react-native';
 import { color, font, space, radius } from '@krishi-verse/ui-native';
 import type { MessageView } from '../message-view';
 
-export function MessageBubble({ view, imageLabel, voiceLabel, flaggedLabel }: {
-  view: MessageView; imageLabel: string; voiceLabel: string; flaggedLabel: string;
+export function MessageBubble({ view, imageLabel, voiceLabel, flaggedLabel, time }: {
+  view: MessageView; imageLabel: string; voiceLabel: string; flaggedLabel: string; time?: string;
 }) {
   const mine = view.mine;
   return (
@@ -22,6 +22,7 @@ export function MessageBubble({ view, imageLabel, voiceLabel, flaggedLabel }: {
           <Text style={[styles.media, mine && styles.textMine]}>🎤 {voiceLabel}</Text>
         ) : null}
         {view.flagged ? <Text style={styles.flagged}>{flaggedLabel}</Text> : null}
+        {time ? <Text style={[styles.time, mine ? styles.timeMine : styles.timeTheirs]}>{time}</Text> : null}
       </View>
     </View>
   );
@@ -36,6 +37,9 @@ const styles = StyleSheet.create({
   theirs: { backgroundColor: color.card, borderWidth: 1, borderColor: color.ink100, borderBottomLeftRadius: radius.sm },
   text: { fontFamily: font.body, fontSize: font.size.md, color: color.ink800 },
   textMine: { color: color.white },
+  time: { fontFamily: font.body, fontSize: 9, marginTop: 4, alignSelf: 'flex-end' },
+  timeMine: { color: color.white, opacity: 0.7 },
+  timeTheirs: { color: color.ink400 },
   media: { fontFamily: font.body, fontSize: font.size.md, color: color.ink700 },
   flagged: { fontFamily: font.body, fontSize: font.size.xs, color: color.dangerDark, marginTop: 2 },
 });

@@ -107,6 +107,27 @@ export class ListingService {
     });
   }
 
+  /** REPOST — bring the seller's own expired/sold-out/hidden/paused listing back to 'published' for a FRESH window
+   *  (durationDays), keeping its photos/description/attributes. Optionally updates the price in the same tx (writes
+   *  price history when it changes). Ownership-checked; the domain state machine validates the source status. */
+  async repost(tenantId: string, actor: ListingActor, id: string, opts: { newPriceMinor?: bigint; durationDays: number }): Promise<void> {
+    await timed(this.metrics, 'listing.repost', { tenant: tenantId }, async () => {
+      await this.uow.run(tenantId, async (tx) => {
+        const listing = await this.repo.getForUpdate(tx, tenantId, id);
+        this.assertCanMutate(listing, actor); // ownership (moderator bypass); status validated by domain
+        const old = listing.price.minor;
+        listing.repost(opts.durationDays, new Date(), opts.newPriceMinor);
+        await this.repo.update(tx, listing);
+        if (opts.newPriceMinor !== undefined && opts.newPriceMinor !== old) {
+          await this.priceHistory.append(tx, PriceHistory.record({ id: uuidv7(), tenantId, listingId: id, oldPriceMinor: old, newPriceMinor: opts.newPriceMinor, changedBy: actor.userId }));
+        }
+        await this.flushEvents(tx, tenantId, id, listing.pullEvents());
+        await this.auditOverride(tx, tenantId, actor, listing, 'listing.reposted');
+      }, { userId: actor.userId });
+      await this.cache.del(cacheKey(tenantId, id));
+    });
+  }
+
   /** CHANGE PRICE — ownership + optimistic-locked, writes price history, emits event. */
   async changePrice(tenantId: string, actor: ListingActor, id: string, newPriceMinor: bigint, expectedVersion: number): Promise<void> {
     await timed(this.metrics, 'listing.change_price', { tenant: tenantId }, async () => {

@@ -15,3 +15,10 @@ export async function reviewSummary(targetUserId: string): Promise<ReviewSummary
   try { return await apiClient().reviews.summary({ targetUserId }); }
   catch { return { averageStars: 0, count: 0 }; }
 }
+
+/** Aggregate rating for a BUYER (the seller sees this on the order-decision screen). Public/anonymous summary,
+ * keyed by the buyer's user id (resolved server-side from the order); degrades to a zero summary on failure. */
+export async function buyerReviewSummary(buyerUserId: string): Promise<ReviewSummary> {
+  try { return await apiClient().reviews.summary({ targetType: 'buyer', targetId: buyerUserId }); }
+  catch { return { averageStars: 0, count: 0 }; }
+}

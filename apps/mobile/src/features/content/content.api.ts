@@ -13,7 +13,7 @@ import { POLICY } from '../../core/offline/cache-policies';
 import { asyncStorageKv as kv } from '../../core/offline/kv';
 import { currentScope } from '../../core/offline/scope';
 import { newId } from '../../core/util/ids';
-import { searchResources, reconcileSavedTips, type TipSnapshot } from './content';
+import { searchResources, reconcileSavedTips, relatedTips, type TipSnapshot } from './content';
 
 export interface TipsPage { items: LearningResource[]; nextCursor: string | null }
 const TIPS_SCOPE = 'public'; // approved tips are the same catalogue for everyone (not user-private)
@@ -33,6 +33,16 @@ export async function listTips(params: { kind?: ResourceKind; cursor?: string } 
 export async function getTip(id: string): Promise<LearningResource | null> {
   try { const { items } = await listTips(); return items.find((r) => r.id === id) ?? null; }
   catch { return null; }
+}
+
+/** Tip detail (screen 101): the tip + REAL "related" tips drawn from the same cached catalogue (PURE relatedTips
+ * heuristic — there's no server "related" endpoint). One read of the cached list serves both. Degrades to nulls. */
+export async function getTipDetail(id: string): Promise<{ tip: LearningResource | null; related: LearningResource[] }> {
+  try {
+    const { items } = await listTips();
+    const tip = items.find((r) => r.id === id) ?? null;
+    return { tip, related: tip ? relatedTips(items, tip.id, 3) : [] };
+  } catch { return { tip: null, related: [] }; }
 }
 
 /** Voice/text search over the (cached) approved tips — local, ReDoS-safe substring. Works offline. */

@@ -4,7 +4,7 @@
 import { Money } from '../../../shared/utils/money';
 import { ListingStatus, assertTransition, isPurchasable } from './listing.state';
 import {
-  InsufficientStockError, InvalidPriceError, ListingNotEditableError,
+  InsufficientStockError, InvalidPriceError, ListingNotEditableError, InvalidRepostDurationError,
 } from './listing.errors';
 
 export interface ListingProps {
@@ -104,6 +104,28 @@ export class Listing {
   hide(): void { this.transition('hidden'); }
   archive(): void { this.transition('archived'); }
   expire(): void { this.transition('expired'); }
+
+  /** REPOST — bring an expired (or sold-out / hidden / paused) listing back to 'published' for a FRESH window,
+   *  keeping its photos/description/attributes (it's the same aggregate). Optionally updates the price in the same
+   *  op. Sets a new expiresAt = now + durationDays so the expire-job doesn't immediately re-expire it (the bug a
+   *  bare publish() would cause — publish() leaves the stale past expiry). The state machine validates the
+   *  source status (expired/sold_out/hidden/paused → published); anything else throws IllegalListingTransition. */
+  repost(durationDays: number, now: Date = new Date(), newPriceMinor?: bigint): void {
+    if (!Number.isInteger(durationDays) || durationDays <= 0 || durationDays > 60)
+      throw new InvalidRepostDurationError(durationDays);
+    if (newPriceMinor !== undefined) {
+      if (newPriceMinor <= 0n) throw new InvalidPriceError('Price must be greater than zero');
+      if (newPriceMinor !== this.props.priceMinor) {
+        const old = this.props.priceMinor;
+        this.props.priceMinor = newPriceMinor;
+        this.events.push({ type: 'listing.price_changed', listingId: this.props.id, oldPriceMinor: old.toString(), newPriceMinor: newPriceMinor.toString() });
+      }
+    }
+    this.transition('published'); // validates the source status + emits status_changed
+    this.props.publishedAt = now;
+    this.props.expiresAt = new Date(now.getTime() + durationDays * 86_400_000);
+    this.events.push({ type: 'listing.published', listingId: this.props.id, priceMinor: this.props.priceMinor.toString() });
+  }
 
   changePrice(newPriceMinor: bigint): void {
     if (!EDITABLE_STATUSES.has(this.props.status))

@@ -14,7 +14,7 @@ import { getOrder, completeOrder, cancelOrder } from '../../../features/orders/o
 import { nextActions, orderStatusTone, type OrderAction } from '../../../features/orders/order-status';
 
 // The buyer order detail handles these inline/navigation actions; others (review/report) are deferred for buyer.
-const HANDLED: OrderAction[] = ['complete', 'cancel', 'track'];
+const HANDLED: OrderAction[] = ['complete', 'cancel', 'track', 'report'];
 
 export default function BuyerOrderDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -51,6 +51,7 @@ export default function BuyerOrderDetail() {
       { text: t('orders.cancel.confirm'), style: 'destructive', onPress: () => run('cancel', () => cancelOrder(id)) },
     ]);
     if (a === 'track') return router.push({ pathname: '/(buyer)/orders/track', params: { orderId: id } });
+    if (a === 'report') return router.push({ pathname: '/(buyer)/orders/report', params: { orderId: id } });
   };
 
   const actions = (order ? nextActions(order.status, 'buyer') : []).filter((a) => HANDLED.includes(a));

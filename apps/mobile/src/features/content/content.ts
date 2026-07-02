@@ -23,6 +23,35 @@ export function kindTone(kind: string): PillTone {
   }
 }
 
+/** The design's topic-category chips (screen 55). Only 'all' is satisfiable today — the resource read-model
+ * carries a topicId (uuid) but NO topic NAME/slug, so the named categories await a topic taxonomy (§13). Pure. */
+export const TIP_CATEGORIES = ['all', 'crops', 'pest', 'soil', 'market'] as const;
+export type TipCategory = (typeof TIP_CATEGORIES)[number];
+
+/** Estimated read time (minutes, ≥1) from a tip body at `wpm` words/minute — DERIVED from the real body text, not
+ * a fabricated field. Empty/whitespace body → 1. Pure. */
+export function readTimeMinutes(body: string | null | undefined, wpm = 200): number {
+  const words = (body ?? '').trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.ceil(words / wpm));
+}
+
+/** i18n key suffix for a resource's languageCode → `content.lang.<key>`. Unknown/empty → 'other'. Pure. */
+export function languageLabelKey(code: string | null | undefined): string {
+  const c = (code ?? '').toLowerCase();
+  return c === 'hi' || c === 'en' || c === 'gu' ? c : 'other';
+}
+
+/** Pick up to `max` "related" tips for the detail screen (screen 101). REAL resources from the cached catalogue —
+ * never fabricated. Excludes the current tip; prefers the SAME kind first (closest match) then fills with others,
+ * preserving catalogue order. There is no server "related" endpoint, so this is an honest local heuristic. Pure. */
+export function relatedTips<T extends Pick<LearningResource, 'id' | 'kind'>>(all: T[], currentId: string, max = 3): T[] {
+  const others = all.filter((r) => r.id !== currentId);
+  const current = all.find((r) => r.id === currentId);
+  const sameKind = current ? others.filter((r) => r.kind === current.kind) : [];
+  const rest = others.filter((r) => !sameKind.includes(r));
+  return [...sameKind, ...rest].slice(0, Math.max(0, max));
+}
+
 /** Normalize a free-text / spoken query: trim, collapse whitespace, lowercase, cap length (bounded; no ReDoS). */
 export function normalizeQuery(raw: string | null | undefined): string {
   return (raw ?? '').replace(/\s+/g, ' ').trim().toLowerCase().slice(0, 120);
@@ -93,7 +122,9 @@ export function buildAssistantDraft(form: { text?: string; lang?: string; sessio
 }
 
 export type ChatRole = 'user' | 'assistant';
-export interface ChatTurn { id: string; role: ChatRole; text: string; at: number }
+/** A transcript turn. `citations` are the SERVER's source links on an assistant turn (rendered verbatim — the app
+ * never fabricates a source); absent on user turns. */
+export interface ChatTurn { id: string; role: ChatRole; text: string; at: number; citations?: Array<{ title: string; url?: string }> }
 /** Append a turn to a transcript (immutable). Bounds the in-memory transcript (perf §5). */
 export function appendTurn(turns: ChatTurn[], turn: ChatTurn, max = 200): ChatTurn[] {
   return [...turns, turn].slice(-max);

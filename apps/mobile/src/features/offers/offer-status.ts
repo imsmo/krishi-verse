@@ -50,3 +50,36 @@ export function normalizeQuantity(qty: string): string | null {
   const clean = (qty ?? '').trim();
   return /^\d{1,11}(\.\d{1,3})?$/.test(clean) && Number(clean) > 0 ? clean : null;
 }
+
+// --- make-offer preview (screen 99): total + %-vs-ask, all BigInt paise (Law 2 — the SERVER computes the
+// authoritative offer total; these drive the on-screen preview only) ---
+
+/** Offer total (minor) = per-unit price (minor) × quantity, where qty may carry up to 2 decimals (quintals). The
+ * qty is scaled to hundredths and the product floored back — exact, never a float. Returns '0' on bad input. Pure. */
+export function offerTotalMinor(perUnitMinor: string, qty: string): string {
+  const clean = (qty ?? '').trim();
+  if (!/^\d{1,11}(\.\d{1,2})?$/.test(clean)) return '0';
+  try {
+    const unit = BigInt(perUnitMinor);
+    const [whole, frac = ''] = clean.split('.');
+    const scaled = BigInt(whole) * 100n + BigInt((frac + '00').slice(0, 2)); // qty × 100
+    return (unit * scaled / 100n).toString();
+  } catch { return '0'; }
+}
+
+/** Signed percent the offer sits vs the list/ask price: POSITIVE = below ask (a discount ask), negative = above.
+ * Rounded to the nearest whole percent. null when ask is missing/zero (screen hides the "% below ask" line rather
+ * than inventing one). Pure. */
+export function pctDiffVsAsk(offerMinor: string, askMinor: string): number | null {
+  try {
+    const offer = BigInt(offerMinor); const ask = BigInt(askMinor);
+    if (ask <= 0n) return null;
+    const bps = (ask - offer) * 10000n / ask; // basis points, signed
+    return Math.round(Number(bps) / 100);
+  } catch { return null; }
+}
+
+/** The list/ask price as a whole-rupee string (for the "List price ₹X" quick-set chip / prefill). '' on bad input. */
+export function listPriceRupees(askMinor: string): string {
+  try { return (BigInt(askMinor) / 100n).toString(); } catch { return ''; }
+}

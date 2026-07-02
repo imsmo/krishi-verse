@@ -21,6 +21,7 @@ import { ListingLinksReadModel } from '../read-models/listing-links.read-model';
 import { ListingBoostService } from '../services/listing-boost.service';
 import { CreateListingDto, CreateListingSchema } from '../dto/create-listing.dto';
 import { ChangePriceDto, ChangePriceSchema } from '../dto/change-price.dto';
+import { RepostListingDto, RepostListingSchema } from '../dto/repost-listing.dto';
 import { QueryListingDto, QueryListingSchema } from '../dto/query-listing.dto';
 import { ListingNotFoundError } from '../domain/listing.errors';
 import { ListingPermissions, canModerate } from '../listings.policies';
@@ -117,6 +118,22 @@ export class ListingsController {
     await this.service.changePrice(
       ctx.tenantId, { userId: ctx.userId, canModerate: canModerate(ctx) },
       id, BigInt(dto.priceMinor), dto.expectedVersion,
+    );
+    return { data: { ok: true } };
+  }
+
+  /** REPOST — bring an expired/sold-out listing back live for a fresh window (screen 116). Owner-only (server
+   *  re-checks ownership + the domain state machine validates the source status). Optional new price applied
+   *  atomically. Default window 7 days when durationDays is omitted. */
+  @Post(':id/repost')
+  @RequirePermissions(ListingPermissions.Update)
+  async repost(
+    @CurrentContext() ctx: RequestContext, @Param('id') id: string,
+    @ZodBody(RepostListingSchema) dto: RepostListingDto,
+  ) {
+    await this.service.repost(
+      ctx.tenantId, { userId: ctx.userId, canModerate: canModerate(ctx) },
+      id, { newPriceMinor: dto.newPriceMinor ? BigInt(dto.newPriceMinor) : undefined, durationDays: dto.durationDays ?? 7 },
     );
     return { data: { ok: true } };
   }

@@ -4,8 +4,41 @@
 import {
   priceChangePct, changeTone, changeArrow, rupeesToThresholdMinor, buildAlertDraft,
   alertTone, weatherSeverityTone, isAdvisoryActive, historyTrendPct,
+  weatherEmoji, weatherConditionKey, pickPrimaryAdvisory, alertSummary,
 } from '../../features/market/market';
 import type { MandiPrice, WeatherAlert } from '@krishi-verse/sdk-js';
+
+describe('alertSummary', () => {
+  it('counts active and total (triggered counts are §13 — not derivable here)', () => {
+    expect(alertSummary([{ isActive: true }, { isActive: false }, { isActive: true }])).toEqual({ active: 2, total: 3 });
+    expect(alertSummary([])).toEqual({ active: 0, total: 0 });
+  });
+});
+
+describe('weatherEmoji / weatherConditionKey', () => {
+  it('maps the normalised codes; unknown degrades (never guessed)', () => {
+    expect(weatherEmoji('rain')).toBe('🌧️');
+    expect(weatherEmoji('thunder')).toBe('⛈️');
+    expect(weatherEmoji('mystery')).toBe('🌡️');
+    expect(weatherConditionKey('clouds')).toBe('clouds');
+    expect(weatherConditionKey('mystery')).toBe('unknown');
+    expect(weatherConditionKey(null)).toBe('unknown');
+  });
+});
+
+describe('pickPrimaryAdvisory', () => {
+  const mk = (id: string, severity: string, validTo: string | null): WeatherAlert => ({
+    id, regionId: 'r1', alertTypeId: null, severity, validFrom: null, validTo, advisoryTextKey: 'k', payload: null, source: null,
+  });
+  const now = Date.UTC(2026, 7, 15);
+  it('returns the most-severe ACTIVE advisory; null when none active', () => {
+    const future = new Date(now + 86_400_000).toISOString();
+    const past = new Date(now - 86_400_000).toISOString();
+    const chosen = pickPrimaryAdvisory([mk('a', 'minor', future), mk('b', 'severe', future), mk('c', 'extreme', past)], now);
+    expect(chosen?.id).toBe('b'); // 'c' (extreme) is expired → excluded
+    expect(pickPrimaryAdvisory([mk('x', 'severe', past)], now)).toBeNull();
+  });
+});
 
 describe('priceChangePct', () => {
   it('computes 1dp percent change with BigInt (no float drift on large paise)', () => {

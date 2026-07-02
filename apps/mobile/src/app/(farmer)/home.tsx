@@ -7,11 +7,23 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { MoneyText, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
+import { MoneyText, SkeletonCard, EmptyState, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useAuth } from '../../core/auth/auth.store';
 import { useFlag } from '../../core/flags/useFlag';
-import { loadFarmerHome, type MandiRow, type HomeTip } from '../../features/farmer/dashboard.api';
+import { loadFarmerHome, type MandiRow, type HomeTip, type HomeWeather } from '../../features/farmer/dashboard.api';
+
+// Crop → emoji is presentational iconography (UI chrome), not data: a small map with a sensible default so a
+// commodity the design didn't anticipate still renders. The price/name themselves are real (from the API).
+const CROP_EMOJI: Record<string, string> = {
+  wheat: '🌾', paddy: '🌾', rice: '🌾', maize: '🌽', corn: '🌽', chilli: '🌶️', chili: '🌶️',
+  onion: '🧅', potato: '🥔', tomato: '🍅', cotton: '🧶', soybean: '🫘', bajra: '🌾', groundnut: '🥜',
+};
+function cropEmoji(name: string): string {
+  const key = name.trim().toLowerCase();
+  for (const k of Object.keys(CROP_EMOJI)) if (key.includes(k)) return CROP_EMOJI[k];
+  return '🌾';
+}
 
 export default function FarmerHome() {
   const router = useRouter();
@@ -22,15 +34,27 @@ export default function FarmerHome() {
   const [mandi, setMandi] = useState<MandiRow[] | null>(null);
   const [walletMinor, setWalletMinor] = useState<string | null>(null);
   const [tip, setTip] = useState<HomeTip | null>(null);
+  const [weather, setWeather] = useState<HomeWeather | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [errored, setErrored] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    await loadProfile();
-    const home = await loadFarmerHome();
-    setListingCount(home.listingCount);
-    setMandi(home.mandi);
-    setWalletMinor(home.walletBalanceMinor);
-    setTip(home.tip);
+    setErrored(false);
+    try {
+      await loadProfile();
+      const home = await loadFarmerHome();
+      setListingCount(home.listingCount);
+      setMandi(home.mandi);
+      setWalletMinor(home.walletBalanceMinor);
+      setTip(home.tip);
+      setWeather(home.weather);
+    } catch {
+      // Whole-screen fetch failed with nothing cached — show a designed retry rather than a blank/white screen (Law 12).
+      setErrored(true);
+    } finally {
+      setLoading(false);
+    }
   }, [loadProfile]);
 
   useEffect(() => { load(); }, [load]);
@@ -48,7 +72,13 @@ export default function FarmerHome() {
           <Text style={styles.greetLine} numberOfLines={1}>
             <Text style={styles.greetVern}>नमस्ते, </Text>{name}
           </Text>
-          <Text style={styles.greetSub}>{t('home.welcomeBack')}</Text>
+          {weather ? (
+            <Text style={styles.greetSub} numberOfLines={1}>
+              {t('home.weather.temp', { deg: weather.tempC })} · {t(`home.weather.${weather.code}`)}{weather.place ? ` · ${weather.place}` : ''}
+            </Text>
+          ) : (
+            <Text style={styles.greetSub}>{t('home.welcomeBack')}</Text>
+          )}
         </View>
         {notifOn ? (
           <Pressable onPress={() => router.push('/(farmer)/notifications')} accessibilityRole="button" accessibilityLabel={t('notifications.title')} hitSlop={8} style={styles.bell}>
@@ -60,6 +90,19 @@ export default function FarmerHome() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.primary600} />}>
 
+        {/* Loading — skeleton that mirrors THIS layout (hero + 2 stat cards + a pulse row). Never a blank body (Law 12). */}
+        {loading ? (
+          <View style={styles.skeleton}>
+            <SkeletonCard lines={4} />
+            <View style={{ flexDirection: 'row', gap: space[2] }}><View style={{ flex: 1 }}><SkeletonCard lines={2} /></View><View style={{ flex: 1 }}><SkeletonCard lines={2} /></View></View>
+            <SkeletonCard lines={3} />
+          </View>
+        ) : errored ? (
+          <View style={styles.errorWrap}>
+            <EmptyState title={t('common.somethingWrong')} message={t('common.retryHint')} actionLabel={t('common.retry')} onAction={load} />
+          </View>
+        ) : (
+        <>
         {/* AI hero */}
         <View style={styles.hero}>
           <View style={styles.heroGlow} />
@@ -104,12 +147,15 @@ export default function FarmerHome() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.mandiList}>
               {mandi.map((m) => (
                 <Pressable key={m.id} style={styles.mandiCard} onPress={() => router.push('/(farmer)/mandi')}>
+                  <Text style={styles.mandiEmoji}>{cropEmoji(m.commodity)}</Text>
                   <Text style={styles.mandiName} numberOfLines={1}>{m.commodity}</Text>
                   <MoneyText minor={m.modalPriceMinor} langCode={lang} size="lg" />
                   <Text style={styles.mandiUnit}>{t('home.perQtl')}</Text>
-                  <Text style={[styles.mandiDelta, { color: m.changePct >= 0 ? color.successDark : color.danger }]}>
-                    {m.changePct >= 0 ? '▲' : '▼'} {Math.abs(m.changePct).toFixed(1)}%
-                  </Text>
+                  {m.changePct != null ? (
+                    <Text style={[styles.mandiDelta, { color: m.changePct >= 0 ? color.successDark : color.danger }]}>
+                      {m.changePct >= 0 ? '▲' : '▼'} {Math.abs(m.changePct).toFixed(1)}%
+                    </Text>
+                  ) : null}
                 </Pressable>
               ))}
             </ScrollView>
@@ -130,6 +176,8 @@ export default function FarmerHome() {
             </Pressable>
           </>
         ) : null}
+        </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -137,6 +185,9 @@ export default function FarmerHome() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: color.page },
+  // Loading / error
+  skeleton: { paddingHorizontal: space[5], gap: space[3] },
+  errorWrap: { paddingHorizontal: space[5], paddingTop: space[8] },
   // Header
   top: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingHorizontal: space[5], paddingVertical: space[4] },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: color.primary600, alignItems: 'center', justifyContent: 'center' },
@@ -172,6 +223,7 @@ const styles = StyleSheet.create({
   // Mandi
   mandiList: { gap: space[2], paddingHorizontal: space[5], paddingBottom: space[3] },
   mandiCard: { width: 130, backgroundColor: color.card, borderWidth: 1, borderColor: color.earth200, borderRadius: radius.md, padding: space[3] },
+  mandiEmoji: { fontSize: 22, marginBottom: 2 },
   mandiName: { fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.bold, color: color.ink800 },
   mandiUnit: { fontFamily: font.body, fontSize: 10, color: color.ink400, marginTop: 2 },
   mandiDelta: { fontFamily: font.body, fontSize: 11, fontWeight: font.weight.semibold, marginTop: 4 },

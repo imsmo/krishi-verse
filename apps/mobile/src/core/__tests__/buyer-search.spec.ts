@@ -1,6 +1,6 @@
 // Unit tests for the PURE buyer search-query + saved-set helpers. No React/native deps (the SDK type is type-only).
 // Money is bigint paise (Law 2) — price filters convert via BigInt, never a float.
-import { buildListingQuery, rupeesToPaiseFilter, activeFilterCount, describeSearch } from '../../features/buyer/search-query';
+import { buildListingQuery, rupeesToPaiseFilter, activeFilterCount, describeSearch, activeFilterChips, removeFilterChip, cycleSort, SORT_KEYS } from '../../features/buyer/search-query';
 import { toggleId, isSaved, capList, dedupeBy, upsertFront } from '../../features/buyer/saved-set';
 
 describe('rupeesToPaiseFilter', () => {
@@ -27,6 +27,9 @@ describe('buildListingQuery', () => {
   it('keeps a non-default sort and threads the cursor', () => {
     expect(buildListingQuery({ sort: 'price_desc' }, 'CUR', 30)).toEqual({ limit: 30, sort: 'price_desc', cursor: 'CUR' });
   });
+  it('threads a single categoryId (screen 68 filter sheet)', () => {
+    expect(buildListingQuery({ categoryId: 'cat-cereals' })).toEqual({ limit: 20, categoryId: 'cat-cereals' });
+  });
 });
 
 describe('activeFilterCount / describeSearch', () => {
@@ -39,6 +42,40 @@ describe('activeFilterCount / describeSearch', () => {
     expect(describeSearch({})).toBe('All produce');
     expect(describeSearch({ q: 'wheat', organic: true })).toContain('"wheat"');
     expect(describeSearch({ q: 'wheat', organic: true })).toContain('organic');
+  });
+});
+
+describe('activeFilterChips / removeFilterChip (screen 67)', () => {
+  it('emits chips for term + each active filter, in order, skipping empties', () => {
+    expect(activeFilterChips({})).toEqual([]);
+    expect(activeFilterChips({ q: '  wheat ', organic: true, saleType: 'auction', priceMinRupees: '50', priceMaxRupees: '3000' }))
+      .toEqual([
+        { key: 'q', value: 'wheat' },
+        { key: 'organic' },
+        { key: 'saleType', value: 'auction' },
+        { key: 'priceMin', value: '50' },
+        { key: 'priceMax', value: '3000' },
+      ]);
+  });
+  it('ignores invalid price bounds (never a broken chip)', () => {
+    expect(activeFilterChips({ priceMinRupees: '12.5', priceMaxRupees: 'abc' })).toEqual([]);
+  });
+  it('removeFilterChip clears exactly one filter, purely', () => {
+    const form = { q: 'wheat', organic: true, saleType: 'auction', priceMinRupees: '50', priceMaxRupees: '3000' };
+    expect(removeFilterChip(form, 'organic')).toMatchObject({ q: 'wheat', organic: false, saleType: 'auction' });
+    expect(removeFilterChip(form, 'q')).toMatchObject({ q: '', organic: true });
+    expect(removeFilterChip(form, 'priceMax').priceMaxRupees).toBeUndefined();
+    expect(form.organic).toBe(true); // input untouched
+  });
+});
+
+describe('cycleSort', () => {
+  it('cycles through the supported sorts and wraps', () => {
+    expect(SORT_KEYS).toEqual(['newest', 'price_asc', 'price_desc']);
+    expect(cycleSort('newest')).toBe('price_asc');
+    expect(cycleSort('price_asc')).toBe('price_desc');
+    expect(cycleSort('price_desc')).toBe('newest');
+    expect(cycleSort(undefined)).toBe('price_asc');
   });
 });
 

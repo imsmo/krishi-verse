@@ -4,7 +4,7 @@
 // the screen shows the precise outcome (idempotent — Law 3; a paid scheme fee / DBT moves money SERVER-SIDE, never
 // here — Law 11). Document upload reuses the core/media pipeline (P-01: pick → process/EXIF-drop → presign → PUT →
 // confirm) and returns a mediaId. Reads degrade-never-die (empty/null). Money is bigint minor strings (Law 2).
-import type { Scheme, SchemeApplication, EligibilityResult, DbtTransfer, SchemeApplicationDocument } from '@krishi-verse/sdk-js';
+import type { Scheme, SchemeAuthority, SchemeApplication, EligibilityResult, DbtTransfer, SchemeApplicationDocument } from '@krishi-verse/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { cache } from '../../core/offline/sqlite.db';
 import { POLICY } from '../../core/offline/cache-policies';
@@ -25,6 +25,17 @@ export async function listSchemes(categoryId?: string): Promise<Scheme[]> {
     return value;
   } catch { return []; }
 }
+/** The scheme AUTHORITIES (id→name lookup for the catalogue cards). Reference data → cached. Degrades to []. */
+export async function listAuthorities(): Promise<SchemeAuthority[]> {
+  try {
+    const { value } = await cache.read<SchemeAuthority[]>({
+      scope: CATALOGUE_SCOPE, ns: 'schemes.authorities', parts: ['all'], policy: POLICY.reference,
+      fetcher: () => apiClient().schemes.authorities(),
+    });
+    return value;
+  } catch { return []; }
+}
+
 export async function getScheme(id: string): Promise<Scheme | null> {
   try {
     const { value } = await cache.read<Scheme>({

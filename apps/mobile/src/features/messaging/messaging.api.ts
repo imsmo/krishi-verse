@@ -13,6 +13,14 @@ export interface MessagesPage { items: Message[]; nextCursor: string | null }
 export function openDirect(participantUserId: string, contextId?: string): Promise<Conversation> {
   return apiClient().conversations.open({ contextType: 'direct', contextId, participantUserIds: [participantUserId] }, newId());
 }
+/** Send a buyer inquiry about a listing: open (or reuse) the direct conversation with the seller (context = the
+ * listing) then post the first message. Both calls are idempotent (Law 3). Returns the conversation so the screen
+ * navigates to the thread. Throws on a real error (403 messaging off / not allowed) so the screen degrades. */
+export async function sendInquiry(sellerUserId: string, listingId: string, body: string): Promise<Conversation> {
+  const convo = await openDirect(sellerUserId, listingId);
+  await postText(convo.id, body.trim());
+  return convo;
+}
 export async function listConversations(cursor?: string): Promise<{ items: Conversation[]; nextCursor: string | null }> {
   try { return await apiClient().conversations.list({ cursor }); } catch { return { items: [], nextCursor: null }; }
 }

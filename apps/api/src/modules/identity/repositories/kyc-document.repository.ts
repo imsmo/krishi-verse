@@ -32,7 +32,7 @@ export class KycDocumentRepository {
   }
   async listByUser(tenantId: string, userId: string, status?: string): Promise<KycDocument[]> {
     const r = await this.replica.forTenant(tenantId).query<Row>(
-      `SELECT ${COLS} FROM kyc_documents WHERE user_id=$1 AND ($2::text IS NULL OR status=$2) AND deleted_at IS NULL ORDER BY created_at DESC`,
+      `SELECT ${COLS} FROM kyc_documents WHERE user_id=$1 AND ($2::text IS NULL OR status=$2::kyc_status) AND deleted_at IS NULL ORDER BY created_at DESC`,
       [userId, status ?? null]);
     return r.rows.map(toDomain);
   }

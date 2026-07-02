@@ -8,7 +8,7 @@ export type { OrderRole } from './resources/orders';
 export type { OfferBox } from './resources/offers';
 export type { WorkerPrefsInput, CreateBookingInput } from './resources/labour';
 export { nameById } from './resources/lookups';
-export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, ListingAnalytics, ProductCard, TraceProvenance, AuthTokens, UserProfile,
+export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, ListingAnalytics, ViewsByDayPoint, ProductCard, TraceProvenance, AuthTokens, UserProfile,
   CategoryNode, AttributeDef, AttributeOption, LookupValue, RegionNode,
   MediaKind, MediaUploadTicket, MediaConfirmResult, MediaDownloadLink,
   PaymentPurpose, PaymentIntent, PaymentSummary, InvoiceSummary, InvoiceDownload, PayoutSummary, BankAccount, KycStatus, KycDocument, KycDocType,

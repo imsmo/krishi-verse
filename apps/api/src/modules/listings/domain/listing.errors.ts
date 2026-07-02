@@ -34,3 +34,6 @@ export class ListingNotEditableError extends DomainError {
     super('LISTING_NOT_EDITABLE', `Listing ${id} cannot be edited in status ${status}`, 409, { status });
   }
 }
+export class InvalidRepostDurationError extends DomainError {
+  constructor(days: number) { super('LISTING_INVALID_REPOST_DURATION', `Repost duration must be 1–60 days (got ${days})`, 422, { days }); }
+}

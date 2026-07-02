@@ -4,8 +4,56 @@
 import {
   RESOURCE_KINDS, kindLabelKey, kindTone, normalizeQuery, matchesQuery, searchResources,
   groupByKind, tipSnapshot, isSaved, toggleSaved, reconcileSavedTips, buildAssistantDraft, appendTurn, type TipSnapshot, type ChatTurn,
+  readTimeMinutes, languageLabelKey, TIP_CATEGORIES, relatedTips,
 } from '../../features/content/content';
 import type { LearningResource } from '@krishi-verse/sdk-js';
+
+describe('relatedTips (real catalogue, never fabricated)', () => {
+  const r = (id: string, kind: LearningResource['kind']) => ({ id, kind });
+  const all = [r('a', 'article'), r('b', 'video'), r('c', 'article'), r('d', 'post'), r('e', 'article')];
+  it('excludes the current tip and caps at max', () => {
+    const out = relatedTips(all, 'a', 3);
+    expect(out.map((x) => x.id)).not.toContain('a');
+    expect(out).toHaveLength(3);
+  });
+  it('prefers same-kind first, then fills with others', () => {
+    const out = relatedTips(all, 'a', 4);
+    // same-kind (article: c,e) come before others (b,d)
+    expect(out.map((x) => x.id)).toEqual(['c', 'e', 'b', 'd']);
+  });
+  it('handles unknown id and tiny lists', () => {
+    expect(relatedTips(all, 'zzz', 2).map((x) => x.id)).toEqual(['a', 'b']);
+    expect(relatedTips([], 'a')).toHaveLength(0);
+  });
+});
+
+describe('readTimeMinutes (derived from real body)', () => {
+  it('estimates minutes ≥1; empty/whitespace → 1', () => {
+    expect(readTimeMinutes('')).toBe(1);
+    expect(readTimeMinutes(null)).toBe(1);
+    expect(readTimeMinutes('   ')).toBe(1);
+    expect(readTimeMinutes('one two three')).toBe(1);
+    expect(readTimeMinutes(Array(401).fill('w').join(' '))).toBe(3); // ceil(401/200)
+  });
+});
+
+describe('languageLabelKey', () => {
+  it('maps hi/en/gu (case-insensitive); unknown/empty → other', () => {
+    expect(languageLabelKey('hi')).toBe('hi');
+    expect(languageLabelKey('EN')).toBe('en');
+    expect(languageLabelKey('gu')).toBe('gu');
+    expect(languageLabelKey('fr')).toBe('other');
+    expect(languageLabelKey(null)).toBe('other');
+  });
+});
+
+describe('TIP_CATEGORIES', () => {
+  it('starts with all + carries the design topic chips', () => {
+    expect(TIP_CATEGORIES[0]).toBe('all');
+    expect(TIP_CATEGORIES).toContain('pest');
+    expect(TIP_CATEGORIES).toHaveLength(5);
+  });
+});
 
 const res = (over: Partial<LearningResource>): LearningResource => ({
   id: 'r1', channelId: null, ownerUserId: 'u1', kind: 'article', title: 'Tomato care',
@@ -110,5 +158,10 @@ describe('appendTurn', () => {
     for (let i = 0; i < 5; i++) t = appendTurn(t, turn(`t${i}`), 3);
     expect(t.length).toBe(3);
     expect(t.map((x) => x.id)).toEqual(['t2', 't3', 't4']);
+  });
+  it('preserves an assistant turn\'s server citations verbatim', () => {
+    const ai: ChatTurn = { id: 'a1', role: 'assistant', text: 'hi', at: 2, citations: [{ title: 'ICAR Manual', url: 'https://x' }] };
+    const out = appendTurn([], ai);
+    expect(out[0].citations).toEqual([{ title: 'ICAR Manual', url: 'https://x' }]);
   });
 });

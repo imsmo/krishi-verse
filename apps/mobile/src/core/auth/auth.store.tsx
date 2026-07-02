@@ -50,8 +50,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await tokenStore.saveTokens(fresh, now);
           if (!cancelled) dispatch({ type: 'TOKENS_REFRESHED', tokens: fresh, nowMs: now });
         } catch {
-          await tokenStore.clearTokens();
-          if (!cancelled) dispatch({ type: 'SIGNED_OUT' });
+          // A failed PROACTIVE refresh must not evict a user whose access token is still valid — only sign out when
+          // the token has actually expired. This keeps the session across app restarts on flaky networks / a
+          // transient refresh error (degrade-never-die); the client refreshes again on its next 401.
+          const stillValid = typeof tokens.expiresAtMs === 'number' && Date.now() < tokens.expiresAtMs;
+          if (!stillValid) {
+            await tokenStore.clearTokens();
+            if (!cancelled) dispatch({ type: 'SIGNED_OUT' });
+          }
         }
       }
     })();

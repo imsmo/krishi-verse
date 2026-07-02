@@ -37,6 +37,9 @@ export default function WorkerTabsLayout() {
       <Tabs.Screen name="jobs/[id]" options={{ href: null }} />
       <Tabs.Screen name="offers/[id]" options={{ href: null }} />
       <Tabs.Screen name="my-jobs" options={{ href: null }} />
+      <Tabs.Screen name="availability" options={{ href: null }} />
+      <Tabs.Screen name="skills" options={{ href: null }} />
+      <Tabs.Screen name="profile/edit" options={{ href: null }} />
       <Tabs.Screen name="active-job/[id]" options={{ href: null }} />
       <Tabs.Screen name="payment-received/[id]" options={{ href: null }} />
       <Tabs.Screen name="earnings" options={{ href: null }} />

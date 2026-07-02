@@ -1,70 +1,212 @@
-// apps/mobile/src/app/(farmer)/orders.tsx · the orders tab (screens 56 farmer-orders / 22 my-orders). Thin screen
-// (guide §3): a Selling/Buying role switch → features/orders.listOrders (SWR-cached, keyset). Tap a row → detail.
-// Money via MoneyText (Law 2). Degrade-never-die: empty/failed → friendly state, never a crash.
-import React, { useCallback, useState } from 'react';
-import { View, Text, FlatList, Pressable, StyleSheet, RefreshControl } from 'react-native';
+// apps/mobile/src/app/(farmer)/orders.tsx · the Orders tab (screen 22 My Orders) — rebuilt to the Phase-1 design
+// (Krishi_Verse_Design_System/screens/22-my-orders.html): As-Buyer / As-Seller tabs with counts, a status filter
+// chip row (All / In Transit / Delivered / Completed / Cancelled), and rich order cards (id + status badge, thumb,
+// counterparty, price, a fulfilment progress bar + status label + a primary CTA). Thin screen (guide §3); money
+// via MoneyText/paise (Law 2); degrade-never-die (Law 12); i18n(hi/en/gu).
+//
+// REAL data: features/orders.listOrders({role}) → OrderListItem (id, orderNo, status, totalMinor, counterparty,
+// createdAt), SWR-cached + keyset. The status badge/tone, the filter chips, the progress bar fill and the row CTA
+// are all derived purely from the REAL status (order-status.ts) — never fabricated. Tab counts are the number of
+// orders loaded for each role (first page), suffixed "+" when more pages exist (no count endpoint — honest).
+// "Pay Now" is a real order payment (payForOrder → gateway → webhook is the source of truth).
+//
+// HONEST GAPS (§13, never faked): the list read-model carries NO crop title / quantity / delivery-ETA / rating —
+// those live on OrderDetail (fetching per card would be an N+1, forbidden §5). So the card title is the real
+// counterparty, the thumb is a neutral 📦 (no product type on the list), and there is no fabricated ETA or
+// "you rated N". The crop/qty/rating show on the order DETAIL screen (tap the card).
+import React, { useCallback, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, FlatList, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import type { OrderListItem, OrderRole } from '@krishi-verse/sdk-js';
-import { Card, EmptyState, MoneyText, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import { formatDate } from '@krishi-verse/i18n';
+import { EmptyState, MoneyText, StatusPill, SkeletonCard, Button, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { listOrders } from '../../features/orders/orders.api';
-import { orderStatusTone } from '../../features/orders/order-status';
+import { payForOrder } from '../../features/payments/payments.api';
+import { orderStatusTone, matchesOrderFilter, orderProgress, orderListCta, counterpartyLabel, type OrderFilter, type OrderListCta } from '../../features/orders/order-status';
+
+const ROLES: OrderRole[] = ['buyer', 'seller'];
+const FILTERS: OrderFilter[] = ['all', 'in_transit', 'delivered', 'completed', 'cancelled'];
 
 export default function Orders() {
   const { t, lang } = useTranslation();
   const router = useRouter();
-  const [role, setRole] = useState<OrderRole>('seller');
-  const [items, setItems] = useState<OrderListItem[]>([]);
+  const [role, setRole] = useState<OrderRole>('buyer');
+  const [filter, setFilter] = useState<OrderFilter>('all');
+  const [byRole, setByRole] = useState<Record<OrderRole, OrderListItem[]>>({ buyer: [], seller: [] });
+  const [moreByRole, setMoreByRole] = useState<Record<OrderRole, boolean>>({ buyer: false, seller: false });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [busyPay, setBusyPay] = useState<string | null>(null);
 
-  const load = useCallback(async () => { setItems((await listOrders({ role })).items); setLoading(false); }, [role]);
+  const load = useCallback(async () => {
+    const [b, s] = await Promise.all([listOrders({ role: 'buyer' }), listOrders({ role: 'seller' })]);
+    setByRole({ buyer: b.items, seller: s.items });
+    setMoreByRole({ buyer: b.nextCursor !== null, seller: s.nextCursor !== null });
+    setLoading(false);
+  }, []);
   useFocusEffect(useCallback(() => { setLoading(true); load(); }, [load]));
   const onRefresh = useCallback(async () => { setRefreshing(true); try { await load(); } finally { setRefreshing(false); } }, [load]);
 
+  const items = byRole[role];
+  const filtered = useMemo(() => items.filter((o) => matchesOrderFilter(o.status, filter)), [items, filter]);
+
+  const onCta = async (o: OrderListItem, cta: OrderListCta) => {
+    if (cta === 'pay') {
+      setBusyPay(o.id);
+      try {
+        const res = await payForOrder(o.id, o.totalMinor);
+        const key = res.outcome === 'success' ? 'orders.pay.success' : res.outcome === 'failed' ? 'orders.pay.failed' : 'orders.pay.pending';
+        await load();
+        router.push({ pathname: '/(farmer)/orders/[id]', params: { id: o.id, role, notice: t(key), party: o.counterparty ?? '' } });
+      } catch { router.push({ pathname: '/(farmer)/orders/[id]', params: { id: o.id, role, party: o.counterparty ?? '' } }); }
+      finally { setBusyPay(null); }
+    } else if (cta === 'track') {
+      router.push({ pathname: '/(farmer)/orders/track', params: { id: o.id } });
+    } else if (cta === 'rate') {
+      router.push({ pathname: '/(farmer)/orders/review', params: { id: o.id } });
+    }
+  };
+
   return (
-    <ScreenScaffold title={t('tabs.orders')} scroll={false}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <View style={styles.appbar}>
+        <Text style={styles.appbarTitle}>{t('orders.title')}</Text>
+        {role === 'seller' ? (
+          <Pressable onPress={() => router.push('/(farmer)/orders/received')} accessibilityRole="button" hitSlop={8}>
+            <Text style={styles.appbarLink}>{t('ordersRecv.title')} →</Text>
+          </Pressable>
+        ) : null}
+      </View>
+
+      {/* Buyer / Seller tabs with counts */}
       <View style={styles.tabs}>
-        {(['seller', 'buyer'] as OrderRole[]).map((r) => {
+        {ROLES.map((r) => {
           const active = role === r;
+          const count = `${byRole[r].length}${moreByRole[r] ? '+' : ''}`;
           return (
-            <Pressable key={r} onPress={() => { setRole(r); setLoading(true); }} style={[styles.tab, active && styles.tabOn]} accessibilityRole="tab" accessibilityState={{ selected: active }}>
+            <Pressable key={r} onPress={() => setRole(r)} style={[styles.tab, active && styles.tabOn]} accessibilityRole="tab" accessibilityState={{ selected: active }}>
               <Text style={[styles.tabText, active && styles.tabTextOn]}>{t(`orders.role.${r}`)}</Text>
+              <View style={[styles.tabCount, active && styles.tabCountOn]}><Text style={[styles.tabCountTxt, active && styles.tabCountTxtOn]}>{count}</Text></View>
             </Pressable>
           );
         })}
       </View>
-      {loading ? <View style={{ gap: space[3], marginTop: space[3] }}><SkeletonCard /><SkeletonCard /></View> : (
+
+      {/* Status filter chips */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+        {FILTERS.map((f) => {
+          const active = filter === f;
+          return (
+            <Pressable key={f} onPress={() => setFilter(f)} style={[styles.chip, active && styles.chipOn]} accessibilityRole="button" accessibilityState={{ selected: active }}>
+              <Text style={[styles.chipTxt, active && styles.chipTxtOn]}>{t(`orders.filter.${f}`)}</Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {loading ? (
+        <View style={styles.body}><SkeletonCard lines={3} /><View style={{ height: space[3] }} /><SkeletonCard lines={3} /></View>
+      ) : (
         <FlatList
-          data={items}
+          data={filtered}
           keyExtractor={(o) => o.id}
-          style={{ marginTop: space[3] }}
+          contentContainerStyle={styles.list}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.primary600} />}
           ItemSeparatorComponent={() => <View style={{ height: space[3] }} />}
-          ListEmptyComponent={<EmptyState title={t('orders.empty.title')} message={t('orders.empty.message')} />}
+          ListEmptyComponent={<View style={styles.body}><EmptyState title={t('orders.empty.title')} message={t('orders.empty.message')} /></View>}
           renderItem={({ item }) => (
-            <Card onPress={() => router.push({ pathname: '/(farmer)/orders/[id]', params: { id: item.id, role } })} accessibilityLabel={t('orders.orderNo', { id: item.orderNo })}>
-              <View style={styles.row}>
-                <Text style={styles.id}>{t('orders.orderNo', { id: item.orderNo })}</Text>
-                <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                  <MoneyText minor={item.totalMinor} langCode={lang} />
-                  <StatusPill label={t(`orders.status.${item.status}`)} tone={orderStatusTone(item.status)} />
-                </View>
-              </View>
-            </Card>
+            <OrderCard item={item} role={role} t={t} lang={lang} busyPay={busyPay === item.id}
+              onOpen={() => router.push({ pathname: '/(farmer)/orders/[id]', params: { id: item.id, role, party: item.counterparty ?? '' } })}
+              onCta={onCta}
+            />
           )}
         />
       )}
-    </ScreenScaffold>
+    </SafeAreaView>
+  );
+}
+
+function OrderCard({ item, role, t, lang, busyPay, onOpen, onCta }: {
+  item: OrderListItem; role: OrderRole; t: (k: string, p?: Record<string, unknown>) => string; lang: string; busyPay: boolean;
+  onOpen: () => void; onCta: (o: OrderListItem, cta: OrderListCta) => void;
+}) {
+  const cta = orderListCta(item.status, role);
+  const pct = orderProgress(item.status);
+  const date = (() => { try { return item.createdAt ? formatDate(item.createdAt, lang, { dateStyle: 'medium' }) : ''; } catch { return ''; } })();
+  return (
+    <Pressable style={styles.card} onPress={onOpen} accessibilityRole="button" accessibilityLabel={t('orders.orderNo', { id: item.orderNo })}>
+      <View style={styles.cardHead}>
+        <Text style={styles.cardId}>{t('orders.orderNo', { id: item.orderNo })}</Text>
+        <StatusPill label={t(`orders.status.${item.status}`)} tone={orderStatusTone(item.status)} />
+      </View>
+      <View style={styles.cardBody}>
+        <View style={styles.thumb}><Text style={styles.thumbEmoji}>📦</Text></View>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={styles.cardTitle} numberOfLines={1}>{counterpartyLabel(item.counterparty) ?? t('orders.orderNo', { id: item.orderNo })}</Text>
+          {date ? <Text style={styles.cardMeta}>{date}</Text> : null}
+          <MoneyText minor={item.totalMinor} langCode={lang} size="md" tone="default" style={styles.cardPrice} />
+        </View>
+      </View>
+      <View style={styles.cardFoot}>
+        <View style={styles.progressMini}>
+          {pct > 0 ? <View style={styles.progressBar}><View style={[styles.progressFill, { width: `${pct}%` }]} /></View> : null}
+          <Text style={styles.progressLabel}><Text style={styles.progressStrong}>{t(`orders.status.${item.status}`)}</Text></Text>
+        </View>
+        {cta ? (
+          <Button
+            title={t(`orders.cta.${cta}`)}
+            size="sm"
+            variant={cta === 'pay' ? 'accent' : cta === 'track' ? 'outline' : 'ghost'}
+            loading={cta === 'pay' && busyPay}
+            onPress={() => onCta(item, cta)}
+          />
+        ) : null}
+      </View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  tabs: { flexDirection: 'row', gap: space[2] },
-  tab: { flex: 1, alignItems: 'center', paddingVertical: space[2], borderRadius: radius.pill, borderWidth: 1.5, borderColor: color.ink200, backgroundColor: color.card, minHeight: 44, justifyContent: 'center' },
-  tabOn: { borderColor: color.primary600, backgroundColor: color.primary50 },
-  tabText: { fontFamily: font.body, fontSize: font.size.md, color: color.ink600 },
-  tabTextOn: { color: color.primary800, fontWeight: font.weight.semibold },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  id: { fontFamily: font.body, fontSize: font.size.lg, fontWeight: font.weight.semibold, color: color.ink800 },
+  safe: { flex: 1, backgroundColor: color.page },
+  appbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space[5], paddingTop: space[2], paddingBottom: space[2] },
+  appbarTitle: { fontFamily: font.display, fontSize: font.size.lg, fontWeight: font.weight.bold, color: color.ink800 },
+  appbarLink: { fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.semibold, color: color.primary700 },
+
+  tabs: { flexDirection: 'row', paddingHorizontal: space[5], borderBottomWidth: 1, borderBottomColor: color.ink100, backgroundColor: color.card },
+  tab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: space[3], borderBottomWidth: 3, borderBottomColor: 'transparent' },
+  tabOn: { borderBottomColor: color.primary600 },
+  tabText: { fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.semibold, color: color.ink500 },
+  tabTextOn: { color: color.primary700 },
+  tabCount: { minWidth: 22, height: 22, paddingHorizontal: 6, borderRadius: 11, backgroundColor: color.earth200, alignItems: 'center', justifyContent: 'center' },
+  tabCountOn: { backgroundColor: color.primary600 },
+  tabCountTxt: { fontFamily: font.body, fontSize: font.size.xs, fontWeight: font.weight.bold, color: color.ink600 },
+  tabCountTxtOn: { color: color.white },
+
+  filters: { gap: space[2], paddingHorizontal: space[5], paddingVertical: space[3] },
+  chip: { paddingVertical: 6, paddingHorizontal: space[3], borderRadius: radius.pill, borderWidth: 1.5, borderColor: color.earth200, backgroundColor: color.card },
+  chipOn: { backgroundColor: color.primary50, borderColor: color.primary600 },
+  chipTxt: { fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.semibold, color: color.ink600 },
+  chipTxtOn: { color: color.primary700 },
+
+  body: { flex: 1, padding: space[5] },
+  list: { paddingHorizontal: space[5], paddingBottom: space[6] },
+
+  card: { backgroundColor: color.card, borderWidth: 1, borderColor: color.earth200, borderRadius: radius.lg, padding: space[3] },
+  cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: space[2], borderBottomWidth: 1, borderBottomColor: color.ink100, borderStyle: 'dashed', marginBottom: space[3] },
+  cardId: { fontFamily: font.body, fontSize: font.size.xs, fontWeight: font.weight.semibold, color: color.ink500 },
+  cardBody: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
+  thumb: { width: 60, height: 60, borderRadius: radius.md, backgroundColor: color.earth100, alignItems: 'center', justifyContent: 'center' },
+  thumbEmoji: { fontSize: 30 },
+  cardTitle: { fontFamily: font.display, fontSize: font.size.md, fontWeight: font.weight.bold, color: color.ink800 },
+  cardMeta: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink500, marginTop: 4 },
+  cardPrice: { marginTop: 4 },
+
+  cardFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[2], paddingTop: space[3], marginTop: space[3], borderTopWidth: 1, borderTopColor: color.ink100, borderStyle: 'dashed' },
+  progressMini: { flex: 1 },
+  progressBar: { height: 4, backgroundColor: color.earth200, borderRadius: 2, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: color.primary600, borderRadius: 2 },
+  progressLabel: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink500, marginTop: 4 },
+  progressStrong: { fontWeight: font.weight.bold, color: color.ink800 },
 });

@@ -3,9 +3,20 @@
 // pay) are ONLINE transitions that throw so the screen shows the precise outcome (422 wage-below-floor, 403
 // not-owner, 409 illegal-transition) — the server is the authority. create/assign/pay carry an Idempotency-Key
 // (Law 3). Money is bigint minor strings (Law 2); the app never moves money — payWages signals the server (Law 11).
-import type { WorkerProfile, LabourBooking, LabourAssignment, CreateBookingInput } from '@krishi-verse/sdk-js';
+import type { WorkerProfile, LabourBooking, LabourAssignment, CreateBookingInput, LabourLookups, ReviewSummary } from '@krishi-verse/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
+
+/** Labour lookups (work types, skills, regions) to resolve a worker's skill/region ids to localized names on the
+ * worker profile (screen 25). Degrades to null so the screen omits those bits rather than showing opaque ids. */
+export async function labourLookups(): Promise<LabourLookups | null> {
+  try { return await apiClient().labour.lookups(); } catch { return null; }
+}
+
+/** A worker's public rating summary (avg + count) keyed to their user id. Degrades to null. */
+export async function workerRatingSummary(userId: string): Promise<ReviewSummary | null> {
+  try { return await apiClient().reviews.summary({ targetUserId: userId }); } catch { return null; }
+}
 
 export interface WorkersPage { items: WorkerProfile[]; nextCursor: string | null }
 export interface BookingsPage { items: LabourBooking[]; nextCursor: string | null }
@@ -28,6 +39,14 @@ export async function getBooking(id: string): Promise<LabourBooking | null> {
 /** Assignments for a booking the caller owns (who accepted/declined). Degrades to []. */
 export async function bookingAssignments(bookingId: string): Promise<LabourAssignment[]> {
   try { return (await apiClient().labour.bookingAssignments(bookingId)).items; } catch { return []; }
+}
+
+/** The employer's bookings enriched with each booking's assigned worker (screen 50). Bounded to the loaded page;
+ * each assignment lookup degrades to null. No combined read-model yet, so we join client-side (§13). */
+export async function myBookingsWithWorkers(): Promise<Array<{ booking: LabourBooking; workerId: string | null }>> {
+  const { items } = await myBookings();
+  const workers = await Promise.all(items.map((b) => bookingAssignments(b.id).then((a) => a[0]?.workerId ?? null).catch(() => null)));
+  return items.map((b, i) => ({ booking: b, workerId: workers[i] }));
 }
 
 // --- mutations (throw on a real error) ---

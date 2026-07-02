@@ -21,6 +21,24 @@ export function canSend(text: string, hasAttachment: boolean): boolean {
   return (text ?? '').trim().length > 0 || hasAttachment;
 }
 
+/** UTC calendar-day key ('YYYY-MM-DD') for a message time, or '' when absent/unparseable. Pure — used to place
+ * the chat's day-divider system rows. */
+export function dayKey(iso?: string): string {
+  if (!iso) return '';
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return '';
+  return new Date(t).toISOString().slice(0, 10);
+}
+
+/** For a DESCENDING (newest-first, as the inverted FlatList holds) list of views, is index `i` the start of a new
+ * day group — i.e. the OLDEST message of its day (so a day divider renders visually above it)? True for the last
+ * item overall or when its day differs from the older neighbour (i+1). Pure. */
+export function isDayBoundary(views: readonly MessageView[], i: number): boolean {
+  if (i < 0 || i >= views.length) return false;
+  if (i === views.length - 1) return true;
+  return dayKey(views[i].createdAt) !== dayKey(views[i + 1].createdAt);
+}
+
 /** Trim + bound a text body to the server's max (4000) before sending. */
 export function normalizeBody(text: string): string {
   return (text ?? '').trim().slice(0, 4000);

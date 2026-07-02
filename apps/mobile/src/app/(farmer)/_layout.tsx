@@ -50,6 +50,9 @@ export default function FarmerTabsLayout() {
       <Tabs.Screen name="listings/[id]" options={{ href: null }} />
       <Tabs.Screen name="listings/preview" options={{ href: null }} />
       <Tabs.Screen name="listings/edit" options={{ href: null }} />
+      <Tabs.Screen name="listings/boost" options={{ href: null }} />
+      <Tabs.Screen name="listings/analytics" options={{ href: null }} />
+      <Tabs.Screen name="listings/repost" options={{ href: null }} />
       <Tabs.Screen name="create-auction" options={{ href: null }} />
       <Tabs.Screen name="wallet/add-money" options={{ href: null }} />
       <Tabs.Screen name="wallet/withdraw" options={{ href: null }} />
@@ -60,6 +63,8 @@ export default function FarmerTabsLayout() {
       <Tabs.Screen name="wallet/earnings" options={{ href: null }} />
       <Tabs.Screen name="wallet/statement" options={{ href: null }} />
       <Tabs.Screen name="orders/[id]" options={{ href: null }} />
+      <Tabs.Screen name="orders/received" options={{ href: null }} />
+      <Tabs.Screen name="orders/decision" options={{ href: null }} />
       <Tabs.Screen name="orders/pod" options={{ href: null }} />
       <Tabs.Screen name="orders/track" options={{ href: null }} />
       <Tabs.Screen name="orders/review" options={{ href: null }} />
@@ -70,16 +75,23 @@ export default function FarmerTabsLayout() {
       <Tabs.Screen name="notifications/settings" options={{ href: null }} />
       <Tabs.Screen name="hire/bookings" options={{ href: null }} />
       <Tabs.Screen name="hire/workers" options={{ href: null }} />
+      <Tabs.Screen name="hire/filter" options={{ href: null }} />
       <Tabs.Screen name="hire/worker/[id]" options={{ href: null }} />
       <Tabs.Screen name="hire/book" options={{ href: null }} />
+      <Tabs.Screen name="hire/book/task" options={{ href: null }} />
+      <Tabs.Screen name="hire/book/when" options={{ href: null }} />
+      <Tabs.Screen name="hire/book/review" options={{ href: null }} />
       <Tabs.Screen name="hire/sent" options={{ href: null }} />
       <Tabs.Screen name="hire/booking/[id]" options={{ href: null }} />
+      <Tabs.Screen name="hire/accepted/[id]" options={{ href: null }} />
+      <Tabs.Screen name="hire/declined/[id]" options={{ href: null }} />
       <Tabs.Screen name="mandi/index" options={{ href: null }} />
       <Tabs.Screen name="mandi/[id]" options={{ href: null }} />
       <Tabs.Screen name="mandi/history" options={{ href: null }} />
       <Tabs.Screen name="mandi/alerts" options={{ href: null }} />
       <Tabs.Screen name="weather/index" options={{ href: null }} />
       <Tabs.Screen name="weather/[id]" options={{ href: null }} />
+      <Tabs.Screen name="weather/detail" options={{ href: null }} />
       <Tabs.Screen name="weather/settings" options={{ href: null }} />
       <Tabs.Screen name="tips/index" options={{ href: null }} />
       <Tabs.Screen name="tips/[id]" options={{ href: null }} />

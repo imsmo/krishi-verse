@@ -41,11 +41,16 @@ export default function BuyerTabsLayout() {
       <Tabs.Screen name="filters" options={{ href: null }} />
       <Tabs.Screen name="listings/[id]" options={{ href: null }} />
       <Tabs.Screen name="seller/[id]" options={{ href: null }} />
+      <Tabs.Screen name="delivery" options={{ href: null }} />
+      <Tabs.Screen name="payment" options={{ href: null }} />
       <Tabs.Screen name="checkout" options={{ href: null }} />
       <Tabs.Screen name="addresses" options={{ href: null }} />
+      <Tabs.Screen name="kyc" options={{ href: null }} />
       <Tabs.Screen name="orders/[id]" options={{ href: null }} />
       <Tabs.Screen name="orders/track" options={{ href: null }} />
+      <Tabs.Screen name="orders/report" options={{ href: null }} />
       <Tabs.Screen name="make-offer" options={{ href: null }} />
+      <Tabs.Screen name="inquiry" options={{ href: null }} />
       <Tabs.Screen name="offers" options={{ href: null }} />
       <Tabs.Screen name="offers/[id]" options={{ href: null }} />
       <Tabs.Screen name="chats" options={{ href: null }} />

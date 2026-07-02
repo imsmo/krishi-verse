@@ -8,24 +8,33 @@ import type { ListingCard } from '@krishi-verse/sdk-js';
 import { Card, MoneyText, StatusPill, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 
-export function BuyerListingCard({ card, langCode, saved, onPress, onToggleSave, saveLabel }: {
+export function BuyerListingCard({ card, langCode, saved, onPress, onToggleSave, saveLabel, glyph, priceOverrideMinor, dropLabel }: {
   card: ListingCard; langCode: string; saved: boolean; onPress: () => void; onToggleSave: () => void; saveLabel: string;
+  /** Presentational crop glyph (default 🌾) — the title is the real datum; the emoji is iconography only. */
+  glyph?: string;
+  /** Current (live) price to show instead of the card's stored price — the Saved screen (126) passes the refreshed
+   *  price so the row reflects "now", while the card's own priceMinor is the save-time price. */
+  priceOverrideMinor?: string;
+  /** Ready-formatted "↓ ₹X since saved" badge (money + i18n formatted by the caller). Only when there's a real drop. */
+  dropLabel?: string | null;
 }) {
   const { t } = useTranslation();
   return (
     <Card onPress={onPress} accessibilityLabel={card.title}>
       <View style={styles.row}>
-        <View style={styles.thumb} accessibilityElementsHidden importantForAccessibility="no"><Text style={styles.thumbGlyph}>🌾</Text></View>
+        <View style={styles.thumb} accessibilityElementsHidden importantForAccessibility="no"><Text style={styles.thumbGlyph}>{glyph ?? '🌾'}</Text></View>
         <View style={styles.body}>
           <Text style={styles.title} numberOfLines={1}>{card.title}</Text>
           <Text style={styles.qty}>{card.quantityAvailable} {card.unitCode}</Text>
           <View style={styles.pills}>
             {card.organicClaim ? <StatusPill label={t('listings.organic')} tone="success" /> : null}
+            {card.saleType === 'auction' || card.auctionId ? <StatusPill label={t('buyer.card.auction')} tone="accent" /> : null}
             {card.boosted ? <StatusPill label={t('buyer.promoted')} tone="accent" /> : null}
+            {dropLabel ? <StatusPill label={dropLabel} tone="success" /> : null}
           </View>
         </View>
         <View style={styles.right}>
-          <MoneyText minor={card.priceMinor} currencyCode={card.currencyCode} langCode={langCode} size="lg" />
+          <MoneyText minor={priceOverrideMinor ?? card.priceMinor} currencyCode={card.currencyCode} langCode={langCode} size="lg" />
           <Pressable onPress={onToggleSave} hitSlop={10} accessibilityRole="button" accessibilityLabel={saveLabel} accessibilityState={{ selected: saved }}>
             <Text style={[styles.heart, saved && styles.heartOn]}>{saved ? '♥' : '♡'}</Text>
           </Pressable>

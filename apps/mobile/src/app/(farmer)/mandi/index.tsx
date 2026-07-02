@@ -1,45 +1,90 @@
-// apps/mobile/src/app/(farmer)/mandi/index.tsx · screen 52 (mandi prices — browse yards). Thin screen (guide §3):
-// lists mandis (market yards) near the farmer's region; tapping a yard opens its live prices. Entry to price
-// alerts. Behind `mandi_weather`. Keyset; degrade-never-die.
-import React, { useCallback, useState } from 'react';
+// apps/mobile/src/app/(farmer)/mandi/index.tsx · screen 52 "Today's Mandi Prices". Thin screen (guide §3): the
+// region's latest mandi price rows (GET /market/prices?regionId), each showing the commodity name, yard · grade,
+// the modal price (bigint paise via MoneyText, Law 2) and its unit. A location + "updated … ago" header and the
+// design's category chips. Tapping a row opens that yard's detail (or price alerts). Behind `mandi_weather`.
+// Degrade-never-die: loading skeleton, designed empty, inline retry.
+// §13 gaps (no contract → rendered honestly, never faked): the price read-model carries no commodity CATEGORY
+// (so the chips beyond "All" are disabled) and no day-over-day CHANGE% (computing it per row would be N+1) — a
+// mandi pulse-list read-model is the production path; we never invent an arrow or a category.
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { Mandi } from '@krishi-verse/sdk-js';
-import { Card, EmptyState, ScreenScaffold, SkeletonCard, color, font, space } from '@krishi-verse/ui-native';
+import type { MandiPrice } from '@krishi-verse/sdk-js';
+import { formatRelative } from '@krishi-verse/i18n';
+import { Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
-import { listMandis, defaultRegionId } from '../../../features/market/market.api';
+import { listPrices, defaultRegionId } from '../../../features/market/market.api';
+import { latestPriceDate, headerRegion, MANDI_CATEGORIES } from '../../../features/market/mandi-list';
 
 export default function MandiPrices() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('mandi_weather');
-  const [items, setItems] = useState<Mandi[]>([]);
+  const [items, setItems] = useState<MandiPrice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
 
   const load = useCallback(async () => {
+    setLoading(true); setFailed(false);
     const region = await defaultRegionId();
-    const r = await listMandis(region ?? undefined);
-    setItems(r.items); setLoading(false);
+    const r = await listPrices({ regionId: region ?? undefined });
+    setItems(r.items); setFailed(false); setLoading(false);
   }, []);
   useFocusEffect(useCallback(() => { if (enabled) { setLoading(true); load(); } }, [enabled, load]));
+
+  const region = useMemo(() => headerRegion(items), [items]);
+  const updated = useMemo(() => latestPriceDate(items), [items]);
 
   if (!enabled) return <ScreenScaffold title={t('mandi.title')}><EmptyState title={t('common.unavailable')} /></ScreenScaffold>;
 
   return (
     <ScreenScaffold title={t('mandi.title')}>
-      <Pressable onPress={() => router.push('/(farmer)/mandi/alerts')} accessibilityRole="button"><Text style={styles.link}>🔔 {t('mandi.alerts.title')} →</Text></Pressable>
-      {loading ? <SkeletonCard lines={5} /> : items.length === 0 ? (
+      {loading ? <SkeletonCard lines={8} /> : failed || items.length === 0 ? (
         <EmptyState title={t('mandi.empty.title')} message={t('mandi.empty.message')} actionLabel={t('common.retry')} onAction={load} />
       ) : (
         <FlatList
           data={items}
-          keyExtractor={(m) => m.id}
+          keyExtractor={(p) => p.id}
+          ListHeaderComponent={
+            <View>
+              <Text style={styles.h1}>{t('mandi.todayTitle')}</Text>
+              <Text style={styles.h1vern}>{t('mandi.todaySubtitle')}</Text>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaTxt}>📍 {region ?? t('mandi.regionUnknown')}</Text>
+                {updated ? <Text style={styles.metaTxt}>🕐 {t('mandi.updated', { ago: safeRelative(updated, lang) })}</Text> : null}
+              </View>
+              {/* Category chips — only "All" is wired; the rest await a category field on the price read-model (§13). */}
+              <View style={styles.chips}>
+                {MANDI_CATEGORIES.map((c) => {
+                  const active = c === 'all';
+                  return (
+                    <View key={c} style={[styles.chip, active ? styles.chipOn : styles.chipDisabled]} accessibilityState={{ disabled: !active, selected: active }}>
+                      <Text style={[styles.chipTxt, active && styles.chipTxtOn]}>{t(`mandi.category.${c}`)}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+              <Text style={styles.note}>{t('mandi.filterSoon')}</Text>
+            </View>
+          }
           renderItem={({ item }) => (
-            <Pressable onPress={() => router.push({ pathname: '/(farmer)/mandi/[id]', params: { id: item.id } })} accessibilityRole="button">
+            <Pressable
+              onPress={() => router.push({ pathname: '/(farmer)/mandi/[id]', params: { id: item.productId, regionId: item.regionId ?? '' } })}
+              accessibilityRole="button"
+            >
               <Card style={styles.card}>
-                <Text style={styles.name}>{item.defaultName}</Text>
-                {item.mandiCode ? <Text style={styles.code}>{item.mandiCode}</Text> : null}
+                <View style={styles.thumb}><Text style={styles.thumbGlyph}>🌾</Text></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.name} numberOfLines={1}>{item.productName ?? t('mandi.commodity')}</Text>
+                  <Text style={styles.sub} numberOfLines={1}>
+                    {(item.regionName ?? region ?? '—')}{item.gradeName ? ` · ${item.gradeName}` : ''}
+                  </Text>
+                </View>
+                <View style={styles.priceCol}>
+                  <MoneyText minor={item.modalMinor} langCode={lang} size="lg" />
+                  <Text style={styles.unit}>{t('mandi.perUnit', { unit: item.unitCode })}</Text>
+                </View>
               </Card>
             </Pressable>
           )}
@@ -50,9 +95,26 @@ export default function MandiPrices() {
   );
 }
 
+function safeRelative(value: string, lang: string): string { try { return formatRelative(value, lang); } catch { return value; } }
+
 const styles = StyleSheet.create({
-  link: { fontFamily: font.body, fontSize: font.size.md, fontWeight: font.weight.semibold, color: color.primary700, paddingVertical: space[2] },
-  card: { marginBottom: space[2] },
+  h1: { fontFamily: font.display, fontSize: font.size.xl, fontWeight: font.weight.bold, color: color.ink900 },
+  h1vern: { fontFamily: font.body, fontSize: font.size.md, color: color.ink500, marginTop: 2 },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[3], marginTop: space[2] },
+  metaTxt: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink600 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2], marginTop: space[3] },
+  chip: { paddingHorizontal: space[3], paddingVertical: space[2], borderRadius: radius.pill },
+  chipOn: { backgroundColor: color.primary600 },
+  chipDisabled: { backgroundColor: color.earth100, opacity: 0.6 },
+  chipTxt: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink600, fontWeight: font.weight.semibold },
+  chipTxtOn: { color: color.white },
+  note: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink400, marginTop: space[2], marginBottom: space[3] },
+
+  card: { flexDirection: 'row', alignItems: 'center', gap: space[3], marginBottom: space[2] },
+  thumb: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: color.earth100, alignItems: 'center', justifyContent: 'center' },
+  thumbGlyph: { fontSize: 22 },
   name: { fontFamily: font.body, fontSize: font.size.md, fontWeight: font.weight.semibold, color: color.ink800 },
-  code: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink500, marginTop: space[1] },
+  sub: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink500, marginTop: 2 },
+  priceCol: { alignItems: 'flex-end' },
+  unit: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink500, marginTop: 2 },
 });

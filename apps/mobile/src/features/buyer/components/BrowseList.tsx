@@ -13,8 +13,11 @@ import { browseListings } from '../browse.api';
 import { getSavedListings, toggleSavedListing } from '../saved.api';
 import { BuyerListingCard } from './BuyerListingCard';
 
-export function BrowseList({ query, ListHeader, emptyTitle, emptyMessage }: {
+export function BrowseList({ query, ListHeader, emptyTitle, emptyMessage, onCountChange }: {
   query: ListingQuery; ListHeader?: React.ReactElement; emptyTitle: string; emptyMessage?: string;
+  /** Reports the number of listings CURRENTLY loaded (grows as pages are appended). The read-model has no total
+   *  count, so screens surface this honest loaded-count — never a fabricated grand total (§13). */
+  onCountChange?: (loaded: number, hasMore: boolean) => void;
 }) {
   const { t, lang } = useTranslation();
   const router = useRouter();
@@ -56,6 +59,8 @@ export function BrowseList({ query, ListHeader, emptyTitle, emptyMessage }: {
     const next = await toggleSavedListing(card);
     setSavedIds(new Set(next.map((l) => l.id)));
   }, []);
+
+  useEffect(() => { onCountChange?.(items.length, cursor !== null); }, [items.length, cursor, onCountChange]);
 
   if (loading) return <View style={{ gap: space[3] }}>{ListHeader}<SkeletonCard /><SkeletonCard /><SkeletonCard /></View>;
 

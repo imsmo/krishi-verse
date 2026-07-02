@@ -1,8 +1,43 @@
 // Unit tests for the PURE offer + chat logic. No React/native deps (SDK/ui types are type-only). Money is bigint
 // minor strings (Law 2) — the rupee→paise helper uses BigInt, never a float.
-import { offerStatusTone, offerActions, isNegotiable, currentOfferPriceMinor, rupeesToOfferMinor, normalizeQuantity } from '../../features/offers/offer-status';
-import { presentMessage, canSend, normalizeBody } from '../../features/messaging/message-view';
+import { offerStatusTone, offerActions, isNegotiable, currentOfferPriceMinor, rupeesToOfferMinor, normalizeQuantity, offerTotalMinor, pctDiffVsAsk, listPriceRupees } from '../../features/offers/offer-status';
+
+describe('make-offer preview (screen 99)', () => {
+  it('offerTotalMinor = per-unit × qty (bigint, decimal qty)', () => {
+    expect(offerTotalMinor('265000', '2')).toBe('530000');       // ₹2,650 × 2 = ₹5,300
+    expect(offerTotalMinor('265000', '2.5')).toBe('662500');     // × 2.5
+    expect(offerTotalMinor('265000', '')).toBe('0');
+    expect(offerTotalMinor('bad', '2')).toBe('0');
+  });
+  it('pctDiffVsAsk rounds signed % (positive = below ask)', () => {
+    expect(pctDiffVsAsk('265000', '288000')).toBe(8);   // ~8% below
+    expect(pctDiffVsAsk('288000', '288000')).toBe(0);
+    expect(pctDiffVsAsk('300000', '288000')).toBe(-4);  // above ask
+    expect(pctDiffVsAsk('265000', '0')).toBeNull();
+  });
+  it('listPriceRupees strips paise', () => {
+    expect(listPriceRupees('288000')).toBe('2880');
+    expect(listPriceRupees('x')).toBe('');
+  });
+});
+import { presentMessage, canSend, normalizeBody, dayKey, isDayBoundary } from '../../features/messaging/message-view';
 import type { Message } from '@krishi-verse/sdk-js';
+
+describe('chat day dividers (screen 98)', () => {
+  const v = (id: string, createdAt?: string) => ({ id, mine: false, kind: 'text' as const, body: 'x', mediaId: null, flagged: false, createdAt });
+  it('dayKey returns UTC yyyy-mm-dd or empty', () => {
+    expect(dayKey('2026-08-18T14:15:00Z')).toBe('2026-08-18');
+    expect(dayKey(undefined)).toBe('');
+    expect(dayKey('nope')).toBe('');
+  });
+  it('marks the oldest message of each day (desc list) as a boundary', () => {
+    // newest-first: two on 08-18, one on 08-17
+    const views = [v('a', '2026-08-18T14:20:00Z'), v('b', '2026-08-18T14:15:00Z'), v('c', '2026-08-17T09:00:00Z')];
+    expect(isDayBoundary(views, 0)).toBe(false); // newest of 18th
+    expect(isDayBoundary(views, 1)).toBe(true);  // oldest of 18th → divider above
+    expect(isDayBoundary(views, 2)).toBe(true);  // last item overall
+  });
+});
 
 describe('offer-status', () => {
   it('maps status → tone', () => {

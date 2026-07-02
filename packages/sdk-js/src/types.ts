@@ -48,12 +48,20 @@ export interface ProductCard { id: string; name: string; categoryId: string; def
 export interface BoostTier { id: string; code: string; name: string; priceMinor: string; days: number; }
 /** Result of paying for a boost from the wallet (server-resolved price; boost recorded immediately). */
 export interface BoostWalletPayResult { ok: boolean; boostId: string; endsAt: string; priceMinor: string; days: number; txnId: string; }
+/** One day's counted views (UTC day, YYYY-MM-DD). */
+export interface ViewsByDayPoint { day: string; views: number }
+
 /** A seller's own-listing engagement analytics. Real metrics only (no fabricated impression/view count). */
 export interface ListingAnalytics {
   listingId: string; status: string; publishedAt: string | null;
   offers: number; priceChanges: number; boostsPurchased: number;
   /** Real per-impression view count (P1-15), fed by the event pipeline; 0 until the first view lands. */
   views: number; lastViewedAt: string | null;
+  /** Real saved/watchlist count for this listing (mid-funnel demand signal); 0 until the first save. */
+  savedCount: number;
+  /** Real per-UTC-day view buckets, trailing 7 days (listing_view_daily); empty until the first view, gaps
+   *  omitted (the client fills missing days with 0). Never fabricated. */
+  viewsByDay: ViewsByDayPoint[];
   activeBoost: { endsAt: string } | null;
 }
 

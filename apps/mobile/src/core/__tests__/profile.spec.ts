@@ -4,7 +4,56 @@
 import {
   isValidEmail, buildProfilePatch, ticketStatusTone, severityTone, canRateCsat, resolutionSlaState,
   buildTicketDraft, parcelAreaLabel, parcelStatusTone, buildParcelDraft, bankLabel, isValidVpa, TICKET_SEVERITIES,
+  initials, landHoldingLabel, bankCodeFromIfsc, reportIssueSeverity, composeReportSubject,
 } from '../../features/profile/profile';
+
+describe('report-a-problem helpers', () => {
+  it('maps issue type → default severity (fraud=P0, app=P3, unknown=P2)', () => {
+    expect(reportIssueSeverity('fraud')).toBe('P0');
+    expect(reportIssueSeverity('app')).toBe('P3');
+    expect(reportIssueSeverity('payment')).toBe('P1');
+    expect(reportIssueSeverity('zzz')).toBe('P2');
+  });
+  it('composes a subject from issue + order ref + description', () => {
+    expect(composeReportSubject({ issueLabel: 'Payment not received', orderRef: 'KV-1', description: 'pending since Aug 13' }))
+      .toBe('Payment not received [KV-1]: pending since Aug 13');
+    expect(composeReportSubject({ issueLabel: 'App not working' })).toBe('App not working');
+    expect(composeReportSubject({ description: 'just text' })).toBe('just text');
+    expect(composeReportSubject({})).toBe('');
+  });
+});
+
+describe('bankCodeFromIfsc', () => {
+  it('takes the 4-letter bank code from a valid IFSC; null otherwise', () => {
+    expect(bankCodeFromIfsc('SBIN0001247')).toBe('SBIN');
+    expect(bankCodeFromIfsc('hdfc0000287')).toBe('HDFC');
+    expect(bankCodeFromIfsc('BADIFSC')).toBeNull();
+    expect(bankCodeFromIfsc(null)).toBeNull();
+  });
+});
+
+describe('initials', () => {
+  it('takes first + last word letters; degrades to ?', () => {
+    expect(initials('Ramesh Patel')).toBe('RP');
+    expect(initials('ramesh')).toBe('R');
+    expect(initials('  ')).toBe('?');
+    expect(initials(null)).toBe('?');
+  });
+});
+
+describe('landHoldingLabel', () => {
+  const p = (area: string, areaUnit: string, isTenantFarmed = false) => ({ area, areaUnit, isTenantFarmed });
+  it('sums same-unit areas + reports ownership', () => {
+    expect(landHoldingLabel([p('3', 'acre'), p('2', 'acre')])).toEqual({ area: '5', unit: 'acre', mixedUnits: false, ownership: 'owned' });
+  });
+  it('flags mixed units + mixed ownership', () => {
+    const r = landHoldingLabel([p('3', 'acre', false), p('1', 'ha', true)]);
+    expect(r!.mixedUnits).toBe(true);
+    expect(r!.ownership).toBe('mixed');
+    expect(r!.area).toBe('3');
+  });
+  it('null when no parcels', () => { expect(landHoldingLabel([])).toBeNull(); });
+});
 
 describe('isValidEmail / isValidVpa', () => {
   it('accepts valid and rejects invalid (bounded, no ReDoS)', () => {

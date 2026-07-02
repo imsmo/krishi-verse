@@ -6,7 +6,7 @@
 // client never moves money, Law 11). FLAG_SECURE (payment surface). Behind `buyer_checkout`. Degrade-never-die.
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SdkError, type Address, type Cart } from '@krishi-verse/sdk-js';
 import { Button, Card, Input, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
@@ -23,6 +23,8 @@ export default function Checkout() {
   const router = useRouter();
   const enabled = useFlag('buyer_checkout');
   const payEnabled = useFlag('payments_addmoney');
+  // The delivery step (129) forwards the chosen address + method; both are re-validated server-side at placeOrder.
+  const params = useLocalSearchParams<{ addressId?: string; methodId?: string }>();
 
   const [cart, setCart] = useState<Cart | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -36,9 +38,11 @@ export default function Checkout() {
     setLoading(true);
     const [c, a] = await Promise.all([getCart(), listAddresses()]);
     setCart(c); setAddresses(a);
-    setAddressId((prev) => prev ?? a.find((x) => x.isDefault)?.id ?? a[0]?.id ?? null);
+    // Prefer the address forwarded from the delivery step (if still valid), else the default/first.
+    const fromParam = params.addressId && a.some((x) => x.id === params.addressId) ? params.addressId : undefined;
+    setAddressId((prev) => prev ?? fromParam ?? a.find((x) => x.isDefault)?.id ?? a[0]?.id ?? null);
     setLoading(false);
-  }, []);
+  }, [params.addressId]);
   useEffect(() => { if (enabled) load(); }, [enabled, load]);
 
   if (!enabled) return <ScreenScaffold title={t('checkout.title')}><EmptyState title={t('common.unavailable')} /></ScreenScaffold>;
@@ -46,7 +50,7 @@ export default function Checkout() {
   const onPlace = async () => {
     setBusy(true); setError(undefined);
     try {
-      const res = await placeOrder({ deliveryAddressId: addressId ?? undefined, couponCode: coupon.trim() || undefined });
+      const res = await placeOrder({ deliveryAddressId: addressId ?? undefined, deliveryMethodId: params.methodId || undefined, couponCode: coupon.trim() || undefined });
       const primary = res.orders[0];
       if (!primary) { setError(t('checkout.failed')); return; }
       // Pay the primary order if online payments are on; escrow held server-side on capture.

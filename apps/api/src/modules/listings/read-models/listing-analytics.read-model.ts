@@ -15,10 +15,17 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 
+export interface ViewsByDayPoint { day: string; views: number }
+
 export interface ListingAnalytics {
   listingId: string; status: string; publishedAt: string | null;
   offers: number; priceChanges: number; boostsPurchased: number; views: number;
+  // savedCount: buyers who saved/watchlisted this listing (saved_items) — a real mid-funnel demand signal.
+  savedCount: number;
   lastViewedAt: string | null;
+  // viewsByDay: real per-UTC-day view buckets (last 7 days) from listing_view_daily (0054); gaps absent → client
+  // fills with 0. Never fabricated. (Search-impression counts + per-viewer geo remain an honest, flagged gap.)
+  viewsByDay: ViewsByDayPoint[];
   activeBoost: { endsAt: string } | null;
 }
 
@@ -35,7 +42,7 @@ export class ListingAnalyticsReadModel {
     if (!listing) return null;
     if (!canModerate && listing.seller_user_id !== viewerUserId) return null;   // owner-only (anti-IDOR)
 
-    const [offers, priceChanges, boosts, views] = await Promise.all([
+    const [offers, priceChanges, boosts, views, saved, daily] = await Promise.all([
       db.query<{ n: string }>(`SELECT count(*)::text AS n FROM listing_offers WHERE listing_id=$1`, [listingId]),
       db.query<{ n: string }>(`SELECT count(*)::text AS n FROM listing_price_history WHERE listing_id=$1`, [listingId]),
       db.query<{ n: string; ends_at: Date | null }>(
@@ -44,6 +51,14 @@ export class ListingAnalyticsReadModel {
       // P1-15: real view count from the counted read-model (0 row ⇒ no views yet, never fabricated).
       db.query<{ total: string; last_viewed_at: Date | null }>(
         `SELECT total_views::text AS total, last_viewed_at FROM listing_view_counts WHERE listing_id=$1`, [listingId]),
+      // Real saved/watchlist count for THIS listing (a genuine mid-funnel demand signal; RLS scopes to tenant).
+      db.query<{ n: string }>(
+        `SELECT count(*)::text AS n FROM saved_items WHERE entity_type='listing' AND entity_id=$1`, [listingId]),
+      // Real per-day view buckets, trailing 7 UTC days (0054). Gaps are absent rows; the client fills with 0.
+      db.query<{ day: Date; views: string }>(
+        `SELECT day, views::text AS views FROM listing_view_daily
+           WHERE listing_id=$1 AND day >= (now() AT TIME ZONE 'UTC')::date - INTERVAL '6 days'
+           ORDER BY day ASC`, [listingId]),
     ]);
     const activeEnds = boosts.rows[0]?.ends_at;
     const viewRow = views.rows[0];
@@ -53,7 +68,12 @@ export class ListingAnalyticsReadModel {
       priceChanges: Number(priceChanges.rows[0]?.n ?? 0),
       boostsPurchased: Number(boosts.rows[0]?.n ?? 0),
       views: Number(viewRow?.total ?? 0),
+      savedCount: Number(saved.rows[0]?.n ?? 0),
       lastViewedAt: viewRow?.last_viewed_at ? new Date(viewRow.last_viewed_at).toISOString() : null,
+      viewsByDay: daily.rows.map((r) => ({
+        day: (r.day instanceof Date ? r.day.toISOString() : String(r.day)).slice(0, 10), // YYYY-MM-DD
+        views: Number(r.views),
+      })),
       activeBoost: activeEnds ? { endsAt: new Date(activeEnds).toISOString() } : null,
     };
   }

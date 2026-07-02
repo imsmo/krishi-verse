@@ -12,6 +12,15 @@ export function createAddress(input: { line1: string; line2?: string; village?: 
   return apiClient().addresses.create(input);
 }
 
+export function updateAddress(id: string, patch: Partial<{ line1: string; line2: string; village: string; pincode: string; contactName: string; contactPhone: string; isDefault: boolean }>): Promise<Address> {
+  return apiClient().addresses.update(id, patch); // throws so the edit form shows the outcome
+}
+
+/** Make an address the delivery default (screen 134 "Make primary"). The server flips the previous default off. */
+export function setPrimaryAddress(id: string): Promise<Address> {
+  return apiClient().addresses.update(id, { isDefault: true });
+}
+
 export function deleteAddress(id: string): Promise<{ ok: boolean }> {
   return apiClient().addresses.remove(id);
 }

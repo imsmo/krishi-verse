@@ -35,6 +35,15 @@ export async function payForOrder(orderId: string, amountMinor: string, prefill?
   return { outcome: final, paymentId: intent.paymentId };
 }
 
+/** Pay for a placed order from the KV WALLET balance (screen 130). Idempotent (Law 3) server move; escrow is held
+ * SERVER-SIDE (the client never moves money — Law 11). Returns 'success' on a terminal wallet capture, else
+ * 'pending' so the order screen reconciles. Throws only on a hard error the screen should surface. */
+export async function payOrderFromWallet(orderId: string): Promise<AddMoneyResult> {
+  const res = await apiClient().orders.payFromWallet(orderId, newId());
+  const outcome: PaymentOutcome = isTerminal(res.status) ? paymentOutcome(res.status) : 'pending';
+  return { outcome, paymentId: res.paymentId };
+}
+
 /** Poll GET /payments/:id until terminal or attempts exhausted. Network errors don't throw — they keep the
  * outcome 'pending' (the wallet reconciles once the webhook lands). */
 export async function pollPaymentStatus(paymentId: string, attempts = 5, delayMs = 1500): Promise<PaymentOutcome> {

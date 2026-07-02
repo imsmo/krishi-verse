@@ -38,6 +38,13 @@ export async function markRead(id: string): Promise<void> {
   await cache.invalidate(currentScope(), 'notifications.inbox');
 }
 
+/** Mark several notifications read ("Mark all read", screen 28). Each server call is idempotent; failures are
+ * swallowed per-item (degrade-never-die). Refreshes the cached inbox once at the end. */
+export async function markAllRead(ids: string[]): Promise<void> {
+  await Promise.all(ids.map((id) => apiClient().notifications.markRead(id).catch(() => {})));
+  await cache.invalidate(currentScope(), 'notifications.inbox');
+}
+
 export async function getPreferences(): Promise<NotificationPreference[]> {
   try { return await apiClient().notifications.getPreferences(); } catch { return []; }
 }

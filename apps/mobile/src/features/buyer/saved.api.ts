@@ -57,3 +57,17 @@ export async function removeSavedSearch(id: string): Promise<SavedSearch[]> {
   await save('searches', next);
   return next;
 }
+
+// --- recent searches (screen 128 "Recent searches") — the raw query terms the buyer actually typed, most-recent-
+// first, deduped (case-insensitive) + capped. Recorded by the Search screen (67) on leave; the Saved screen offers
+// "+ Save" to promote one into a saved-search alert. On-device (non-secret), user-scoped. ---
+const RECENT_MAX = 10;
+export function getRecentSearches(): Promise<string[]> { return load<string>('recent'); }
+export async function pushRecentSearch(q: string): Promise<string[]> {
+  const term = (q ?? '').trim();
+  if (!term) return getRecentSearches();
+  const next = capList(dedupeBy([term, ...(await getRecentSearches())], (s) => s.toLowerCase()), RECENT_MAX);
+  await save('recent', next);
+  return next;
+}
+export async function clearRecentSearches(): Promise<void> { await save('recent', []); }
