@@ -18,7 +18,7 @@ const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/; // bounded, no cata
 export function isValidEmail(email: string): boolean { return EMAIL_RE.test(email.trim()); }
 
 export interface ProfileForm { fullName?: string; languageCode?: string; email?: string }
-export interface ProfilePatch { fullName?: string; languageCode?: string; email?: string }
+export interface ProfilePatch { fullName?: string; languageCode?: string; email?: string; gender?: 'male' | 'female' | 'other' | 'undisclosed' }
 export interface ProfileDraft { ok: boolean; patch?: ProfilePatch; reason?: 'empty' | 'name' | 'email' }
 /** Assemble a PATCH /users/me payload from the form. Drops blanks (only changed fields sent); validates email +
  * a non-empty trimmed name. Returns `empty` if nothing to change. The server re-validates (zod .strict). */

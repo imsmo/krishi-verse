@@ -107,16 +107,39 @@ export interface WalletLedgerEntry { entryId: string; txnId: string; txnType: st
 export interface BankAccount { id: string; accountKind: 'bank' | 'upi'; upiId?: string | null; accountLast4?: string | null; ifsc?: string | null; holderName?: string | null; isPrimary: boolean; }
 /** A money-insights bucket: a month ('YYYY-MM') or a txn-type code, with the total (bigint minor-unit string). */
 export interface InsightBucket { key: string; amountMinor: string; count: number; }
-/** Aggregated earnings (credits) or spending (debits, positive magnitudes) over a bounded window. */
-export interface WalletInsights { fromIso: string; toIso: string; currencyCode: string; totalMinor: string; byMonth: InsightBucket[]; byType: InsightBucket[]; }
+/** Aggregated earnings (credits) or spending (debits, positive magnitudes) over a bounded window.
+ *  `byCrop` is present only on earnings requested with `groupBy:'crop'` — key = order product title (P0-3). */
+export interface WalletInsights { fromIso: string; toIso: string; currencyCode: string; totalMinor: string; byMonth: InsightBucket[]; byType: InsightBucket[]; byCrop?: InsightBucket[]; }
+/** P0-3 statement export payload: a downloadable ledger file. `content` is base64 (pdf) or utf8 (csv). */
+export interface WalletStatementFile { filename: string; contentType: string; encoding: 'base64' | 'utf8'; content: string; rowCount: number; }
 /** A UPI AutoPay mandate (standing instruction). vpaMasked is "ab***@psp" — never the raw VPA. No money lives here. */
 export interface AutopayMandate { id: string; status: 'pending' | 'active' | 'paused' | 'cancelled' | 'expired'; purpose: string; vpaMasked: string; provider: string; maxAmountMinor: string; currencyCode: string; frequency: string; validUntil: string | null; createdAt: string; }
+/** One UPI AutoPay collection attempt (P0-4). Money moved through the wallet ledger (ledgerTxnId); never holds money. */
+export interface MandateExecution { id: string; mandateId: string; amountMinor: string; currencyCode: string; status: 'pending' | 'collected' | 'failed'; providerPaymentRef: string | null; ledgerTxnId: string | null; failureReason: string | null; createdAt: string; }
+/** The caller's OWN saved instruments (P0-4). Nothing sensitive: masked UPI handles + bank last-4 / IFSC only. */
+export interface SavedMandateInstrument { kind: 'upi_autopay'; id: string; handleMasked: string; status: string; purpose: string; maxAmountMinor: string; currencyCode: string; }
+export interface SavedBankInstrument { kind: 'bank' | 'upi'; id: string; last4: string | null; ifsc: string | null; upiMasked: string | null; holderName: string | null; isPrimary: boolean; verified: boolean; }
+export interface SavedInstruments { mandates: SavedMandateInstrument[]; accounts: SavedBankInstrument[]; }
 
 // --- KYC (module 1, identity) — never carries raw doc numbers, only masked + media refs ---
 export type KycStatus = 'pending' | 'verified' | 'rejected' | 'expired';
 export interface KycDocument { id: string; status: KycStatus; docTypeId?: string; mediaId?: string; docNoMasked?: string | null; rejectReason?: string | null; createdAt?: string; }
 /** A selectable KYC document type from the seeded 'doc_type' catalogue (id to submit + name to show). */
 export interface KycDocType { id: string; code: string; name: string; }
+
+// --- Business KYC (buyer, P0-5). Server stores + returns MASKED GSTIN/PAN only — never the raw tax id. ---
+export type BusinessType = 'proprietorship' | 'partnership' | 'pvt_ltd' | 'llp' | 'fpo' | 'cooperative' | 'trader' | 'huf' | 'other';
+export interface BusinessKycStatus {
+  status: 'none' | 'pending' | 'verified' | 'rejected' | 'expired';
+  businessType: BusinessType | null;
+  legalName: string | null;
+  gstinMasked: string | null;
+  panMasked: string | null;
+  docMediaIds: string[];
+  rejectReason: string | null;
+  reviewedAt: string | null;
+  submittedAt: string | null;
+}
 
 // --- eKYC (Aadhaar/PAN provider verification). The server returns ONLY masked values — never the raw id. ---
 export interface EkycStartResult { id: string; docType: 'aadhaar' | 'pan'; maskedId: string; otpRequired: boolean; }
@@ -219,7 +242,15 @@ export interface ListingOffer {
 
 // --- messaging (communication) ---
 export type ConversationContext = 'order' | 'requirement' | 'dispute' | 'booking' | 'direct' | 'support_ticket';
-export interface Conversation { id: string; contextType: string; contextId: string | null; isLocked: boolean; createdAt?: string; }
+export interface Conversation {
+  id: string; contextType: string; contextId: string | null; isLocked: boolean; createdAt?: string;
+  // Enriched inbox-summary fields (server read-model, P0-1). Present on the list endpoint; optional so a bare
+  // open()/get() response (which omits them) still satisfies the type.
+  isArchived?: boolean; unreadCount?: number;
+  lastMessageAt?: string | null; lastMessageBody?: string | null;
+  lastMessageHasAttachment?: boolean; lastMessageHasVoice?: boolean;
+  counterpartyName?: string | null; counterpartyRole?: string | null;
+}
 /** A chat message. Exactly one of body/voiceMediaId/attachmentMediaId carries the content; media are referenced
  * by id only (the bytes live in S3). NO raw PII. */
 export interface Message {
@@ -261,15 +292,29 @@ export interface WorkerProfile {
   id: string; userId: string; ageVerified18: boolean; villageRegionId: string | null; travelKm: number | null;
   stayAwayOk: string | null; minWageExpectationMinor: string | null; autoAcceptAboveMinor: string | null;
   hasSmartphone: boolean | null; ratingAvg: number | null; bookingsCompleted: number | null; noShowCount: number | null;
+  /** The worker's OWN consent to be shown to employers with identity (name/rating/job-count). Present on the
+   * `myWorker()` self-read; the worker toggles it via updateMyWorker({ discoverable }). Default false (DPDP). */
+  discoverable?: boolean;
   /** The caller's self-declared skill ids — present on the `myWorker()` read. */
   skillIds?: string[]; createdAt?: string;
 }
+/** P0-2 consented employer marketplace CARD. `displayName`/`ratingAvg`/`bookingsCompleted` are populated by the
+ * server ONLY for workers who opted in (`discoverable=true`); otherwise they are null and the card is anonymous
+ * (region/travel/availability only). This is what the employer browse (listWorkers/getWorker) returns. */
+export interface WorkerCard {
+  id: string; userId: string; villageRegionId: string | null; travelKm: number | null; stayAwayOk: string | null;
+  ageVerified: boolean; discoverable: boolean; createdAt?: string;
+  minWageExpectationMinor: string | null;
+  displayName: string | null; ratingAvg: number | null; bookingsCompleted: number | null;
+}
 /** A labour booking (a job). Workers browse `box=open`; the employer owns `box=mine`. `respondBy` is the
- * accept/decline window deadline (server-enforced). */
+ * accept/decline window deadline (server-enforced). P0-2 added `startTime` (HH:MM work start, null=unspecified),
+ * `notes` (special instructions), and `employerName` (read-only display name joined on read paths). */
 export interface LabourBooking {
   id: string; bookingNo: string; employerUserId: string; demandTypeId: string | null; taskSkillId: string | null;
   workersNeeded: number; startDate: string; endDate: string | null; wageKind: string; wageOfferedMinor: string;
   minWageMinor: string; currencyCode: string; womenOnly: boolean; status: string; respondBy: string | null; version?: number; createdAt?: string;
+  startTime?: string | null; notes?: string | null; employerName?: string | null;
 }
 /** A worker's assignment to a booking (the "job offer"). The worker accepts/rejects within the booking's window. */
 export interface LabourAssignment { id: string; bookingId: string; workerId: string; status: string; wageMinor: string; acceptedAt: string | null; createdAt?: string; }
@@ -456,7 +501,9 @@ export interface SupportTicket {
 // --- DPDP privacy (P-23 data-download / account-delete / change-phone) — ASSUMED contracts (endpoints not live) ---
 /** A data-subject request (export or erasure). `status` is server-driven (pending→processing→ready/done). The app
  * only submits + reflects status — it never produces the export itself (the server compiles it; Law 11). */
-export interface PrivacyRequest { id: string; kind: 'export' | 'deletion'; status: string; requestedAt?: string; readyAt?: string; downloadUrl?: string | null; }
+export interface PrivacyRequest { id: string; kind: 'export' | 'deletion'; status: string; coolingEndsAt?: string | null; requestedAt?: string; readyAt?: string; downloadUrl?: string | null; }
+/** A DPDP consent record: whether the caller has granted a given processing purpose (append-only server-side). */
+export interface ConsentRecord { purposeCode: string; granted: boolean; updatedAt?: string; }
 
 // --- land parcels (P-22 farm details) ---
 /** A land parcel the farmer owns/farms. `area` is a decimal STRING in `areaUnit` (e.g. acre) — not money. */
@@ -608,6 +655,9 @@ export interface Dispute {
   status: string; sellerRespondBy: string | null; resolutionType: string | null; resolutionAmountMinor: string | null;
   resolvedBy: string | null; resolvedAt: string | null; slaDueAt: string | null; createdAt?: string;
 }
+/** One append-only message in a dispute's evidence thread. `authorUserId` is an id (no display name on this
+ * contract) — the UI derives a role (complainant/respondent/moderator) by matching it against the dispute. */
+export interface DisputeMessage { id: string; disputeId: string; authorUserId: string; body: string; createdAt: string; }
 
 // --- media (core/media) ---
 export type MediaKind = 'image' | 'video' | 'audio' | 'document';

@@ -62,6 +62,8 @@ export default function FarmerTabsLayout() {
       <Tabs.Screen name="wallet/autopay" options={{ href: null }} />
       <Tabs.Screen name="wallet/earnings" options={{ href: null }} />
       <Tabs.Screen name="wallet/statement" options={{ href: null }} />
+      <Tabs.Screen name="wallet/upi" options={{ href: null }} />
+      <Tabs.Screen name="wallet/spending" options={{ href: null }} />
       <Tabs.Screen name="orders/[id]" options={{ href: null }} />
       <Tabs.Screen name="orders/received" options={{ href: null }} />
       <Tabs.Screen name="orders/decision" options={{ href: null }} />
@@ -70,6 +72,12 @@ export default function FarmerTabsLayout() {
       <Tabs.Screen name="orders/review" options={{ href: null }} />
       <Tabs.Screen name="orders/report" options={{ href: null }} />
       <Tabs.Screen name="kyc/index" options={{ href: null }} />
+      <Tabs.Screen name="kyc/aadhaar" options={{ href: null }} />
+      <Tabs.Screen name="kyc/verify-otp" options={{ href: null }} />
+      <Tabs.Screen name="kyc/bank" options={{ href: null }} />
+      <Tabs.Screen name="kyc/selfie" options={{ href: null }} />
+      <Tabs.Screen name="kyc/upload" options={{ href: null }} />
+      <Tabs.Screen name="kyc/issues" options={{ href: null }} />
       <Tabs.Screen name="notifications/index" options={{ href: null }} />
       <Tabs.Screen name="notifications/[id]" options={{ href: null }} />
       <Tabs.Screen name="notifications/settings" options={{ href: null }} />

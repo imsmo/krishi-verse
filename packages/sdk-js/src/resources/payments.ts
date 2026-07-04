@@ -3,7 +3,7 @@
 // the client only polls status. Both money-moving POSTs require an Idempotency-Key (Law 3). Money is bigint
 // minor-unit strings (Law 2). Gated server-side by the `online_payments` flag.
 import { HttpClient } from '../http';
-import { PaymentIntent, PaymentSummary, PayoutSummary, WalletBalance, WalletLedgerEntry, WalletInsights, AutopayMandate, InvoiceSummary, InvoiceDownload, Page } from '../types';
+import { PaymentIntent, PaymentSummary, PayoutSummary, WalletBalance, WalletLedgerEntry, WalletInsights, WalletStatementFile, AutopayMandate, MandateExecution, SavedInstruments, InvoiceSummary, InvoiceDownload, Page } from '../types';
 
 /** Buyer-facing GST trade invoices for orders. Read-only + ownership-gated server-side (the order's buyer/seller
  *  or a finance moderator — a foreign order is 404, never enumerable). Hangs off `payments.invoices`. */
@@ -68,13 +68,24 @@ export class WalletResource {
     const r = await this.http.request<WalletLedgerEntry[]>('GET', 'wallet/ledger', { query: { cursor, limit, currency }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
-  /** The caller's OWN earnings (credits) aggregated by month + txn type over a bounded window (defaults ~12mo). */
-  async earnings(opts: { from?: string; to?: string; currency?: string } = {}, signal?: AbortSignal): Promise<WalletInsights> {
-    return (await this.http.request<WalletInsights>('GET', 'wallet/earnings', { query: { from: opts.from, to: opts.to, currency: opts.currency ?? 'INR' }, signal })).data;
+  /** The caller's OWN earnings (credits) aggregated by month + txn type over a bounded window (defaults ~12mo).
+   *  Pass `groupBy: 'crop'` to also receive `byCrop` — earnings attributed to each order's product title (P0-3). */
+  async earnings(opts: { from?: string; to?: string; currency?: string; groupBy?: 'crop' } = {}, signal?: AbortSignal): Promise<WalletInsights> {
+    return (await this.http.request<WalletInsights>('GET', 'wallet/earnings', { query: { from: opts.from, to: opts.to, currency: opts.currency ?? 'INR', groupBy: opts.groupBy }, signal })).data;
   }
   /** The caller's OWN spending (debits, positive magnitudes) aggregated by month + txn type over a bounded window. */
   async spendingInsights(opts: { from?: string; to?: string; currency?: string } = {}, signal?: AbortSignal): Promise<WalletInsights> {
     return (await this.http.request<WalletInsights>('GET', 'wallet/spending-insights', { query: { from: opts.from, to: opts.to, currency: opts.currency ?? 'INR' }, signal })).data;
+  }
+  /** P0-3 statement export: the caller's OWN ledger for a bounded window as a downloadable CSV or PDF. Returns the
+   *  file inline (base64 for pdf / utf8 for csv) + a suggested filename + content type — the client saves/shares it. */
+  async statement(opts: { format?: 'csv' | 'pdf'; from?: string; to?: string; currency?: string } = {}, signal?: AbortSignal): Promise<WalletStatementFile> {
+    return (await this.http.request<WalletStatementFile>('GET', 'wallet/statement', { query: { format: opts.format ?? 'csv', from: opts.from, to: opts.to, currency: opts.currency ?? 'INR' }, signal })).data;
+  }
+  /** The caller's OWN saved payment instruments (P0-4): live UPI-AutoPay mandates (masked handle) + tokenised
+   *  bank/UPI payout instruments (last-4 / IFSC only). Nothing sensitive is returned. */
+  async instruments(signal?: AbortSignal): Promise<SavedInstruments> {
+    return (await this.http.request<SavedInstruments>('GET', 'wallet/instruments', { signal })).data;
   }
 }
 
@@ -98,5 +109,19 @@ export class AutopayResource {
   /** Cancel (revoke) a mandate the caller owns. */
   async cancel(id: string, reason?: string): Promise<AutopayMandate> {
     return (await this.http.request<AutopayMandate>('DELETE', `wallet/autopay/${encodeURIComponent(id)}`, { body: reason ? { reason } : {} })).data;
+  }
+  /** Confirm (activate) a mandate after the user approved the standing instruction in their UPI app.
+   *  Behind the `autopay_execution` flag server-side (default OFF until a live UPI-AutoPay PSP is wired). */
+  async confirm(id: string): Promise<AutopayMandate> {
+    return (await this.http.request<AutopayMandate>('POST', `wallet/autopay/${encodeURIComponent(id)}/confirm`, { body: {} })).data;
+  }
+  /** Present a capped debit against an active mandate → lands in the caller's wallet. Idempotency-Key required.
+   *  Behind the `autopay_execution` flag server-side; amountMinor must be ≤ the mandate's per-debit cap. */
+  async execute(id: string, amountMinor: string, idempotencyKey: string): Promise<MandateExecution> {
+    return (await this.http.request<MandateExecution>('POST', `wallet/autopay/${encodeURIComponent(id)}/execute`, { idempotencyKey, body: { amountMinor } })).data;
+  }
+  /** Recent collection attempts against a mandate the caller owns (audit list). */
+  async executions(id: string, limit = 20, signal?: AbortSignal): Promise<MandateExecution[]> {
+    return (await this.http.request<MandateExecution[]>('GET', `wallet/autopay/${encodeURIComponent(id)}/executions`, { query: { limit }, signal })).data;
   }
 }

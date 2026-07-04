@@ -1,11 +1,24 @@
 // Unit tests for the PURE ambassador/referral logic (features/ambassador/referral-flow). Earnings summed with
 // BigInt (Law 2); code validation mirrors the server's regex.
-import { referralStatusTone, normalizeReferralCode, isValidReferralCode, referralFunnel, sumEarningsMinor, isConverted } from '../../features/ambassador/referral-flow';
+import { referralStatusTone, normalizeReferralCode, isValidReferralCode, referralFunnel, sumEarningsMinor, isConverted, ONBOARD_METHODS, deriveReferralCode } from '../../features/ambassador/referral-flow';
 import type { Referral, AmbassadorEarning } from '@krishi-verse/sdk-js';
 
 const ref = (status: string): Referral => ({ id: Math.random().toString(), referrerUserId: 'a', refereeUserId: null, code: 'ABCD', status } as Referral);
 const earn = (amountMinor: string, payoutId: string | null = null): AmbassadorEarning =>
   ({ id: Math.random().toString(), ambassadorId: 'a', eventCode: 'referral_activated', referenceType: null, referenceId: null, amountMinor, payoutId } as AmbassadorEarning);
+
+describe('ONBOARD_METHODS / deriveReferralCode', () => {
+  it('lists the three design methods, scan fastest', () => {
+    expect(ONBOARD_METHODS.map((m) => m.key)).toEqual(['scan', 'manual', 'sms']);
+    expect(ONBOARD_METHODS.find((m) => m.key === 'scan')!.fastest).toBe(true);
+  });
+  it('derives a valid shareable code from a seed', () => {
+    const c = deriveReferralCode('a1b2-c3d4-e5f6');
+    expect(isValidReferralCode(c)).toBe(true);
+    expect(c).toBe('A1B2C3D4');
+    expect(isValidReferralCode(deriveReferralCode('x'))).toBe(true); // short seed padded
+  });
+});
 
 describe('referralStatusTone', () => {
   it('tones across the funnel', () => {

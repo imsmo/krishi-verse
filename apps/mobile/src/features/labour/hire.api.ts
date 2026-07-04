@@ -3,7 +3,7 @@
 // pay) are ONLINE transitions that throw so the screen shows the precise outcome (422 wage-below-floor, 403
 // not-owner, 409 illegal-transition) — the server is the authority. create/assign/pay carry an Idempotency-Key
 // (Law 3). Money is bigint minor strings (Law 2); the app never moves money — payWages signals the server (Law 11).
-import type { WorkerProfile, LabourBooking, LabourAssignment, CreateBookingInput, LabourLookups, ReviewSummary } from '@krishi-verse/sdk-js';
+import type { WorkerCard, LabourBooking, LabourAssignment, CreateBookingInput, LabourLookups, ReviewSummary } from '@krishi-verse/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 
@@ -18,14 +18,15 @@ export async function workerRatingSummary(userId: string): Promise<ReviewSummary
   try { return await apiClient().reviews.summary({ targetUserId: userId }); } catch { return null; }
 }
 
-export interface WorkersPage { items: WorkerProfile[]; nextCursor: string | null }
+export interface WorkersPage { items: WorkerCard[]; nextCursor: string | null }
 export interface BookingsPage { items: LabourBooking[]; nextCursor: string | null }
 
-/** Browse the worker pool (PII-minimised). Degrades to an empty page. */
+/** Browse the worker pool. Returns consent-gated CARDS: name/rating/job-count are present only for workers who
+ * opted in (discoverable=true); others are anonymous availability cards. Degrades to an empty page. */
 export async function browseWorkers(filter: { villageRegionId?: string; ageVerified?: boolean } = {}, cursor?: string): Promise<WorkersPage> {
   try { return await apiClient().labour.listWorkers({ ...filter, cursor }); } catch { return { items: [], nextCursor: null }; }
 }
-export async function getWorker(id: string): Promise<WorkerProfile | null> {
+export async function getWorker(id: string): Promise<WorkerCard | null> {
   try { return await apiClient().labour.getWorker(id); } catch { return null; }
 }
 

@@ -1,5 +1,15 @@
-// Unit tests for the PURE worker job-offer logic (screen 27).
-import { respondWindow, wageAboveMinMinor } from '../../features/labour/offer';
+// Unit tests for the PURE worker job-offer logic (screen 27 / 141).
+import { respondWindow, wageAboveMinMinor, workersNeeded } from '../../features/labour/offer';
+
+describe('workersNeeded (screen 141)', () => {
+  it('splits total into you + others, clamps to ≥1', () => {
+    expect(workersNeeded(2)).toEqual({ total: 2, others: 1 });
+    expect(workersNeeded(1)).toEqual({ total: 1, others: 0 });
+    expect(workersNeeded(5)).toEqual({ total: 5, others: 4 });
+    expect(workersNeeded(0)).toEqual({ total: 1, others: 0 });
+    expect(workersNeeded(null)).toEqual({ total: 1, others: 0 });
+  });
+});
 
 describe('job offer (screen 27)', () => {
   const now = Date.parse('2026-08-15T13:06:00Z');

@@ -4,12 +4,14 @@
 // These helpers parse the opaque lesson `quiz` payload defensively and compute a UX score/progress.
 import type { CourseLesson, LessonProgress, Enrollment } from '@krishi-verse/sdk-js';
 
-export interface QuizQuestion { q: string; options: string[]; answer: number }
+export interface QuizQuestion { q: string; options: string[]; answer: number; hint?: string }
 export const QUIZ_PASS_PCT = 60;
 
 /** Parse the opaque lesson.quiz JSON into a normalized question list, or null if it isn't a usable quiz. Accepts
- * `{ questions: [{ q|question|text, options|choices: string[], answer|correct|correctIndex: number }] }`. Tolerant
- * of shape drift (authoring is loosely typed server-side) — anything malformed yields null rather than throwing. */
+ * `{ questions: [{ q|question|text, options|choices: string[], answer|correct|correctIndex: number, hint?: string }] }`.
+ * Tolerant of shape drift (authoring is loosely typed server-side) — anything malformed yields null rather than
+ * throwing. `hint` is optional: it is carried through only when the author supplied a non-empty string; the screen
+ * renders no hint block when absent (§13 — never a fabricated hint). */
 export function parseQuiz(raw: unknown): QuizQuestion[] | null {
   const arr = Array.isArray(raw) ? raw : (raw && typeof raw === 'object' && Array.isArray((raw as any).questions) ? (raw as any).questions : null);
   if (!arr || arr.length === 0) return null;
@@ -19,11 +21,21 @@ export function parseQuiz(raw: unknown): QuizQuestion[] | null {
     const q = (item as any).q ?? (item as any).question ?? (item as any).text;
     const options = (item as any).options ?? (item as any).choices;
     const answer = (item as any).answer ?? (item as any).correct ?? (item as any).correctIndex;
+    const hintRaw = (item as any).hint ?? (item as any).explanation;
     if (typeof q !== 'string' || !Array.isArray(options) || options.length < 2 || !options.every((o) => typeof o === 'string')) return null;
     if (typeof answer !== 'number' || !Number.isInteger(answer) || answer < 0 || answer >= options.length) return null;
-    out.push({ q, options, answer });
+    const question: QuizQuestion = { q, options, answer };
+    if (typeof hintRaw === 'string' && hintRaw.trim().length > 0) question.hint = hintRaw;
+    out.push(question);
   }
   return out;
+}
+
+/** Minimum number of correct answers needed to pass a quiz of `total` questions — derived from QUIZ_PASS_PCT with
+ * integer math (ceil), NOT a hardcoded "4/5". Drives the "Pass: N/total correct" header. Pure. */
+export function passThreshold(total: number): number {
+  if (total <= 0) return 0;
+  return Math.ceil((QUIZ_PASS_PCT * total) / 100);
 }
 
 export interface QuizResult { correct: number; total: number; scorePct: number; passed: boolean }

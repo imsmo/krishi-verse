@@ -30,6 +30,11 @@ export interface LabourBookingProps {
   respondBy: Date | null;
   version: number;
   createdAt?: Date;
+  // P0-2 booking details
+  startTime?: string | null;     // HH:MM time-of-day (null = unspecified)
+  notes?: string | null;         // special instructions to the worker
+  // P0-2 read-only enrichment (joined from users; NEVER persisted from the entity)
+  employerName?: string | null;
 }
 
 export class LabourBooking {
@@ -42,7 +47,7 @@ export class LabourBooking {
     if (input.wageOfferedMinor < input.minWageMinor) throw new WageBelowMinimumError(input.wageOfferedMinor, input.minWageMinor);
     if (input.workersNeeded < 1) throw new BookingNotPayableError('invalid worker count');
     if (input.endDate < input.startDate) throw new BookingNotPayableError('end date before start date');
-    const b = new LabourBooking({ ...input, status: 'open', version: 1 });
+    const b = new LabourBooking({ ...input, startTime: input.startTime ?? null, notes: input.notes ?? null, status: 'open', version: 1 });
     b.events.push({ type: LabourEventType.BookingPosted, payload: { bookingId: b.props.id, employerUserId: b.props.employerUserId,
       taskSkillId: b.props.taskSkillId, workersNeeded: b.props.workersNeeded, wageOfferedMinor: b.props.wageOfferedMinor.toString() } });
     return b;

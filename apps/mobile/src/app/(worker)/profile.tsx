@@ -112,14 +112,16 @@ export default function WorkerProfile() {
           {/* Ratings & reviews */}
           <Text style={styles.section}>{t('worker.profileView.ratings')}</Text>
           <Card>
-            <LinkRow icon="⭐" title={t('worker.profileView.viewReviews')} sub={t('worker.profileView.ratingsCount', { n: ratingCount })} onPress={() => router.push('/(worker)/reviews')} last />
+            <LinkRow icon="⭐" title={t('worker.profileView.viewReviews')} sub={t('worker.profileView.ratingsCount', { n: ratingCount })} onPress={() => router.push('/(worker)/reviews')} />
+            <LinkRow icon="📜" title={t('workerHistory.title')} sub={t('workerHistory.jobsCount', { n: worker.bookingsCompleted ?? 0 })} onPress={() => router.push('/(worker)/work-history')} last />
           </Card>
 
           {/* Account */}
           <Text style={styles.section}>{t('worker.profileView.account')}</Text>
           <Card>
+            <LinkRow icon="🗂" title={t('workerDocs.title')} onPress={() => router.push('/(worker)/documents')} />
             <LinkRow icon="⚙️" title={t('worker.profileView.settings')} onPress={() => router.push('/(system)/settings')} />
-            <LinkRow icon="❓" title={t('worker.profileView.help')} sub={t('worker.profileView.helpSub')} last />
+            <LinkRow icon="❓" title={t('worker.profileView.help')} sub={t('worker.profileView.helpSub')} onPress={() => router.push('/(worker)/help')} last />
           </Card>
         </ScrollView>
       )}

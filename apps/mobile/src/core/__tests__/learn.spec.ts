@@ -1,6 +1,6 @@
 // Unit tests for the PURE learning logic (features/education/learn): defensive quiz parsing, integer scoring, and
 // progress computation. The server is authoritative on stored score + enrollment %; these drive the UX.
-import { parseQuiz, scoreQuiz, lessonCompleted, courseProgressPct, isCourseComplete, nextLessonId, QUIZ_PASS_PCT } from '../../features/education/learn';
+import { parseQuiz, scoreQuiz, passThreshold, lessonCompleted, courseProgressPct, isCourseComplete, nextLessonId, QUIZ_PASS_PCT } from '../../features/education/learn';
 import type { LessonProgress } from '@krishi-verse/sdk-js';
 
 const prog = (lessonId: string, completed: boolean): LessonProgress => ({ lessonId, completedAt: completed ? '2026-01-01' : null, secondsWatched: 0, quizScore: null });
@@ -23,6 +23,23 @@ describe('parseQuiz', () => {
     expect(parseQuiz({ questions: [{ q: 'x', options: ['only-one'], answer: 0 }] })).toBeNull();   // <2 options
     expect(parseQuiz({ questions: [{ q: 'x', options: ['a', 'b'], answer: 5 }] })).toBeNull();       // answer OOB
     expect(parseQuiz({ questions: [{ q: 1, options: ['a', 'b'], answer: 0 }] })).toBeNull();         // q not string
+  });
+  it('carries an author-supplied hint but never invents one', () => {
+    const withHint = parseQuiz({ questions: [{ q: 'x', options: ['a', 'b'], answer: 0, hint: 'think fallback' }] });
+    expect(withHint![0].hint).toBe('think fallback');
+    const noHint = parseQuiz({ questions: [{ q: 'x', options: ['a', 'b'], answer: 0 }] });
+    expect(noHint![0].hint).toBeUndefined();
+    const blankHint = parseQuiz({ questions: [{ q: 'x', options: ['a', 'b'], answer: 0, hint: '  ' }] });
+    expect(blankHint![0].hint).toBeUndefined();
+  });
+});
+
+describe('passThreshold', () => {
+  it('is ceil(QUIZ_PASS_PCT * total / 100), not a hardcoded 4/5', () => {
+    expect(passThreshold(5)).toBe(3);   // 60% of 5 = 3.0 → 3
+    expect(passThreshold(4)).toBe(3);   // 2.4 → 3
+    expect(passThreshold(1)).toBe(1);
+    expect(passThreshold(0)).toBe(0);
   });
 });
 

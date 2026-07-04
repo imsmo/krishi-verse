@@ -22,3 +22,10 @@ export function wageAboveMinMinor(offeredMinor: string, minMinor: string): strin
     return offered > min ? (offered - min).toString() : null;
   } catch { return null; }
 }
+
+/** "N people (you + N−1)" breakdown for the worker offer's "workers needed" row (screen 141). `others` is how many
+ * beyond the offered worker. Clamped at ≥1 total. Pure — the count is REAL from the booking (workersNeeded). */
+export function workersNeeded(total: number | null | undefined): { total: number; others: number } {
+  const n = Number.isInteger(total) && (total as number) > 0 ? (total as number) : 1;
+  return { total: n, others: Math.max(0, n - 1) };
+}

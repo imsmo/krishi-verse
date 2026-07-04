@@ -13,8 +13,11 @@ export class ConversationsResource {
   async open(input: { contextType: string; contextId?: string | null; participantUserIds: string[] }, idempotencyKey: string): Promise<Conversation> {
     return (await this.http.request<Conversation>('POST', 'conversations', { idempotencyKey, body: input })).data;
   }
-  async list(params: { contextType?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<Conversation>> {
-    const r = await this.http.request<Conversation[]>('GET', 'conversations', { query: { contextType: params.contextType, cursor: params.cursor, limit: params.limit ?? 20 }, signal });
+  /** The caller's conversations as enriched inbox summaries (P0-1: last-message preview + unread count +
+   * counterparty name/role + per-participant archive flag). `archived=true` returns the archive instead of the
+   * inbox. Keyset paginated. */
+  async list(params: { contextType?: string; cursor?: string; limit?: number; archived?: boolean } = {}, signal?: AbortSignal): Promise<Page<Conversation>> {
+    const r = await this.http.request<Conversation[]>('GET', 'conversations', { query: { contextType: params.contextType, cursor: params.cursor, limit: params.limit ?? 20, archived: params.archived }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
   async get(id: string, signal?: AbortSignal): Promise<Conversation> {
@@ -22,6 +25,13 @@ export class ConversationsResource {
   }
   async markRead(id: string): Promise<{ ok: boolean }> {
     return (await this.http.request<{ ok: boolean }>('POST', `conversations/${encodeURIComponent(id)}/read`, { body: {} })).data;
+  }
+  /** Archive/restore the thread FOR THE CALLER only (per-participant, P0-1). A private toggle — safe to repeat. */
+  async archive(id: string): Promise<{ ok: boolean; isArchived: boolean }> {
+    return (await this.http.request<{ ok: boolean; isArchived: boolean }>('POST', `conversations/${encodeURIComponent(id)}/archive`, { body: {} })).data;
+  }
+  async restore(id: string): Promise<{ ok: boolean; isArchived: boolean }> {
+    return (await this.http.request<{ ok: boolean; isArchived: boolean }>('POST', `conversations/${encodeURIComponent(id)}/restore`, { body: {} })).data;
   }
   /** Post a message: text body and/or a voice/attachment media id (at least one). Idempotent. */
   async postMessage(conversationId: string, input: { body?: string; voiceMediaId?: string; attachmentMediaId?: string }, idempotencyKey: string): Promise<Message> {

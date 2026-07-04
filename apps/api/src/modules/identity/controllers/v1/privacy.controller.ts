@@ -21,8 +21,8 @@ export class PrivacyController {
     return this.privacy.requestExport(ctx.tenantId, ctx.userId, this.key(key)).then((data) => ({ data }));
   }
   @Post('deletion-requests')
-  deletion(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @Body('reason') _reason?: string) {
-    return this.privacy.requestDeletion(ctx.tenantId, ctx.userId, this.key(key)).then((data) => ({ data }));
+  deletion(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @Body('reason') reason?: string) {
+    return this.privacy.requestDeletion(ctx.tenantId, ctx.userId, this.key(key), typeof reason === 'string' ? reason : undefined).then((data) => ({ data }));
   }
   @Get('requests')
   mine(@CurrentContext() ctx: RequestContext) {

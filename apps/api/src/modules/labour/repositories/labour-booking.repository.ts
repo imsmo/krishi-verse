@@ -12,8 +12,12 @@ import { BookingConcurrencyError, InvalidDemandTypeError, SkillNotFoundError } f
 
 const COLS = `id, tenant_id, booking_no, employer_user_id, demand_type_id, task_skill_id, workers_needed,
   start_date, end_date, daily_hours, wage_kind, wage_offered_minor, min_wage_minor, currency_code,
-  overtime_rate_multiplier, women_only, farm_lat, farm_lng, status, respond_by, version, created_at`;
+  overtime_rate_multiplier, women_only, farm_lat, farm_lng, status, respond_by, version, created_at, start_time, notes`;
+// P0-2: read paths also expose the employer's display name (correlated, tenant-safe — the reader is either the
+// employer themselves or an assigned worker who is a party to the booking) and normalise the time to HH:MM.
+const READ_COLS = `${COLS}, (SELECT u.full_name FROM users u WHERE u.id = labour_bookings.employer_user_id) AS employer_name`;
 const d = (v: any): string => (v instanceof Date ? v.toISOString().slice(0, 10) : String(v));
+const hhmm = (v: any): string | null => (v == null ? null : String(v).slice(0, 5));
 function toDomain(r: any): LabourBooking {
   return LabourBooking.rehydrate({
     id: r.id, tenantId: r.tenant_id, bookingNo: r.booking_no, employerUserId: r.employer_user_id,
@@ -22,6 +26,7 @@ function toDomain(r: any): LabourBooking {
     wageOfferedMinor: BigInt(r.wage_offered_minor), minWageMinor: BigInt(r.min_wage_minor), currencyCode: r.currency_code,
     overtimeRateMultiplier: Number(r.overtime_rate_multiplier), womenOnly: r.women_only, farmLat: Number(r.farm_lat),
     farmLng: Number(r.farm_lng), status: r.status as BookingStatus, respondBy: r.respond_by, version: r.version, createdAt: r.created_at,
+    startTime: hhmm(r.start_time), notes: r.notes ?? null, employerName: r.employer_name ?? null,
   });
 }
 export interface BookingListQuery { employerUserId?: string; openOnly?: boolean; status?: string; taskSkillId?: string; cursor?: { c: string; id: string }; limit: number; }
@@ -35,15 +40,15 @@ export class LabourBookingRepository {
     await tx.query(
       `INSERT INTO labour_bookings (id, tenant_id, booking_no, employer_user_id, demand_type_id, task_skill_id,
          workers_needed, start_date, end_date, daily_hours, wage_kind, wage_offered_minor, min_wage_minor,
-         currency_code, overtime_rate_multiplier, women_only, farm_lat, farm_lng, status, respond_by, version, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)`,
+         currency_code, overtime_rate_multiplier, women_only, farm_lat, farm_lng, status, respond_by, version, start_time, notes, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$4)`,
       [p.id, p.tenantId, p.bookingNo, p.employerUserId, p.demandTypeId, p.taskSkillId, p.workersNeeded, p.startDate,
        p.endDate, p.dailyHours, p.wageKind, p.wageOfferedMinor.toString(), p.minWageMinor.toString(), p.currencyCode,
-       p.overtimeRateMultiplier, p.womenOnly, p.farmLat, p.farmLng, p.status, p.respondBy, p.version, p.employerUserId]);
+       p.overtimeRateMultiplier, p.womenOnly, p.farmLat, p.farmLng, p.status, p.respondBy, p.version, p.startTime ?? null, p.notes ?? null]);
   }
   /** Lock-free read for marketplace/detail. */
   async getById(tenantId: string, id: string, tx?: TxContext): Promise<LabourBooking | null> {
-    const sql = `SELECT ${COLS} FROM labour_bookings WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`;
+    const sql = `SELECT ${READ_COLS} FROM labour_bookings WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`;
     const r = tx ? await tx.query(sql, [id, tenantId]) : await this.replica.forTenant(tenantId).query(sql, [id, tenantId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
@@ -71,7 +76,7 @@ export class LabourBookingRepository {
     if (q.taskSkillId) where += ` AND task_skill_id=${p(q.taskSkillId)}`;
     if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
     const lp = p(q.limit);
-    const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM labour_bookings WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
+    const r = await this.replica.forTenant(tenantId).query(`SELECT ${READ_COLS} FROM labour_bookings WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);
   }
   /** Worker job (cross-tenant; kv_relay). Open bookings past respond_by, bounded + SKIP LOCKED. */

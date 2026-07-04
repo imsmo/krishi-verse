@@ -38,10 +38,16 @@ export function registerParcel(input: ParcelInput): Promise<LandParcel> {
 export async function myBankAccounts(): Promise<BankAccount[]> {
   try { return await apiClient().bankAccounts.list(); } catch { return []; }
 }
-/** Add a UPI payout destination. A VPA is a public payment address (not a secret), so it is its own vaultRef —
- * full bank-account add needs a server-side tokenization step not exposed to mobile (flagged). Idempotent. */
+/** Add a UPI payout destination. A VPA is a public payment address (not a secret), so it is its own vaultRef. Idempotent. */
 export function addUpiAccount(input: { upiId: string; holderName?: string; isPrimary?: boolean }): Promise<BankAccount> {
   return apiClient().bankAccounts.add({ accountKind: 'upi', upiId: input.upiId, vaultRef: `upi:${input.upiId}`, holderName: input.holderName, isPrimary: input.isPrimary }, newId());
+}
+
+/** Add a FULL bank account (screen 74). The RAW account number + IFSC are sent ONCE to the server, which tokenises
+ * them at the gateway (penny-drop ownership check) and persists ONLY a vault ref + last-4 — the raw number is never
+ * stored/logged on client or server (§4/DPDP, P1-16). Idempotent (Law 3). Throws so the screen shows the outcome. */
+export function addBankAccountFull(input: { accountNumber: string; ifsc: string; holderName: string; accountType?: 'savings' | 'current'; isPrimary?: boolean }): Promise<{ id: string }> {
+  return apiClient().bankAccounts.addFull(input, newId());
 }
 
 // --- documents (KYC) ---

@@ -12,12 +12,16 @@
 //    payments (money-in) and Payout history lists payouts; the Statement screen shows the unified ledger feed.
 //  • Earnings (settlement credits) + spending-insights are now LIVE (P0-8): GET /v1/wallet/earnings and
 //    /v1/wallet/spending-insights — the caller's OWN wallet, aggregated float-free (bigint-minor strings).
-//  • UPI autopay mandates are now LIVE (P0-8): register / list / cancel against /v1/wallet/autopay. The actual
-//    auto-debit COLLECTION still awaits a UPI-AutoPay PSP + webhook + worker (flagged in the API) — registering a
-//    mandate records the standing instruction; it does not yet pull money.
+//  • UPI autopay mandates are now LIVE (P0-8): register / list / cancel against /v1/wallet/autopay. The auto-debit
+//    COLLECTION path (confirm + execute) is now WIRED (P0-4) but gated server-side by the `autopay_execution` flag
+//    (default OFF, fail-closed until a live UPI-AutoPay PSP + webhook are configured) — the client calls degrade to a
+//    disabled outcome, never a crash. Registering a mandate records the standing instruction; execute pulls a capped
+//    debit into the wallet through the ledger (Law 2) only once the flag is on.
+//  • Saved instruments read (P0-4): GET /v1/wallet/instruments returns the caller's OWN live UPI-AutoPay mandates
+//    (masked handle) + tokenised bank/UPI payout instruments (last-4 / IFSC + verified flag). Nothing sensitive.
 //    Adding a bank/UPI payout destination (tokenised vaultRef) is the P-03 flagged gap — withdrawal works against
 //    destinations already on file.
-import type { PaymentSummary, PayoutSummary, BankAccount, WalletInsights, AutopayMandate, WalletBalance, WalletLedgerEntry } from '@krishi-verse/sdk-js';
+import type { PaymentSummary, PayoutSummary, BankAccount, WalletInsights, WalletStatementFile, AutopayMandate, MandateExecution, SavedInstruments, WalletBalance, WalletLedgerEntry } from '@krishi-verse/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 
@@ -79,8 +83,31 @@ export async function requestWithdrawal(amountMinor: string, bankAccountId: stri
 // empty view on failure (read screens never crash). The window defaults to ~12 months server-side. ---
 const EMPTY_INSIGHTS: WalletInsights = { fromIso: '', toIso: '', currencyCode: 'INR', totalMinor: '0', byMonth: [], byType: [] };
 
-export async function walletEarnings(opts: { from?: string; to?: string } = {}): Promise<WalletInsights> {
-  try { return await apiClient().wallet.earnings(opts); } catch { return EMPTY_INSIGHTS; }
+/** Earnings insights. Pass `byCrop:true` (P0-3) to also receive a per-crop breakdown (attributed to each order's
+ *  product title). Degrades to a safe empty view on failure. */
+export async function walletEarnings(opts: { from?: string; to?: string; byCrop?: boolean } = {}): Promise<WalletInsights> {
+  try { return await apiClient().wallet.earnings({ from: opts.from, to: opts.to, groupBy: opts.byCrop ? 'crop' : undefined }); } catch { return EMPTY_INSIGHTS; }
+}
+/** P0-3 statement export: fetch the caller's ledger as a downloadable CSV/PDF file payload. Returns null on failure
+ *  so the screen can show a friendly "couldn't generate" note rather than crashing. */
+export async function walletStatement(opts: { format?: 'csv' | 'pdf'; from?: string; to?: string } = {}): Promise<WalletStatementFile | null> {
+  try { return await apiClient().wallet.statement(opts); } catch { return null; }
+}
+/** P0-3: fetch + write the statement to a local file and return its uri (so the screen can share/open it). The
+ *  server sends bytes inline (base64 for pdf, utf8 for csv); we decode to the right on-disk encoding. null on any
+ *  failure (degrade-never-die). */
+export async function exportWalletStatement(opts: { format?: 'csv' | 'pdf'; from?: string; to?: string } = {}): Promise<{ uri: string; filename: string } | null> {
+  const file = await walletStatement(opts);
+  if (!file) return null;
+  try {
+    const FileSystem = require('expo-file-system') as typeof import('expo-file-system');
+    const dir = FileSystem.documentDirectory ?? FileSystem.cacheDirectory ?? '';
+    const uri = `${dir}${file.filename}`;
+    await FileSystem.writeAsStringAsync(uri, file.content, {
+      encoding: file.encoding === 'base64' ? FileSystem.EncodingType.Base64 : FileSystem.EncodingType.UTF8,
+    });
+    return { uri, filename: file.filename };
+  } catch { return null; }
 }
 export async function walletSpending(opts: { from?: string; to?: string } = {}): Promise<WalletInsights> {
   try { return await apiClient().wallet.spendingInsights(opts); } catch { return EMPTY_INSIGHTS; }
@@ -97,4 +124,24 @@ export async function registerAutopayMandate(input: { vpa: string; purpose: 'mem
 }
 export async function cancelAutopayMandate(id: string, reason?: string): Promise<AutopayMandate> {
   return apiClient().autopay.cancel(id, reason);
+}
+/** Confirm (activate) a mandate the user approved in their UPI app. Server gates on `autopay_execution` (fail-closed)
+ * — a disabled server returns a 403 the screen surfaces as "not available yet". Throws so the caller shows the reason. */
+export async function confirmAutopayMandate(id: string): Promise<AutopayMandate> {
+  return apiClient().autopay.confirm(id);
+}
+/** Present a capped debit against an active mandate → lands in the wallet. Idempotent (Law 3). Gated server-side by
+ * `autopay_execution`; amountMinor must be ≤ the mandate cap (the server re-asserts). Throws on a real error. */
+export async function executeAutopayMandate(id: string, amountMinor: string): Promise<MandateExecution> {
+  return apiClient().autopay.execute(id, amountMinor, newId());
+}
+export async function listAutopayExecutions(id: string): Promise<MandateExecution[]> {
+  try { return await apiClient().autopay.executions(id); } catch { return []; }
+}
+
+// --- Saved instruments (P0-4): the caller's OWN live mandates (masked handle) + tokenised bank/UPI payout accounts. ---
+const EMPTY_INSTRUMENTS: SavedInstruments = { mandates: [], accounts: [] };
+/** Degrade-never-die read of the caller's saved instruments; failure → empty (screen shows the designed empty state). */
+export async function walletInstruments(): Promise<SavedInstruments> {
+  try { return await apiClient().wallet.instruments(); } catch { return EMPTY_INSTRUMENTS; }
 }

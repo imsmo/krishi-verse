@@ -61,6 +61,24 @@ export class ConversationService {
     const nextCursor = items.length === q.limit && last ? Buffer.from(`${last.createdAt?.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;
     return { items, nextCursor };
   }
+  /** The caller's inbox as enriched summaries (contract-gap P0-1). Keyset (created_at|id), same cursor grammar as
+   * list(). `archived` splits inbox from archive. Membership is enforced by the JOIN in the read — a non-participant
+   * simply never appears (no IDOR). */
+  async listSummaries(tenantId: string, actor: MessagingActor, q: { archived: boolean; contextType?: string; cursor?: { c: string; id: string }; limit: number }) {
+    const rows = await this.repo.listSummariesForUser(tenantId, actor.userId, q);
+    const last = rows[rows.length - 1];
+    const nextCursor = rows.length === q.limit && last ? Buffer.from(`${last.createdAt.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;
+    return { items: rows, nextCursor };
+  }
+  /** Archive/restore the thread FOR THE CALLER only (per-participant). Re-checks membership (anti-IDOR) then flips
+   * the flag idempotently — no outbox event (this is private UI state, not a shared thread change). */
+  async setArchive(tenantId: string, actor: MessagingActor, id: string, archived: boolean) {
+    return this.uow.run(tenantId, async (tx) => {
+      if (!(await this.repo.isParticipant(tenantId, id, actor.userId, tx))) throw new ConversationNotFoundError(id);
+      await this.repo.setArchived(tx, id, actor.userId, archived);
+      return { ok: true, isArchived: archived };
+    }, { userId: actor.userId });
+  }
   async markRead(tenantId: string, actor: MessagingActor, id: string) {
     return this.uow.run(tenantId, async (tx) => {
       if (!(await this.repo.isParticipant(tenantId, id, actor.userId, tx))) throw new ConversationNotFoundError(id);

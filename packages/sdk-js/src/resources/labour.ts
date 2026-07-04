@@ -5,12 +5,14 @@
 // hard-gates accepting work on it. register carries an Idempotency-Key (Law 3). Money is bigint minor strings
 // (Law 2). Gated server-side by the `labour` flag.
 import { HttpClient } from '../http';
-import { WorkerProfile, LabourBooking, LabourAssignment, LabourAttendance, LabourLookups, Page } from '../types';
+import { WorkerProfile, WorkerCard, LabourBooking, LabourAssignment, LabourAttendance, LabourLookups, Page } from '../types';
 
 export interface WorkerPrefsInput {
   villageRegionId?: string; travelKm?: number; stayAwayOk?: 'same_day' | 'overnight' | 'weekly' | 'monthly';
   minWageExpectationMinor?: string; autoAcceptAboveMinor?: string; hasSmartphone?: boolean;
   emergencyContactName?: string; emergencyContactPhone?: string; eshramNo?: string;
+  /** P0-2 consent: opt in to be shown to employers with identity (name/rating/job-count). Default false (DPDP). */
+  discoverable?: boolean;
   /** The worker's self-declared skill ids (replaces the whole set on update). Unknown ids are rejected. */
   skillIds?: string[];
 }
@@ -24,6 +26,8 @@ export interface CreateBookingInput {
   workersNeeded: number; startDate: string; endDate: string; dailyHours?: number;
   wageKind?: 'per_day' | 'per_hour' | 'per_task'; wageOfferedMinor: string;
   womenOnly?: boolean; farmLat: number; farmLng: number; respondByHours?: number;
+  /** P0-2 booking details (optional): HH:MM work start time-of-day + free-text special instructions (≤300 chars). */
+  startTime?: string; notes?: string;
 }
 
 export class LabourResource {
@@ -97,13 +101,14 @@ export class LabourResource {
 
   // --- employer / hire side (P-14). All authorized server-side by worker.book; owner-or-admin per booking. ---
 
-  /** Browse the worker pool (employer). PII-minimised — no name/phone, only region/rating/availability. Keyset. */
-  async listWorkers(params: { villageRegionId?: string; ageVerified?: boolean; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<WorkerProfile>> {
-    const r = await this.http.request<WorkerProfile[]>('GET', 'labour/workers', { query: { villageRegionId: params.villageRegionId, ageVerified: params.ageVerified, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+  /** Browse the worker pool (employer). Returns consent-gated CARDS: name/rating/job-count appear ONLY for workers
+   * who opted in (discoverable=true); everyone else is an anonymous availability card (region/travel). Keyset. */
+  async listWorkers(params: { villageRegionId?: string; ageVerified?: boolean; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<WorkerCard>> {
+    const r = await this.http.request<WorkerCard[]>('GET', 'labour/workers', { query: { villageRegionId: params.villageRegionId, ageVerified: params.ageVerified, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
-  async getWorker(id: string, signal?: AbortSignal): Promise<WorkerProfile> {
-    return (await this.http.request<WorkerProfile>('GET', `labour/workers/${encodeURIComponent(id)}`, { signal })).data;
+  async getWorker(id: string, signal?: AbortSignal): Promise<WorkerCard> {
+    return (await this.http.request<WorkerCard>('GET', `labour/workers/${encodeURIComponent(id)}`, { signal })).data;
   }
 
   /** Post a booking (the offered wage must clear the server's statutory floor). Idempotent (Law 3). */

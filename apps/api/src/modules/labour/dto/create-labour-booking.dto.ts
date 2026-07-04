@@ -21,5 +21,8 @@ export const CreateBookingSchema = z.object({
   farmLat: z.number().min(-90).max(90),
   farmLng: z.number().min(-180).max(180),
   respondByHours: z.number().int().min(1).max(720).optional(),
+  // P0-2 booking details (both optional): work start time-of-day + free-text special instructions to the worker.
+  startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'must be HH:MM').optional(),
+  notes: z.string().max(300).optional(),
 }).strict();
 export type CreateBookingDto = z.infer<typeof CreateBookingSchema>;

@@ -3,7 +3,7 @@
 // Bank accounts store a gateway-tokenised vaultRef + last-4/IFSC only — never a raw account number. Both POSTs
 // require an Idempotency-Key (Law 3). KYC is gated server-side by the `kyc` flag.
 import { HttpClient } from '../http';
-import { KycDocument, KycDocType, BankAccount, Address, EkycStartResult, EkycVerifyResult, EkycSessionSummary } from '../types';
+import { KycDocument, KycDocType, BankAccount, Address, EkycStartResult, EkycVerifyResult, EkycSessionSummary, BusinessKycStatus, BusinessType } from '../types';
 
 export class KycResource {
   constructor(private readonly http: HttpClient) {}
@@ -39,6 +39,21 @@ export class KycResource {
   async ekycSessions(signal?: AbortSignal): Promise<EkycSessionSummary[]> {
     return (await this.http.request<EkycSessionSummary[]>('GET', 'kyc/ekyc/sessions', { signal })).data;
   }
+
+  // --- Business KYC (buyer, P0-5). The RAW gstin/pan are sent ONCE on submit; the server validates + masks them,
+  // and only ever returns masked values (DPDP §4). Submit is an upsert (re-submit resets to 'pending'). ---
+  /** Submit (or re-submit) the caller's business-KYC profile. Returns the masked stored profile. */
+  async submitBusiness(input: { businessType: BusinessType; legalName: string; gstin?: string; pan: string; docMediaIds?: string[] }): Promise<BusinessKycStatus> {
+    return (await this.http.request<BusinessKycStatus>('POST', 'kyc/business', { body: input })).data;
+  }
+  /** The caller's OWN business-KYC status (masked). `status:'none'` when nothing has been submitted yet. */
+  async businessStatus(signal?: AbortSignal): Promise<BusinessKycStatus> {
+    return (await this.http.request<BusinessKycStatus>('GET', 'kyc/business', { signal })).data;
+  }
+  /** Tenant-admin: review a member's business-KYC (approve/reject). Needs identity.approve (server-side). */
+  async reviewBusiness(id: string, input: { decision: 'verify' | 'reject'; reason?: string }): Promise<{ id: string; status: string }> {
+    return (await this.http.request<{ id: string; status: string }>('POST', `kyc/business/${encodeURIComponent(id)}/review`, { body: input })).data;
+  }
 }
 
 export class BankAccountsResource {
@@ -53,7 +68,7 @@ export class BankAccountsResource {
   }
   /** P1-16 · add a FULL bank account: send the raw account number + IFSC ONCE; the SERVER tokenises it at the
    * gateway and persists ONLY the vault ref + last-4 (raw number never stored/logged). Idempotency-keyed (Law 3). */
-  async addFull(input: { accountNumber: string; ifsc: string; holderName: string; isPrimary?: boolean }, idempotencyKey: string): Promise<{ id: string }> {
+  async addFull(input: { accountNumber: string; ifsc: string; holderName: string; accountType?: 'savings' | 'current'; isPrimary?: boolean }, idempotencyKey: string): Promise<{ id: string }> {
     return (await this.http.request<{ id: string }>('POST', 'bank-accounts/tokenise', { idempotencyKey, body: input })).data;
   }
 }

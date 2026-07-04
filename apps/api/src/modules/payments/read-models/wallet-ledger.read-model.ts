@@ -90,4 +90,39 @@ export class WalletLedgerReadModel {
     const nextCursor = last ? encodeLedgerCursor(last.createdAt, last.entryId) : null;
     return { items, nextCursor };
   }
+
+  /** P0-3 statement export: the caller's ledger rows for a bounded date window, OLDEST-first (a statement reads
+   *  top-to-bottom), HARD-capped at `cap` rows (never unbounded). Same anti-IDOR scoping as forUser. Read-only. */
+  async statementRows(
+    viewerUserId: string,
+    userId: string,
+    canModerate: boolean,
+    opts: { fromIso: string; toIso: string; currencyCode?: string; cap?: number },
+  ): Promise<WalletLedgerEntryView[]> {
+    if (viewerUserId !== userId && !canModerate) return []; // fail closed
+    const currencyCode = opts.currencyCode ?? 'INR';
+    const cap = Math.min(Math.max(opts.cap ?? 5000, 1), 20000);
+    const r = await this.pools.replica(0).query<{
+      entry_id: string; txn_id: string; txn_type: string | null; account_code: string;
+      amount_minor: string; balance_after_minor: string; currency_code: string;
+      reference_type: string | null; reference_id: string | null; description: string | null; created_at: Date;
+    }>(
+      `SELECT e.id::text AS entry_id, e.txn_id::text AS txn_id, lv.code AS txn_type, a.account_code,
+              e.amount_minor::text AS amount_minor, e.balance_after_minor::text AS balance_after_minor,
+              e.currency_code, t.reference_type, t.reference_id::text AS reference_id, t.description, e.created_at
+         FROM ledger_entries e
+         JOIN wallet_accounts a ON a.id = e.account_id AND a.owner_kind = 'user' AND a.owner_user_id = $1
+         JOIN ledger_transactions t ON t.id = e.txn_id
+         LEFT JOIN lookup_values lv ON lv.id = t.txn_type_id
+        WHERE e.currency_code = $2 AND e.created_at >= $3 AND e.created_at < $4
+        ORDER BY e.created_at ASC, e.id ASC
+        LIMIT $5`,
+      [userId, currencyCode, opts.fromIso, opts.toIso, cap]);
+    return r.rows.map((x) => ({
+      entryId: x.entry_id, txnId: x.txn_id, txnType: x.txn_type, accountCode: x.account_code,
+      amountMinor: x.amount_minor, balanceAfterMinor: x.balance_after_minor, currencyCode: x.currency_code,
+      referenceType: x.reference_type, referenceId: x.reference_id, description: x.description,
+      createdAt: x.created_at instanceof Date ? x.created_at.toISOString() : String(x.created_at),
+    }));
+  }
 }

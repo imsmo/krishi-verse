@@ -11,15 +11,14 @@
 // Chai/Tools/Transport/Insurance), the payment terms copy, and — for worker privacy — the employer's NAME + ⭐rating
 // + tenure + "View profile" ("Ramesh Patel ✓ · ⭐4.9 · 42 bookings" is design seed) → an anonymised employer + note.
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { LabourBooking, LabourLookups, WorkerProfile } from '@krishi-verse/sdk-js';
-import { SdkError } from '@krishi-verse/sdk-js';
 import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
 import { formatDate, formatMoneyMinor } from '@krishi-verse/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
-import { getJob, labourLookups, getMyWorker, applyToJob } from '../../../features/labour/labour.api';
+import { getJob, labourLookups, getMyWorker } from '../../../features/labour/labour.api';
 import { canAcceptWork } from '../../../features/labour/labour-status';
 import { wageAboveMinMinor } from '../../../features/labour/offer';
 import { skillLabel, workTypeLabel, taskEmoji } from '../../../features/labour/worker-home';
@@ -34,7 +33,6 @@ export default function JobDetail() {
   const [worker, setWorker] = useState<WorkerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
-  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -46,17 +44,8 @@ export default function JobDetail() {
 
   if (!enabled) return <ScreenScaffold title={t('worker.jobDetail.title')}><EmptyState title={t('common.unavailable')} /></ScreenScaffold>;
 
-  const apply = async () => {
-    if (!id) return;
-    setBusy(true);
-    try {
-      await applyToJob(id);
-      router.replace({ pathname: '/(worker)/jobs', params: { notice: t('worker.jobDetail.applied') } });
-    } catch (e) {
-      const msg = e instanceof SdkError && e.isConflict ? t('worker.jobDetail.alreadyApplied') : e instanceof SdkError && e.isForbidden ? t('worker.cannotAccept') : t('common.error.generic');
-      Alert.alert(t('worker.jobDetail.applyFailed'), msg);
-    } finally { setBusy(false); }
-  };
+  // "Apply" opens the confirm-and-apply screen (140), which performs the real idempotent applyToBooking.
+  const goApply = () => { if (id) router.push({ pathname: '/(worker)/jobs/apply/[id]', params: { id } }); };
 
   const ageOk = canAcceptWork(worker);
   const skill = job ? skillLabel(job, lookups) : null;

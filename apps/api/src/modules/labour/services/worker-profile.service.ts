@@ -58,6 +58,7 @@ export class WorkerProfileService {
         hasSmartphone: dto.hasSmartphone, emergencyContactName: dto.emergencyContactName,
         emergencyContactPhone: dto.emergencyContactPhone, eshramNo: dto.eshramNo,
       });
+      if (dto.discoverable !== undefined) worker.updateDiscoverability(dto.discoverable);   // explicit consent decision
       if (dto.skillIds) await this.repo.setSkills(tx, worker.id, dto.skillIds);   // replace the self-declared skill set
       await this.repo.update(tx, worker);
       await this.flush(tx, tenantId, worker.id, worker.pullEvents());
@@ -84,11 +85,28 @@ export class WorkerProfileService {
     return { items, nextCursor };
   }
 
+  /** P0-2 employer marketplace read: consented worker CARDS. Identity fields are populated by the repo's
+   *  discoverable-gated SQL — a non-consenting worker appears only as an anonymous availability card. */
+  async listCards(tenantId: string, q: { villageRegionId?: string; ageVerified?: boolean; cursor?: { c: string; id: string }; limit: number }) {
+    const items = await this.repo.listCards(tenantId, q);
+    const last = items[items.length - 1];
+    const nextCursor = items.length === q.limit && last ? Buffer.from(`${last.id}`).toString('base64') : null;
+    return { items, nextCursor };
+  }
+  async getCard(tenantId: string, id: string) {
+    const card = await this.repo.getCard(tenantId, id);
+    if (!card) throw new WorkerProfileNotFoundError(id);
+    return card;
+  }
+
   private serialize(w: WorkerProfile) {
     const v = w.toProps();
+    // NOTE: this is the worker's OWN full profile (getMine / register / updateMine) — discoverable is the worker's
+    // own consent flag, safe to return to themselves. The employer-facing PII gate lives in listCards/getCard.
     return { id: v.id, userId: v.userId, ageVerified18: v.ageVerified18, villageRegionId: v.villageRegionId,
       travelKm: v.travelKm, stayAwayOk: v.stayAwayOk, minWageExpectationMinor: v.minWageExpectationMinor?.toString() ?? null,
       autoAcceptAboveMinor: v.autoAcceptAboveMinor?.toString() ?? null, hasSmartphone: v.hasSmartphone,
+      discoverable: v.discoverable,
       ratingAvg: v.ratingAvg, bookingsCompleted: v.bookingsCompleted, noShowCount: v.noShowCount, createdAt: v.createdAt };
   }
   private async flush(tx: TxContext, tenantId: string, workerId: string, events: DomainEvent[]) {

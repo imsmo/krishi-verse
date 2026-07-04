@@ -15,14 +15,19 @@ export interface InsightsView {
   totalMinor: string;          // bigint as string (credited for earnings / spent for spending)
   byMonth: InsightBucket[];    // key = 'YYYY-MM'
   byType: InsightBucket[];     // key = ledger_txn_type code
+  byCrop?: InsightBucket[];    // key = order_items.title_snapshot — ONLY on earnings when groupBy='crop' (P0-3)
 }
 
 @Injectable()
 export class WalletInsightsReadModel {
   constructor(private readonly pools: PgPoolProvider) {}
 
-  async earnings(viewerUserId: string, userId: string, canModerate: boolean, opts: { from?: string; to?: string; currencyCode?: string }): Promise<InsightsView> {
-    return this.aggregate('credit', viewerUserId, userId, canModerate, opts);
+  async earnings(viewerUserId: string, userId: string, canModerate: boolean, opts: { from?: string; to?: string; currencyCode?: string; groupBy?: 'crop' }): Promise<InsightsView> {
+    const view = await this.aggregate('credit', viewerUserId, userId, canModerate, opts);
+    if (opts.groupBy === 'crop' && (viewerUserId === userId || canModerate)) {
+      view.byCrop = await this.cropBuckets(userId, view.currencyCode, view.fromIso, view.toIso);
+    }
+    return view;
   }
   async spending(viewerUserId: string, userId: string, canModerate: boolean, opts: { from?: string; to?: string; currencyCode?: string }): Promise<InsightsView> {
     return this.aggregate('debit', viewerUserId, userId, canModerate, opts);
@@ -65,5 +70,46 @@ export class WalletInsightsReadModel {
       byMonth: map(byMonth.rows),
       byType: map(byType.rows),
     };
+  }
+
+  /** P0-3: per-crop earnings. Each wallet CREDIT that settled an order is attributed to that order's line items
+   *  by the frozen `order_items.title_snapshot` (the real crop/product the buyer saw — never fabricated), the net
+   *  credit apportioned across lines by their gross share. FLOAT-FREE: the share is integer bigint division in
+   *  Postgres (floor; a few paise may be unattributed on multi-line orders — acceptable for a display breakdown).
+   *  Scoped by `orders.seller_user_id = caller` (anti-IDOR, independent of RLS; ids are globally-unique uuids).
+   *  Degrades to [] on any error (Law 12). */
+  private async cropBuckets(userId: string, currencyCode: string, fromIso: string, toIso: string): Promise<InsightBucket[]> {
+    try {
+      const r = await this.pools.replica(0).query<{ k: string; s: string; n: string }>(
+        `WITH credit_txn AS (
+           SELECT t.reference_id AS order_id, e.amount_minor AS credit_minor
+             FROM ledger_entries e
+             JOIN wallet_accounts a ON a.id = e.account_id AND a.owner_kind = 'user' AND a.owner_user_id = $1
+             JOIN ledger_transactions t ON t.id = e.txn_id
+            WHERE e.currency_code = $2 AND e.created_at >= $3 AND e.created_at < $4
+              AND e.amount_minor > 0 AND t.reference_type = 'order' AND t.reference_id IS NOT NULL
+         ),
+         og AS (
+           SELECT oi.order_id, SUM(oi.line_total_minor) AS gross
+             FROM order_items oi
+             JOIN orders o ON o.id = oi.order_id AND o.seller_user_id = $1
+            WHERE oi.order_id IN (SELECT order_id FROM credit_txn)
+            GROUP BY 1
+         )
+         SELECT oi.title_snapshot AS k,
+                COALESCE(SUM((ct.credit_minor * oi.line_total_minor) / NULLIF(og.gross, 0)), 0)::text AS s,
+                count(DISTINCT ct.order_id)::text AS n
+           FROM credit_txn ct
+           JOIN orders o ON o.id = ct.order_id AND o.seller_user_id = $1
+           JOIN order_items oi ON oi.order_id = ct.order_id
+           JOIN og ON og.order_id = ct.order_id
+          GROUP BY 1
+          ORDER BY SUM((ct.credit_minor * oi.line_total_minor) / NULLIF(og.gross, 0)) DESC NULLS LAST
+          LIMIT 30`,
+        [userId, currencyCode, fromIso, toIso]);
+      return r.rows.map((x) => ({ key: x.k, amountMinor: x.s, count: Number(x.n) }));
+    } catch {
+      return []; // degrade-never-die — the period/type breakdowns still render
+    }
   }
 }

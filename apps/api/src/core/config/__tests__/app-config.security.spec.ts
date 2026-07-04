@@ -24,6 +24,10 @@ const SECURE_RAW: Record<string, string> = {
   EKYC_PROVIDER_URL: 'https://ekyc.provider.example.com',
   EKYC_PROVIDER_API_KEY: 'ekyc-live-strong-api-key-0123456789',
   MEDIA_SCAN_SECRET: 'media-scan-hmac-strong-secret-0123456789',  // P0-13: AV scan-result webhook HMAC
+  BANK_VAULT_KIND: 'razorpayx',                                    // P1-16-C: real tokeniser required in prod (sandbox forbidden)
+  RAZORPAYX_KEY_ID: 'rzp_live_x_abc123',
+  RAZORPAYX_KEY_SECRET: 'rzpx_live_strong_secret_abcdef0123456789', // 40 chars, passes weak16
+  RAZORPAYX_WEBHOOK_SECRET: 'rzpx_whsec_live_strong_abcdef0123456789', // verifies payout webhooks (strong)
 };
 
 const envWith = (overrides: Record<string, string | undefined>): Env => {

@@ -1,6 +1,6 @@
 // Unit tests for the PURE wallet presenters + the withdrawal guard (features/wallet/txn). No React/native deps
 // (SDK/ui imports are type-only). Money is bigint minor units (Law 2) — the guard must use BigInt, never float.
-import { statusTone, statusLabelKey, txnTitleKey, presentPayment, presentPayout, withdrawable, ledgerMoneyTone, presentLedgerEntry } from '../../features/wallet/txn';
+import { statusTone, statusLabelKey, txnTitleKey, presentPayment, presentPayout, withdrawable, ledgerMoneyTone, presentLedgerEntry, txnFlow } from '../../features/wallet/txn';
 import type { PaymentSummary, PayoutSummary, WalletLedgerEntry } from '@krishi-verse/sdk-js';
 
 describe('statusTone / statusLabelKey', () => {
@@ -65,6 +65,18 @@ describe('ledgerMoneyTone / presentLedgerEntry (server-truth signed amount + run
   it('defaults a missing amount/balance to 0 (never undefined into MoneyText)', () => {
     const e = { entryId: '7', txnId: 't', txnType: null, accountCode: 'main', currencyCode: 'INR', referenceType: null, referenceId: null, description: null } as unknown as WalletLedgerEntry;
     expect(presentLedgerEntry(e)).toMatchObject({ amountMinor: '0', balanceAfterMinor: '0', moneyTone: 'default' });
+  });
+});
+
+describe('txnFlow (own-wallet side + net label from tone; never fabricates the counterparty)', () => {
+  it('a credit puts the wallet on the receiving (to) side, net credit', () => {
+    expect(txnFlow('positive')).toEqual({ walletSide: 'to', netKey: 'netCredit' });
+  });
+  it('a debit puts the wallet on the sending (from) side, net debit', () => {
+    expect(txnFlow('negative')).toEqual({ walletSide: 'from', netKey: 'netDebit' });
+  });
+  it('a neutral movement is treated as a credit-side (never inverts the wallet role)', () => {
+    expect(txnFlow('default')).toEqual({ walletSide: 'to', netKey: 'netCredit' });
   });
 });
 

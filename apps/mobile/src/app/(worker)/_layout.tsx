@@ -35,17 +35,26 @@ export default function WorkerTabsLayout() {
       <Tabs.Screen name="offers" options={{ title: t('worker.tabs.offers'), tabBarIcon: ({ focused }) => <Icon glyph="📨" focused={focused} /> }} />
       <Tabs.Screen name="profile" options={{ title: t('tabs.profile'), tabBarIcon: ({ focused }) => <Icon glyph="👤" focused={focused} /> }} />
       <Tabs.Screen name="jobs/[id]" options={{ href: null }} />
+      <Tabs.Screen name="jobs/apply/[id]" options={{ href: null }} />
       <Tabs.Screen name="offers/[id]" options={{ href: null }} />
+      <Tabs.Screen name="offers/decline/[id]" options={{ href: null }} />
       <Tabs.Screen name="my-jobs" options={{ href: null }} />
       <Tabs.Screen name="availability" options={{ href: null }} />
       <Tabs.Screen name="skills" options={{ href: null }} />
       <Tabs.Screen name="profile/edit" options={{ href: null }} />
+      <Tabs.Screen name="profile/skills-add" options={{ href: null }} />
       <Tabs.Screen name="active-job/[id]" options={{ href: null }} />
       <Tabs.Screen name="payment-received/[id]" options={{ href: null }} />
       <Tabs.Screen name="earnings" options={{ href: null }} />
       <Tabs.Screen name="withdraw" options={{ href: null }} />
       <Tabs.Screen name="reviews" options={{ href: null }} />
       <Tabs.Screen name="insurance" options={{ href: null }} />
+      <Tabs.Screen name="work-history" options={{ href: null }} />
+      <Tabs.Screen name="documents" options={{ href: null }} />
+      <Tabs.Screen name="dispute/[id]" options={{ href: null }} />
+      <Tabs.Screen name="help" options={{ href: null }} />
+      <Tabs.Screen name="pmsby-enroll" options={{ href: null }} />
+      <Tabs.Screen name="claim" options={{ href: null }} />
     </Tabs>
   );
 }

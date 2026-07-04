@@ -1,52 +1,150 @@
-// apps/mobile/src/app/(system)/settings.tsx · screen 75 (settings hub). Thin screen (guide §3): a list of links to
-// the cross-cutting screens (language, privacy, permissions, tutorial, about, feedback) + sign out. Behind
-// `system_screens`. Degrade-never-die.
-import React from 'react';
+// apps/mobile/src/app/(system)/settings.tsx · screen 75 (Settings hub) — rebuilt to the Phase-1 design: an identity
+// header (avatar + name + KYC badge), grouped sections (Account / Preferences / Security & Privacy / Support), a
+// Logout, and a version footer. Thin screen (guide §3): reads the profile + KYC + payout destinations, renders
+// ui-native rows that deep-link to the real screens. Behind `system_screens`. Degrade-never-die (skeleton on the
+// data rows). FLAG_SECURE (payout/KYC details on screen, §4).
+//
+// §13 (NOT faked): the name (profile.displayName), the KYC ✓ badge (real verified doc), the Bank/UPI sub-lines
+// (real count + masked last-4 / VPA), the Language value (profile.locale), and the app version (config.appVersion)
+// are all REAL. The design's masked PHONE ("+91 98765 ●●●●●") + LOCATION ("Anand, Gujarat") are NOT on the profile
+// contract (and the phone is deliberately never held client-side, §4) → the header omits them rather than
+// fabricating. "★ Verified Seller" has no seller-verified flag → omitted. "App PIN · On" has no app-PIN contract →
+// shown as a coming-soon info row, never a fake toggle. "App Theme · System" is the real current behaviour (the app
+// follows the OS theme; no in-app theme store yet). The build number ("Build 142") isn't in config → only the real
+// version is shown.
+import React, { useCallback, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Button, Card, EmptyState, ScreenScaffold, color, font, space } from '@krishi-verse/ui-native';
+import { useRouter, useFocusEffect } from 'expo-router';
+import type { KycDocument, BankAccount } from '@krishi-verse/sdk-js';
+import { LANGUAGES } from '@krishi-verse/i18n';
+import { Button, Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { useAuth } from '../../core/auth/auth.store';
+import { useSecureScreen } from '../../core/security/screen-guard';
+import { config } from '../../core/config';
+import { myDocuments, myBankAccounts } from '../../features/profile/profile.api';
+import { initials, hasVerifiedKyc, bankCodeFromIfsc } from '../../features/profile/profile';
 
 export default function Settings() {
+  useSecureScreen();
   const { t } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('system_screens');
   const notifOn = useFlag('notifications');
-  const { signOut } = useAuth();
+  const { state, signOut } = useAuth();
+  const [docs, setDocs] = useState<KycDocument[]>([]);
+  const [banks, setBanks] = useState<BankAccount[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  if (!enabled) return <ScreenScaffold title={t('system.settings.title')}><EmptyState title={t('common.unavailable')} /></ScreenScaffold>;
+  const load = useCallback(async () => {
+    setLoading(true);
+    const [d, b] = await Promise.all([myDocuments(), myBankAccounts()]);
+    setDocs(d); setBanks(b); setLoading(false);
+  }, []);
+  useFocusEffect(useCallback(() => { if (enabled) load(); else setLoading(false); }, [enabled, load]));
+
+  if (!enabled) return <ScreenScaffold title={t('settings.title')}><EmptyState title={t('common.unavailable')} /></ScreenScaffold>;
 
   const onSignOut = async () => { await signOut(); router.replace('/(auth)/welcome'); };
 
-  const LINKS: Array<{ key: string; route: string; label: string }> = [
-    { key: 'search', route: '/(system)/search', label: t('system.search.title') },
-    { key: 'language', route: '/(system)/language', label: t('system.language.title') },
-    ...(notifOn ? [{ key: 'notif', route: '/(farmer)/notifications/settings', label: t('system.settings.notifications') }] : []),
-    { key: 'privacy', route: '/(system)/privacy', label: t('system.privacy.title') },
-    { key: 'permissions', route: '/(system)/permissions', label: t('system.permissions.title') },
-    { key: 'feedback', route: '/(system)/feedback', label: t('system.feedback.title') },
-    { key: 'tutorial', route: '/(system)/tutorial', label: t('system.tutorial.title') },
-    { key: 'about', route: '/(system)/about', label: t('system.about.title') },
-  ];
+  const name = state.profile?.displayName ?? t('home.defaultName');
+  const kycVerified = hasVerifiedKyc(docs);
+  const langLabel = LANGUAGES.find((l) => l.code === (state.profile?.locale ?? state.language))?.nameNative ?? '';
+
+  const bankAccts = banks.filter((a) => a.accountKind === 'bank');
+  const primaryBank = bankAccts.find((a) => a.isPrimary) ?? bankAccts[0];
+  const bankSub = bankAccts.length === 0 ? t('settings.bankNone')
+    : t('settings.bankSub', { n: bankAccts.length, code: primaryBank ? (bankCodeFromIfsc(primaryBank.ifsc) ?? '') : '', last4: primaryBank?.accountLast4 ?? '' });
+  const upis = banks.filter((a) => a.accountKind === 'upi');
+  const primaryUpi = upis.find((a) => a.isPrimary) ?? upis[0];
+  const upiSub = primaryUpi?.upiId ? t('settings.upiSub', { vpa: primaryUpi.upiId }) : t('settings.upiNone');
 
   return (
-    <ScreenScaffold title={t('system.settings.title')}>
-      <View style={{ gap: space[2] }}>
-        {LINKS.map((l) => (
-          <Card key={l.key} onPress={() => router.push(l.route as never)} accessibilityLabel={l.label}>
-            <Text style={styles.link}>{l.label} →</Text>
+    <ScreenScaffold title={t('settings.title')} scroll>
+      {/* Identity header */}
+      <View style={styles.header}>
+        <View style={styles.avatar}><Text style={styles.avatarTxt}>{initials(name)}</Text></View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.name}>{name}</Text>
+          <View style={styles.badges}>
+            {kycVerified ? <StatusPill label={t('settings.kycBadge')} tone="success" /> : null}
+          </View>
+        </View>
+      </View>
+
+      {loading ? <SkeletonCard lines={6} /> : (
+        <>
+          {/* Account */}
+          <Text style={styles.section}>{t('settings.account')}</Text>
+          <Card>
+            <Row title={t('settings.editProfile')} sub={t('settings.editProfileSub')} onPress={() => router.push('/(farmer)/profile/edit')} />
+            <Row title={t('settings.bankAccounts')} sub={bankSub} onPress={() => router.push('/(farmer)/profile/bank')} divide />
+            <Row title={t('settings.upiIds')} sub={upiSub} onPress={() => router.push('/(farmer)/wallet/upi')} divide />
           </Card>
-        ))}
-      </View>
-      <View style={{ marginTop: space[8] }}>
-        <Button title={t('common.signOut')} variant="outline" onPress={onSignOut} />
-      </View>
+
+          {/* Preferences */}
+          <Text style={styles.section}>{t('settings.preferences')}</Text>
+          <Card>
+            <Row title={t('settings.language')} value={langLabel} onPress={() => router.push('/(system)/language')} />
+            {notifOn ? <Row title={t('settings.notifications')} sub={t('settings.notificationsSub')} onPress={() => router.push('/(farmer)/notifications/settings')} divide /> : null}
+            {/* §13: app follows the OS theme; no in-app theme store yet → static "System". */}
+            <Row title={t('settings.theme')} value={t('settings.themeSystem')} divide />
+          </Card>
+
+          {/* Security & Privacy */}
+          <Text style={styles.section}>{t('settings.security')}</Text>
+          <Card>
+            {/* §13: no app-PIN contract → coming-soon info row, not a fake toggle. */}
+            <Row title={t('settings.appPin')} sub={t('settings.appPinSoon')} />
+            <Row title={t('settings.privacy')} sub={t('settings.privacySub')} onPress={() => router.push('/(system)/privacy')} divide />
+            <Row title={t('settings.permissions')} sub={t('settings.permissionsSub')} onPress={() => router.push('/(system)/permissions')} divide />
+          </Card>
+
+          {/* Support */}
+          <Text style={styles.section}>{t('settings.support')}</Text>
+          <Card>
+            <Row title={t('settings.helpFaq')} onPress={() => router.push('/(farmer)/profile/help')} />
+            <Row title={t('settings.contactSupport')} sub={t('settings.contactSupportSub')} onPress={() => router.push('/(farmer)/profile/help')} divide />
+            <Row title={t('settings.about')} onPress={() => router.push('/(system)/about')} divide />
+          </Card>
+
+          <View style={{ marginTop: space[5] }}>
+            <Button title={t('common.signOut')} variant="outline" onPress={onSignOut} />
+          </View>
+          <Text style={styles.version}>{t('settings.versionLine', { version: config.appVersion })}</Text>
+        </>
+      )}
     </ScreenScaffold>
   );
 }
 
+function Row({ title, sub, value, onPress, divide }: { title: string; sub?: string; value?: string; onPress?: () => void; divide?: boolean }) {
+  const body = (
+    <View style={[styles.row, divide && styles.divide]}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.rowTitle}>{title}</Text>
+        {sub ? <Text style={styles.rowSub}>{sub}</Text> : null}
+      </View>
+      {value ? <Text style={styles.rowValue}>{value}</Text> : null}
+      {onPress ? <Text style={styles.chev}>›</Text> : null}
+    </View>
+  );
+  return onPress ? <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={title}>{body}</Pressable> : body;
+}
+
 const styles = StyleSheet.create({
-  link: { fontFamily: font.body, fontSize: font.size.lg, fontWeight: font.weight.semibold, color: color.primary700 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3], marginTop: space[2] },
+  avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: color.primary600, alignItems: 'center', justifyContent: 'center' },
+  avatarTxt: { fontFamily: font.display, fontSize: font.size.lg, fontWeight: font.weight.bold, color: color.white },
+  name: { fontFamily: font.display, fontSize: font.size.xl, fontWeight: font.weight.bold, color: color.ink900 },
+  badges: { flexDirection: 'row', gap: space[2], marginTop: space[1] },
+  section: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink500, fontWeight: font.weight.bold, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: space[4], marginBottom: space[2] },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3], minHeight: 48 },
+  divide: { borderTopWidth: 1, borderTopColor: color.ink100 },
+  rowTitle: { fontFamily: font.body, fontSize: font.size.md, fontWeight: font.weight.semibold, color: color.ink800 },
+  rowSub: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink500, marginTop: 2 },
+  rowValue: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink500 },
+  chev: { fontFamily: font.body, fontSize: font.size.lg, color: color.ink400 },
+  version: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink400, textAlign: 'center', marginTop: space[4] },
 });

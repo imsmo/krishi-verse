@@ -5,7 +5,7 @@
 // their own tenant, the server re-checks tenant membership + permission on each call. Mutations carry an
 // Idempotency-Key (Law 3). Money is bigint minor strings (Law 2).
 import { HttpClient } from '../http';
-import { RoleAssignment, RoleDef, PermissionDef, AssignRoleInput, StaffOverrideInput, Dispute, UserProfile, Page } from '../types';
+import { RoleAssignment, RoleDef, PermissionDef, AssignRoleInput, StaffOverrideInput, Dispute, DisputeMessage, UserProfile, Page } from '../types';
 
 export class RbacResource {
   constructor(private readonly http: HttpClient) {}
@@ -65,6 +65,12 @@ export class DisputesResource {
    * SERVER-SIDE (the app never does, Law 11). Needs dispute.resolve. */
   async resolve(id: string, input: { resolutionType: string; resolutionAmountMinor?: string; note?: string }): Promise<Dispute> {
     return (await this.http.request<Dispute>('POST', `disputes/${encodeURIComponent(id)}/resolve`, { body: input })).data;
+  }
+  /** The append-only evidence/conversation thread for a dispute (author + body + time). Keyset. Party-vs-party +
+   * moderator authority enforced SERVER-SIDE per row. */
+  async messages(id: string, params: { cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<DisputeMessage>> {
+    const r = await this.http.request<DisputeMessage[]>('GET', `disputes/${encodeURIComponent(id)}/messages`, { query: { cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
 }
 

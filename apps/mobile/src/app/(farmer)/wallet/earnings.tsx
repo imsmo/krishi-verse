@@ -16,7 +16,8 @@ import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, colo
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { useSecureScreen } from '../../../core/security';
-import { walletEarnings, walletBalance } from '../../../features/wallet/wallet.api';
+import { walletEarnings, walletBalance, exportWalletStatement } from '../../../features/wallet/wallet.api';
+import { Share } from 'react-native';
 import { currentMonth, momDelta, totalSales, averageSaleMinor, bestMonth, periodTotal, barChart, type EarningsPeriod } from '../../../features/wallet/earnings';
 
 const PERIODS: EarningsPeriod[] = ['week', 'month', 'year', 'lifetime'];
@@ -33,12 +34,26 @@ export default function Earnings() {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
 
+  const [downloading, setDownloading] = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
-    const [ins, bal] = await Promise.all([walletEarnings(), walletBalance()]);
+    const [ins, bal] = await Promise.all([walletEarnings({ byCrop: true }), walletBalance()]);
     setView(ins); setBalanceMinor(bal.availableMinor); setFailed(ins.fromIso === ''); setLoading(false);
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  // P0-3 statement export: fetch the CSV ledger, write it to a file, and hand it to the OS share sheet. Honest
+  // failure note (never a fake success). CSV opens in any spreadsheet app the farmer has.
+  const onDownload = useCallback(async () => {
+    setDownloading(true);
+    try {
+      const out = await exportWalletStatement({ format: 'csv' });
+      if (!out) { Alert.alert(t('earnings.report.title'), t('earnings.report.failed')); return; }
+      try { await Share.share({ url: out.uri, title: out.filename, message: t('earnings.report.shareMsg') }); }
+      catch { Alert.alert(t('earnings.report.title'), t('earnings.report.saved', { name: out.filename })); }
+    } finally { setDownloading(false); }
+  }, [t]);
 
   const period$ = useMemo(() => periodTotal(view.byMonth, period), [view, period]);
   const mom = useMemo(() => momDelta(view.byMonth), [view]);
@@ -55,7 +70,7 @@ export default function Earnings() {
       title={t('earnings.title')}
       footer={
         <View style={styles.footer}>
-          <Button title={t('earnings.download')} variant="outline" onPress={() => Alert.alert(t('earnings.report.title'), t('earnings.report.soon'))} />
+          <Button title={t('earnings.download')} variant="outline" loading={downloading} disabled={downloading} onPress={onDownload} />
           <View style={{ flex: 1 }}>
             <Button title={`${t('earnings.withdraw')} ${moneyInline(balanceMinor, cc, lang)}`} onPress={() => router.push('/(farmer)/wallet/withdraw')} disabled={balanceMinor === '0'} />
           </View>
@@ -110,7 +125,7 @@ export default function Earnings() {
             <Stat label={t('earnings.walletBalance')}><MoneyText minor={balanceMinor} currencyCode={cc} langCode={lang} size="lg" /></Stat>
           </View>
 
-          {/* Earnings by source (real byType; §13 per-crop breakdown not in the contract) */}
+          {/* Earnings by source (real byType) */}
           <Card style={{ marginTop: space[4] }}>
             <Text style={styles.section}>{t('earnings.bySource')}</Text>
             {view.byType.length ? view.byType.map((b) => (
@@ -119,8 +134,20 @@ export default function Earnings() {
                 <MoneyText minor={b.amountMinor} currencyCode={cc} langCode={lang} size="md" />
               </View>
             )) : <Text style={styles.muted}>{t('earnings.bySourceEmpty')}</Text>}
-            <Text style={styles.note}>{t('earnings.byCropSoon')}</Text>
           </Card>
+
+          {/* Earnings by crop (P0-3, real byCrop — attributed to each order's product title). Only render when present. */}
+          {view.byCrop && view.byCrop.length ? (
+            <Card style={{ marginTop: space[3] }}>
+              <Text style={styles.section}>{t('earnings.byCrop')}</Text>
+              {view.byCrop.map((b) => (
+                <View key={b.key} style={styles.srcRow}>
+                  <Text style={styles.srcKey} numberOfLines={1}>{b.key}</Text>
+                  <MoneyText minor={b.amountMinor} currencyCode={cc} langCode={lang} size="md" />
+                </View>
+              ))}
+            </Card>
+          ) : null}
 
           {failed ? <View style={{ marginTop: space[3] }}><Button title={t('common.retry')} variant="outline" onPress={load} /></View> : null}
         </>

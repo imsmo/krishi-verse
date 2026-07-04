@@ -5,7 +5,7 @@
 // (execution is a flagged follow-on). The raw VPA is NEVER stored: only a masked form (DPDP minimisation).
 import { MandateStatus, assertTransition } from './mandate.state';
 import { MandateEventType, DomainEvent } from './payments.events';
-import { InvalidVpaError } from './payments.errors';
+import { InvalidVpaError, MandateNotActiveError, MandateAmountExceedsCapError } from './payments.errors';
 
 // handle@psp — letters/digits/dot/hyphen/underscore handle, an @, then the PSP handle.
 const VPA_RE = /^[a-zA-Z0-9.\-_]{2,64}@[a-zA-Z][a-zA-Z0-9.\-]{1,30}$/;
@@ -55,8 +55,25 @@ export class Mandate {
   get userId() { return this.props.userId; }
   get tenantId() { return this.props.tenantId; }
   get version() { return this.props.version; }
+  get currencyCode() { return this.props.currencyCode; }
+  get maxAmountMinor() { return this.props.maxAmountMinor; }
+  get providerMandateRef() { return this.props.providerMandateRef; }
   toProps(): Readonly<MandateProps> { return Object.freeze({ ...this.props }); }
   pullEvents(): DomainEvent[] { const e = [...this.events]; this.events.length = 0; return e; }
+
+  /** Guard a collection request against this mandate BEFORE any money moves (Law 5 / server sole authority).
+   *  Throws if the mandate is not active or the amount exceeds the authorised per-debit cap. Pure — no state change.
+   *  On success it records the Executed event; the caller flushes it once the ledger move + row insert commit. */
+  assertCollectable(amountMinor: bigint, ctx: { executionId: string; idempotencyKey: string }): void {
+    if (this.props.status !== 'active') throw new MandateNotActiveError(this.props.status);
+    if (amountMinor <= 0n) throw new MandateAmountExceedsCapError(amountMinor, this.props.maxAmountMinor);
+    if (amountMinor > this.props.maxAmountMinor) throw new MandateAmountExceedsCapError(amountMinor, this.props.maxAmountMinor);
+    this.events.push({ type: MandateEventType.Executed, payload: {
+      mandateId: this.props.id, userId: this.props.userId, purpose: this.props.purpose,
+      executionId: ctx.executionId, amountMinor: amountMinor.toString(), currencyCode: this.props.currencyCode,
+      idempotencyKey: ctx.idempotencyKey,
+    } });
+  }
 
   /** PSP confirmed the standing instruction (provider mandate token attached). Idempotent. */
   activate(providerMandateRef: string): boolean {

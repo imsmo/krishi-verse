@@ -4,28 +4,29 @@
 // an `assignBookingId`, the employer can ASSIGN this worker (idempotent; the server re-checks ownership, the 18+
 // gate, headcount + wage floor), else the primary CTA books a new job. Behind `labour_hire`. Degrade-never-die.
 //
-// §13 (no contract → rendered honestly, never faked): the pool read is PII-MINIMISED — NO name/photo → we show an
-// anonymised worker id + a person glyph, never "Sunita Kumari". Distance ("2.4 km away") isn't in the contract →
-// omitted (region name IS resolved from lookups). The design's 30-day availability CALENDAR, PMSBY insurance and
-// the worker's private monthly EARNINGS aren't exposed to a hiring employer → shown as honest "not shared" notes,
-// never a fabricated calendar or ₹ figure.
+// §13 (no contract → rendered honestly, never faked): the pool read is a CONSENT-GATED card (P0-2). The worker's
+// NAME/rating/job-count are shown ONLY when they opted in (discoverable=true); otherwise we show an anonymised
+// worker id + a person glyph, never a fabricated name. Distance ("2.4 km away") isn't in the contract → omitted
+// (region name IS resolved from lookups). The card carries no skill set → the skills block shows honestly as
+// "not shared". The design's 30-day availability CALENDAR, PMSBY insurance and the worker's private monthly
+// EARNINGS aren't exposed to a hiring employer → shown as honest "not shared" notes, never a fabricated figure.
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { WorkerProfile, LabourLookups, ReviewSummary } from '@krishi-verse/sdk-js';
+import type { WorkerCard, LabourLookups, ReviewSummary } from '@krishi-verse/sdk-js';
 import { SdkError } from '@krishi-verse/sdk-js';
 import { Button, Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../../../core/i18n/useTranslation';
 import { useFlag } from '../../../../core/flags/useFlag';
 import { getWorker, assignWorker, labourLookups, workerRatingSummary } from '../../../../features/labour/hire.api';
-import { workerYears, skillLabels, regionName } from '../../../../features/labour/worker-profile';
+import { workerYears, regionName } from '../../../../features/labour/worker-profile';
 
 export default function WorkerProfileEmployer() {
   const { id, assignBookingId } = useLocalSearchParams<{ id: string; assignBookingId?: string }>();
   const { t } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('labour_hire');
-  const [worker, setWorker] = useState<WorkerProfile | null>(null);
+  const [worker, setWorker] = useState<WorkerCard | null>(null);
   const [lookups, setLookups] = useState<LabourLookups | null>(null);
   const [rating, setRating] = useState<ReviewSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,7 +38,9 @@ export default function WorkerProfileEmployer() {
     const w = await getWorker(id);
     setWorker(w);
     setLookups(await labourLookups());
-    setRating(w ? await workerRatingSummary(w.userId) : null);
+    // Public review summary only for a consented worker (their user id is exposed on the card either way, but we
+    // honour the display consent gate here too). Degrades to null.
+    setRating(w && w.discoverable ? await workerRatingSummary(w.userId) : null);
     setLoading(false);
   }, [id]);
   useEffect(() => { if (enabled) load(); }, [enabled, load]);
@@ -46,10 +49,11 @@ export default function WorkerProfileEmployer() {
   if (loading) return <ScreenScaffold title={t('workerProfile.title')}><SkeletonCard lines={3} /><SkeletonCard lines={4} /></ScreenScaffold>;
   if (!worker) return <ScreenScaffold title={t('workerProfile.title')}><EmptyState title={t('hire.worker.unavailable')} actionLabel={t('common.retry')} onAction={load} /></ScreenScaffold>;
 
-  const anon = t('hire.worker.anon', { id: worker.id.slice(0, 6).toUpperCase() });
+  // Consent-gated display name: the worker's real name only when they opted in; otherwise an anonymised handle.
+  const name = worker.discoverable && worker.displayName ? worker.displayName : t('hire.worker.anon', { id: worker.id.slice(0, 6).toUpperCase() });
   const region = regionName(lookups?.regions ?? [], worker.villageRegionId);
   const years = workerYears(worker.createdAt);
-  const skills = skillLabels(lookups?.skills ?? [], worker.skillIds);
+  const skills: string[] = [];   // §13: the consent-gated card carries no skill set → shown as "not shared"
   const ratingAvg = worker.ratingAvg ?? (rating ? rating.averageStars : null);
   const ratingCount = rating?.count ?? 0;
 
@@ -79,8 +83,8 @@ export default function WorkerProfileEmployer() {
       <View style={styles.hero}>
         <View style={styles.avatar}><Text style={styles.avatarGlyph}>👤</Text></View>
         <View style={styles.headRow}>
-          <Text style={styles.name}>{anon}</Text>
-          <StatusPill label={t(worker.ageVerified18 ? 'worker.verified' : 'worker.unverified')} tone={worker.ageVerified18 ? 'success' : 'warning'} />
+          <Text style={styles.name}>{name}</Text>
+          <StatusPill label={t(worker.ageVerified ? 'worker.verified' : 'worker.unverified')} tone={worker.ageVerified ? 'success' : 'warning'} />
         </View>
         {region ? <Text style={styles.location}>📍 {region}</Text> : null}
       </View>

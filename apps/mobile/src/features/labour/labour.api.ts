@@ -52,6 +52,13 @@ export function applyToJob(bookingId: string): Promise<LabourAssignment> {
 
 // ---- P-13: active-job / earnings / reviews (reads over the SAME labour + reviews contracts) ----
 
+/** The caller's OWN work-history (attendance days, newest first; screen 138). Keyset-paged; degrades to an empty
+ * page. Attendance carries date/hours/status/paid — NOT the task/farmer/wage/rating/review (those aren't on the
+ * contract, so the screen degrades them, never fakes them). */
+export async function workHistory(cursor?: string): Promise<{ items: import('@krishi-verse/sdk-js').LabourAttendance[]; nextCursor: string | null }> {
+  try { return await apiClient().labour.workHistory(cursor, 20); } catch { return { items: [], nextCursor: null }; }
+}
+
 /** All of the caller's assignments (every status) for the My-Jobs view; categorized client-side. Keyset-paged;
  * degrades to an empty page. */
 export async function myJobs(cursor?: string): Promise<OffersPage> {

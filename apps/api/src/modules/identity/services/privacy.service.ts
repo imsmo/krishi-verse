@@ -29,9 +29,11 @@ export class PrivacyService {
   ) {}
 
   requestExport(tenantId: string, userId: string, idemKey: string) { return this.open(tenantId, userId, idemKey, 'portability'); }
-  requestDeletion(tenantId: string, userId: string, idemKey: string) { return this.open(tenantId, userId, idemKey, 'erasure'); }
+  /** Erasure request. An optional free-text `reason` (the "why leaving" the app collects) is NOT a DPDP field, so it
+   *  is NOT stored on the request row — it rides the outbox event (length-capped) for the fulfilment/CRM plane only. */
+  requestDeletion(tenantId: string, userId: string, idemKey: string, reason?: string) { return this.open(tenantId, userId, idemKey, 'erasure', reason); }
 
-  private open(tenantId: string, userId: string, idemKey: string, requestType: DsrType) {
+  private open(tenantId: string, userId: string, idemKey: string, requestType: DsrType, reason?: string) {
     return this.idem.remember(idemKey, userId, `identity.dsr.${requestType}`, () =>
       timed(this.metrics, 'identity.dsr.open', { tenant: tenantId, type: requestType }, () =>
         this.uow.run(tenantId, async (tx) => {
@@ -39,7 +41,8 @@ export class PrivacyService {
           if (existing) return toJSON(existing);                       // one open request per kind — idempotent
           const dsr = DataSubjectRequest.open({ id: uuidv7(), userId, requestType });
           await this.repo.insert(tx, dsr);
-          await this.outbox.write(tx, { tenantId, aggregateType: 'data_subject_request', aggregateId: dsr.id, eventType: 'identity.dsr_opened', payload: { v: 1, dsrId: dsr.id, userId, requestType } });
+          const reasonNote = reason ? String(reason).slice(0, 500) : undefined;   // capped; never a raw dump
+          await this.outbox.write(tx, { tenantId, aggregateType: 'data_subject_request', aggregateId: dsr.id, eventType: 'identity.dsr_opened', payload: { v: 1, dsrId: dsr.id, userId, requestType, ...(reasonNote ? { reason: reasonNote } : {}) } });
           return toJSON(dsr);
         }, { userId })));
   }

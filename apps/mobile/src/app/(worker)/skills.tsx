@@ -60,6 +60,7 @@ export default function WorkerSkills() {
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: space[4], gap: space[3] }}>
           <Text style={styles.intro}>{t('worker.skills.intro')}</Text>
+          <Button title={t('workerAddSkill.cta')} variant="outline" onPress={() => router.push('/(worker)/profile/skills-add')} />
 
           {groups.map((g) => (
             <Card key={g.key}>

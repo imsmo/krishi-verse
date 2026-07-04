@@ -20,7 +20,7 @@ import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getOffer, getJob, getMyWorker, respondOffer, labourLookups } from '../../../features/labour/labour.api';
 import { assignmentActions, canAcceptWork } from '../../../features/labour/labour-status';
-import { respondWindow, wageAboveMinMinor } from '../../../features/labour/offer';
+import { respondWindow, wageAboveMinMinor, workersNeeded } from '../../../features/labour/offer';
 
 export default function OfferDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -71,7 +71,7 @@ export default function OfferDetail() {
   const footer = offer && actions.length ? (
     ageOk ? (
       <View style={styles.actions}>
-        <Button title={t('jobOffer.decline')} variant="outline" loading={busy === 'reject'} disabled={busy !== null} onPress={() => respond('reject')} />
+        <Button title={t('jobOffer.decline')} variant="outline" disabled={busy !== null} onPress={() => router.push({ pathname: '/(worker)/offers/decline/[id]', params: { id: id! } })} />
         <View style={{ flex: 1 }}><Button title={t('jobOffer.accept', { amount: formatMoneyMinor(wageMinor, ccy, lang) })} loading={busy === 'accept'} disabled={busy !== null} onPress={() => respond('accept')} fullWidth /></View>
       </View>
     ) : undefined
@@ -111,6 +111,7 @@ export default function OfferDetail() {
             <Row label={t('jobOffer.task')} value={skill ?? '—'} />
             <Row label={t('jobOffer.when')} value={booking?.startDate ? safeDate(booking.startDate, lang) : '—'} />
             <Row label={t('jobOffer.duration')} value={t('jobOffer.durationTbd')} />
+            {booking ? <Row label={t('jobOffer.workersNeeded')} value={t('jobOffer.workersValue', workersNeeded(booking.workersNeeded))} /> : null}
             <View style={styles.wageRow}>
               <View>
                 <MoneyText minor={wageMinor} currencyCode={ccy} langCode={lang} size="2xl" tone="positive" />

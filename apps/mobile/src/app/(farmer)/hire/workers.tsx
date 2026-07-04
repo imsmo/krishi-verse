@@ -3,20 +3,21 @@
 // rich worker cards. When opened with an `assignBookingId` param, tapping a worker carries it through so the
 // employer can assign them to that open booking. Behind `labour_hire`. Keyset; degrade-never-die.
 //
-// §13 — REAL: rating, completed jobs, region (lookups), 18+ status, wage expectation (money via MoneyText), and the
-// task catalogue. HONESTLY degraded (no field on the pool read → NEVER faked): the worker's NAME ("Sunita Kumari" —
-// the pool is PII-minimised) → an anonymised worker; the DISTANCE ("2.4 km" — no geo on the read) → omitted; the
-// "Within 5 km" / "Available today" filter chips (no geo/availability) → replaced by real rating/verified chips;
-// per-worker skill chips render only when the pool carries skillIds, else they're omitted.
+// §13 — REAL: region (lookups), 18+ status, wage expectation (money via MoneyText), and the task catalogue.
+// CONSENT-GATED (P0-2): the worker's NAME / rating / completed-jobs are shown ONLY for workers who opted in
+// (discoverable=true) — otherwise the card is anonymised (worker id + glyph), never a fabricated name.
+// HONESTLY degraded: the DISTANCE ("2.4 km" — no geo on the read) → omitted; the "Within 5 km" / "Available today"
+// filter chips (no geo/availability) → replaced by real rating/verified chips; the card carries no skill set so
+// per-worker skill chips are omitted (skill filtering is server-side).
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, FlatList, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import type { WorkerProfile, LabourLookups } from '@krishi-verse/sdk-js';
+import type { WorkerCard, LabourLookups } from '@krishi-verse/sdk-js';
 import { Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { browseWorkers, labourLookups } from '../../../features/labour/hire.api';
-import { filterWorkers, sortWorkers, skillChips, type WorkerSort } from '../../../features/labour/hire-browse';
+import { filterWorkers, sortWorkers, type WorkerSort } from '../../../features/labour/hire-browse';
 import { regionName } from '../../../features/labour/worker-profile';
 import { skillEmoji } from '../../../features/labour/worker-skills';
 
@@ -26,7 +27,7 @@ export default function BrowseWorkers() {
   const params = useLocalSearchParams<{ assignBookingId?: string; minRating?: string; verified?: string; skillId?: string }>();
   const { assignBookingId } = params;
   const enabled = useFlag('labour_hire');
-  const [items, setItems] = useState<WorkerProfile[]>([]);
+  const [items, setItems] = useState<WorkerCard[]>([]);
   const [lookups, setLookups] = useState<LabourLookups | null>(null);
   const [highRating, setHighRating] = useState(!!params.minRating);
   const [verified, setVerified] = useState(params.verified === '1');
@@ -100,21 +101,16 @@ export default function BrowseWorkers() {
           ListEmptyComponent={<EmptyState title={t('hire.workers.empty.title')} message={t('hire.workers.empty.message')} actionLabel={t('common.retry')} onAction={load} />}
           renderItem={({ item }) => {
             const region = regionName(lookups?.regions ?? [], item.villageRegionId);
-            const chips = skillChips(item.skillIds, lookups, 2);
+            // Consent-gated name: real name only for opted-in workers; otherwise an anonymised handle.
+            const name = item.discoverable && item.displayName ? item.displayName : t('hire.worker.anon', { id: item.id.slice(0, 6).toUpperCase() });
             return (
               <Pressable onPress={() => router.push({ pathname: '/(farmer)/hire/worker/[id]', params: { id: item.id, ...(assignBookingId ? { assignBookingId } : {}) } })} accessibilityRole="button" style={styles.card}>
                 <View style={styles.avatar}><Text style={{ fontSize: 18 }}>👤</Text></View>
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={styles.name} numberOfLines={1}>{t('hire.worker.anon', { id: item.id.slice(0, 6).toUpperCase() })}</Text>
+                  <Text style={styles.name} numberOfLines={1}>{name}</Text>
                   <Text style={styles.meta} numberOfLines={1}>
-                    {[region, t('hire.browse.jobsCount', { n: item.bookingsCompleted ?? 0 })].filter(Boolean).join(' · ')}
+                    {[region, item.bookingsCompleted != null ? t('hire.browse.jobsCount', { n: item.bookingsCompleted }) : null].filter(Boolean).join(' · ')}
                   </Text>
-                  {chips.labels.length ? (
-                    <View style={styles.tagRow}>
-                      {chips.labels.map((l) => <View key={l} style={styles.tag}><Text style={styles.tagTxt}>{l}</Text></View>)}
-                      {chips.extra > 0 ? <View style={styles.tag}><Text style={styles.tagTxt}>+{chips.extra}</Text></View> : null}
-                    </View>
-                  ) : null}
                 </View>
                 <View style={styles.rightCol}>
                   {item.minWageExpectationMinor ? (

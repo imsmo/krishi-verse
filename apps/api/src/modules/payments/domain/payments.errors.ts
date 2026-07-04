@@ -56,3 +56,17 @@ export class MandateAlreadyExistsError extends AppError {
 export class InvalidVpaError extends DomainError {
   constructor() { super('MANDATE_INVALID_VPA', 'VPA must look like handle@psp', 422); }
 }
+/** A debit was attempted against a mandate that is not active (pending/cancelled/expired). */
+export class MandateNotActiveError extends DomainError {
+  constructor(status: string) { super('MANDATE_NOT_ACTIVE', `Mandate is ${status}, not active — cannot collect`, 409, { status }); }
+}
+/** A requested collection exceeded the mandate's authorised per-debit cap (honour the user's ceiling). */
+export class MandateAmountExceedsCapError extends DomainError {
+  constructor(amountMinor: bigint, capMinor: bigint) {
+    super('MANDATE_AMOUNT_OVER_CAP', 'Collection exceeds the mandate per-debit cap', 422, { amountMinor: amountMinor.toString(), capMinor: capMinor.toString() });
+  }
+}
+/** AutoPay execution is behind the `autopay_execution` flag (default OFF until a live UPI-AutoPay PSP is wired). */
+export class MandateExecutionDisabledError extends AppError {
+  constructor() { super('MANDATE_EXECUTION_DISABLED', 'UPI AutoPay execution is not enabled', 403); }
+}

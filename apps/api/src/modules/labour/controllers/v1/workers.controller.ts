@@ -40,12 +40,14 @@ export class WorkersController {
     });
   }
 
+  // P0-2: the employer marketplace browse returns consent-gated CARDS (listCards/getCard) — name/rating/job-count
+  // appear only for workers who opted in (discoverable=true); everyone else is an anonymous availability card.
   @Get() @RequirePermissions(LabourPermissions.Book)
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryWorkersSchema) q: QueryWorkersDto) {
-    return this.workers.list(ctx.tenantId, { villageRegionId: q.villageRegionId, ageVerified: q.ageVerified, cursor: decodeCursor(q.cursor), limit: q.limit })
+    return this.workers.listCards(ctx.tenantId, { villageRegionId: q.villageRegionId, ageVerified: q.ageVerified, cursor: decodeCursor(q.cursor), limit: q.limit })
       .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
 
   @Get(':id') @RequirePermissions(LabourPermissions.Book)
-  get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.workers.getById(ctx.tenantId, id).then((data) => ({ data })); }
+  get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.workers.getCard(ctx.tenantId, id).then((data) => ({ data })); }
 }

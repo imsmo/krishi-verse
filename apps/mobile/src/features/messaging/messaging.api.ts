@@ -21,9 +21,13 @@ export async function sendInquiry(sellerUserId: string, listingId: string, body:
   await postText(convo.id, body.trim());
   return convo;
 }
-export async function listConversations(cursor?: string): Promise<{ items: Conversation[]; nextCursor: string | null }> {
-  try { return await apiClient().conversations.list({ cursor }); } catch { return { items: [], nextCursor: null }; }
+export async function listConversations(cursor?: string, archived = false): Promise<{ items: Conversation[]; nextCursor: string | null }> {
+  try { return await apiClient().conversations.list({ cursor, archived }); } catch { return { items: [], nextCursor: null }; }
 }
+/** Archive / restore a thread for the caller only (per-participant, contract-gap P0-1). Throws on a real error so
+ * the screen degrades honestly. */
+export function archiveConversation(id: string): Promise<{ ok: boolean; isArchived: boolean }> { return apiClient().conversations.archive(id); }
+export function restoreConversation(id: string): Promise<{ ok: boolean; isArchived: boolean }> { return apiClient().conversations.restore(id); }
 export async function getConversation(id: string): Promise<Conversation | null> {
   try { return await apiClient().conversations.get(id); } catch { return null; }
 }

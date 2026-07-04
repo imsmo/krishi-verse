@@ -22,6 +22,9 @@ export interface WorkerProfileProps {
   ratingAvg: number | null;
   bookingsCompleted: number;
   noShowCount: number;
+  // P0-2 consent: the worker's OWN opt-in to be shown to employers with identity (name/rating/job-count).
+  // DEFAULT false = privacy-by-default (DPDP). Only the worker may flip it (updateDiscoverability).
+  discoverable: boolean;
   createdAt?: Date;
 }
 
@@ -48,6 +51,7 @@ export class WorkerProfile {
       emergencyContactPhone: input.emergencyContactPhone ?? null,
       eshramNo: input.eshramNo ?? null,
       ratingAvg: null, bookingsCompleted: 0, noShowCount: 0,
+      discoverable: false,
     });
     w.events.push({ type: LabourEventType.WorkerRegistered, payload: { workerId: w.props.id, userId: w.props.userId } });
     return w;
@@ -58,6 +62,7 @@ export class WorkerProfile {
   get userId() { return this.props.userId; }
   get tenantId() { return this.props.tenantId; }
   get isAgeVerified() { return this.props.ageVerified18; }
+  get isDiscoverable() { return this.props.discoverable; }
   toProps(): Readonly<WorkerProfileProps> { return Object.freeze({ ...this.props }); }
   pullEvents(): DomainEvent[] { const e = [...this.events]; this.events.length = 0; return e; }
 
@@ -74,5 +79,13 @@ export class WorkerProfile {
       (this.props as any)[k] = v; changed = true;
     }
     if (changed) this.events.push({ type: LabourEventType.WorkerUpdated, payload: { workerId: this.props.id } });
+  }
+
+  /** Worker's explicit consent decision to be shown to employers with identity. Separate from preferences so the
+   *  UI can present it as a distinct privacy toggle; emits WorkerUpdated only when the value actually changes. */
+  updateDiscoverability(discoverable: boolean): void {
+    if (this.props.discoverable === discoverable) return;
+    this.props.discoverable = discoverable;
+    this.events.push({ type: LabourEventType.WorkerUpdated, payload: { workerId: this.props.id, discoverable } });
   }
 }

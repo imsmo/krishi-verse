@@ -68,6 +68,7 @@ export class LabourBookingService {
             workersNeeded: dto.workersNeeded, startDate: dto.startDate, endDate: dto.endDate, dailyHours: dto.dailyHours,
             wageKind: dto.wageKind as WageKind, wageOfferedMinor: offered, minWageMinor: floor, currencyCode: 'INR',
             overtimeRateMultiplier: 1.5, womenOnly: dto.womenOnly, farmLat: dto.farmLat, farmLng: dto.farmLng, respondBy,
+            startTime: dto.startTime ?? null, notes: dto.notes ?? null,
           });
           await this.bookings.insert(tx, booking);
           await this.quota.increment(tx, tenantId, QUOTA_METRIC, 1);
@@ -255,7 +256,8 @@ export class LabourBookingService {
     const v = b.toProps();
     return { id: v.id, bookingNo: v.bookingNo, employerUserId: v.employerUserId, demandTypeId: v.demandTypeId, taskSkillId: v.taskSkillId,
       workersNeeded: v.workersNeeded, startDate: v.startDate, endDate: v.endDate, wageKind: v.wageKind, wageOfferedMinor: v.wageOfferedMinor.toString(),
-      minWageMinor: v.minWageMinor.toString(), currencyCode: v.currencyCode, womenOnly: v.womenOnly, status: v.status, respondBy: v.respondBy, version: v.version, createdAt: v.createdAt };
+      minWageMinor: v.minWageMinor.toString(), currencyCode: v.currencyCode, womenOnly: v.womenOnly, status: v.status, respondBy: v.respondBy, version: v.version, createdAt: v.createdAt,
+      startTime: v.startTime ?? null, notes: v.notes ?? null, employerName: v.employerName ?? null };
   }
   private serializeAssignment(a: BookingAssignment) {
     const v = a.toProps();

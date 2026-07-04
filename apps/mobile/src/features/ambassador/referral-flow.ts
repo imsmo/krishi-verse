@@ -26,6 +26,26 @@ export function isValidReferralCode(code: string): boolean {
   return /^[A-Z0-9]{4,20}$/.test(code);
 }
 
+// Onboard-method options for screen 88 (Choose method). Design chrome, in order → i18n `amb.onboard.method.<key>.*`.
+// §13: the real, attributable mechanism is a shareable referral CODE the farmer claims on their own phone; assisted
+// document-scan / manual account creation have no ambassador-create endpoint (account creation is self-service OTP,
+// Law 11) — so those methods still converge on the referral flow rather than a fabricated create-account call.
+export const ONBOARD_METHODS = [
+  { key: 'scan', icon: '📷', fastest: true },
+  { key: 'manual', icon: '📝', fastest: false },
+  { key: 'sms', icon: '📞', fastest: false },
+] as const;
+export type OnboardMethod = (typeof ONBOARD_METHODS)[number]['key'];
+
+/** Derive a valid, shareable referral code from a random seed (e.g. `newId()`) — the design never asks the
+ * ambassador to type one. Uppercases, strips to [A-Z0-9], and clamps to the server's 4–20 length (pads if short).
+ * Pure + deterministic for a given seed (testable); the server re-validates + owns attribution. */
+export function deriveReferralCode(seed: string): string {
+  const alnum = (seed ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const base = alnum.slice(0, 8);
+  return base.length >= 4 ? base : (base + 'KV24').slice(0, 4);
+}
+
 export interface ReferralFunnel { invited: number; signedUp: number; activated: number; rewarded: number; total: number }
 /** Tally an ambassador's referrals by stage — drives the acquisition funnel on Home/Farmers. */
 export function referralFunnel(items: Referral[]): ReferralFunnel {

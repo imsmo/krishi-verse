@@ -33,12 +33,18 @@ export class ConversationsController {
   }
   @Get()
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryConversationsSchema) q: QueryConversationsDto) {
-    return this.convos.list(ctx.tenantId, this.actor(ctx), { contextType: q.contextType, cursor: decodeCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
+    // Enriched inbox summaries (contract-gap P0-1): each row carries the last-message preview, the caller's unread
+    // count, the counterparty name/role, and the per-participant archive flag. `archived` splits inbox vs archive.
+    return this.convos.listSummaries(ctx.tenantId, this.actor(ctx), { archived: q.archived, contextType: q.contextType, cursor: decodeCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
   @Get(':id')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.convos.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
   @Post(':id/read')
   read(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.convos.markRead(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
+  @Post(':id/archive')
+  archive(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.convos.setArchive(ctx.tenantId, this.actor(ctx), id, true).then((data) => ({ data })); }
+  @Post(':id/restore')
+  restore(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.convos.setArchive(ctx.tenantId, this.actor(ctx), id, false).then((data) => ({ data })); }
   @Post(':id/lock')
   lock(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Body('locked') locked?: boolean) { return this.convos.setLock(ctx.tenantId, this.actor(ctx), id, locked !== false).then((data) => ({ data })); }
 

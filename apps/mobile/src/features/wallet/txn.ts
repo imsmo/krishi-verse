@@ -90,6 +90,16 @@ export function presentLedgerEntry(e: WalletLedgerEntry): LedgerView {
   };
 }
 
+/** Which side of the money-flow the user's OWN wallet sits on, and the net-amount label — derived ONLY from the
+ * amount's tone (credit → money came INTO the wallet, so the wallet is the "to"; debit → it left, wallet is the
+ * "from"). §13: the COUNTERPARTY (payer/payee name, VPA) is NOT in the payment/payout read-model, so this only
+ * ever names the user's own wallet side — it never fabricates who the other party is. Pure. */
+export function txnFlow(moneyTone: MoneyTone): { walletSide: 'to' | 'from'; netKey: 'netCredit' | 'netDebit' } {
+  return moneyTone === 'negative'
+    ? { walletSide: 'from', netKey: 'netDebit' }
+    : { walletSide: 'to', netKey: 'netCredit' };
+}
+
 export interface WithdrawCheck { ok: boolean; reason?: 'invalid' | 'exceeds' }
 
 /** Client-side pre-check for a withdrawal (UX only — the SERVER re-validates balance, KYC, limits, and is the

@@ -13,6 +13,24 @@ function toDomain(r: any): Conversation {
   return Conversation.rehydrate({ id: r.id, tenantId: r.tenant_id, contextType: r.context_type as ContextType, contextId: r.context_id, isLocked: r.is_locked, createdAt: r.created_at });
 }
 export interface ConversationListQuery { contextType?: string; cursor?: { c: string; id: string }; limit: number; }
+export interface ConversationSummaryQuery extends ConversationListQuery { archived: boolean; }
+/** The enriched inbox row (contract-gap P0-1): base conversation + a preview of the last message, the caller's
+ * unread count, the (single) counterparty's display name + role, and the caller's per-participant archive flag. */
+export interface ConversationSummary {
+  id: string; contextType: string; contextId: string | null; isLocked: boolean; createdAt: Date;
+  isArchived: boolean; unreadCount: number;
+  lastMessageAt: Date | null; lastMessageBody: string | null; lastMessageHasAttachment: boolean; lastMessageHasVoice: boolean;
+  counterpartyName: string | null; counterpartyRole: string | null;
+}
+function toSummary(r: any): ConversationSummary {
+  return {
+    id: r.id, contextType: r.context_type, contextId: r.context_id, isLocked: r.is_locked, createdAt: r.created_at,
+    isArchived: r.is_archived === true, unreadCount: Number(r.unread ?? 0),
+    lastMessageAt: r.last_at ?? null, lastMessageBody: r.last_body ?? null,
+    lastMessageHasAttachment: r.last_att != null, lastMessageHasVoice: r.last_voice != null,
+    counterpartyName: r.other_name ?? null, counterpartyRole: r.other_role ?? null,
+  };
+}
 
 @Injectable()
 export class ConversationRepository {
@@ -82,5 +100,38 @@ export class ConversationRepository {
       `SELECT ${COLS.split(', ').map((c) => 'c.' + c).join(', ')} FROM conversations c JOIN conversation_participants cp ON cp.conversation_id=c.id
        WHERE ${where} ORDER BY c.created_at DESC, c.id DESC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);
+  }
+  /** The caller's inbox as enriched summaries (contract-gap P0-1). One bounded query per page: last-message preview
+   * via a LATERAL over the (conversation_id, created_at DESC)-indexed messages, a correlated unread count keyed off
+   * the caller's last_read_at, and the single counterparty's name/role. Keyset on created_at (stable) — NOT on the
+   * mutable last-message time. `archived` splits the inbox (false) from the archive (true), both per-participant. */
+  async listSummariesForUser(tenantId: string, userId: string, q: ConversationSummaryQuery): Promise<ConversationSummary[]> {
+    const params: unknown[] = [tenantId, userId, q.archived];
+    const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
+    let where = `c.tenant_id=$1 AND cp.user_id=$2 AND c.deleted_at IS NULL AND cp.is_archived=$3`;
+    if (q.contextType) where += ` AND c.context_type=${p(q.contextType)}`;
+    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (c.created_at < ${cc} OR (c.created_at=${cc} AND c.id < ${ci}))`; }
+    const lp = p(q.limit);
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT c.id, c.context_type, c.context_id, c.is_locked, c.created_at, cp.is_archived,
+              lm.body AS last_body, lm.attachment_media_id AS last_att, lm.voice_media_id AS last_voice, lm.created_at AS last_at,
+              (SELECT count(*)::int FROM messages m
+                 WHERE m.conversation_id=c.id AND m.sender_user_id IS DISTINCT FROM $2
+                   AND (cp.last_read_at IS NULL OR m.created_at > cp.last_read_at)) AS unread,
+              ou.full_name AS other_name, op.role AS other_role
+       FROM conversations c
+       JOIN conversation_participants cp ON cp.conversation_id=c.id AND cp.user_id=$2
+       LEFT JOIN LATERAL (SELECT body, attachment_media_id, voice_media_id, created_at
+              FROM messages m WHERE m.conversation_id=c.id ORDER BY m.created_at DESC LIMIT 1) lm ON true
+       LEFT JOIN LATERAL (SELECT cp2.user_id, cp2.role FROM conversation_participants cp2
+              WHERE cp2.conversation_id=c.id AND cp2.user_id <> $2 ORDER BY cp2.user_id LIMIT 1) op ON true
+       LEFT JOIN users ou ON ou.id = op.user_id
+       WHERE ${where} ORDER BY c.created_at DESC, c.id DESC LIMIT ${lp}`, params);
+    return r.rows.map(toSummary);
+  }
+  /** Toggle the caller's per-participant archive flag (idempotent). Membership is re-checked by the service. */
+  async setArchived(tx: TxContext, conversationId: string, userId: string, archived: boolean): Promise<void> {
+    await tx.query(`UPDATE conversation_participants SET is_archived=$3, archived_at=CASE WHEN $3 THEN now() ELSE NULL END
+                    WHERE conversation_id=$1 AND user_id=$2`, [conversationId, userId, archived]);
   }
 }

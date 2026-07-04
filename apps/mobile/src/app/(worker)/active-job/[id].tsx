@@ -141,12 +141,11 @@ export default function ActiveJob() {
             <Text style={styles.note}>{t('worker.activeJob.farmerNote')}</Text>
           </Card>
 
-          {/* Issues — §13 no worker dispute endpoint */}
+          {/* Issues — routes to the Wage-Dispute screen (filed as high-priority support; §13 no labour-dispute endpoint) */}
           <Card>
             <Text style={styles.h3}>{t('worker.activeJob.issues')}</Text>
-            <Text style={styles.reportTitle}>{t('worker.activeJob.report')}</Text>
-            <Text style={styles.note}>{t('worker.activeJob.reportReasons')}</Text>
             <Text style={styles.note}>{t('worker.activeJob.reportNote')}</Text>
+            <Button title={t('worker.activeJob.report')} variant="outline" size="sm" onPress={() => router.push({ pathname: '/(worker)/dispute/[id]', params: { id: id! } })} />
           </Card>
 
           {phase === 'done' ? <Text style={styles.doneNote}>{t('worker.activeJob.awaitingConfirm')}</Text> : null}

@@ -44,7 +44,7 @@ export default function BookWhen() {
 
   const shiftMonth = (d: number) => { const nd = new Date(Date.UTC(year, month0 + d, 1)); setYear(nd.getUTCFullYear()); setMonth0(nd.getUTCMonth()); };
   const next = () => router.push({
-    pathname: '/(farmer)/hire/book',
+    pathname: '/(farmer)/hire/book/where',
     params: { ...(params.workerId ? { workerId: params.workerId } : {}), ...(params.taskSkillId ? { taskSkillId: params.taskSkillId } : {}), ...(date ? { startDate: date } : {}), hours: String(hours) },
   });
 

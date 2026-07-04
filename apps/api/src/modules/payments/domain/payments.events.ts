@@ -11,6 +11,7 @@ export const MandateEventType = {
   Registered: 'payments.mandate_registered',   // user created a pending autopay mandate (awaiting PSP confirm)
   Activated: 'payments.mandate_activated',      // PSP confirmed the standing instruction
   Cancelled: 'payments.mandate_cancelled',      // user (or system) revoked it
+  Executed: 'payments.mandate_executed',        // a capped debit was collected against the mandate (P0-4)
 } as const;
 export type MandateEventType = typeof MandateEventType[keyof typeof MandateEventType];
 

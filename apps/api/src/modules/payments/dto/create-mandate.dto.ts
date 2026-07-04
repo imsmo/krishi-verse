@@ -19,3 +19,11 @@ export const CancelMandateSchema = z.object({
   reason: z.string().max(280).optional(),
 }).strict();
 export type CancelMandateDto = z.infer<typeof CancelMandateSchema>;
+
+// Execute (collect) a capped debit against an active mandate. amountMinor is a bigint-safe minor-units string
+// and must be ≤ the mandate's per-debit cap (the domain re-asserts this — the DTO only checks shape). The
+// caller supplies an Idempotency-Key header, NOT a body field, so a replay never double-collects.
+export const ExecuteMandateSchema = z.object({
+  amountMinor: z.string().regex(/^[1-9]\d{0,15}$/, 'amountMinor must be a positive integer string of minor units'),
+}).strict();
+export type ExecuteMandateDto = z.infer<typeof ExecuteMandateSchema>;

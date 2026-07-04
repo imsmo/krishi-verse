@@ -29,7 +29,7 @@ const SKILL_LEVELS = ['unskilled', 'semi_skilled', 'skilled', 'highly_skilled'] 
 export default function BookWorker() {
   const { t, lang } = useTranslation();
   const router = useRouter();
-  const wp = useLocalSearchParams<{ workerId?: string; taskSkillId?: string; startDate?: string; hours?: string }>();
+  const wp = useLocalSearchParams<{ workerId?: string; taskSkillId?: string; startDate?: string; hours?: string; farmLat?: string; farmLng?: string; landmark?: string }>();
   const { workerId } = wp;
   const enabled = useFlag('labour_hire');
 
@@ -41,7 +41,12 @@ export default function BookWorker() {
   const [startDate, setStart] = useState(wp.startDate ?? '');
   const [hours, setHours] = useState<number>(wp.hours ? Number(wp.hours) : 8);
   const [wageRupees, setWage] = useState('');
-  const [farm, setFarm] = useState<{ lat: number; lng: number } | null>(null);
+  // GPS coords are set at the Work-Location step (screen 62) and carried in as params; prefill so the wage step
+  // doesn't force a re-capture (the farmer can still re-set with "use my location").
+  const [farm, setFarm] = useState<{ lat: number; lng: number } | null>(() => {
+    const lat = Number(wp.farmLat), lng = Number(wp.farmLng);
+    return Number.isFinite(lat) && Number.isFinite(lng) && (wp.farmLat ?? '') !== '' && (wp.farmLng ?? '') !== '' ? { lat, lng } : null;
+  });
   const [errors, setErrors] = useState<BookingDraftField[]>([]);
   const [busy, setBusy] = useState(false);
   const [locating, setLocating] = useState(false);

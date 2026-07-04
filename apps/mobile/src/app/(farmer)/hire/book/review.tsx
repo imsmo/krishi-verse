@@ -10,14 +10,14 @@
 // insurance ₹2 / "You Pay ₹412") has NO labour fee-preview contract, so we show the wage the worker receives + a
 // note that platform fee & insurance are applied at settlement, never a fabricated total.
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { SdkError, type CreateBookingInput, type WorkerProfile, type LabourLookups } from '@krishi-verse/sdk-js';
+import { type CreateBookingInput, type WorkerProfile, type LabourLookups } from '@krishi-verse/sdk-js';
 import { Button, Card, EmptyState, MoneyText, Toggle, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
 import { formatDate, formatMoneyMinor } from '@krishi-verse/i18n';
 import { useTranslation } from '../../../../core/i18n/useTranslation';
 import { useFlag } from '../../../../core/flags/useFlag';
-import { createBooking, assignWorker, getWorker, labourLookups } from '../../../../features/labour/hire.api';
+import { getWorker, labourLookups } from '../../../../features/labour/hire.api';
 import { walletBalance } from '../../../../features/wallet/wallet.api';
 
 export default function BookReview() {
@@ -32,7 +32,6 @@ export default function BookReview() {
   const [balanceMinor, setBalanceMinor] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     const [lk, w, bal] = await Promise.all([labourLookups(), workerId ? getWorker(workerId) : Promise.resolve(null), walletBalance()]);
@@ -46,24 +45,16 @@ export default function BookReview() {
   const skill = input ? lookups?.skills.find((s) => s.id === input.taskSkillId)?.name ?? null : null;
   const wageMinor = input?.wageOfferedMinor ?? '0';
 
-  const send = async () => {
+  // Step 4 → step 5: the booking is NOT created here; the farmer confirms payment on screen 63, which submits.
+  const proceed = () => {
     if (!input) return;
-    setBusy(true);
-    try {
-      const b = await createBooking(input);
-      if (workerId) { try { await assignWorker(b.id, workerId); } catch { /* booking created; assign retriable from the booking */ } }
-      router.replace({ pathname: '/(farmer)/hire/sent', params: { bookingNo: b.bookingNo, id: b.id } });
-    } catch (e) {
-      const msg = e instanceof SdkError && e.status === 422 ? t('hire.book.belowFloor')
-        : e instanceof SdkError && e.isForbidden ? t('hire.assign.notAllowed') : t('hire.book.failed');
-      Alert.alert(t('hire.book.error'), msg);
-    } finally { setBusy(false); }
+    router.push({ pathname: '/(farmer)/hire/book/confirm', params: { inputJson: inputJson ?? '', ...(workerId ? { workerId } : {}) } });
   };
 
   const footer = (
     <View style={styles.footerRow}>
-      <Button title={t('common.back')} variant="outline" disabled={busy} onPress={() => router.back()} />
-      <View style={{ flex: 1 }}><Button title={t('bookReview.send', { amount: formatMoneyMinor(wageMinor, ccy, lang) })} onPress={send} loading={busy} disabled={busy || !agreed || !input} fullWidth /></View>
+      <Button title={t('common.back')} variant="outline" onPress={() => router.back()} />
+      <View style={{ flex: 1 }}><Button title={t('bookReview.continue')} onPress={proceed} disabled={!agreed || !input} fullWidth /></View>
     </View>
   );
 

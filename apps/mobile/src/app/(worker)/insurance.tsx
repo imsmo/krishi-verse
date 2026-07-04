@@ -11,6 +11,7 @@
 // Claim / Download-PDF surface a coming-soon notice rather than calling a non-existent endpoint.
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Button, Card, EmptyState, MoneyText, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
 import { formatMoneyMinor } from '@krishi-verse/i18n';
 import { useTranslation } from '../../core/i18n/useTranslation';
@@ -23,6 +24,7 @@ const PREMIUM_MINOR = '2000';          // ₹20 / year
 
 export default function WorkerInsurance() {
   const { t, lang } = useTranslation();
+  const router = useRouter();
   const enabled = useFlag('worker_app');
   if (!enabled) return <ScreenScaffold title={t('worker.insurance.title')}><EmptyState title={t('common.unavailable')} /></ScreenScaffold>;
 
@@ -40,7 +42,7 @@ export default function WorkerInsurance() {
       footer={
         <View style={styles.actions}>
           <Button title={t('worker.insurance.download')} variant="outline" onPress={() => Alert.alert(t('worker.insurance.title'), t('worker.insurance.comingSoon'))} />
-          <View style={{ flex: 1 }}><Button title={t('worker.insurance.fileClaim')} onPress={() => Alert.alert(t('worker.insurance.fileClaim'), t('worker.insurance.comingSoon'))} fullWidth /></View>
+          <View style={{ flex: 1 }}><Button title={t('worker.insurance.fileClaim')} onPress={() => router.push('/(worker)/claim')} fullWidth /></View>
         </View>
       }
     >
@@ -61,6 +63,9 @@ export default function WorkerInsurance() {
             </View>
           </View>
         </View>
+
+        {/* Enroll CTA → PMSBY enrollment (145) */}
+        <Button title={t('worker.insurance.enroll')} onPress={() => router.push('/(worker)/pmsby-enroll')} fullWidth />
 
         {/* What's covered — program facts */}
         <Card>

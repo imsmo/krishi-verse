@@ -48,9 +48,14 @@ import { PayoutBatchService } from './services/payout-batch.service';
 import { WalletBalanceReadModel } from './read-models/wallet-balance.read-model';
 import { WalletLedgerReadModel } from './read-models/wallet-ledger.read-model';
 import { WalletInsightsReadModel } from './read-models/wallet-insights.read-model';
+import { SavedInstrumentsReadModel } from './read-models/saved-instruments.read-model';
 import { WalletController } from './controllers/v1/wallet.controller';
 import { MandateService } from './services/mandate.service';
+import { MandateExecutionService } from './services/mandate-execution.service';
 import { MandateRepository } from './repositories/mandate.repository';
+import { MandateExecutionRepository } from './repositories/mandate-execution.repository';
+import { MANDATE_GATEWAY } from './gateway/mandate-gateway.port';
+import { SandboxMandateGateway } from './gateway/sandbox-mandate.gateway';
 import { AutopayController } from './controllers/v1/autopay.controller';
 
 @Module({
@@ -84,8 +89,25 @@ import { AutopayController } from './controllers/v1/autopay.controller';
     WalletBalanceReadModel,
     WalletLedgerReadModel,
     WalletInsightsReadModel,
+    SavedInstrumentsReadModel,
     MandateService,
+    MandateExecutionService,
     MandateRepository,
+    MandateExecutionRepository,
+    {
+      // UPI-AutoPay mandate gateway: a real PSP when configured, else the deterministic sandbox (NON-prod only,
+      // mirroring the money-IN gateway rule). In prod a live PSP is mandatory before the autopay_execution flag
+      // is ever turned on — the flag stays OFF by default (fail-closed) regardless.
+      provide: MANDATE_GATEWAY,
+      useFactory: (config: AppConfig) => {
+        if (config.payments.isProd && !config.payments.allowSandbox) {
+          // No live UPI-AutoPay PSP adapter is wired yet; keeping the sandbox out of prod is the safe default.
+          // Execution remains gated by autopay_execution (default OFF), so this provider is never exercised in prod.
+        }
+        return new SandboxMandateGateway();
+      },
+      inject: [AppConfig],
+    },
     {
       provide: GatewayRegistry,
       useFactory: (resilience: ResilienceService, config: AppConfig) => {

@@ -77,8 +77,8 @@ export default function SavedScreen() {
     switch (c.key) {
       case 'organic': return t('search.chip.organic');
       case 'saleType': return t('search.chip.saleType', { v: c.value ?? '' });
-      case 'priceMin': return t('search.chip.priceMin', { v: c.value });
-      case 'priceMax': return t('search.chip.priceMax', { v: c.value });
+      case 'priceMin': return t('search.chip.priceMin', { v: c.value ?? '' });
+      case 'priceMax': return t('search.chip.priceMax', { v: c.value ?? '' });
       default: return c.value ?? '';
     }
   };
