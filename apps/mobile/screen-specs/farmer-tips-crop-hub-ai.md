@@ -1,0 +1,290 @@
+# Farmer · Tips / Crop-hub / AI — screen build specs
+
+- **Route group:** `src/app/(farmer)/tips · crop-hub · assistant`  ·  **Feature/data:** `features/content`  ·  **Flag (default OFF):** `tips_assistant`
+- Build each screen to FULL design parity (guide §12). Content below is the EXACT design text/values the
+  screen must show (from `docs/design-data/SCREEN-DATA-CATALOG.md`) — render via i18n keys (hi/en/gu),
+  money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
+
+
+## 55-farmer-tips-library — 55 · Farming Tips — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/55-farmer-tips-library.html`
+- **Route:** `src/app/(farmer)/tips · crop-hub · assistant/…`  ·  **Feature:** `features/content`  ·  **Flag:** `tips_assistant`
+- **Must render (exact design content):**
+  - 55 · Farming Tips — Krishi-Verse
+  - Tips & Knowledge
+  - All
+  - Crops
+  - Pest
+  - Soil
+  - Market
+  - 🌾
+  - Crops · Wheat
+  - When to harvest wheat for maximum yield and price
+  - 🕐 5 min read
+  - 🇮🇳 हिंदी
+  - 👁 2.4k views
+  - 🐛
+  - Pest Control
+  - Identifying aphid infestation in wheat — early signs & organic remedies
+  - 🕐 7 min read
+  - 🇮🇳 हिंदी
+  - 👁 1.8k views
+  - 💧
+  - Irrigation
+  - Drip irrigation setup — 60% water savings in cotton fields
+  - 🕐 4 min · 📹 video
+  - 👁 5.2k views
+  - 📈
+  - Market
+  - Why are chilli prices rising? Demand forecast for Aug-Oct 2026
+  - 🕐 3 min read
+  - 👁 3.6k views
+  - 🧪
+  - Soil Health
+  - How to read your Soil Health Card — N, P, K, micronutrients explained
+  - 🕐 8 min read
+  - 👁 1.1k views
+  - 🌱
+  - Sustainable
+  - Organic certification — step-by-step process & premium pricing
+  - 🕐 10 min read
+  - 👁 890 views
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 101-farmer-tip-detail — 101 · Tip Detail — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/101-farmer-tip-detail.html`
+- **Route:** `src/app/(farmer)/tips · crop-hub · assistant/…`  ·  **Feature:** `features/content`  ·  **Flag:** `tips_assistant`
+- **Must render (exact design content):**
+  - 101 · Tip Detail — Krishi-Verse
+  - Pest Control
+  - Stop Wheat Rust Before It Spreads
+  - Dr. Mehta · ICAR · 5 min read
+  - Save
+  - Bookmarked
+  - Share
+  - Apply
+  - 🎧 Listen in Gujarati
+  - Read aloud by AI · ~5 min
+  - Wheat rust is the most common disease affecting wheat in Gujarat. Three types exist — leaf rust, stripe rust, and stem rust. Early detection prevents 60-80% yield loss.
+  - Signs to look for
+  - Yellow-orange pustules
+  - on leaf surface
+  - Powdery rust-coloured spores when leaves are rubbed
+  - Affected leaves dry out and fall early
+  - 💡
+  - Quick check:
+  - Wipe a yellow patch with white cloth. If orange powder appears, it's rust.
+  - Treatment
+  - Spray
+  - Propiconazole 25 EC @ 0.1%
+  - (1 ml per litre water)
+  - Apply early morning or evening, not midday
+  - Repeat after 15 days if needed
+  - Cost: ~₹450 for 1 acre
+  - Prevention next season
+  - Use resistant varieties: HD 2967, GW 322
+  - Avoid late sowing
+  - Balanced nitrogen (don't over-apply)
+  - Related tips
+  - 🌾
+  - Best wheat varieties for Gujarat 2026
+  - 4 min · 12.4k reads
+  - 💧
+  - Irrigation schedule for wheat
+  - 3 min · 8.9k reads
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 102-farmer-tips-category — 102 · Tips by Category — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/102-farmer-tips-category.html`
+- **Route:** `src/app/(farmer)/tips · crop-hub · assistant/…`  ·  **Feature:** `features/content`  ·  **Flag:** `tips_assistant`
+- **Must render (exact design content):**
+  - 102 · Tips by Category — Krishi-Verse
+  - Pest Control · 24 tips
+  - All
+  - Wheat (8)
+  - Cotton (6)
+  - Cumin (5)
+  - Pulses (5)
+  - 🌾
+  - Wheat · Disease
+  - Stop Wheat Rust Before It Spreads
+  - 🎧 Audio
+  - 5 min
+  - 12.4k reads
+  - 🐛
+  - Cotton · Pest
+  - Pink Bollworm: Detection & Treatment
+  - 6 min
+  - 9.2k reads
+  - 🌿
+  - Cumin · Pest
+  - Aphid attack on cumin: organic solutions
+  - 🎧 Audio
+  - 4 min
+  - 7.1k reads
+  - 🌾
+  - Wheat · Disease
+  - Karnal bunt: Early signs and management
+  - 5 min
+  - 5.8k reads
+  - 🌱
+  - Pulses · IPM
+  - Pheromone traps for pulse pod borer
+  - 🎧 Audio
+  - 7 min
+  - 4.6k reads
+  - 🦗
+  - Multi-crop · Pest
+  - Locust swarm: emergency action plan
+  - 8 min
+  - 3.2k reads
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 103-farmer-saved-tips — 103 · Saved Tips — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/103-farmer-saved-tips.html`
+- **Route:** `src/app/(farmer)/tips · crop-hub · assistant/…`  ·  **Feature:** `features/content`  ·  **Flag:** `tips_assistant`
+- **Must render (exact design content):**
+  - 103 · Saved Tips — Krishi-Verse
+  - My Saved Tips · 12
+  - Bookmarked
+  - 12 saved
+  - 🌾
+  - Wheat · Disease
+  - Stop Wheat Rust Before It Spreads
+  - Saved 3 days ago · 5 min read
+  - 💧
+  - Wheat · Irrigation
+  - Irrigation schedule for wheat (week-by-week)
+  - Saved last week · 3 min read
+  - 🐛
+  - Cotton · Pest
+  - Pink Bollworm: Detection & Treatment
+  - Saved 2 weeks ago · 6 min read
+  - Recently read
+  - View all →
+  - 📊
+  - Market · Pricing
+  - When to sell: reading mandi trends
+  - Yesterday · 4 min read
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 104-farmer-crop-hub — 104 · Crop Knowledge Hub — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/104-farmer-crop-hub.html`
+- **Route:** `src/app/(farmer)/tips · crop-hub · assistant/…`  ·  **Feature:** `features/content`  ·  **Flag:** `tips_assistant`
+- **Must render (exact design content):**
+  - 104 · Crop Knowledge Hub — Krishi-Verse
+  - Wheat (Lokwan)
+  - Wheat · Lokwan
+  - Rabi season · 120-130 days · Your variety
+  - ₹2,880
+  - Today mandi
+  - 11%
+  - Moisture
+  - Stage 4/6
+  - Growth
+  - Growth timeline
+  - Sowing · Days 0–7
+  - Nov 15 · ✓ Complete
+  - Germination · Days 7–14
+  - Nov 22 · ✓ Complete
+  - Tillering · Days 14–45
+  - Dec 22 · ✓ Complete · 1st irrigation done
+  - Stem elongation · Days 45–75 ← You are here
+  - Jan 5 · Active · 2nd irrigation due
+  - 💧 Irrigate at CRI
+  - ⚠ Watch for rust
+  - N: 30 kg/ha
+  - Heading & flowering · Days 75–95
+  - Expected Feb 15 · Most critical stage
+  - Grain filling · Days 95–120
+  - Expected Mar 15 · Final irrigation
+  - Harvest · Days 120–130
+  - Expected Mar 25-Apr 5
+  - Top tips for this crop
+  - 🌾
+  - Stop Wheat Rust Before It Spreads
+  - 5 min · 12.4k reads
+  - ›
+  - 💧
+  - Irrigation schedule for wheat
+  - 3 min · 8.9k reads
+  - ›
+  - 🌡
+  - Heatwave protection for grain filling
+  - 7 min · 5.1k reads
+  - ›
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 125-farmer-ai-chat — 125 · AI Assistant — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/125-farmer-ai-chat.html`
+- **Route:** `src/app/(farmer)/tips · crop-hub · assistant/…`  ·  **Feature:** `features/content`  ·  **Flag:** `tips_assistant`
+- **Must render (exact design content):**
+  - 125 · AI Assistant — Krishi-Verse
+  - 🤖
+  - Krishi AI · असिस्टेंट
+  - ● Online · Gujarati, Hindi, English
+  - Namaste Ramesh ji! 🙏 I'm your Krishi-Verse AI assistant. I can help with farming questions, market prices, scheme info, and app issues. Ask me anything in Gujarati, Hindi, or English.
+  - 11:42 AM
+  - My wheat leaves have yellow patches. What is it?
+  - 11:45 AM
+  - This sounds like
+  - wheat rust
+  - — common at this stage. Can you share a photo? Meanwhile:
+  - 📋
+  - Quick check:
+  - Rub a yellow leaf with white cloth. Orange powder = rust confirmed.
+  - 💊
+  - Treatment:
+  - Spray Propiconazole 25 EC @ 0.1% (1 ml per litre water). Cost ~₹450 per acre.
+  - Want me to show full guide?
+  - 📖 From: ICAR Wheat Disease Manual 2024
+  - 11:45 AM
+  - Yes show guide
+  - 11:46 AM
+  - Here's the full step-by-step:
+  - 1.
+  - Mix 10ml in 10 liter water
+  - 2.
+  - Spray early morning OR evening (not midday)
+  - 3.
+  - Cover both sides of leaves
+  - 4.
+  - Repeat after 15 days
+  - 📍 Nearest agri store:
+  - Anand Krishi Sewa Kendra
+  - · 3 km · ₹85 per 100ml bottle
+  - 11:46 AM
+  - 📊 Today's mandi rates
+  - 🌧 Weather forecast
+  - 📋 My active schemes
+  - 💰 Recent transactions
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 184-voice-search — 184 · Voice Search — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/184-voice-search.html`
+- **Route:** `src/app/(farmer)/tips · crop-hub · assistant/…`  ·  **Feature:** `features/content`  ·  **Flag:** `tips_assistant`
+- **Must render (exact design content):**
+  - 184 · Voice Search — Krishi-Verse
+  - Listening...
+  - Speak now
+  - In Gujarati, Hindi, or English
+  - "કાલે ઘઉં વેચવા છે..."
+  - Try saying:
+  - "Wheat mandi prices today"
+  - "Workers available Monday"
+  - "Show my orders"
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).

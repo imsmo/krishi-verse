@@ -1,0 +1,418 @@
+# Farmer · Home & Listings — screen build specs
+
+- **Route group:** `src/app/(farmer)`  ·  **Feature/data:** `features/farmer · listings`  ·  **Flag (default OFF):** `farmer_app`
+- Build each screen to FULL design parity (guide §12). Content below is the EXACT design text/values the
+  screen must show (from `docs/design-data/SCREEN-DATA-CATALOG.md`) — render via i18n keys (hi/en/gu),
+  money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
+
+
+## 09-farmer-home — 09 · Farmer Home — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/09-farmer-home.html`
+- **Route:** `src/app/(farmer)/…`  ·  **Feature:** `features/farmer · listings`  ·  **Flag:** `farmer_app`
+- **Must render (exact design content):**
+  - 09 · Farmer Home — Krishi-Verse
+  - R
+  - नमस्ते,
+  - Ramesh ji
+  - 28°C
+  - · Sunny · Anand
+  - ⚡ AI Powered
+  - Sell your crop in 60 seconds
+  - अपनी फसल बेचें
+  - Speak to Sell
+  - Photo
+  - My Listings
+  - 3 Active
+  - Wallet
+  - ₹12,450
+  - Today's Mandi Pulse
+  - All →
+  - 🌾
+  - Wheat
+  - ₹2,840
+  - per qtl
+  - ▲ 4.2%
+  - 🌽
+  - Maize
+  - ₹1,910
+  - per qtl
+  - ▼ 1.8%
+  - 🌶️
+  - Chilli
+  - ₹14,500
+  - per qtl
+  - ▲ 8.3%
+  - 🧅
+  - Onion
+  - ₹2,200
+  - per qtl
+  - ▲ 2.1%
+  - Today's Tip
+  - Sowing Window
+  - Best 3 days to sow Bajra
+  - Forecast says 18–20 Aug is optimal. Tap to learn more.
+  - Home
+  - Listings
+  - Orders
+  - Wallet
+  - Profile
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 10-create-listing — 10 · Create Listing — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/10-create-listing.html`
+- **Route:** `src/app/(farmer)/…`  ·  **Feature:** `features/farmer · listings`  ·  **Flag:** `farmer_app`
+- **Must render (exact design content):**
+  - 10 · Create Listing — Krishi-Verse
+  - Create Listing
+  - Photo
+  - Voice
+  - Manual
+  - ⚡ AI Voice Listing
+  - Listening...
+  - सुन रहा हूं
+  - e.g. "5 quintal wheat at 2800 rupees"
+  - हिंदी
+  - English
+  - ગુજરાતી
+  - Live Transcript
+  - मेरे पास पाँच क्विंटल अच्छी क्वालिटी का गेहूं है, अट्ठाईस सौ रुपये क्विंटल के हिसाब से बेचना है
+  - ✨ AI Detected
+  - Crop
+  - 🌾 Wheat
+  - Quantity
+  - 5 Quintal
+  - Price/qtl
+  - ₹2,800
+  - Quality
+  - Good (A)
+  - Re-record
+  - Preview →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 11-listing-preview — 11 · Preview Listing — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/11-listing-preview.html`
+- **Route:** `src/app/(farmer)/…`  ·  **Feature:** `features/farmer · listings`  ·  **Flag:** `farmer_app`
+- **Must render (exact design content):**
+  - 11 · Preview Listing — Krishi-Verse
+  - Preview & Publish
+  - 🌾
+  - Premium Wheat — Lokwan
+  - Edit All
+  - Verified
+  - ⚡ AI Listed
+  - Anand, GJ
+  - Crop · Variety
+  - AI
+  - 🌾 Wheat · Lokwan
+  - Change
+  - Quantity
+  - 5 Quintal (500 kg)
+  - Change
+  - Price per Quintal
+  - AI
+  - ₹2,880
+  - Change
+  - Grade · Moisture
+  - A Grade · ≤ 12%
+  - Change
+  - 📊 Fair Price Check — In Range
+  - Your
+  - ₹2,880
+  - is fair for Lokwan wheat in Anand this week.
+  - Low ₹2,650
+  - You ₹2,880
+  - High ₹3,100
+  - Save Draft
+  - Publish Listing →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 12-my-listings — 12 · My Listings — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/12-my-listings.html`
+- **Route:** `src/app/(farmer)/…`  ·  **Feature:** `features/farmer · listings`  ·  **Flag:** `farmer_app`
+- **Must render (exact design content):**
+  - 12 · My Listings — Krishi-Verse
+  - My Listings
+  - 3
+  - Active
+  - 1
+  - Sold this week
+  - ₹38K
+  - Earnings
+  - All (5)
+  - Active (3)
+  - Sold (1)
+  - Draft (1)
+  - 🌾
+  - Premium Wheat — Lokwan
+  - LIVE
+  - 5 Qtl
+  - Grade A
+  - ⚡AI
+  - ₹2,880
+  - /qtl
+  - 👁 42 · 3 inq
+  - 🌶️
+  - Red Chilli — Teja Premium
+  - AUCTION 2h
+  - 2 Qtl
+  - Organic
+  - ₹14,500
+  - /qtl current
+  - 7 bids
+  - 🧅
+  - Onion — Medium grade
+  - LIVE
+  - 10 Qtl
+  - Grade B
+  - ₹2,200
+  - /qtl
+  - 👁 18
+  - 🌽
+  - Maize — Yellow (Sold)
+  - SOLD
+  - 3 Qtl
+  - 12 Aug
+  - ₹1,910
+  - /qtl final
+  - +₹5,730
+  - 📝
+  - Bajra Draft
+  - DRAFT
+  - Started 2 days ago
+  - Tap to continue →
+  - Home
+  - Listings
+  - Orders
+  - Wallet
+  - Profile
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 112-farmer-my-listing-detail — 112 · My Listing — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/112-farmer-my-listing-detail.html`
+- **Route:** `src/app/(farmer)/…`  ·  **Feature:** `features/farmer · listings`  ·  **Flag:** `farmer_app`
+- **Must render (exact design content):**
+  - 112 · My Listing — Krishi-Verse
+  - My Listing
+  - 🌾
+  - ✓ ACTIVE
+  - 📷 4 photos
+  - Premium Wheat — Lokwan
+  - ₹2,880 / quintal
+  - 5 quintal available · Grade A · 11% moisture · Listed 3 days ago
+  - FAIR PRICE ✓
+  - VERIFIED LOCATION
+  - Last 7 days
+  - 247
+  - Views
+  - 8
+  - Inquiries
+  - 3
+  - Offers
+  - ✏️
+  - Edit
+  - 🚀
+  - Boost
+  - 📊
+  - Stats
+  - 🗑
+  - Remove
+  - Recent inquiries
+  - View all 8 →
+  - PM
+  - Priya Mehta · Vadodara
+  - "Moisture content? Can deliver to Vadodara?"
+  - 2h
+  - AS
+  - Anand Stores · Anand
+  - Made offer: ₹2,750/qtl for 5 qtl
+  - OFFER
+  - KM
+  - Kishan Mills · Nadiad
+  - "Grade A confirmation? Lab report available?"
+  - yesterday
+  - Listing health
+  - ✓ 4 photos added
+  - EXCELLENT
+  - ⚠ Lab report missing
+  - ADD +20% TRUST
+  - ⚠ Listing expires in 4 days
+  - EXTEND
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 113-farmer-edit-listing — 113 · Edit Listing — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/113-farmer-edit-listing.html`
+- **Route:** `src/app/(farmer)/…`  ·  **Feature:** `features/farmer · listings`  ·  **Flag:** `farmer_app`
+- **Must render (exact design content):**
+  - 113 · Edit Listing — Krishi-Verse
+  - Edit Listing
+  - Photos
+  - 🌾
+  - ×
+  - 🌾
+  - ×
+  - 🌾
+  - ×
+  - 🌾
+  - ×
+  - Add more
+  - Details
+  - Crop *
+  - Wheat — Lokwan
+  - Wheat — Sharbati
+  - Quantity available *
+  - quintal
+  - Price per quintal *
+  - ₹
+  - Fair range: ₹2,520 - ₹2,920 ✓
+  - Grade
+  - Grade A (premium)
+  - Grade B (standard)
+  - FAQ
+  - Moisture content (%)
+  - Description
+  - Premium quality Lokwan wheat from my 5-acre farm. Harvested last month. Single variety, no mixing.
+  - Preferences
+  - Open to negotiation
+  - Delivery available
+  - Minimum order: 1 quintal
+  - Edit
+  - Cancel
+  - Save Changes
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 114-farmer-boost-listing — 114 · Boost Listing — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/114-farmer-boost-listing.html`
+- **Route:** `src/app/(farmer)/…`  ·  **Feature:** `features/farmer · listings`  ·  **Flag:** `farmer_app`
+- **Must render (exact design content):**
+  - 114 · Boost Listing — Krishi-Verse
+  - Boost Listing
+  - 🚀
+  - Reach 5× More Buyers
+  - Your wheat listing seen by buyers up to 100 km away
+  - Choose a boost package
+  - Local
+  - 3 days · 30 km radius
+  - ₹49
+  - ✓ Top of search results · 30 km
+  - ✓ ~80 extra views
+  - ✓ ~3 inquiries
+  - Regional
+  - 7 days · 100 km radius
+  - ₹149
+  - ✓ Top of search · entire Gujarat region
+  - ✓ Featured on buyer home
+  - ✓ ~250 extra views · ~10 inquiries
+  - ✓ SMS alert to subscribers
+  - Statewide
+  - 14 days · All Gujarat + nearby states
+  - ₹399
+  - ✓ Top across multiple states
+  - ✓ Featured banner placement
+  - ✓ ~600 extra views · ~25 inquiries
+  - 💡
+  - Sellers who boost get
+  - 3.4× more inquiries
+  - on average. Money back if listing doesn't get views.
+  - Payment
+  - Boost package
+  - ₹149
+  - GST (18%)
+  - ₹27
+  - Total
+  - ₹176
+  - Maybe Later
+  - Pay ₹176 · Boost Now
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 115-farmer-listing-analytics — 115 · Listing Analytics — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/115-farmer-listing-analytics.html`
+- **Route:** `src/app/(farmer)/…`  ·  **Feature:** `features/farmer · listings`  ·  **Flag:** `farmer_app`
+- **Must render (exact design content):**
+  - 115 · Listing Analytics — Krishi-Verse
+  - Listing Analytics
+  - Premium Wheat — Lokwan
+  - Live for 3 days · Listing #LST-2026-247
+  - 247
+  - Total views
+  - 8
+  - Inquiries
+  - 3.2%
+  - Conv rate
+  - Views by day
+  - Mon
+  - Tue
+  - Wed
+  - Thu
+  - Fri
+  - Sat
+  - Sun
+  - Buyer journey funnel
+  - Search saw
+  - 412
+  - Opened
+  - 247
+  - Saved
+  - 42
+  - Inquired
+  - 8
+  - Offered
+  - 3
+  - Buyer locations
+  - Anand (within 30 km)
+  - 142 · 57%
+  - Vadodara (30-60 km)
+  - 68 · 28%
+  - Nadiad, Petlad
+  - 28 · 11%
+  - Outside region
+  - 9 · 4%
+  - 🚀
+  - Want to reach 600+ buyers?
+  - Boost your listing — ₹149 for 7 days statewide.
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 116-farmer-repost-listing — 116 · Repost Listing — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/116-farmer-repost-listing.html`
+- **Route:** `src/app/(farmer)/…`  ·  **Feature:** `features/farmer · listings`  ·  **Flag:** `farmer_app`
+- **Must render (exact design content):**
+  - 116 · Repost Listing — Krishi-Verse
+  - Repost Listing
+  - ⏳
+  - Listing expired
+  - Your wheat listing was up for 7 days. Repost it in seconds — keeps all the photos and details.
+  - 🌾
+  - Premium Wheat — Lokwan
+  - 5 qtl · ₹2,880/qtl · Grade A
+  - Last 7 days:
+  - 412 views · 8 inquiries · 3 offers
+  - Update before reposting
+  - Quantity still available
+  - quintal
+  - Originally 5 qtl · adjust if some sold offline
+  - Update price?
+  - ₹
+  - Market is up ₹40 vs last week · Suggested: ₹2,920
+  - Same photos (4)
+  - Same description
+  - Boost this time (+₹149)
+  - Discard
+  - Repost · Live in 5 min
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).

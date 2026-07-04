@@ -1,0 +1,286 @@
+# Farmer · Orders & Earnings — screen build specs
+
+- **Route group:** `src/app/(farmer)/orders`  ·  **Feature/data:** `features/orders · reviews`  ·  **Flag (default OFF):** `orders_fulfilment`
+- Build each screen to FULL design parity (guide §12). Content below is the EXACT design text/values the
+  screen must show (from `docs/design-data/SCREEN-DATA-CATALOG.md`) — render via i18n keys (hi/en/gu),
+  money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
+
+
+## 22-my-orders — 22 · My Orders — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/22-my-orders.html`
+- **Route:** `src/app/(farmer)/orders/…`  ·  **Feature:** `features/orders · reviews`  ·  **Flag:** `orders_fulfilment`
+- **Must render (exact design content):**
+  - 22 · My Orders — Krishi-Verse
+  - My Orders
+  - As Buyer
+  - 5
+  - As Seller
+  - 12
+  - All
+  - In Transit
+  - Delivered
+  - Completed
+  - Cancelled
+  - #KV-2026-0142
+  - IN TRANSIT
+  - 🌾
+  - Premium Wheat — Lokwan
+  - 2 quintal · Ramesh Patel · Anand
+  - ₹5,760
+  - Out for delivery
+  - · Arriving by 4 PM today
+  - Track
+  - #KV-2026-0138
+  - PAYMENT DUE
+  - 🌶️
+  - Red Chilli — Teja Variety
+  - 1 quintal · Krishna FPO
+  - ₹14,500
+  - Awaiting payment
+  - · UPI link sent
+  - Pay Now
+  - #KV-2026-0121
+  - DELIVERED
+  - 🥒
+  - Organic Cucumber
+  - 200 kg · Anand FPO · Delivered 12 Aug
+  - ₹7,600
+  - Completed
+  - Rate ⭐
+  - #KV-2026-0098
+  - COMPLETED
+  - 🌽
+  - Yellow Maize
+  - 5 quintal · 28 July 2026 · ⭐ You rated 5
+  - ₹9,550
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 23-order-detail — 23 · Order Tracking — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/23-order-detail.html`
+- **Route:** `src/app/(farmer)/orders/…`  ·  **Feature:** `features/orders · reviews`  ·  **Flag:** `orders_fulfilment`
+- **Must render (exact design content):**
+  - 23 · Order Tracking — Krishi-Verse
+  - Order #KV-2026-0142
+  - In Transit
+  - Your order is on the way
+  - Expected to arrive by
+  - 4:00 PM today
+  - , 15 Aug 2026
+  - 🌾
+  - Premium Wheat — Lokwan
+  - 2 quintal · ₹2,880/qtl · Grade A
+  - ₹5,760
+  - Order Timeline
+  - Order Placed
+  - 14 Aug, 10:42 AM
+  - Payment Confirmed
+  - 14 Aug, 10:43 AM
+  - ₹5,760 held in escrow · UPI
+  - Seller Confirmed
+  - 14 Aug, 11:15 AM
+  - Ramesh Patel accepted · Ready by tomorrow morning
+  - Ready for Pickup
+  - 15 Aug, 8:30 AM
+  - Out for Delivery
+  - 15 Aug, 12:20 PM · ETA 4:00 PM
+  - Driver: Suresh · 📞 +91 98765 12345 · 8 km away
+  - Delivered
+  - Pending
+  - Completed · Payment released to seller
+  - Pending
+  - Seller
+  - RP
+  - Seller · Verified
+  - Ramesh Patel
+  - Payment Summary
+  - Item total · 2 qtl × ₹2,880
+  - ₹5,760
+  - Delivery
+  - FREE
+  - Platform fee
+  - ₹50
+  - GST
+  - ₹0
+  - Total Paid
+  - ₹5,810
+  - Cancel Order
+  - Help
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 24-order-review — 24 · Rate Your Order — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/24-order-review.html`
+- **Route:** `src/app/(farmer)/orders/…`  ·  **Feature:** `features/orders · reviews`  ·  **Flag:** `orders_fulfilment`
+- **Must render (exact design content):**
+  - 24 · Rate Your Order — Krishi-Verse
+  - Rate Your Order
+  - ✓ Completed
+  - Order delivered successfully!
+  - Your order #KV-2026-0142 has been completed.
+  - How was your experience?
+  - Rate the seller — Ramesh Patel
+  - 4.0 — Very Good
+  - What went well?
+  - ✓ Quality good
+  - ✓ On time
+  - Fair price
+  - Well packaged
+  - Friendly seller
+  - Would buy again
+  - Excellent quality wheat, delivered on time. Will definitely buy from Ramesh ji again.
+  - 87 / 500
+  - Add photos (optional)
+  - Add Photo
+  - Skip
+  - Submit Review
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 56-farmer-orders — 56 · Orders Received — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/56-farmer-orders.html`
+- **Route:** `src/app/(farmer)/orders/…`  ·  **Feature:** `features/orders · reviews`  ·  **Flag:** `orders_fulfilment`
+- **Must render (exact design content):**
+  - 56 · Orders Received — Krishi-Verse
+  - My Orders
+  - 2
+  - New
+  - 8
+  - In Progress
+  - ₹84k
+  - This Month
+  - New
+  - 2
+  - Active
+  - Completed
+  - #KV-2026-0218
+  - ⏱ Action needed
+  - 🌾
+  - Premium Wheat — Lokwan
+  - Priya Mehta · Vadodara · ⭐ 4.8
+  - 3 qtl · ₹8,640
+  - Reject
+  - Accept Order
+  - #KV-2026-0215
+  - ⏱ 2 hours left
+  - 🌽
+  - Yellow Maize
+  - Rajesh Trader · Ahmedabad · ⭐ 4.6
+  - 5 qtl · ₹9,550
+  - Reject
+  - Accept Order
+  - #KV-2026-0201
+  - In transit
+  - 🌾
+  - Wheat — Sharbati
+  - Anand FPO · Bulk order
+  - 10 qtl · ₹31,500
+  - #KV-2026-0198
+  - Delivered ✓
+  - 🌽
+  - Yellow Maize
+  - Vadodara Mills · ⭐ rated 5
+  - 8 qtl · ₹15,280
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 57-farmer-order-detail — 57 · Order Decision — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/57-farmer-order-detail.html`
+- **Route:** `src/app/(farmer)/orders/…`  ·  **Feature:** `features/orders · reviews`  ·  **Flag:** `orders_fulfilment`
+- **Must render (exact design content):**
+  - 57 · Order Decision — Krishi-Verse
+  - Order #KV-2026-0218
+  - Decision needed within 4 hours · Buyer waiting
+  - PM
+  - Priya Mehta
+  - Restaurant owner · Vadodara · 47 km away
+  - ⭐ 4.8
+  - 120 orders
+  - 98%
+  - Payment rate
+  - 3 yrs
+  - On platform
+  - Order Items
+  - 🌾
+  - Premium Wheat · Lokwan
+  - Grade A · 2026 harvest
+  - 3 quintal × ₹2,880
+  - Payment Breakdown
+  - 3 qtl × ₹2,880
+  - ₹8,640
+  - Platform fee (1.5%)
+  - -₹130
+  - You receive
+  - ₹8,510
+  - Payment held in escrow until delivery confirmed
+  - Delivery
+  - Self-delivery requested
+  - Buyer prefers to pick up from your farm by 18 Aug. Transport handled by them.
+  - Buyer's Note
+  - "Need clean, dry wheat for our pasta line. Will check grain moisture content. Lunch can be arranged at your place if needed."
+  - Reject
+  - Accept · ₹8,510
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 58-farmer-earnings — 58 · My Earnings — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/58-farmer-earnings.html`
+- **Route:** `src/app/(farmer)/orders/…`  ·  **Feature:** `features/orders · reviews`  ·  **Flag:** `orders_fulfilment`
+- **Must render (exact design content):**
+  - 58 · My Earnings — Krishi-Verse
+  - My Earnings
+  - This month's earnings
+  - ₹84,320
+  - From 14 sales · Aug 2026
+  - ↑ ₹12,400 vs last month (+17%)
+  - Week
+  - Month
+  - Year
+  - Lifetime
+  - 52k
+  - Mar
+  - 68k
+  - Apr
+  - 61k
+  - May
+  - 74k
+  - Jun
+  - 72k
+  - Jul
+  - 84k
+  - Aug
+  - Total sales
+  - 14
+  - Average sale
+  - ₹6,023
+  - Best month
+  - ₹91k Apr
+  - Wallet balance
+  - ₹12,450
+  - This month by crop
+  - 🌾
+  - Wheat
+  - 18 qtl · 6 sales
+  - ₹52,800
+  - 🌽
+  - Maize
+  - 12 qtl · 4 sales
+  - ₹22,920
+  - 🌶️
+  - Chilli
+  - 0.5 qtl · 2 sales
+  - ₹7,250
+  - 🥒
+  - Cucumber
+  - 35 kg · 2 sales
+  - ₹1,350
+  - Download Report
+  - Withdraw ₹12,450
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).

@@ -1,0 +1,804 @@
+# Buyer — screen build specs
+
+- **Route group:** `src/app/(buyer)`  ·  **Feature/data:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag (default OFF):** `buyer_app / buyer_checkout`
+- Build each screen to FULL design parity (guide §12). Content below is the EXACT design text/values the
+  screen must show (from `docs/design-data/SCREEN-DATA-CATALOG.md`) — render via i18n keys (hi/en/gu),
+  money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
+
+
+## 13-buyer-home — 13 · Buyer Home — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/13-buyer-home.html`
+- **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
+- **Must render (exact design content):**
+  - 13 · Buyer Home — Krishi-Verse
+  - Anand, Gujarat
+  - 2
+  - 🥭
+  - Seasonal
+  - Mango Season is here!
+  - Alphonso, Kesar & Dasheri direct from farms
+  - Shop by Category
+  - View All →
+  - 🌾
+  - Grains
+  - 🥬
+  - Veggies
+  - 🍎
+  - Fruits
+  - 🌶️
+  - Spices
+  - 🥜
+  - Pulses
+  - 🌻
+  - Oilseeds
+  - 🌿
+  - Herbs
+  - 🐄
+  - Dairy
+  - Trending Near You
+  - All →
+  - 🌾
+  - Lokwan Wheat — Premium
+  - 📍 Ramesh Patel · 2.4 km · ⭐ 4.8
+  - ₹2,880
+  - /qtl · 5 qtl available
+  - 🥒
+  - Organic Cucumber
+  - 📍 Anand FPO · 5.1 km · ⭐ 4.9
+  - · Organic
+  - ₹38
+  - /kg · 200 kg available
+  - 🌶️
+  - Red Chilli — Teja
+  - AUCTION
+  - ⏱ Ends in 2h 14m · 7 bids
+  - ₹14,500
+  - /qtl · current bid
+  - Home
+  - Listings
+  - Orders
+  - Wallet
+  - Profile
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 67-buyer-search-results — 67 · Search Results — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/67-buyer-search-results.html`
+- **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
+- **Must render (exact design content):**
+  - 67 · Search Results — Krishi-Verse
+  - Search
+  - Wheat ✕
+  - Organic ✕
+  - Within 50km
+  - Grade A only
+  - ≤ ₹3,000
+  - 42 results
+  - for "organic wheat"
+  - Price: Low to High
+  - Distance
+  - Newest
+  - Best Rated
+  - 🌾
+  - ✓ ORGANIC
+  - GRADE A
+  - Premium Lokwan Wheat
+  - 📍 Anand · 4 km
+  - 📦 5 qtl avl
+  - ₹2,880/qtl
+  - ⭐ 4.9
+  - 🌾
+  - ✓ ORGANIC
+  - Sharbati Wheat
+  - 📍 Anand · 12 km
+  - 📦 10 qtl
+  - ₹2,950/qtl
+  - ⭐ 4.7
+  - 🌾
+  - ✓ ORGANIC
+  - 🔨 AUCTION
+  - Lokwan Wheat — 10 qtl lot
+  - 📍 Petlad · 24 km
+  - ⏱ Ends 2h 14m
+  - From ₹2,800
+  - ⭐ 4.8
+  - 🌾
+  - ✓ ORGANIC
+  - Durum Wheat (Maccaroni)
+  - 📍 Khambhat · 35 km
+  - 📦 25 qtl
+  - ₹3,150/qtl
+  - ⭐ 4.6
+  - 🌾
+  - ✓ ORGANIC
+  - Whole Wheat — Krishna FPO
+  - 📍 Anand · 8 km
+  - 📦 100 qtl bulk
+  - ₹2,750/qtl
+  - ⭐ 4.9 (FPO)
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 68-buyer-filters — 68 · Filters — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/68-buyer-filters.html`
+- **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
+- **Must render (exact design content):**
+  - 68 · Filters — Krishi-Verse
+  - [Search results in background]
+  - Filters
+  - Clear all (5)
+  - Categories
+  - 2 selected
+  - 🌾 Cereals
+  - 🌽 Pulses
+  - 🥬 Vegetables
+  - 🍇 Fruits
+  - 🌰 Spices
+  - 🌻 Oilseeds
+  - Price range
+  - ₹0
+  - ₹500 – ₹3,500
+  - ₹10,000
+  - Distance
+  - Within 5km
+  - Within 50km
+  - Within 100km
+  - Any distance
+  - Quality grade
+  - Grade A
+  - Grade B
+  - Grade C
+  - Certifications
+  - Organic certified
+  - NPOP / India Organic
+  - FSSAI verified
+  - Food safety license
+  - PMFBY insured
+  - Crop insurance backed
+  - Seller type
+  - Individual farmer
+  - FPO/Cooperative
+  - Verified ★
+  - Reset
+  - Show 42 results →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 69-buyer-orders — 69 · My Orders — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/69-buyer-orders.html`
+- **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
+- **Must render (exact design content):**
+  - 69 · My Orders — Krishi-Verse
+  - My Orders
+  - Active
+  - 3
+  - Delivered
+  - 28
+  - Returns
+  - 1
+  - #KV-2026-0142
+  - IN TRANSIT
+  - 🌾
+  - Premium Wheat — Lokwan
+  - 2 qtl · Ramesh Patel · Anand
+  - ₹5,760
+  - Out for delivery
+  - · Arrives 4:00 PM
+  - Track
+  - #KV-2026-0138
+  - PROCESSING
+  - 🌶️
+  - Red Chilli — Teja
+  - 1 qtl · Krishna FPO
+  - ₹14,500
+  - Seller preparing
+  - · Pickup tomorrow
+  - Detail
+  - #KV-2026-0136
+  - SCHEDULED
+  - 🥒
+  - Organic Cucumber
+  - 200 kg · Anand FPO · Recurring weekly
+  - ₹7,600
+  - Delivery on
+  - 18 Aug, Mon
+  - Edit
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 96-buyer-cart — 96 · My Cart — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/96-buyer-cart.html`
+- **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
+- **Must render (exact design content):**
+  - 96 · My Cart — Krishi-Verse
+  - My Cart · 3 items
+  - 🌾
+  - Premium Wheat — Lokwan
+  - Ramesh Patel · Anand · Grade A
+  - ₹2,880 / quintal
+  - −
+  - 2 qtl
+  - +
+  - ₹5,760
+  - 🌶️
+  - Red Chilli — Teja
+  - Pushpa Vyas · Anand · Organic
+  - ₹14,500 / quintal
+  - −
+  - 1 qtl
+  - +
+  - ₹14,500
+  - 🌽
+  - Yellow Maize
+  - Krishna Mehta · Nadiad
+  - ₹1,910 / quintal
+  - −
+  - 5 qtl
+  - +
+  - ₹9,550
+  - Subtotal
+  - ₹29,810
+  - Delivery (within 30 km)
+  - FREE
+  - Platform fee
+  - ₹150
+  - GST
+  - ₹0
+  - Total
+  - ₹29,960
+  - Buyer protection: payment held in escrow until delivery confirmed. Full refund if quality issues.
+  - Proceed to Checkout · ₹29,960 →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 97-buyer-inquiry — 97 · Send Inquiry — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/97-buyer-inquiry.html`
+- **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
+- **Must render (exact design content):**
+  - 97 · Send Inquiry — Krishi-Verse
+  - Inquire about listing
+  - 🌾
+  - Premium Wheat — Lokwan
+  - Ramesh Patel · 5 quintal available
+  - ₹2,880 / quintal
+  - Quick templates
+  - "Is this still available? I'm interested in 2 quintals."
+  - "Can you share more photos of the crop?"
+  - "What's the moisture content?"
+  - "Can you deliver to Vadodara? What's the cost?"
+  - "Open to negotiation on price?"
+  - Or write your own
+  - Namaste Ramesh ji, I'm interested in 2 quintals. Can you share the moisture content and let me know if you can deliver to Vadodara? — Priya Mehta
+  - Auto-translated to seller's language
+  - 137 / 500
+  - Attach photos (optional)
+  - Add
+  - Seller typically replies within 2 hours. Phone shared only after they accept your inquiry.
+  - Save Draft
+  - Send Inquiry
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 98-buyer-chat — 98 · Chat with Seller — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/98-buyer-chat.html`
+- **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
+- **Must render (exact design content):**
+  - 98 · Chat with Seller — Krishi-Verse
+  - RP
+  - Ramesh Patel ⭐ 4.9
+  - ● Online
+  - 🌾
+  - Premium Wheat — Lokwan
+  - 5 qtl available · ₹2,880/qtl
+  - Today, 2:15 PM
+  - Namaste Ramesh ji, I'm interested in 2 quintals. Can you share moisture content and let me know if you can deliver to Vadodara?
+  - 2:15 PM ✓✓
+  - नमस्ते Priya ji. Moisture is 11.2% — well below 12% limit. Quality grade A.
+  - 2:18 PM
+  - Vadodara delivery possible. Transport extra ₹400. Total ₹6,160 for 2 qtl + delivery.
+  - 2:19 PM
+  - Thank you. Can you share a photo of the moisture meter reading?
+  - 2:22 PM ✓✓
+  - 📊
+  - Moisture meter · 11.2%
+  - 2:24 PM
+  - Should I confirm 2 quintal? Can deliver by tomorrow.
+  - 2:25 PM
+  - Ramesh is typing...
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 99-buyer-make-offer — 99 · Make Offer — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/99-buyer-make-offer.html`
+- **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
+- **Must render (exact design content):**
+  - 99 · Make Offer — Krishi-Verse
+  - Make an Offer
+  - 🌾
+  - Premium Wheat — Lokwan
+  - Ramesh Patel · Listed at ₹2,880/qtl
+  - Your offer
+  - Offer per quintal
+  - ₹2,650
+  - For 2 qtl = ₹5,300 total · ~8% below ask
+  - 📊 Fair market range:
+  - ₹2,520 – ₹2,920 (Anand mandi, this week)
+  - ₹2,400
+  - YOUR OFFER
+  - ₹3,000
+  - Adjust
+  - −
+  - ₹2,650
+  - per quintal
+  - +
+  - −₹100
+  - −₹230 (8%)
+  - List price ₹2,880
+  - Quantity
+  - How many quintals
+  - Message (optional)
+  - Hi Ramesh ji, I run a restaurant in Vadodara — looking for a regular supplier. Can we close at ₹2,650?
+  - ⚠ Offer locks ₹530 in your wallet for 24 hours. If accepted, becomes payment. If rejected/expired, fully refunded.
+  - Save
+  - Send Offer · ₹5,300
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 100-buyer-seller-profile — 100 · Seller Profile — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/100-buyer-seller-profile.html`
+- **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
+- **Must render (exact design content):**
+  - 100 · Seller Profile — Krishi-Verse
+  - Seller Profile
+  - RP
+  - Ramesh Patel
+  - Anand · Gujarat
+  - ⭐ 4.9
+  - VERIFIED ✓
+  - 3 YRS ON KV
+  - 42
+  - Live listings
+  - 187
+  - Sales done
+  - ⭐ 4.9
+  - 156 reviews
+  - About
+  - 5-acre family farm in Anand. Specialize in wheat (Lokwan, Sharbati), cumin, and cotton. Third-generation farmer. Always honest about quality, on-time delivery.
+  - Quick facts
+  - Farm size
+  - 5 acres
+  - Primary crops
+  - Wheat, Cumin, Cotton
+  - Member since
+  - January 2024
+  - Languages
+  - Gujarati, Hindi
+  - Avg response time
+  - 2 hours
+  - On-time delivery
+  - 98%
+  - Active listings (3)
+  - 🌾
+  - Premium Wheat — Lokwan
+  - 5 qtl · Grade A
+  - ₹2,880
+  - 🌿
+  - Cumin Seeds
+  - 1 qtl · Premium quality
+  - ₹28,000
+  - 🌾
+  - Sharbati Wheat
+  - 3 qtl · Grade A+
+  - ₹3,200
+  - Recent reviews
+  - "Excellent wheat quality, on-time delivery. Will buy again."
+  - Anand Stores · 2 days ago
+  - "Honest farmer, good moisture content. Very responsive on chat."
+  - Priya M. · 1 week ago
+  - "Good quality. Took an extra day for delivery."
+  - Krishna FPO · 2 weeks ago
+  - Message
+  - View All Listings →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 126-buyer-saved-listings — 126 · Saved Listings — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/126-buyer-saved-listings.html`
+- **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
+- **Must render (exact design content):**
+  - 126 · Saved Listings — Krishi-Verse
+  - Saved · 14
+  - All · 14
+  - Wheat · 4
+  - Spices · 3
+  - Vegetables · 5
+  - Price dropped · 2
+  - 🌾
+  - Premium Wheat — Lokwan
+  - Ramesh Patel · Anand · ⭐ 4.9
+  - ₹2,880 / qtl
+  - ↓ ₹40 SINCE SAVED
+  - 🌶
+  - Red Chilli — Teja (Organic)
+  - Pushpa Vyas · Anand · ⭐ 4.6
+  - ₹14,500 / qtl
+  - 🌽
+  - Yellow Maize
+  - Krishna Mehta · Nadiad · ⭐ 4.8
+  - ₹1,910 / qtl
+  - ↓ ₹60 SINCE SAVED
+  - 🥬
+  - Organic Spinach
+  - Hetal Patel · Vadodara · ⭐ 4.5
+  - ₹35 / kg
+  - 🌾
+  - Sharbati Wheat
+  - Ramesh Patel · Anand · ⭐ 4.9
+  - ₹3,200 / qtl
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 127-buyer-saved-sellers — 127 · Saved Sellers — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/127-buyer-saved-sellers.html`
+- **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
+- **Must render (exact design content):**
+  - 127 · Saved Sellers — Krishi-Verse
+  - Saved Sellers · 8
+  - Get notified when these farmers post new listings
+  - RP
+  - Ramesh Patel ⭐ 4.9
+  - Anand · 42 listings · 3 yrs
+  - 🌾 Wheat
+  - 🌿 Cumin
+  - 🌱 Cotton
+  - 3 NEW
+  - PV
+  - Pushpa Vyas ⭐ 4.6
+  - Anand · 67 listings · 2 yrs
+  - 🌶 Chilli
+  - 🌿 Turmeric
+  - 1 NEW
+  - MJ
+  - Mahesh Joshi ⭐ 4.8
+  - Petlad · 35 listings · 3 yrs
+  - 🥒 Cucumber
+  - 🥬 Vegetables
+  - KM
+  - Krishna Mehta ⭐ 4.8
+  - Nadiad · 52 listings · 2 yrs
+  - 🌽 Maize
+  - 🌾 Wheat
+  - HP
+  - Hetal Patel ⭐ 4.5
+  - Vadodara · 19 listings · 1 yr
+  - 🥬 Organic
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 128-buyer-saved-searches — 128 · Saved Searches — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/128-buyer-saved-searches.html`
+- **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
+- **Must render (exact design content):**
+  - 128 · Saved Searches — Krishi-Verse
+  - Saved Searches
+  - Active alerts
+  - 🔍 Wheat Lokwan in Anand
+  - ≤ ₹2,900/qtl
+  - Grade A
+  - ≥ 5 qtl
+  - 30 km
+  - ✓ 3 new matches this week
+  - 🔍 Organic vegetables in Vadodara
+  - Organic certified
+  - ≤ ₹50/kg
+  - 15 km
+  - No new matches
+  - 🔍 Cumin (premium quality)
+  - Grade A only
+  - ≤ ₹30,000/qtl
+  - Any location
+  - Recent searches
+  - 🕒 cotton bt anand
+  - + Save
+  - 🕒 mustard seeds bulk
+  - + Save
+  - 🕒 rice basmati vadodara
+  - + Save
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 129-buyer-delivery-address — 129 · Delivery Address — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/129-buyer-delivery-address.html`
+- **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
+- **Must render (exact design content):**
+  - 129 · Delivery Address — Krishi-Verse
+  - Delivery Address
+  - Step 2 of 3
+  - Delivery
+  - Where to deliver?
+  - PRIMARY · WAREHOUSE
+  - Mehta Trading Co. — Warehouse
+  - Plot 42, GIDC Phase 2, Vadodara, Gujarat 390003
+  - Contact: Priya Mehta · +91 98765 43210
+  - 📍 30 km from seller · Delivery in 2 days · ₹400
+  - RESTAURANT
+  - Mehta's Kitchen — Main Branch
+  - Race Course Circle, Vadodara, Gujarat 390007
+  - 📍 32 km · Delivery in 2 days · ₹450
+  - PICKUP
+  - Pickup from farmer
+  - Self-pickup from Ramesh Patel · Anand
+  - ✓ Save ₹400 on delivery
+  - + Add new address
+  - Delivery slot
+  - Mon 24 Aug
+  - 9 AM - 1 PM ✓
+  - Mon 24 Aug
+  - 2 PM - 6 PM
+  - Tue 25 Aug
+  - 9 AM - 1 PM
+  - Tue 25 Aug
+  - 2 PM - 6 PM
+  - Back
+  - Continue · Payment →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 130-buyer-payment-method — 130 · Payment — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/130-buyer-payment-method.html`
+- **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
+- **Must render (exact design content):**
+  - 130 · Payment — Krishi-Verse
+  - Payment Method
+  - Step 3 of 3
+  - Payment · Order ₹29,960
+  - How will you pay?
+  - 📱
+  - UPI · priya@oksbi
+  - Linked SBI ••••8421 · Instant
+  - RECOMMENDED
+  - 🏦
+  - Net Banking
+  - All major banks supported
+  - ›
+  - 💳
+  - Credit / Debit Card
+  - Visa, Mastercard, RuPay
+  - ›
+  - 💵
+  - Wallet · ₹12,200
+  - Insufficient · need ₹17,760 more
+  - 📋
+  - Pay on delivery
+  - Cash to farmer on receipt · Cash deposit min ₹5,000 advance
+  - Order summary
+  - 3 items
+  - ₹29,810
+  - Delivery (30 km)
+  - ₹0
+  - Platform fee
+  - ₹150
+  - Total
+  - ₹29,960
+  - 🔒
+  - Buyer protection:
+  - Money held in escrow until you confirm delivery. Full refund on quality issues.
+  - Back
+  - Pay ₹29,960 via UPI
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 131-buyer-order-track — 131 · Track Order — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/131-buyer-order-track.html`
+- **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
+- **Must render (exact design content):**
+  - 131 · Track Order — Krishi-Verse
+  - Track Order #KV-2026-0247
+  - 🏠
+  - 🚛
+  - 📍
+  - ETA
+  - In 1h 28m
+  - DRIVER
+  - Hareshbhai · 🚛 GJ-23-AB-7821
+  - Order timeline
+  - ✓
+  - Order confirmed
+  - 22 Aug, 11:42 AM · Payment received
+  - 📦
+  - Packed by Ramesh Patel
+  - 22 Aug, 4:15 PM · 5 quintal · Quality checked
+  - 🚛
+  - Picked up
+  - 23 Aug, 9:30 AM · Anand
+  - 📍
+  - In transit · 18 km away
+  - Passed Karjan checkpoint · 1h 28m to delivery
+  - 📍
+  - Delivery
+  - Expected 11:30 AM today
+  - 📞
+  - Need help?
+  - Call Hareshbhai (driver) or message Ramesh (farmer) anytime.
+  - 📞 Driver
+  - Mark Delivered
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 132-buyer-profile — 132 · Business Profile — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/132-buyer-profile.html`
+- **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
+- **Must render (exact design content):**
+  - 132 · Business Profile — Krishi-Verse
+  - Business Profile
+  - MT
+  - Mehta Trading Co.
+  - Vadodara · Gujarat · Since 2019
+  - ⭐ 4.8
+  - GST VERIFIED
+  - FSSAI ✓
+  - 187
+  - Orders
+  - ₹84L
+  - Lifetime
+  - ⭐4.8
+  - Farmer rating
+  - Business details
+  - Business type
+  - Wholesale trader · Food
+  - GSTIN
+  - 24ABCPM1234K1Z5
+  - PAN
+  - ABCPM1234K
+  - FSSAI
+  - 10012043001247
+  - Owner
+  - Priya Mehta
+  - Established
+  - June 2019
+  - Contact
+  - Phone
+  - +91 98765 43210
+  - Email
+  - priya@mehtatrading.in
+  - Website
+  - mehtatrading.in
+  - Procurement preferences
+  - Buying categories
+  - Cereals, Spices, Pulses
+  - Volume/month
+  - ~50 quintal
+  - Payment terms
+  - UPI advance · Net 7
+  - Delivery radius
+  - 100 km from Vadodara
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 133-buyer-kyc — 133 · Business KYC — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/133-buyer-kyc.html`
+- **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
+- **Must render (exact design content):**
+  - 133 · Business KYC — Krishi-Verse
+  - Business KYC
+  - Step 2 of 3
+  - Documents
+  - Why KYC?
+  - Higher order limits, GST input credit eligibility, priority support.
+  - Business proof
+  - Business name *
+  - Business type *
+  - Wholesale trader (mandi vyapari)
+  - Restaurant / hotel
+  - FPO / Cooperative
+  - Mill / processor
+  - Retail store
+  - Export company
+  - GSTIN *
+  - PAN *
+  - FSSAI (for food businesses)
+  - Documents
+  - 📄
+  - GST Registration Certificate
+  - ✓ Uploaded · Auto-verified with GSTN
+  - 📇
+  - PAN Card
+  - ✓ Verified with NSDL
+  - 🏛
+  - Business address proof
+  - Electricity bill / rent agreement
+  - 📷 Upload
+  - Back
+  - Continue · Review →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 134-buyer-addresses — 134 · My Addresses — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/134-buyer-addresses.html`
+- **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
+- **Must render (exact design content):**
+  - 134 · My Addresses — Krishi-Verse
+  - My Addresses
+  - PRIMARY · WAREHOUSE
+  - Mehta Trading Co. — Warehouse
+  - Plot 42, GIDC Phase 2, Vadodara, Gujarat 390003
+  - Landmark: Near GEB substation
+  - 📞 +91 98765 43210 · Mon-Sat 9 AM - 6 PM
+  - ✏ Edit
+  - 📍 Map
+  - RESTAURANT
+  - Mehta's Kitchen — Main Branch
+  - Race Course Circle, Vadodara, Gujarat 390007
+  - 📞 +91 98765 11122 · Daily 10 AM - 10 PM
+  - ✏ Edit
+  - 📍 Map
+  - Make primary
+  - SECONDARY
+  - Mehta's Kitchen — Race Course
+  - Akota Road, Vadodara, Gujarat 390020
+  - 📞 +91 98765 22233
+  - ✏ Edit
+  - 📍 Map
+  - 🗑 Remove
+  - + Add new address
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 135-buyer-report-order — 135 · Report Order Issue — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/135-buyer-report-order.html`
+- **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
+- **Must render (exact design content):**
+  - 135 · Report Order Issue — Krishi-Verse
+  - Report Issue
+  - 🌾
+  - Premium Wheat — Lokwan
+  - Order #KV-2026-0247 · 5 qtl · ₹14,400
+  - ✓ Delivered 23 Aug
+  - What went wrong?
+  - ⚖ Quality not as described
+  - Different grade, moisture, variety
+  - ✓
+  - ⚖ Quantity short
+  - Less than ordered weight
+  - 📦 Damaged on delivery
+  - Torn bags, wet, spoiled
+  - 🚛 Late delivery
+  - Beyond agreed window
+  - 🚫 Wrong item
+  - Different from order
+  - 🤝 Other / talk to support
+  - Describe the issue
+  - Moisture content claimed was 11% but actual is 13.5% (tested at our QC lab). Grade B not Grade A as listed.
+  - 📎 Lab report.pdf
+  - 📷 Photo (3)
+  - What do you want?
+  - 💰 Partial refund
+  - Pay for what I actually received
+  - ↩ Full return + refund
+  - Send back, get full ₹14,400
+  - 🔄 Replacement
+  - New batch matching original spec
+  - Money in escrow · Released only after dispute resolved. Both you and seller get to share evidence.
+  - Cancel
+  - Submit Dispute
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).

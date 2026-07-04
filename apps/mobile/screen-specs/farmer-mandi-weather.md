@@ -1,0 +1,410 @@
+# Farmer · Mandi & Weather — screen build specs
+
+- **Route group:** `src/app/(farmer)/mandi · weather`  ·  **Feature/data:** `features/market`  ·  **Flag (default OFF):** `mandi_weather`
+- Build each screen to FULL design parity (guide §12). Content below is the EXACT design text/values the
+  screen must show (from `docs/design-data/SCREEN-DATA-CATALOG.md`) — render via i18n keys (hi/en/gu),
+  money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
+
+
+## 52-farmer-mandi-prices — 52 · Today's Mandi Prices — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/52-farmer-mandi-prices.html`
+- **Route:** `src/app/(farmer)/mandi · weather/…`  ·  **Feature:** `features/market`  ·  **Flag:** `mandi_weather`
+- **Must render (exact design content):**
+  - 52 · Today's Mandi Prices — Krishi-Verse
+  - Mandi Prices
+  - Today's Mandi Prices
+  - आज का मंडी भाव
+  - 📍 Anand APMC
+  - 🕐 Updated 12 min ago
+  - All
+  - Grains
+  - Pulses
+  - Vegetables
+  - Spices
+  - Cash crops
+  - 🌾
+  - Wheat — Lokwan
+  - Anand · Premium grade
+  - ₹2,880
+  - per quintal
+  - ↑ 2.4%
+  - 🌾
+  - Wheat — Sharbati
+  - Anand · Grade A
+  - ₹3,150
+  - per quintal
+  - ↑ 1.1%
+  - 🌽
+  - Maize — Yellow
+  - Anand · FAQ grade
+  - ₹1,910
+  - per quintal
+  - ↓ 0.8%
+  - 🌶️
+  - Red Chilli — Teja
+  - Anand · Sun-dried
+  - ₹14,500
+  - per quintal
+  - ↑ 5.2%
+  - 🥒
+  - Cucumber
+  - Anand · Local grade
+  - ₹38
+  - per kg
+  - → 0%
+  - 🥔
+  - Potato
+  - Anand · Grade A
+  - ₹22
+  - per kg
+  - ↓ 4.3%
+  - 🧅
+  - Onion — Red
+  - Anand · Medium size
+  - ₹28
+  - per kg
+  - ↑ 8.7%
+  - 🌶️
+  - Cumin — Jeera
+  - Unjha · Premium
+  - ₹62,400
+  - per quintal
+  - ↑ 1.8%
+  - 🥜
+  - Groundnut
+  - Junagadh · Bold
+  - ₹6,250
+  - per quintal
+  - ↑ 0.9%
+  - 🌱
+  - Castor Seed
+  - Mehsana · FAQ
+  - ₹5,830
+  - per quintal
+  - ↓ 1.2%
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 53-farmer-mandi-detail — 53 · Wheat Price Detail — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/53-farmer-mandi-detail.html`
+- **Route:** `src/app/(farmer)/mandi · weather/…`  ·  **Feature:** `features/market`  ·  **Flag:** `mandi_weather`
+- **Must render (exact design content):**
+  - 53 · Wheat Price Detail — Krishi-Verse
+  - Wheat — Lokwan
+  - 🌾
+  - Wheat · Lokwan
+  - Premium grade · Today's rate
+  - ₹2,880
+  - per quintal
+  - ↑ ₹68 (2.4%)
+  - Price Trend
+  - 1W
+  - 1M
+  - 3M
+  - 6M
+  - 1Y
+  - 30-Day Summary
+  - High
+  - ₹2,920
+  - Low
+  - ₹2,640
+  - Average
+  - ₹2,790
+  - Volatility
+  - Low
+  - Nearby Mandi Prices
+  - Anand APMC · 0 km
+  - ₹2,880
+  - Nadiad APMC · 18 km
+  - ₹2,850
+  - Vadodara APMC · 42 km
+  - ₹2,910
+  - Ahmedabad APMC · 78 km
+  - ₹2,960
+  - Best price in Vadodara · ₹2,910/qtl
+  - 42 km away · Transport ~₹1,200 for full load
+  - Set Alert
+  - List My Wheat Now
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 54-farmer-weather — 54 · 7-Day Weather — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/54-farmer-weather.html`
+- **Route:** `src/app/(farmer)/mandi · weather/…`  ·  **Feature:** `features/market`  ·  **Flag:** `mandi_weather`
+- **Must render (exact design content):**
+  - 54 · 7-Day Weather — Krishi-Verse
+  - Weather
+  - 📍 Anand, Gujarat
+  - ⛅
+  - 31°
+  - Partly Cloudy
+  - आज दिन के समय
+  - Humidity
+  - 68%
+  - Wind
+  - 12 km/h
+  - Rain
+  - 20%
+  - UV
+  - High
+  - Heavy rain alert · Thursday-Friday
+  - 40-60mm expected. Harvest mature wheat by Wednesday evening.
+  - 7-Day Forecast
+  - Today
+  - 15 Aug
+  - ⛅
+  - 💧 20%
+  - 31°
+  - 22°
+  - Wed
+  - 16 Aug
+  - ☀️
+  - 💧 5%
+  - 34°
+  - 24°
+  - Thu
+  - 17 Aug
+  - 🌧️
+  - 💧 80%
+  - 40mm
+  - 27°
+  - 22°
+  - Fri
+  - 18 Aug
+  - ⛈️
+  - 💧 95%
+  - 60mm
+  - 26°
+  - 21°
+  - Sat
+  - 19 Aug
+  - 🌦️
+  - 💧 60%
+  - 28°
+  - 22°
+  - Sun
+  - 20 Aug
+  - ⛅
+  - 💧 30%
+  - 30°
+  - 23°
+  - Mon
+  - 21 Aug
+  - ☀️
+  - 💧 10%
+  - 33°
+  - 24°
+  - Krishi-Verse Advisory
+  - Heavy rain expected Thu-Fri. If your wheat is mature, harvest by Wed evening to avoid damage. Cover stored grain.
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 110-farmer-mandi-alerts — 110 · Price Alerts — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/110-farmer-mandi-alerts.html`
+- **Route:** `src/app/(farmer)/mandi · weather/…`  ·  **Feature:** `features/market`  ·  **Flag:** `mandi_weather`
+- **Must render (exact design content):**
+  - 110 · Price Alerts — Krishi-Verse
+  - Mandi Price Alerts
+  - My alerts
+  - 5 active
+  - 2
+  - Triggered today
+  - 12
+  - This week
+  - SMS
+  - Free alerts
+  - Triggered today
+  - 🌾 Wheat (Lokwan) · ₹2,880/qtl
+  - ↑ Crossed ₹2,800 in Anand mandi
+  - Sell Now
+  - 🌿 Cumin · ₹28,500/qtl
+  - ↑ Crossed ₹28,000 in Unjha mandi
+  - Sell Now
+  - Active alerts
+  - + Add new
+  - 🌾 Wheat (Sharbati)
+  - Alert when price ≥ ₹3,200/qtl · Anand, Nadiad mandis · Currently ₹3,100
+  - 🌽 Maize
+  - Alert when price ≥ ₹2,100/qtl · Currently ₹1,910
+  - 🌶 Red Chilli
+  - Daily summary · 6 AM IST · Top 5 mandis
+  - Alert preferences
+  - 📱 App push notifications
+  - 💬 SMS alerts (free)
+  - 🔇 Quiet hours (10 PM - 6 AM)
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 111-farmer-mandi-history — 111 · Price History — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/111-farmer-mandi-history.html`
+- **Route:** `src/app/(farmer)/mandi · weather/…`  ·  **Feature:** `features/market`  ·  **Flag:** `mandi_weather`
+- **Must render (exact design content):**
+  - 111 · Price History — Krishi-Verse
+  - Wheat · Price History
+  - 🌾 Wheat — Lokwan · Anand Mandi
+  - ₹2,880 / qtl
+  - ↑ ₹50 today · ↑ 3.8% this week
+  - 7d
+  - 30d
+  - 3 mo
+  - 6 mo
+  - 1 yr
+  - 5 yr
+  - 30-day trend
+  - Anand Mandi
+  - Range
+  - ₹2,720 - ₹2,920
+  - Jul 15
+  - Jul 22
+  - Jul 29
+  - Aug 5
+  - Aug 12
+  - Aug 14
+  - Compare across mandis
+  - MANDI
+  - PRICE
+  - CHANGE
+  - Anand
+  - ₹2,880
+  - ↑ 1.8%
+  - ›
+  - Nadiad
+  - ₹2,920
+  - ↑ 2.3%
+  - ›
+  - Vadodara
+  - ₹2,850
+  - → 0.0%
+  - ›
+  - Surat
+  - ₹2,790
+  - ↓ 0.5%
+  - ›
+  - Rajkot
+  - ₹2,810
+  - ↑ 0.9%
+  - ›
+  - 💡
+  - Nadiad mandi
+  - is 14 km away and pays ₹40 more. Transport cost ~₹15/qtl. Net gain: ₹25/qtl.
+  - Set Alert
+  - Sell at ₹2,880 →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 117-farmer-weather-detail — 117 · Weather Detail — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/117-farmer-weather-detail.html`
+- **Route:** `src/app/(farmer)/mandi · weather/…`  ·  **Feature:** `features/market`  ·  **Flag:** `mandi_weather`
+- **Must render (exact design content):**
+  - 117 · Weather Detail — Krishi-Verse
+  - Anand · Weather
+  - ⛈
+  - 28°C
+  - Thunderstorms · Feels 32°C
+  - 📍 Anand · Updated 12 min ago
+  - NOW
+  - ⛈
+  - 28°
+  - 12 PM
+  - ⛈
+  - 29°
+  - 1 PM
+  - 🌧
+  - 28°
+  - 2 PM
+  - 🌧
+  - 27°
+  - 3 PM
+  - 🌦
+  - 26°
+  - 4 PM
+  - 🌤
+  - 27°
+  - 5 PM
+  - ☀
+  - 28°
+  - ⚠ Heavy rain alert · Next 6 hours
+  - Expected 45-60mm rainfall · IMD warning for Anand district
+  - For your wheat crop
+  - 🌾
+  - Stem elongation stage
+  - · day 52 of 130
+  - ⚠ Today: SKIP irrigation
+  - Heavy rain expected — natural irrigation. Save water.
+  - ✓ Day after rain: Check for rust
+  - Humid conditions favour rust spread. Inspect leaves.
+  - Conditions
+  - Humidity
+  - 88%
+  - Wind
+  - 15 km/h NE
+  - UV Index
+  - 2 · Low
+  - Pressure
+  - 1006 hPa
+  - Visibility
+  - 4 km
+  - Sunrise
+  - 6:22 AM
+  - 7-day forecast
+  - Today
+  - ⛈
+  - Heavy thunderstorms
+  - 28° / 22°
+  - Tomorrow
+  - 🌧
+  - Showers possible
+  - 26° / 21°
+  - Sat
+  - ⛅
+  - Partly cloudy
+  - 29° / 22°
+  - Sun
+  - ☀
+  - Sunny · clear
+  - 31° / 23°
+  - Mon
+  - ☀
+  - Sunny · hot
+  - 33° / 24°
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 118-farmer-weather-settings — 118 · Weather Alerts — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/118-farmer-weather-settings.html`
+- **Route:** `src/app/(farmer)/mandi · weather/…`  ·  **Feature:** `features/market`  ·  **Flag:** `mandi_weather`
+- **Must render (exact design content):**
+  - 118 · Weather Alerts — Krishi-Verse
+  - Weather Alert Settings
+  - Critical alerts (always on)
+  - ⛈ Heavy rain warning
+  - >40mm in 24 hrs · 2-4 hr advance notice
+  - 🌨 Hailstorm alert
+  - Damages standing crop · 1 hr advance
+  - 🌡 Heat wave
+  - >45°C for 3+ days · affects grain filling
+  - ❄ Frost warning
+  - Min temp
+  - Daily advisory
+  - 🌅 Morning summary (6 AM)
+  - Today's conditions + crop tip
+  - 📞 Voice call (for poor reading)
+  - 5-min daily voice update · ₹0 charge
+  - Notification delivery
+  - 📱 App push notification
+  - 💬 SMS (offline backup)
+  - Free · works without internet
+  - Crop selection
+  - 🌾 Wheat ✓
+  - 🌿 Cumin ✓
+  - 🌱 Cotton ✓
+  - + Add crop
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).

@@ -1,0 +1,365 @@
+# Marketplace & Auctions — screen build specs
+
+- **Route group:** `src/app/(buyer)/auctions · (farmer)/create-auction`  ·  **Feature/data:** `features/auctions`  ·  **Flag (default OFF):** `auctions`
+- Build each screen to FULL design parity (guide §12). Content below is the EXACT design text/values the
+  screen must show (from `docs/design-data/SCREEN-DATA-CATALOG.md`) — render via i18n keys (hi/en/gu),
+  money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
+
+
+## 14-listing-detail — 14 · Listing Detail — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/14-listing-detail.html`
+- **Route:** `src/app/(buyer)/auctions · (farmer)/create-auction/…`  ·  **Feature:** `features/auctions`  ·  **Flag:** `auctions`
+- **Must render (exact design content):**
+  - 14 · Listing Detail — Krishi-Verse
+  - 🌾
+  - Verified
+  - ⚡ AI Listed
+  - Premium Wheat — Lokwan
+  - ⭐
+  - 4.8
+  - (126 reviews)
+  - In Stock
+  - ₹2,880
+  - per quintal
+  - 5 qtl
+  - available
+  - Product Details
+  - Variety
+  - Lokwan
+  - Grade
+  - A — Premium
+  - Moisture
+  - ≤ 12%
+  - Harvest
+  - Apr 2026
+  - About Seller
+  - RP
+  - Ramesh Patel
+  - ✓
+  - 3 yrs · 42 listings · ⭐ 4.9 (340)
+  - Quantity
+  - −
+  - 2 qtl
+  - +
+  - Add to Cart
+  - Buy Now · ₹5,760
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 16-auction-detail — 16 · Auction Detail — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/16-auction-detail.html`
+- **Route:** `src/app/(buyer)/auctions · (farmer)/create-auction/…`  ·  **Feature:** `features/auctions`  ·  **Flag:** `auctions`
+- **Must render (exact design content):**
+  - 16 · Auction Detail — Krishi-Verse
+  - LIVE AUCTION
+  - 🌶️
+  - Red Chilli — Teja Variety, Premium
+  - 2 Quintal
+  - Organic Certified
+  - Anand FPO
+  - Current Highest Bid
+  - ₹14,500
+  - /qtl
+  - Time Left
+  - 2h 14m
+  - Total Bidders
+  - 7
+  - Bids Placed
+  - 23
+  - ₹500 EMD
+  - will be held from wallet when you place a bid. Refunded if you don't win.
+  - Bid History (Top 5)
+  - SM
+  - Sharma Masala Mart
+  - 👑
+  - 2 min ago · You're outbid
+  - ₹14,500
+  - YO
+  - You
+  - 5 min ago
+  - ₹14,200
+  - VT
+  - Vyapari T***
+  - 8 min ago
+  - ₹14,000
+  - PK
+  - P*** K***
+  - 12 min ago
+  - ₹13,800
+  - AS
+  - A*** S***
+  - 22 min ago
+  - ₹13,500
+  - Watch
+  - Place Bid →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 17-place-bid — 17 · Place Bid — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/17-place-bid.html`
+- **Route:** `src/app/(buyer)/auctions · (farmer)/create-auction/…`  ·  **Feature:** `features/auctions`  ·  **Flag:** `auctions`
+- **Must render (exact design content):**
+  - 17 · Place Bid — Krishi-Verse
+  - Place Your Bid
+  - Current highest:
+  - ₹14,500 /qtl
+  - · Min increment: ₹100
+  - ₹
+  - /qtl
+  - +100
+  - +200
+  - +300
+  - +500
+  - Bid Amount (2 qtl × ₹14,800)
+  - ₹29,600
+  - EMD to be held
+  - ₹500
+  - Wallet balance
+  - ₹12,450 ✓
+  - Wallet hold
+  - ₹500
+  - Cancel
+  - Confirm Bid · ₹14,800
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 18-my-bids — 18 · My Bids — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/18-my-bids.html`
+- **Route:** `src/app/(buyer)/auctions · (farmer)/create-auction/…`  ·  **Feature:** `features/auctions`  ·  **Flag:** `auctions`
+- **Must render (exact design content):**
+  - 18 · My Bids — Krishi-Verse
+  - My Bids
+  - Active
+  - 3
+  - Won
+  - 5
+  - Lost
+  - 12
+  - ★ WINNING
+  - 🌶️
+  - Red Chilli — Teja Premium
+  - ⏱ Ends in 2h 14m
+  - My Bid
+  - ₹14,800
+  - Current High
+  - ₹14,800 ✓
+  - 🌾
+  - Premium Wheat — 10 Quintal
+  - ⏱ Ends in 18h 42m
+  - My Bid
+  - ₹2,750
+  - Current High
+  - ₹2,890 ▲
+  - 🧅
+  - Onion — Medium grade, 8 Quintal
+  - ⏱ Ends in 4d 6h
+  - My Bid
+  - ₹2,200
+  - Current High
+  - ₹2,200 ✓
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 64-create-auction — 64 · Create Auction — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/64-create-auction.html`
+- **Route:** `src/app/(buyer)/auctions · (farmer)/create-auction/…`  ·  **Feature:** `features/auctions`  ·  **Flag:** `auctions`
+- **Must render (exact design content):**
+  - 64 · Create Auction — Krishi-Verse
+  - Create Auction
+  - Start a live auction
+  - Get the best price from multiple buyers competing in real-time
+  - कई खरीदारों से बोली पाएँ — सबसे ऊँचा दाम
+  - How auctions work:
+  - Buyers place bids over your set duration. Highest bid at end wins. EMD (₹500) is held from each bidder to prevent fake bids. Best for unique/premium crops.
+  - About your crop
+  - Crop name
+  - Quantity (qtl)
+  - Grade
+  - A — Premium
+  - B — Standard
+  - Auction settings
+  - Reserve price (minimum acceptable)
+  - ₹
+  - Auction will fail if no bid reaches this · Suggested: ₹2,750–2,900
+  - Bid increment (min step up)
+  - ₹
+  - Auction duration
+  - 2h
+  - Quick
+  - 6h
+  - Standard
+  - 24h
+  - Wide reach
+  - Auction Summary
+  - Starts
+  - Immediately after publish
+  - Ends
+  - Today, 9:30 PM (6 hours)
+  - Reserve / min bid
+  - ₹2,800 / qtl
+  - Expected reach
+  - ~340 verified vyaparis
+  - Expected best price
+  - ₹2,900–3,150 / qtl
+  - Save Draft
+  - Start Auction 🔨
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 65-auction-watch-live — 65 · Your Auction — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/65-auction-watch-live.html`
+- **Route:** `src/app/(buyer)/auctions · (farmer)/create-auction/…`  ·  **Feature:** `features/auctions`  ·  **Flag:** `auctions`
+- **Must render (exact design content):**
+  - 65 · Your Auction — Krishi-Verse
+  - Your Auction
+  - LIVE NOW
+  - ₹3,050
+  - Current highest bid · per quintal
+  - +9%
+  - Above Reserve
+  - 12
+  - Bidders
+  - 23
+  - Bids placed
+  - ⏱ Ends in
+  - 02 : 14 : 36
+  - 340
+  - Viewers
+  - 12
+  - Bidding
+  - ₹2,800
+  - Reserve
+  - Top Bids
+  - View all →
+  - RK
+  - Rajesh K.
+  - ★ HIGHEST
+  - Just now · Ahmedabad APMC
+  - ₹3,050
+  - PT
+  - Pinakin T.
+  - 2 min ago
+  - ₹3,000
+  - MS
+  - Mehul S.
+  - 5 min ago
+  - ₹2,950
+  - AK
+  - Ankit K.
+  - 12 min ago
+  - ₹2,900
+  - Share Auction
+  - Stop Early
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 66-auction-ended-success — 66 · Auction Complete — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/66-auction-ended-success.html`
+- **Route:** `src/app/(buyer)/auctions · (farmer)/create-auction/…`  ·  **Feature:** `features/auctions`  ·  **Flag:** `auctions`
+- **Must render (exact design content):**
+  - 66 · Auction Complete — Krishi-Verse
+  - Auction Complete
+  - ✓ SOLD
+  - Your auction ended successfully!
+  - Highest bid accepted at
+  - ₹3,050/qtl
+  - Winning Bidder
+  - RK
+  - Rajesh Kumar
+  - Ahmedabad APMC · ⭐ 4.8 · 142 deals
+  - Total Sale Value
+  - ₹30,500
+  - 10 qtl × ₹3,050 · +9% above reserve
+  - 23
+  - Total Bids
+  - 12
+  - Bidders
+  - 6h
+  - Duration
+  - What happens next
+  - 1
+  - Payment held in escrow
+  - — Rajesh's ₹30,500 is secured
+  - 2
+  - Schedule pickup
+  - — Confirm date within 24 hours
+  - 3
+  - Delivery
+  - — Hand crop to driver, payment releases
+  - Share
+  - Schedule Pickup →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 193-auction-outbid — 193 · Outbid — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/193-auction-outbid.html`
+- **Route:** `src/app/(buyer)/auctions · (farmer)/create-auction/…`  ·  **Feature:** `features/auctions`  ·  **Flag:** `auctions`
+- **Must render (exact design content):**
+  - 193 · Outbid — Krishi-Verse
+  - Auction Update
+  - 😔
+  - You've been outbid
+  - Current highest bid:
+  - ₹2,950
+  - Your bid was ₹2,900 · ₹50 short
+  - Auction details
+  - Item
+  - 5 quintal Wheat (Lokwan)
+  - Seller
+  - Krishna Mehta · Nadiad
+  - Time left
+  - ⏱ 14 min
+  - Total bidders
+  - 7
+  - 💡 Place new bid?
+  - Need to bid at least ₹2,955 · We recommend ₹2,985 for better chance
+  - Your ₹2,900 escrow has been released back to your wallet · You can re-bid if you want
+  - Walk Away
+  - Bid ₹2,985
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 194-auction-history — 194 · Auction History — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/194-auction-history.html`
+- **Route:** `src/app/(buyer)/auctions · (farmer)/create-auction/…`  ·  **Feature:** `features/auctions`  ·  **Flag:** `auctions`
+- **Must render (exact design content):**
+  - 194 · Auction History — Krishi-Verse
+  - My Auctions
+  - All · 24
+  - Won · 14
+  - Lost · 8
+  - Active · 2
+  - 🌾 5 qtl Wheat (Lokwan)
+  - Seller: Ramesh Patel · Won 22 Aug
+  - WON ✓
+  - Final bid · 7 bidders
+  - ₹2,880/qtl · ₹14,400
+  - 🌿 3 qtl Cumin (premium)
+  - Seller: Pushpa Vyas · Lost 18 Aug
+  - OUTBID
+  - Your max bid · Won at
+  - ₹28,500 · ₹29,200
+  - 🌾 8 qtl Wheat (Sharbati)
+  - Seller: Krishna Mehta · Won 12 Aug
+  - WON ✓
+  - Final bid · 4 bidders
+  - ₹3,180/qtl · ₹25,440
+  - 🌱 12 qtl Cotton
+  - Seller: Mahesh Joshi · Won 5 Aug
+  - WON ✓
+  - Final bid · 9 bidders
+  - ₹6,850/qtl · ₹82,200
+  - 🌽 4 qtl Maize
+  - Seller: Krishna Mehta · Lost 28 Jul
+  - DIDN'T BID
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).

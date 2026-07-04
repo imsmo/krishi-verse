@@ -1,0 +1,172 @@
+# Farmer · Wallet — screen build specs
+
+- **Route group:** `src/app/(farmer)/wallet`  ·  **Feature/data:** `features/wallet`  ·  **Flag (default OFF):** `wallet`
+- Build each screen to FULL design parity (guide §12). Content below is the EXACT design text/values the
+  screen must show (from `docs/design-data/SCREEN-DATA-CATALOG.md`) — render via i18n keys (hi/en/gu),
+  money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
+
+
+## 19-wallet-home — 19 · Wallet — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/19-wallet-home.html`
+- **Route:** `src/app/(farmer)/wallet/…`  ·  **Feature:** `features/wallet`  ·  **Flag:** `wallet`
+- **Must render (exact design content):**
+  - 19 · Wallet — Krishi-Verse
+  - Wallet
+  - Available Balance
+  - ₹12,450
+  - .50
+  - 👁
+  - In Escrow
+  - ₹500
+  - This Month
+  - +₹18,920
+  - Pending
+  - ₹2,400
+  - Add Money
+  - Send
+  - Withdraw
+  - Recent Transactions
+  - View All →
+  - Order #ORD-8421 paid by Sharma Stores
+  - 5 min ago · Settled
+  - + ₹1,250
+  - EMD held — Auction #AUC-122
+  - 15 min ago · Held until auction close
+  - - ₹500
+  - Wallet recharge via GPay
+  - 2 hours ago
+  - + ₹5,000
+  - Wages paid to 14 workers · Onion harvest
+  - Yesterday · 6:30 PM
+  - - ₹4,900
+  - Auction won — Maize 3 Qtl
+  - 2 days ago · Released from escrow
+  - + ₹5,730
+  - Home
+  - Listings
+  - Orders
+  - Wallet
+  - Profile
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 20-add-money — 20 · Add Money — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/20-add-money.html`
+- **Route:** `src/app/(farmer)/wallet/…`  ·  **Feature:** `features/wallet`  ·  **Flag:** `wallet`
+- **Must render (exact design content):**
+  - 20 · Add Money — Krishi-Verse
+  - Add Money
+  - Enter Amount
+  - ₹
+  - 5,000
+  - Min: ₹10 · Max: ₹2,00,000
+  - ₹500
+  - ₹1,000
+  - ₹2,000
+  - ₹5,000
+  - ₹10,000
+  - Pay Using
+  - G
+  - GPay
+  - P
+  - PhonePe
+  - P
+  - Paytm
+  - +
+  - Other UPI
+  - Debit / Credit Card
+  - Visa, Mastercard, RuPay
+  - Netbanking
+  - SBI, HDFC, ICICI, Axis + 50 more
+  - Proceed to Pay · ₹5,000
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 21-transactions — 21 · Transactions — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/21-transactions.html`
+- **Route:** `src/app/(farmer)/wallet/…`  ·  **Feature:** `features/wallet`  ·  **Flag:** `wallet`
+- **Must render (exact design content):**
+  - 21 · Transactions — Krishi-Verse
+  - Transaction History
+  - Export
+  - All
+  - Money In
+  - Money Out
+  - Escrow
+  - This month
+  - Total In
+  - + ₹38.4K
+  - Total Out
+  - - ₹19.5K
+  - Net
+  - ₹18.9K
+  - Today · 15 Aug 2026
+  - Order #ORD-8421 — Sharma Stores
+  - TXN-202608150005 · 10:42 AM
+  - + ₹1,250
+  - EMD Auction #AUC-122 — Red Chilli
+  - TXN-202608150004 · 10:38 AM
+  - - ₹500
+  - Wallet recharge — GPay UPI
+  - TXN-202608150003 · 8:15 AM
+  - + ₹5,000
+  - Yesterday · 14 Aug 2026
+  - Wages — 14 workers · Onion harvest
+  - TXN-202608140012 · 6:30 PM
+  - - ₹4,900
+  - Auction won — Maize 3 Qtl
+  - TXN-202608140008 · 4:12 PM
+  - + ₹5,730
+  - Bank withdrawal — HDFC ●●4521
+  - TXN-202608140003 · 11:00 AM
+  - - ₹10,000
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 59-farmer-payout-history — 59 · Payout History — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/59-farmer-payout-history.html`
+- **Route:** `src/app/(farmer)/wallet/…`  ·  **Feature:** `features/wallet`  ·  **Flag:** `wallet`
+- **Must render (exact design content):**
+  - 59 · Payout History — Krishi-Verse
+  - Payout History
+  - Total received lifetime
+  - ₹4,28,750
+  - From 87 payouts · Since Jan 2024
+  - August 2026 · ₹84,320
+  - ✓
+  - Order #KV-0198 · Maize sale
+  - UTR: 423891754201 · 14 Aug, 4:32 PM
+  - +₹15,280
+  - RECEIVED
+  - ✓
+  - Order #KV-0192 · Wheat sale
+  - UTR: 423891687234 · 11 Aug, 2:15 PM
+  - +₹8,640
+  - RECEIVED
+  - ⏱
+  - Order #KV-0201 · Wheat sale
+  - In escrow · Delivery pending
+  - ₹31,500
+  - HOLD
+  - ✓
+  - Auction win · Lot #842
+  - UTR: 423891598472 · 08 Aug, 11:40 AM
+  - +₹28,900
+  - RECEIVED
+  - July 2026 · ₹71,920
+  - ✓
+  - Order #KV-0156 · Chilli sale
+  - UTR: 423891423891 · 28 Jul
+  - +₹14,500
+  - RECEIVED
+  - !
+  - Withdrawal · ₹8,000
+  - Bank rejected · IFSC mismatch
+  - -₹8,000
+  - FAILED · RETRY
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).

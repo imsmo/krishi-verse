@@ -1,0 +1,1804 @@
+# Worker / Labour — screen build specs
+
+- **Route group:** `src/app/(worker) · (farmer)/hire`  ·  **Feature/data:** `features/labour`  ·  **Flag (default OFF):** `worker_app / labour_hire`
+- Build each screen to FULL design parity (guide §12). Content below is the EXACT design text/values the
+  screen must show (from `docs/design-data/SCREEN-DATA-CATALOG.md`) — render via i18n keys (hi/en/gu),
+  money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
+
+
+## 25-worker-profile — 25 · Worker Profile — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/25-worker-profile.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 25 · Worker Profile — Krishi-Verse
+  - SK
+  - Sunita Kumari
+  - Sojitra Village, Anand · 2.4 km away
+  - ★
+  - 4.9
+  - 340 ratings
+  - 187
+  - Jobs done
+  - 3 yrs
+  - On platform
+  - Skills
+  - 🌱
+  - Sowing
+  - 🌾
+  - Harvesting
+  - 🌿
+  - Weeding
+  - 💧
+  - Irrigation
+  - 🪴
+  - Transplanting
+  - Availability — Next 30 days
+  - August 2026
+  - M
+  - T
+  - W
+  - T
+  - F
+  - S
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  - 11
+  - 12
+  - 13
+  - 14
+  - 15
+  - 16
+  - 17
+  - 18
+  - 19
+  - 20
+  - 21
+  - 22
+  - 23
+  - 24
+  - 25
+  - 26
+  - 27
+  - 28
+  - 29
+  - 30
+  - 31
+  - Available
+  - Booked
+  - Off
+  - Insurance & Earnings
+  - PMSBY Insurance · Active
+  - Cover ₹2,00,000 · Valid till 31 Mar 2027
+  - ✓
+  - This Month's Earnings
+  - ₹8,450
+  - 14 jobs ·
+  - ↑ +24% vs last month
+  - Book Sunita for a Job →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 26-book-worker — 26 · Book a Worker — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/26-book-worker.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 26 · Book a Worker — Krishi-Verse
+  - Book Sunita Kumari
+  - Step 3 of 4
+  - Date, Hours & Wage
+  - When do you need help?
+  - कब चाहिए मदद?
+  - Selected task:
+  - Harvesting · Wheat
+  - Work Date
+  - Start Time
+  - 6:00 AM
+  - 7:00 AM
+  - 8:00 AM
+  - Hours
+  - 4 hours
+  - 6 hours
+  - 8 hours (full day)
+  - Wage Offered per Day
+  - ₹
+  - State Minimum Wage:
+  - ₹350/day in Gujarat (skilled agricultural work).
+  - Your offer of
+  - ₹400
+  - is fair and complies with Minimum Wages Act, 1948.
+  - Location & Notes
+  - Farm Location
+  - GPS coordinates will be shared with worker on accept
+  - Special instructions (optional)
+  - Please bring own water bottle. Lunch & chai will be provided by us.
+  - Booking Summary
+  - Worker
+  - Sunita Kumari
+  - Task
+  - Wheat harvesting
+  - Date
+  - Mon, 18 Aug 2026
+  - Time
+  - 7:00 AM · 8 hours
+  - Wage
+  - ₹400/day
+  - Platform fee
+  - ₹10
+  - Total
+  - ₹410
+  - Back
+  - Send Booking Request
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 27-booking-confirm — 27 · New Job Offer — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/27-booking-confirm.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 27 · New Job Offer — Krishi-Verse
+  - New Job Offer
+  - 🌾 NEW BOOKING REQUEST
+  - You have a new job offer!
+  - नया काम मिला है
+  - Respond within
+  - 3 hours 24 minutes
+  - Offer expires at 4:30 PM today
+  - RP
+  - Ramesh Patel
+  - ⭐ 4.9 · 42 bookings · 3 yrs on platform
+  - Task
+  - Wheat harvesting · ~2 acres
+  - When
+  - Mon, 18 Aug · 7:00 AM
+  - Duration
+  - 8 hours (full day with lunch break)
+  - ₹400
+  - Wage offered for the day
+  - ✓ ₹50 above state minimum · Paid via UPI on completion
+  - Farm Location
+  - 📍 Anand, Plot 247 · 2.4 km from your home
+  - Special instructions from farmer:
+  - Please bring own water bottle. Lunch & chai will be provided.
+  - Decline
+  - Accept · ₹400
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 28-notifications — 28 · Notifications — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/28-notifications.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 28 · Notifications — Krishi-Verse
+  - Notifications
+  - All
+  - 5
+  - Unread
+  - 3
+  - Mark all read
+  - Today
+  - Your order is on the way! 🚛
+  - Premium Wheat (2 qtl) is out for delivery. Expected by 4:00 PM.
+  - 12 min ago · Order #KV-0142
+  - Track
+  - You've been outbid on
+  - Red Chilli
+  - Highest bid now ₹15,200. Auction ends in 2h 14m.
+  - 28 min ago
+  - Bid again
+  - Sunita Kumari
+  - accepted your booking
+  - She'll arrive at your farm at 7 AM on Mon, 18 Aug for wheat harvesting.
+  - 1 hour ago
+  - View
+  - Yesterday
+  - Payment received
+  - ₹9,550
+  - ✓
+  - From Anand Stores for your Maize listing. Credited to wallet.
+  - Yesterday, 4:32 PM
+  - Aadhaar KYC verified
+  - Your account is now fully verified. You can withdraw up to ₹50,000/day.
+  - Yesterday, 10:14 AM
+  - You're all caught up! ✨
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 29-worker-home — 29 · Worker Home — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/29-worker-home.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 29 · Worker Home — Krishi-Verse
+  - SK
+  - Namaste Sunita!
+  - आज 3 नए काम मिले हैं
+  - This week's earnings
+  - ₹2,800
+  - 7 jobs · ↑ 24% vs last week
+  - View Earnings
+  - Get Paid →
+  - 3 Pending
+  - job offers awaiting response
+  - 2 Tomorrow
+  - confirmed bookings
+  - Jobs near you
+  - View all
+  - 🌾
+  - Wheat harvesting · 8 hours
+  - Ramesh Patel · Anand
+  - ₹400/day
+  - 2.4 km
+  - 🌱
+  - Sowing · 6 hours
+  - Krishna FPO · Sojitra
+  - ₹380/day
+  - 1.2 km
+  - 💧
+  - Irrigation setup · 4 hours
+  - Vijay Bhai · Petlad
+  - ₹200 (half day)
+  - 8.5 km
+  - Today's tip
+  - 💡
+  - Carry water on hot days
+  - When farmer doesn't provide water, you have right to ask. We've added "water provided" filter — use it when searching jobs.
+  - Home
+  - Jobs
+  - Schedule
+  - Earnings
+  - Profile
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 30-worker-browse-jobs — 30 · Find Jobs — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/30-worker-browse-jobs.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 30 · Find Jobs — Krishi-Verse
+  - Find Jobs
+  - All
+  - ≤ 5 km
+  - Today
+  - ≥ ₹400
+  - Harvesting
+  - Water provided
+  - 12 jobs found · 5 km radius
+  - Sort: Distance ↓
+  - Wheat harvesting · 8 hr full day
+  - ₹400
+  - Ramesh Patel · ⭐ 4.9 (42)
+  - 📍 Anand · 2.4 km
+  - 📅 Tomorrow, 7 AM
+  - Water provided
+  - Lunch provided
+  - Tomato transplanting · 6 hr
+  - ₹380
+  - Krishna FPO · ⭐ 4.7 (128)
+  - 📍 Sojitra · 1.2 km
+  - 📅 Mon, 18 Aug
+  - Group work (12 workers)
+  - Cotton picking · 3 days
+  - ₹450
+  - Mahesh Bhai · ⭐ 4.5 (8)
+  - 📍 Bhalej · 4.8 km
+  - 📅 Starts 20 Aug
+  - 3-day commitment
+  - Above min wage
+  - Drip irrigation setup · 4 hr
+  - ₹200
+  - Vijay Patel · ⭐ 4.8 (24)
+  - 📍 Petlad · 8.5 km
+  - 📅 Wed, 19 Aug · Half day
+  - Skilled work
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 31-worker-job-detail — 31 · Job Detail — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/31-worker-job-detail.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 31 · Job Detail — Krishi-Verse
+  - Job Detail
+  - Recommended for you
+  - Wheat Harvesting Job
+  - 📍 Anand · 2.4 km
+  - 📅 Tomorrow · 7 AM
+  - ⏱️ 8 hours
+  - Wage Offered
+  - ₹400/day
+  - +₹50 above min wage
+  - State min: ₹350
+  - About this job
+  - Wheat harvest on a 2-acre farm. Family-run operation. Worker should bring own sickle. Lunch and chai will be provided. Estimated work: 8 hours including 1-hour lunch break.
+  - Farmer
+  - RP
+  - Ramesh Patel ✓
+  - ⭐ 4.9 · 42 bookings · 3 yrs on platform
+  - View profile
+  - What's provided
+  - Water
+  - Lunch
+  - Chai/Tea
+  - Tools (bring own)
+  - Transport
+  - Insurance (PMSBY active)
+  - Job details
+  - Date
+  - Monday, 18 Aug 2026
+  - Start time
+  - 7:00 AM
+  - Duration
+  - 8 hours (with lunch)
+  - Work type
+  - Manual harvesting
+  - Workers needed
+  - 1 worker
+  - Payment
+  - UPI on completion · Same day
+  - Location
+  - Anand · Plot 247 · Will share exact GPS on accept
+  - Decline
+  - Accept · Earn ₹400
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 32-worker-my-jobs — 32 · My Schedule — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/32-worker-my-jobs.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 32 · My Schedule — Krishi-Verse
+  - My Schedule
+  - Upcoming
+  - (5)
+  - Past
+  - (187)
+  - Cancelled
+  - (2)
+  - ★ TODAY — 15 AUG
+  - 7:00 AM
+  - 8 hours · Active now
+  - IN PROGRESS
+  - Wheat harvesting · Ramesh Patel
+  - 📍 Anand 2.4 km
+  - ⏱️ Started 7:05 AM
+  - View active job →
+  - TOMORROW — 16 AUG
+  - 6:30 AM
+  - 6 hours
+  - ₹380
+  - Tomato transplanting · Krishna FPO
+  - 📍 Sojitra 1.2 km
+  - 👥 12 workers
+  - THIS WEEK
+  - Mon 18 · 7 AM
+  - 8 hours
+  - ₹400
+  - Wheat harvesting · Ramesh Patel
+  - 📍 Anand
+  - 📋 Confirmed
+  - Wed 20 · 8 AM
+  - 3 days commitment
+  - ₹1,350
+  - Cotton picking · Mahesh Bhai
+  - 📍 Bhalej
+  - 💰 ₹450/day
+  - Sat 23 · 7 AM
+  - 4 hours
+  - ₹200
+  - Drip setup · Vijay Patel
+  - 📍 Petlad
+  - ⚙️ Skilled work
+  - Home
+  - Jobs
+  - Schedule
+  - Earnings
+  - Profile
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 33-worker-active-job — 33 · Active Job — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/33-worker-active-job.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 33 · Active Job — Krishi-Verse
+  - Today's Job
+  - WORK IN PROGRESS
+  - Wheat harvesting
+  - Checked in at 7:05 AM · Ramesh Patel's farm
+  - Time worked
+  - 04:23:18
+  - Start
+  - 7:05 AM
+  - Break
+  - 30 min
+  - Earning
+  - ₹220
+  - Job details
+  - Wage
+  - ₹400/day
+  - Hours
+  - 8 hrs (with lunch)
+  - Will be paid by
+  - Today, on completion
+  - Farmer
+  - RP
+  - Ramesh Patel
+  - 📞 +91 98765 43210
+  - Issues?
+  - Report a problem
+  - Wage dispute · Safety concern · Unfair treatment
+  - Mark Job Complete → Get Paid
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 34-worker-payment-received — 34 · Payment Received — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/34-worker-payment-received.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 34 · Payment Received — Krishi-Verse
+  - Payment
+  - Payment received!
+  - पैसा मिल गया
+  - ₹400
+  - Credited to your wallet · just now
+  - Job
+  - Wheat harvesting
+  - From
+  - Ramesh Patel
+  - Date
+  - 15 Aug 2026
+  - Hours
+  - 8 hours
+  - UTR
+  - UPI/626543201
+  - Total received
+  - ₹400
+  - Withdraw to bank →
+  - Find next job
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 35-worker-earnings — 35 · My Earnings — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/35-worker-earnings.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 35 · My Earnings — Krishi-Verse
+  - My Earnings
+  - This week
+  - This month
+  - This year
+  - All time
+  - August 2026 earnings
+  - ₹8,450
+  - ↑ +24% vs July
+  - 14
+  - Jobs done
+  - 112
+  - Hours
+  - ⭐ 4.9
+  - Avg rating
+  - Last 7 months
+  - ₹6,800 avg
+  - Feb
+  - Mar
+  - Apr
+  - May
+  - Jun
+  - Jul
+  - Aug
+  - Recent payments
+  - View all
+  - 15
+  - Aug
+  - Wheat harvesting
+  - Ramesh Patel · 8 hrs
+  - +₹400
+  - 13
+  - Aug
+  - Sowing assistance
+  - Krishna FPO · 6 hrs
+  - +₹380
+  - 11
+  - Aug
+  - Weeding
+  - Vijay Patel · 8 hrs
+  - +₹360
+  - 08
+  - Aug
+  - Cotton picking (Day 3)
+  - Mahesh Bhai · 8 hrs
+  - +₹450
+  - 07
+  - Aug
+  - Cotton picking (Day 2)
+  - Mahesh Bhai · 8 hrs
+  - +₹450
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 36-worker-availability — 36 · Set Availability — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/36-worker-availability.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 36 · Set Availability — Krishi-Verse
+  - Set Availability
+  - Tap a date to mark it available. Farmers can only book you on green days. Bookings can't be removed here.
+  - ✓ Available
+  - ✕ Block date
+  - August 2026
+  - ‹
+  - ›
+  - M
+  - T
+  - W
+  - T
+  - F
+  - S
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  - 11
+  - 12
+  - 13
+  - 14
+  - 15
+  - 16
+  - 17
+  - 18
+  - 19
+  - 20
+  - 21
+  - 22
+  - 23
+  - 24
+  - 25
+  - 26
+  - 27
+  - 28
+  - 29
+  - 30
+  - 31
+  - 22
+  - Available
+  - 7
+  - Booked
+  - 5
+  - Off (rest)
+  - Quick actions
+  - All weekdays
+  - Skip Sundays
+  - Next 7 days
+  - Clear all
+  - Save Availability
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 37-worker-skills — 37 · My Skills — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/37-worker-skills.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 37 · My Skills — Krishi-Verse
+  - My Skills
+  - Skills you turn ON appear on your profile. Farmers can search by skill — more skills = more jobs. Add new ones anytime.
+  - Crop work
+  - 5 active
+  - 🌱
+  - Sowing
+  - 42 jobs · ⭐ 4.9
+  - 🌾
+  - Harvesting
+  - 98 jobs · ⭐ 4.9
+  - 🌿
+  - Weeding
+  - 31 jobs · ⭐ 4.8
+  - 🪴
+  - Transplanting
+  - 16 jobs · ⭐ 4.7
+  - Irrigation & setup
+  - 1 active
+  - 💧
+  - Drip irrigation
+  - 8 jobs · ⭐ 4.9 ·
+  - Skilled rate
+  - 🚿
+  - Flood irrigation
+  - Not active
+  - Specialised
+  - 0 active
+  - 🚜
+  - Tractor operator
+  - Requires certification ·
+  - Learn how
+  - 🐄
+  - Animal care
+  - Available in Phase 2
+  - Earn the "Skilled Worker" badge
+  - Complete 3 skilled jobs · Get 20% higher pay automatically
+  - + Add a new skill
+  - Save Skills
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 38-worker-profile-own — 38 · My Profile — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/38-worker-profile-own.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 38 · My Profile — Krishi-Verse
+  - My Profile
+  - Edit ✎
+  - SK
+  - Sunita Kumari ✓
+  - Sojitra Village, Anand · Hindi · ⭐ 4.9
+  - 187
+  - Jobs done
+  - 3 yr
+  - On platform
+  - ₹0.97L
+  - Lifetime
+  - WORK PREFERENCES
+  - 🌾
+  - My Skills
+  - 5 skills active
+  - ›
+  - 📅
+  - Availability
+  - 22 days available · 7 booked
+  - ›
+  - 📍
+  - Work area
+  - 10 km radius from Sojitra
+  - ›
+  - 💰
+  - Minimum wage
+  - ₹350/day (state minimum)
+  - ›
+  - PROTECTION & ID
+  - 🛡️
+  - PMSBY Insurance
+  - Active · ₹2,00,000 cover · Valid till Mar 2027
+  - ›
+  - 📋
+  - Aadhaar verified ✓
+  - Last verified 12 Apr 2025
+  - ›
+  - 🏦
+  - Bank / UPI
+  - SBI ****4521 · sunita@oksbi
+  - ›
+  - RATINGS & REVIEWS
+  - ⭐
+  - View my reviews
+  - 340 ratings from farmers
+  - ›
+  - ACCOUNT
+  - ⚙️
+  - Settings
+  - ›
+  - ❓
+  - Help & Support
+  - ›
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 39-worker-insurance — 39 · PMSBY Insurance — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/39-worker-insurance.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 39 · PMSBY Insurance — Krishi-Verse
+  - Insurance
+  - ✓ ACTIVE · GOVT-BACKED
+  - PMSBY Insurance
+  - Pradhan Mantri Suraksha Bima Yojana
+  - Total cover
+  - ₹2,00,000
+  - Annual premium
+  - ₹20 only
+  - Policy details
+  - Policy number
+  - SBI-PMSBY-7842156
+  - Provider
+  - SBI General Insurance
+  - Coverage period
+  - 1 Apr 2026 — 31 Mar 2027
+  - Premium paid via
+  - Krishi-Verse Wallet
+  - Auto-renew
+  - ✓ ON
+  - What's covered
+  - Accidental death — ₹2,00,000 to family
+  - Permanent total disability — ₹2,00,000
+  - Permanent partial disability — ₹1,00,000
+  - Work-related and non-work accidents both
+  - 24/7 coverage including off-duty hours
+  - Nominee
+  - Name
+  - Vikas Kumar (Son)
+  - Aadhaar last 4
+  - ****8245
+  - Change nominee →
+  - How to claim
+  - In case of accident:
+  - Call helpline
+  - 1800-XXX-XXXX
+  - within 30 days. We'll guide you through document submission. No middlemen, no fees.
+  - File a Claim
+  - Download policy PDF
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 40-worker-reviews — 40 · My Reviews — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/40-worker-reviews.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 40 · My Reviews — Krishi-Verse
+  - My Reviews
+  - 4.9
+  - ★★★★★
+  - 340 reviews · 187 completed jobs
+  - 5 ★
+  - 279
+  - 4 ★
+  - 48
+  - 3 ★
+  - 10
+  - 2 ★
+  - 3
+  - 1 ★
+  - 0
+  - All
+  - 5 stars
+  - With photos
+  - This month
+  - RP
+  - Ramesh Patel
+  - Wheat harvesting · 13 Aug
+  - ★★★★★
+  - Sunita ji ne bahut acchi mehnat ki. Time pe aayi, complete kaam kiya, sab khush hain. Phir bulayenge.
+  - On time
+  - Quality work
+  - Polite
+  - KF
+  - Krishna FPO
+  - Sowing · 8 Aug
+  - ★★★★★
+  - Excellent worker. Has done multiple jobs for our FPO. Reliable, no complaints from any farmer.
+  - Reliable
+  - Experienced
+  - VP
+  - Vijay Patel
+  - Irrigation · 2 Aug
+  - ★★★★★
+  - Drip line lagana sahi se aaya tha. Skilled hai.
+  - Skilled
+  - MB
+  - Mahesh Bhai
+  - Cotton picking · 28 Jul
+  - ★★★★☆
+  - Acchha kaam. Thoda jaldi finish kar deti hai. Quality A1.
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 41-worker-withdraw — 41 · Withdraw to Bank — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/41-worker-withdraw.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 41 · Withdraw to Bank — Krishi-Verse
+  - Withdraw Money
+  - Wallet balance
+  - ₹2,800
+  - Withdraw amount
+  - ₹
+  - ₹500
+  - ₹1,000
+  - ₹2,000
+  - All
+  - Withdraw to
+  - 🏦
+  - State Bank of India
+  - A/c ****4521 · IFSC SBIN0001234
+  - Primary
+  - + Use different account
+  - ⚡ Instant transfer:
+  - Money will reach your bank in 2-5 minutes (UPI/IMPS).
+  - No fees · No minimum amount · Available 24×7
+  - Withdraw ₹2,800 →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 42-browse-workers — 42 · Find Workers — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/42-browse-workers.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 42 · Find Workers — Krishi-Verse
+  - Find Workers
+  - All Tasks
+  - Within 5 km
+  - Available today
+  - ⭐ 4.5+
+  - Browse by Task
+  - 🌾
+  - Harvest
+  - 🌱
+  - Sowing
+  - 🌿
+  - Weeding
+  - 💧
+  - Irrigation
+  - 🪴
+  - Transplant
+  - 🌳
+  - Pruning
+  - 🚜
+  - Tractor
+  - 📦
+  - Loading
+  - Available Today (12)
+  - Sort ↓
+  - SK
+  - Sunita Kumari
+  - 2.4 km · Sojitra village · 187 jobs
+  - Harvest
+  - Sowing
+  - +3
+  - ₹400
+  - /day
+  - ★
+  - 4.9
+  - RM
+  - Ramesh Mahato
+  - 3.1 km · Bhalej village · 142 jobs
+  - Harvest
+  - Tractor
+  - ₹450
+  - /day
+  - ★
+  - 4.7
+  - LD
+  - Lakshmi Devi
+  - 4.0 km · Anand · 95 jobs
+  - Weeding
+  - Transplant
+  - ₹380
+  - /day
+  - ★
+  - 4.8
+  - KS
+  - Kamla Sharma
+  - 5.2 km · Petlad · 210 jobs
+  - Harvest
+  - Sowing
+  - +2
+  - ₹420
+  - /day
+  - ★
+  - 4.9
+  - VP
+  - Vijay Patel
+  - 6.8 km · Borsad · 67 jobs
+  - Tractor
+  - Loading
+  - ₹500
+  - /day
+  - ★
+  - 4.6
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 43-filter-workers — 43 · Filter Workers — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/43-filter-workers.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 43 · Filter Workers — Krishi-Verse
+  - Filter Workers
+  - Reset all
+  - Task type
+  - 🌾 Harvest
+  - 🌱 Sowing
+  - 🌿 Weeding
+  - 💧 Irrigation
+  - 🪴 Transplant
+  - 🚜 Tractor
+  - Distance from your farm
+  - 2 km
+  - 7 km
+  - Daily wage range
+  - ₹350
+  - ₹500
+  - ✓ Above state minimum (₹350)
+  - Availability
+  - Today
+  - Tomorrow
+  - This week
+  - Pick date
+  - Other preferences
+  - Minimum 4★ rating
+  - Verified workers only
+  - PMSBY insurance active
+  - Has worked with me before
+  - Cancel
+  - Show 12 workers
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 44-book-step1-task — 44 · Book Sunita · Step 1 — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/44-book-step1-task.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 44 · Book Sunita · Step 1 — Krishi-Verse
+  - Book Sunita Kumari
+  - Step 1 of 4
+  - What work do you need?
+  - क्या काम चाहिए?
+  - Sunita can do these tasks. Pick what fits your farm today.
+  - 🌾
+  - Wheat Harvesting
+  - Cutting · Threshing · Bundling
+  - 🌱
+  - Sowing / Bijai
+  - Seed placement · Furrow making
+  - 🌿
+  - Weeding / Nirai
+  - Manual · Hand-weeding
+  - 💧
+  - Irrigation Support
+  - Channel cleaning · Pump operation
+  - 🪴
+  - Transplanting
+  - Rice paddy · Vegetable seedlings
+  - ✨
+  - Other / Custom
+  - Describe in next step
+  - ℹ Tip
+  - For 2-acre wheat harvesting, you'll typically need 1-2 workers for a full day.
+  - Back
+  - Next · Date & Time
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 45-book-step2-datetime — 45 · Book Sunita · Step 2 — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/45-book-step2-datetime.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 45 · Book Sunita · Step 2 — Krishi-Verse
+  - Book Sunita Kumari
+  - Step 2 of 4
+  - When do you need her?
+  - कब चाहिए?
+  - August 2026
+  - M
+  - T
+  - W
+  - T
+  - F
+  - S
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  - 11
+  - 12
+  - 13
+  - 14
+  - 15
+  - 16
+  - 17
+  - 18
+  - 19
+  - 20
+  - 21
+  - 22
+  - 23
+  - 24
+  - 25
+  - 26
+  - 27
+  - 28
+  - 29
+  - 30
+  - 31
+  - Available
+  - Busy
+  - Selected
+  - Start time
+  - 6:00 AM
+  - Early morning
+  - 7:00 AM
+  - Recommended
+  - 8:00 AM
+  - Morning
+  - 9:00 AM
+  - Late morning
+  - 2:00 PM
+  - Afternoon
+  - 3:00 PM
+  - Afternoon
+  - Duration
+  - 4 hrs
+  - Half day
+  - 6 hrs
+  - 3/4 day
+  - 8 hrs
+  - Full day
+  - Back
+  - Next · Wage
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 46-book-step4-review — 46 · Book Sunita · Final Review — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/46-book-step4-review.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 46 · Book Sunita · Final Review — Krishi-Verse
+  - Final Review
+  - Step 4 of 4
+  - Confirm & send
+  - Almost done!
+  - Review your booking before sending to Sunita
+  - SK
+  - Sunita Kumari
+  - ⭐ 4.9 · 187 jobs · 2.4 km away
+  - Task
+  - Wheat Harvesting
+  - Date
+  - Mon, 18 Aug 2026
+  - Time
+  - 7:00 AM start
+  - Duration
+  - 8 hours (full day)
+  - Location
+  - My farm · Anand, Plot 247
+  - Cost Breakdown
+  - Daily wage
+  - ₹400
+  - Platform fee (2.5%)
+  - ₹10
+  - Insurance contribution
+  - ₹2
+  - You Pay
+  - ₹412
+  - 💳
+  - Pay from Wallet
+  - Balance: ₹3,450
+  - Change ▾
+  - By sending this booking
+  - you agree to pay Sunita ₹400 via wallet on job completion. Cancel before 24 hours of start time for full refund. After accept, partial refunds apply.
+  - I agree to the booking terms above
+  - Back
+  - Send Booking · ₹412
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 47-booking-sent — 47 · Booking Sent — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/47-booking-sent.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 47 · Booking Sent — Krishi-Verse
+  - Booking Status
+  - WAITING FOR RESPONSE
+  - Booking sent to Sunita
+  - She has up to 4 hours to accept or decline.
+  - You'll get a notification as soon as she responds.
+  - Response expected within
+  - 3h 47m
+  - 📱 What happens next
+  - Sunita gets a notification on her phone. She reviews the job details and accepts or declines. If she accepts, you both get GPS-shared location 1 hour before start time.
+  - 📋 View booking details
+  - 📞 Call Sunita directly
+  - Cancel booking
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 48-booking-accepted — 48 · Sunita Accepted — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/48-booking-accepted.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 48 · Sunita Accepted — Krishi-Verse
+  - Booking Confirmed
+  - ✓ ACCEPTED
+  - Sunita accepted your booking!
+  - She'll arrive at your farm at 7:00 AM
+  - on Monday, 18 August 2026.
+  - SK
+  - Sunita Kumari
+  - "Will reach on time. Thank you."
+  - 📅
+  - Monday, 18 Aug · 7:00 AM
+  - 2 days from now · ₹400 will be held in escrow
+  - 🌱
+  - What happens next
+  - 1
+  - 1 hour before start:
+  - You'll get a GPS link to share farm location with Sunita.
+  - 2
+  - On work day:
+  - Sunita clocks in via app when she arrives. Track her progress in real time.
+  - 3
+  - After work:
+  - Both confirm completion. Payment of ₹400 is released to Sunita's UPI. You rate her.
+  - View Booking Details
+  - Back to home
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 49-booking-rejected — 49 · Booking Declined — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/49-booking-rejected.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 49 · Booking Declined — Krishi-Verse
+  - Booking Update
+  - Declined
+  - Sunita couldn't take this job
+  - No problem — your money is safe
+  - and we found similar workers nearby.
+  - SK
+  - Sunita Kumari
+  - Declined 12 min ago
+  - "Sorry, I have a booking for 18 Aug already. Try 19 Aug or after."
+  - Refund initiated
+  - ₹412
+  - returned to your wallet · Available in 2-5 seconds
+  - Similar workers available for 18 Aug
+  - RM
+  - Ramesh Mahato · ⭐ 4.7
+  - Harvest · 3.1 km · 142 jobs
+  - ₹450
+  - KS
+  - Kamla Sharma · ⭐ 4.9
+  - Harvest · 5.2 km · 210 jobs
+  - ₹420
+  - LD
+  - Lakshmi Devi · ⭐ 4.8
+  - Weeding · 4.0 km · 95 jobs
+  - ₹380
+  - See all 12 workers
+  - Pick a different date
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 50-my-bookings-farmer — 50 · My Worker Bookings — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/50-my-bookings-farmer.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 50 · My Worker Bookings — Krishi-Verse
+  - My Worker Bookings
+  - Active
+  - 3
+  - Completed
+  - 14
+  - Cancelled
+  - 2
+  - #BK-2026-0089
+  - PENDING
+  - SK
+  - Sunita Kumari
+  - 🌾 Wheat harvesting · 8 hours
+  - Mon, 18 Aug · 7:00 AM
+  - ₹412
+  - Waiting for response
+  - · 3h 47m left
+  - View
+  - #BK-2026-0087
+  - CONFIRMED
+  - RM
+  - Ramesh Mahato
+  - 🚜 Tractor + Loading · 6 hours
+  - Wed, 20 Aug · 9:00 AM
+  - ₹460
+  - Confirmed
+  - · GPS share 8 AM
+  - Track
+  - #BK-2026-0085
+  - IN PROGRESS
+  - LD
+  - Lakshmi Devi
+  - 🌿 Weeding · 4 hours
+  - Today · Started 9:15 AM
+  - ₹390
+  - 2 of 4 hrs done
+  - · 50% complete
+  - Live
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 51-booking-detail-farmer — 51 · Job In Progress — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/51-booking-detail-farmer.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 51 · Job In Progress — Krishi-Verse
+  - #BK-2026-0085
+  - IN PROGRESS
+  - Lakshmi is working on your farm
+  - Started at 9:15 AM · Expected finish 1:15 PM
+  - Work Progress
+  - 50%
+  - 9:15 AM · Clock-in
+  - Now · 11:15 AM
+  - 1:15 PM · Expected
+  - LD
+  - Lakshmi Devi
+  - At your farm · GPS confirmed
+  - Job Details
+  - Task
+  - 🌿 Weeding · 2 acres
+  - Duration
+  - 4 hours (half day)
+  - Started
+  - Today, 9:15 AM
+  - Wage
+  - ₹390 (held in escrow)
+  - Location
+  - My farm · Anand, Plot 247
+  - Progress Photos
+  - 🌿
+  - 9:30 AM · Started
+  - 🌱
+  - 10:45 AM · 1/3 done
+  - Payment
+  - Total wage
+  - ₹390
+  - Platform fee
+  - ₹10
+  - Held in escrow
+  - ₹400 ✓
+  - Will release to Lakshmi's UPI when both confirm completion
+  - Report an issue
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 62-book-step3-location — 62 · Book Worker — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/62-book-step3-location.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 62 · Book Worker — Krishi-Verse
+  - Book Sunita Kumari
+  - Step 3 of 5
+  - Work Location
+  - Where should they come?
+  - कहाँ आना है काम पर?
+  - Worker will navigate via GPS to this location
+  - My farm — Plot 247
+  - Sojitra Road, Anand, Gujarat 388001 · 2.4 km away
+  - Edit
+  - Landmark (helps worker find you)
+  - Or pick from saved locations
+  - ★ Default farm
+  - Plot 247, Sojitra Road, Anand
+  - ✓
+  - Plot 152
+  - Khedbrahma village, Anand district
+  - Storage
+  - Warehouse Lane, Anand APMC
+  - Back
+  - Continue →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 63-book-step5-confirm — 63 · Confirm Booking — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/63-book-step5-confirm.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 63 · Confirm Booking — Krishi-Verse
+  - Confirm Booking
+  - Step 5 of 5
+  - Confirm & Pay
+  - SK
+  - Sunita Kumari
+  - ⭐ 4.9 · 187 jobs · Verified
+  - Task
+  - Wheat harvesting · 2 acres
+  - Date
+  - Mon, 18 Aug 2026
+  - Time
+  - 7:00 AM · 8 hours
+  - Location
+  - Plot 247, Sojitra Road, Anand
+  - Wage
+  - ₹400/day (₹50 above state min)
+  - Payment Method
+  - Krishi Wallet
+  - Balance: ₹2,840 (available)
+  - ✓ Sufficient
+  - UPI · Pay later (on job completion)
+  - Safer for both sides · No money held
+  - GPay
+  - PhonePe
+  - Wage (8 hours × ₹400)
+  - ₹400
+  - Platform fee
+  - ₹10
+  - PMSBY insurance contribution
+  - FREE
+  - Total
+  - ₹410
+  - By confirming, you agree to pay
+  - ₹400 to Sunita upon work completion
+  - . Platform fee is non-refundable if cancelled within 2 hours of work start.
+  - Read full terms →
+  - Edit
+  - Confirm Booking · ₹410
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 136-worker-edit-profile — 136 · Edit Profile — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/136-worker-edit-profile.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 136 · Edit Profile — Krishi-Verse
+  - Edit Profile
+  - SK
+  - Change photo
+  - Basic info
+  - Full name *
+  - Mobile
+  - Age
+  - Gender
+  - Female
+  - Male
+  - Other
+  - Languages
+  - हिंदी ✓
+  - ગુજરાતી ✓
+  - English
+  - Location & work area
+  - Home village *
+  - Travel willing (km)
+  - Daily rate (₹)
+  - ₹
+  - Local market range: ₹350 - ₹500 · You're in fair range ✓
+  - About me
+  - Short intro (shown to farmers)
+  - 15 years experience. Specialize in wheat harvesting & cotton picking. Punctual, honest work. References from 3 villages.
+  - Cancel
+  - Save
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 137-worker-add-skill — 137 · Add Skill — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/137-worker-add-skill.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 137 · Add Skill — Krishi-Verse
+  - Add a Skill
+  - What can you do?
+  - Pick all that apply. Adding skills helps farmers find you for relevant jobs.
+  - 🌾
+  - Wheat harvesting
+  - ₹350-450/day
+  - 🌱
+  - Cotton picking
+  - ₹400-500/day
+  - 🌽
+  - Maize harvesting
+  - ₹350-450/day
+  - 🌾
+  - Sowing & planting
+  - ₹400-500/day
+  - 💧
+  - Irrigation
+  - ₹350-400/day
+  - 💊
+  - Spraying / pesticide
+  - ₹500-650/day
+  - 🌿
+  - Weeding
+  - ₹300-400/day
+  - 🪓
+  - Threshing
+  - ₹400-500/day
+  - 🚜
+  - Tractor operating
+  - ₹600-800/day
+  - 📦
+  - Loading/unloading
+  - ₹350-450/day
+  - Years of experience
+  - 0-2
+  - Beginner
+  - 3-5
+  - Intermediate
+  - 6-10
+  - Skilled
+  - 10+
+  - Expert
+  - Certificates (optional)
+  - Skill India tractor cert
+  - Free training · 7 days
+  - Learn →
+  - Skip
+  - Save (3 skills)
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 138-worker-work-history — 138 · Work History — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/138-worker-work-history.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 138 · Work History — Krishi-Verse
+  - My Work History
+  - Lifetime
+  - 187 jobs · ₹71,420
+  - ⭐ 4.7
+  - Rating
+  - 98%
+  - On-time
+  - 42
+  - Repeat farmers
+  - All · 187
+  - This year · 64
+  - 5★ · 142
+  - Wheat · 78
+  - Cotton · 45
+  - 🌾 Wheat harvesting · Ramesh Patel
+  - Anand · 22 Aug 2026 · 8 hrs
+  - ₹400
+  - ⭐⭐⭐⭐⭐
+  - "Excellent worker, very punctual"
+  - 🌱 Cotton picking · Pushpa Vyas
+  - Anand · 18 Aug 2026 · 6 hrs
+  - ₹375
+  - ⭐⭐⭐⭐⭐
+  - "Hardworking"
+  - 🌾 Wheat harvesting · Mahesh Joshi
+  - Petlad · 15 Aug 2026 · 8 hrs
+  - ₹400
+  - ⭐⭐⭐⭐⭐
+  - 5★
+  - 🌿 Weeding · Krishna Mehta
+  - Nadiad · 12 Aug 2026 · 5 hrs
+  - ₹250
+  - ⭐⭐⭐⭐
+  - "Good work"
+  - 🌾 Threshing · Hetal Patel
+  - Vadodara · 8 Aug 2026 · 8 hrs
+  - ₹450
+  - ⭐⭐⭐⭐⭐
+  - 5★
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 139-worker-documents — 139 · My Documents — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/139-worker-documents.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 139 · My Documents — Krishi-Verse
+  - My Documents
+  - 🗂
+  - 3 of 5 documents
+  - Verified workers get 2× more job offers
+  - Identity
+  - 🪪
+  - Aadhaar Card
+  - XXXX XXXX 4521 · ✓ Verified
+  - 📷
+  - Profile Photo
+  - Matched with Aadhaar ✓
+  - 📇
+  - PAN Card (optional)
+  - Needed for >₹50K annual earnings
+  - Add
+  - Banking
+  - 🏦
+  - Bank · Bank of Baroda
+  - XXXX 8921 · ✓ Linked
+  - 📱
+  - UPI ID
+  - Faster payments
+  - Add
+  - Skill certificates (optional)
+  - 🎓
+  - Skill India certificate
+  - Free training · increases rate
+  - Apply
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 140-worker-apply-job — 140 · Apply for Job — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/140-worker-apply-job.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 140 · Apply for Job — Krishi-Verse
+  - Apply for Job
+  - 🌾
+  - Wheat Harvesting · Ramesh Patel
+  - Mon 22 Aug · 7 AM - 3 PM · Anand (5 km)
+  - ₹400 + lunch
+  - Quick note to farmer (optional)
+  - Namaste Ramesh ji. I have 15 years experience harvesting wheat. Already worked in nearby villages. Can reach by 6:45 AM. — Sunita
+  - Your profile (⭐ 4.7 · 187 jobs done) is auto-shared with farmer.
+  - Confirm details
+  - Date & time
+  - Mon 22 Aug · 7 AM
+  - Duration
+  - 8 hours
+  - Location
+  - Anand · 5 km
+  - Provided
+  - Lunch, chai
+  - Daily wage
+  - ₹400
+  - 🔒
+  - Wage locked in escrow.
+  - Farmer cannot reduce after work starts. Paid to your bank within 24 hrs of check-out.
+  - Cancel
+  - Apply Now
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 141-worker-job-offer — 141 · New Job Offer — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/141-worker-job-offer.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 141 · New Job Offer — Krishi-Verse
+  - New Job Offer
+  - 🌾
+  - New job from Ramesh ji!
+  - Wheat Harvesting · Anand · 5 km
+  - ₹400
+  - per day + lunch · 8 hrs
+  - ⏱ Respond in 3 hours 24 minutes
+  - RP
+  - Ramesh Patel ⭐ 4.9
+  - Anand · You've worked 4 times before
+  - 📞 Call
+  - Date
+  - Mon 22 Aug 2026
+  - Time
+  - 7 AM - 3 PM (8 hrs)
+  - Location
+  - Plot A · Anand · 5 km from you
+  - Task
+  - Wheat harvesting (manual)
+  - Daily wage
+  - ₹400
+  - Provided
+  - Lunch, chai/water
+  - Tools
+  - Farmer provides sickles
+  - Workers needed
+  - 2 people (you + 1)
+  - 💬
+  - "Sunita ji, you did great work last time. Hope you can come again. — Ramesh"
+  - Decline
+  - Accept · ₹400 Locked
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 142-worker-decline-job — 142 · Decline Job — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/142-worker-decline-job.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 142 · Decline Job — Krishi-Verse
+  - Decline Job
+  - 🌾
+  - Wheat Harvesting · Ramesh Patel
+  - Mon 22 Aug · ₹400/day
+  - No penalty for declining. Helping us understand helps match better jobs to you.
+  - Why are you declining?
+  - 📅 Already booked that day
+  - Have another job
+  - ✓
+  - 💰 Wage too low
+  - Market rate is higher
+  - 📍 Too far
+  - Beyond my travel range
+  - 🤒 Not feeling well
+  - Health reason
+  - 🏠 Family obligation
+  - Personal reason
+  - 🙅 Don't want to work for this farmer
+  - Private to you
+  - Message (optional)
+  - Sorry Ramesh ji, I'm already booked Mon-Tue for Krishna ji's farm. Available from Wednesday. — Sunita
+  - Back
+  - Send Decline
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 143-worker-dispute — 143 · Wage Dispute — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/143-worker-dispute.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 143 · Wage Dispute — Krishi-Verse
+  - Report Wage Dispute
+  - 🌾 Wheat Harvesting · Ramesh Patel
+  - 22 Aug 2026 · Anand · 8 hrs
+  - Agreed wage
+  - ₹400
+  - Received
+  - ₹300
+  - What happened?
+  - 💰 Less wage than agreed
+  - Paid less than the booking amount
+  - ⏰ Forced to work extra hours
+  - Beyond agreed time without pay
+  - 🚫 Not paid at all
+  - Farmer refusing to pay
+  - 🤝 Bad behavior
+  - Harassment or mistreatment
+  - 🍴 Lunch/chai not provided
+  - Amenities promised but not given
+  - Tell us what happened
+  - Worked full 8 hours from 7 AM to 3 PM. At end farmer said "work was less" and only paid ₹300 instead of ₹400 agreed. I can show my check-in/out timestamps.
+  - 📷 Attach photo
+  - 🎤 Voice note
+  - 🛡
+  - Your wages are protected.
+  - If you're right, we'll recover the ₹100 from the farmer and credit to you within 7 days. No retaliation.
+  - Cancel
+  - Report · We'll Help
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 144-worker-help — 144 · Help & Support — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/144-worker-help.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 144 · Help & Support — Krishi-Verse
+  - Help & Support
+  - 🤖
+  - Ask AI · Voice
+  - ⚠
+  - Report wage issue
+  - 📞
+  - Call helpline
+  - 🛡
+  - My rights
+  - Common questions
+  - When will I get paid after finishing work?
+  - ›
+  - What if farmer pays less than agreed?
+  - ›
+  - Can I cancel a booked job?
+  - ›
+  - How does PMSBY insurance work?
+  - ›
+  - What is the minimum wage in Gujarat?
+  - ›
+  - Can I work for multiple farmers same week?
+  - ›
+  - Your worker rights
+  - ✓ Minimum wage ₹350/day in Gujarat
+  - ✓ Wages within 24 hrs of check-out
+  - ✓ Refuse work that's unsafe
+  - ✓ Free PMSBY ₹2L insurance
+  - ✓ No bonded labour ever
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 145-worker-pmsby-enroll — 145 · PMSBY Enrollment — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/145-worker-pmsby-enroll.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 145 · PMSBY Enrollment — Krishi-Verse
+  - PMSBY Insurance
+  - Pradhan Mantri Suraksha Bima Yojana
+  - ₹2 Lakh
+  - Accidental death & disability cover
+  - Just ₹20/year premium
+  - What you get
+  - 💰
+  - ₹2,00,000 on accidental death
+  - Paid to nominee within 30 days
+  - 🦽
+  - ₹2,00,000 on total permanent disability
+  - Loss of both eyes / both limbs / one each
+  - 🦾
+  - ₹1,00,000 on partial disability
+  - Loss of one eye / one limb
+  - Eligibility
+  - ✓
+  - You qualify!
+  - Age 18-70 · Bank account ✓ · Aadhaar linked ✓
+  - Add nominee
+  - Nominee name *
+  - Relationship *
+  - Spouse
+  - Father
+  - Mother
+  - Son
+  - Daughter
+  - Sibling
+  - Other
+  - Nominee Aadhaar (optional)
+  - ₹20 auto-debited from your Bank of Baroda account on 1 June each year. Cancel anytime.
+  - Maybe Later
+  - Enroll · ₹20/yr
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 146-worker-claim — 146 · File Insurance Claim — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/146-worker-claim.html`
+- **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
+- **Must render (exact design content):**
+  - 146 · File Insurance Claim — Krishi-Verse
+  - File Claim
+  - Your PMSBY · Policy #PMSBY-2026-009842 · Active till 31 May 2027
+  - What type of claim?
+  - 🚑
+  - Accidental injury
+  - Self / nominee
+  - ⚱
+  - Death (by nominee)
+  - For deceased
+  - Incident details
+  - Date of incident *
+  - Place
+  - What happened? *
+  - Slipped on wet ground during wheat harvesting. Fell with sickle in hand. Deep cut on right hand. Lost vision in right eye (will be permanent per doctor).
+  - Documents needed
+  - 📄
+  - FIR (police report)
+  - ✓ Filed at Anand PS on 22 Aug
+  - 🏥
+  - Hospital records *
+  - Discharge summary, doctor certificate
+  - 📷 Upload
+  - 📋
+  - Disability certificate *
+  - From govt hospital · For permanent disability
+  - 📷 Upload
+  - After submission: Bank verifies within 30 days. Money credited directly to your Bank of Baroda account. We'll help you with paperwork.
+  - Save Draft
+  - Submit Claim
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).

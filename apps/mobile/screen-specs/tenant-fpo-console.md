@@ -1,0 +1,1206 @@
+# Tenant / FPO console — screen build specs
+
+- **Route group:** `src/app/(owner)`  ·  **Feature/data:** `features/tenant`  ·  **Flag (default OFF):** `owner_console`
+- Build each screen to FULL design parity (guide §12). Content below is the EXACT design text/values the
+  screen must show (from `docs/design-data/SCREEN-DATA-CATALOG.md`) — render via i18n keys (hi/en/gu),
+  money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
+
+
+## 06-tenant-apply — 06 · Tenant Application — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/06-tenant-apply.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 06 · Tenant Application — Krishi-Verse
+  - Become a Tenant
+  - Step 2 of 5
+  - Plan Selection
+  - Choose a plan that fits your scale
+  - You can upgrade or downgrade anytime. First 6 months free for design partners.
+  - Starter
+  - Up to 500 farmers
+  - ₹4,999
+  - per month
+  - Single-branded mobile app, 3 languages, wallet, basic listings, email support.
+  - Growth
+  - RECOMMENDED
+  - Up to 5,000 farmers
+  - ₹19,999
+  - per month
+  - Everything in Starter + auctions, voice listing, AI extraction, custom domain, phone support, 5 admin users.
+  - Professional
+  - Up to 25,000 farmers
+  - ₹49,999
+  - per month
+  - Everything in Growth + labour marketplace, API access, white-label, dedicated CSM, 20 admins.
+  - Enterprise
+  - Unlimited
+  - Custom
+  - contact sales
+  - All Professional features + SLA, custom integrations, on-premise option, multi-region.
+  - Back
+  - Continue
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 07-tenant-pending — 07 · Application Under Review — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/07-tenant-pending.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 07 · Application Under Review — Krishi-Verse
+  - Application Status
+  - Under Review
+  - We're reviewing your application
+  - Our team is verifying your documents. We will get back to you within
+  - 24 hours
+  - via email and SMS.
+  - Application ID
+  - KV-TNT-2026-0142
+  - Business Name
+  - Anand FPO Pvt Ltd
+  - Plan Selected
+  - Growth · ₹19,999/mo
+  - Submitted On
+  - 15 Aug 2026, 10:42 AM
+  - Expected Response
+  - By 16 Aug, 11:00 AM
+  - What happens next?
+  - Document verification by our compliance team
+  - You'll receive a call from your dedicated CSM
+  - Once approved, your subdomain & admin login go live
+  - Onboarding session scheduled within 48 hours
+  - Contact Support
+  - Got it
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 08-tenant-dashboard — 08 · Tenant Dashboard — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/08-tenant-dashboard.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 08 · Tenant Dashboard — Krishi-Verse
+  - A
+  - Anand FPO
+  - Admin Console
+  - Namaste, Rajesh ji
+  - Here's your business at a glance — Today, 15 Aug
+  - Today's GMV
+  - ₹2.4L
+  - +18% vs yesterday
+  - Active Farmers
+  - 1,247
+  - +24 this week
+  - New Listings
+  - 86
+  - +12 today
+  - Pending Orders
+  - 23
+  - 3 overdue ⚠
+  - Quick Actions
+  - Users
+  - Listings
+  - Orders
+  - Wallet
+  - Reports
+  - Settings
+  - Recent Activity
+  - View All
+  - New order from
+  - Sharma Stores
+  - · 50kg Bajra
+  - 2 min ago
+  - + ₹1,250
+  - Auction closed —
+  - Premium Wheat 5T
+  - · 4 bids
+  - 14 min ago
+  - + ₹1.4L
+  - Wage payout to
+  - 14 workers
+  - · Onion harvest
+  - 1 hour ago
+  - - ₹4,900
+  - Ramesh Patel
+  - joined as new farmer
+  - 2 hours ago
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 76-tenant-farmers — 76 · Farmers — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/76-tenant-farmers.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 76 · Farmers — Krishi-Verse
+  - Farmers · Anand FPO
+  - 1,247
+  - Total
+  - 128
+  - Active 7d
+  - 14
+  - Pending KYC
+  - All · 1,247
+  - Active
+  - Pending KYC · 14
+  - Inactive 30d
+  - Top sellers
+  - RP
+  - Ramesh Patel ⭐ 4.9
+  - Anand · #FPO-A-247 · Joined 2023
+  - 42
+  - listings
+  - SK
+  - Sunita Kumari ⭐ 4.7
+  - Sojitra · #FPO-A-189 · Joined 2024
+  - 28
+  - listings
+  - MJ
+  - Mahesh Joshi ⭐ 4.8
+  - Petlad · #FPO-A-298 · Joined 2023
+  - 35
+  - listings
+  - AK
+  - Anil Kumar
+  - PENDING KYC
+  - Borsad · Joined yesterday · By Vikas J.
+  - 0
+  - listings
+  - PV
+  - Pushpa Vyas ⭐ 4.6
+  - Anand · #FPO-A-104 · Joined 2022
+  - 67
+  - listings
+  - KM
+  - Krishna Mehta ⭐ 4.8
+  - Nadiad · #FPO-A-156 · Joined 2023
+  - 52
+  - listings
+  - HP
+  - Hetal Patel ⭐ 4.5
+  - Vadodara · #FPO-A-167 · Joined 2024
+  - 19
+  - listings
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 77-tenant-farmer-detail — 77 · Farmer Detail — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/77-tenant-farmer-detail.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 77 · Farmer Detail — Krishi-Verse
+  - Farmer Profile
+  - RP
+  - Ramesh Patel
+  - ID · FPO-A-247
+  - ⭐ 4.9
+  - VERIFIED ✓
+  - 3 YRS
+  - 42
+  - Listings
+  - ₹4.2L
+  - Lifetime
+  - 38
+  - Orders
+  - Personal details
+  - Phone
+  - +91 98765 12340
+  - Aadhaar
+  - XXXX XXXX 7892 ✓
+  - Village
+  - Anand
+  - Farm size
+  - 5 acres
+  - Primary crops
+  - Wheat, Cumin, Cotton
+  - Bank
+  - SBI ••••2247
+  - Last 30 days
+  - New listings
+  - 6
+  - Sales
+  - 4 · ₹38,420
+  - Disputes
+  - 0
+  - Worker bookings
+  - 3
+  - Last active
+  - 2 hours ago
+  - Subscription
+  - Plan
+  - Pro · ₹99/month
+  - Next billing
+  - 15 Sep 2026
+  - Commission rate
+  - 2.5%
+  - Total fees
+  - ₹10,500
+  - Message
+  - View Full Profile →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 78-tenant-add-farmer — 78 · Add Farmer — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/78-tenant-add-farmer.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 78 · Add Farmer — Krishi-Verse
+  - Add a Farmer
+  - How will you add this farmer?
+  - Pick one method. Farmer can complete remaining steps later.
+  - 📝
+  - Manual entry
+  - Enter details now
+  - 📲
+  - SMS invite
+  - Send signup link
+  - 📂
+  - Bulk upload
+  - CSV / Excel file
+  - 📷
+  - QR onboard
+  - Scan Aadhaar
+  - Farmer details
+  - Full name *
+  - Mobile *
+  - +91
+  - Village *
+  - Primary crops
+  - Aadhaar (optional now)
+  - SMS link sent to farmer for self-completion. They get 7 days. Onboarder Vikas Joshi earns ₹50 commission on completion.
+  - Cancel
+  - Add Farmer
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 79-tenant-listings — 79 · Listings — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/79-tenant-listings.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 79 · Listings — Krishi-Verse
+  - Listings · Anand FPO
+  - 23
+  - Pending
+  - 412
+  - Active
+  - 1,847
+  - Sold
+  - 5
+  - Flagged
+  - 🌾
+  - Premium Wheat — Lokwan
+  - Ramesh Patel · 5 qtl · ₹2,880/qtl · 12 min ago
+  - ⚡ AI-generated · Needs photo verification
+  - ✓ Approve
+  - ✕ Reject
+  - Edit
+  - 🌶️
+  - Red Chilli — Teja
+  - Pushpa Vyas · 2 qtl · ₹14,500/qtl · 28 min ago
+  - ✓ Approve
+  - ✕ Reject
+  - 🌽
+  - Yellow Maize
+  - Krishna Mehta · 8 qtl · ₹1,910/qtl · 1 hr ago
+  - ⚠ Price 18% below fair band
+  - ✓ Approve
+  - ⚠ Question price
+  - 🥒
+  - Organic Cucumber
+  - Mahesh Joshi · 200 kg · ₹38/kg · 2 hrs ago
+  - ✓ Approve
+  - ✕ Reject
+  - 🥔
+  - Potato — Kufri Pukhraj
+  - Hetal Patel · 10 qtl · ₹980/qtl · 3 hrs ago
+  - ✓ Approve
+  - ✕ Reject
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 80-tenant-payouts — 80 · Payouts — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/80-tenant-payouts.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 80 · Payouts — Krishi-Verse
+  - Farmer Payouts
+  - Pending payouts
+  - ₹2,84,650
+  - 47 farmers · 89 transactions
+  - Select to pay (5 selected)
+  - Ramesh Patel
+  - 3 orders · UPI ramesh@okaxis
+  - ₹18,420
+  - Pushpa Vyas
+  - 2 orders · UPI pushpa@paytm
+  - ₹14,500
+  - Krishna Mehta
+  - 5 orders · UPI krish@phonepe
+  - ₹42,300
+  - Mahesh Joshi
+  - 1 order · UPI mahesh@okhdfcbank
+  - ₹7,600
+  - Hetal Patel
+  - 4 orders · UPI hetal@ybl
+  - ₹9,830
+  - Anil Kumar
+  - KYC PENDING
+  - 2 orders · Bank not verified
+  - ₹5,200
+  - Subtotal (5 farmers)
+  - ₹92,650
+  - Platform fee
+  - - ₹2,316
+  - Total to pay
+  - ₹90,334
+  - Schedule
+  - Pay Now via UPI
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 81-tenant-compliance — 81 · Compliance — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/81-tenant-compliance.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 81 · Compliance — Krishi-Verse
+  - Compliance & Reports
+  - All compliant · No issues
+  - Last audit 5 days ago · Next Sep 15, 2026
+  - Regulatory reports
+  - 📋
+  - NABARD FPO compliance
+  - Q2 2026 · Due in 12 days
+  - Download
+  - 💼
+  - GST returns · GSTR-1
+  - Last filed Aug 11 · ✓ Filed
+  - View
+  - 🏛️
+  - RBI · Payment aggregator
+  - Quarterly · Auto-submitted
+  - View
+  - 📊
+  - Minimum wage compliance
+  - All 412 worker bookings paid ≥ state min
+  - View
+  - Audit trail
+  - 🔒
+  - Activity logs · Last 90 days
+  - 8,247 entries · Cryptographically signed
+  - Export
+  - 📜
+  - User consent records
+  - 1,247 farmers · DPDP Act compliant
+  - View
+  - Recent inspections
+  - NABARD officer visit
+  - ✓ Pass
+  - Co-op registrar audit
+  - ✓ Pass
+  - Labour dept check
+  - ✓ Pass
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 82-tenant-branding — 82 · Branding — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/82-tenant-branding.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 82 · Branding — Krishi-Verse
+  - App Branding
+  - Preview · How farmers see your app
+  - A
+  - Anand FPO
+  - Your Trusted Partner
+  - Sell my crop
+  - Logo
+  - A
+  - anand-fpo-logo.svg
+  - Min 512×512 · PNG/SVG · Max 2 MB
+  - Replace
+  - Brand colors
+  - Primary brand
+  - #1E6F3F
+  - Edit
+  - Accent
+  - #F39C12
+  - Edit
+  - ⚠ Colors must pass WCAG AA contrast (4.5:1+). Auto-validated before save.
+  - Display info
+  - App display name
+  - Tagline
+  - Custom domain
+  - Reset
+  - Save & Publish
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 83-tenant-team — 83 · Team — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/83-tenant-team.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 83 · Team — Krishi-Verse
+  - Team & Users
+  - Admins (3)
+  - AS
+  - Anita Singh
+  - OWNER · YOU
+  - Founder · Full access · anita@anandfpo.com
+  - RJ
+  - Raj Joshi
+  - Operations Head · Admin · raj@anandfpo.com
+  - Edit
+  - SK
+  - Suresh Kumar
+  - Finance Lead · Payouts only · suresh@anandfpo.com
+  - Edit
+  - Field staff · Ambassadors (8)
+  - VJ
+  - Vikas Joshi ⭐ 4.8
+  - Ambassador · Petlad · 247 farmers
+  - ACTIVE
+  - DS
+  - Deepak Shah ⭐ 4.6
+  - Ambassador · Nadiad · 189 farmers
+  - ACTIVE
+  - RP
+  - Rita Pandya ⭐ 4.9
+  - Ambassador · Vadodara · 156 farmers
+  - ACTIVE
+  - HM
+  - Hari Mistry
+  - Ambassador · Borsad · 87 farmers
+  - INACTIVE 7D
+  - Support staff (2)
+  - KP
+  - Kavita Patel
+  - Customer support · Read-only · Hindi/Gujarati
+  - NS
+  - Naresh Solanki
+  - Tech support · Read-only · Disputes
+  - + 2 invitations pending
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 84-tenant-kpi-gmv — 84 · GMV Analytics — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/84-tenant-kpi-gmv.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 84 · GMV Analytics — Krishi-Verse
+  - GMV Analytics
+  - GMV · Aug 2026
+  - ₹38.4 L
+  - ↑ 24% vs Jul
+  - •
+  - 847 orders · ₹4,532 avg
+  - 7d
+  - 30d
+  - 3 mo
+  - 1 yr
+  - All
+  - Daily GMV
+  - Last 14 days
+  - ↑ Trending up
+  - Top categories
+  - 🌾
+  - Cereals
+  - ₹14.2 L
+  - 🌶️
+  - Spices
+  - ₹9.8 L
+  - 🥬
+  - Vegetables
+  - ₹7.5 L
+  - 🥔
+  - Tubers
+  - ₹4.1 L
+  - 🌿
+  - Herbs
+  - ₹2.8 L
+  - Top sellers
+  - Ramesh Patel
+  - ₹84,200
+  - Krishna Mehta
+  - ₹72,150
+  - Pushpa Vyas
+  - ₹58,420
+  - Download CSV Report
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 85-tenant-billing — 85 · Plan & Billing — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/85-tenant-billing.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 85 · Plan & Billing — Krishi-Verse
+  - Plan & Billing
+  - Current plan
+  - Growth · Tier 2
+  - ₹4,999/month
+  - ✓ Up to 5,000 farmers
+  - ✓ Unlimited listings · auctions
+  - ✓ White-label branding
+  - ✓ Priority support
+  - Next billing: Sep 15, 2026 · auto-renew
+  - Usage this month
+  - Farmers
+  - 1,247 / 5,000
+  - SMS sent
+  - 8,420 / 10,000
+  - Upgrade options
+  - Scale · Tier 3
+  - ₹14,999
+  - /month
+  - Upgrade
+  - ✓ Up to 25,000 farmers
+  - ✓ Multi-region support
+  - ✓ API access
+  - ✓ Dedicated account manager
+  - Enterprise
+  - Custom
+  - Contact
+  - ✓ Unlimited farmers
+  - ✓ Self-hosted option
+  - ✓ SLA support
+  - Billing history
+  - Aug 15, 2026 · Growth
+  - ₹4,999 ✓
+  - Jul 15, 2026 · Growth
+  - ₹4,999 ✓
+  - Jun 15, 2026 · Starter
+  - ₹999 ✓
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 147-tenant-farmer-approvals — 147 · Pending Approvals — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/147-tenant-farmer-approvals.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 147 · Pending Approvals — Krishi-Verse
+  - Pending Approvals · 14
+  - All · 14
+  - Ambassador · 9
+  - Self-signup · 5
+  - AK
+  - Anil Kumar Vasava
+  - Borsad · By Vikas Joshi · 2d
+  - AADHAAR ✓
+  - BANK ✓
+  - LAND ✓
+  - ✓
+  - ✕
+  - GP
+  - Geeta Patel
+  - Petlad · By Vikas Joshi · 5d
+  - AADHAAR ✓
+  - BANK PENDING
+  - ✓
+  - ✕
+  - RS
+  - Ramnik Solanki
+  - Anand · Self-signup · 1d
+  - AADHAAR ✓
+  - LAND DOC MISSING
+  - ✓
+  - ✕
+  - MP
+  - Manjula Pandya
+  - Nadiad · By Deepak Shah · 3d
+  - ALL VERIFIED
+  - ✓
+  - ✕
+  - JR
+  - Jignesh Rana
+  - Vadodara · today
+  - DUPLICATE? AADHAAR MATCHES
+  - ✓
+  - ✕
+  - Bulk Action
+  - Approve Verified (9)
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 148-tenant-approve-detail — 148 · Review Farmer — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/148-tenant-approve-detail.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 148 · Review Farmer — Krishi-Verse
+  - Review Farmer
+  - AK
+  - Anil Kumar Vasava
+  - Borsad · By Vikas Joshi · 2 days ago
+  - Verification checks
+  - Aadhaar verification
+  - XXXX 4521 · UIDAI confirmed · Photo matched ✓
+  - PASS
+  - Bank account
+  - SBI ••••9281 · Name matched ✓
+  - PASS
+  - Land record (7/12)
+  - 3.5 acres · Plot 47 Borsad · Verified
+  - PASS
+  - Duplicate check
+  - No existing account · New farmer ✓
+  - PASS
+  - Details
+  - Phone
+  - +91 98765 54321
+  - Village
+  - Borsad · Anand
+  - Farm size
+  - 3.5 acres
+  - Primary crops
+  - Wheat, Cumin, Pulses
+  - Onboarder
+  - Vikas Joshi ⭐ 4.8
+  - AI insights
+  - ✨ Recommended: APPROVE
+  - • All KYC checks passed cleanly
+  - • Onboarder Vikas has 94% approval rate
+  - • Borsad area underserved · adds geographic spread
+  - • Est 1st year GMV: ₹85K-1.2L
+  - Reject
+  - Approve Farmer
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 149-tenant-bulk-actions — 149 · Bulk Actions — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/149-tenant-bulk-actions.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 149 · Bulk Actions — Krishi-Verse
+  - Bulk Actions
+  - 9 farmers selected · Pending approval queue
+  - Operations
+  - ✓
+  - Approve all selected
+  - 9 farmers · All KYC verified
+  - ›
+  - 📧
+  - Send onboarding reminder
+  - SMS to pending KYC
+  - ›
+  - 🚀
+  - Send first-listing tutorial
+  - Video link to 24 newly approved
+  - ›
+  - 📊
+  - Export to CSV
+  - All selected farmer data
+  - ›
+  - 📝
+  - Add tag / segment
+  - For targeted campaigns
+  - ›
+  - 🚫
+  - Reject all
+  - With reason · sends SMS
+  - ›
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 150-tenant-farmer-analytics — 150 · Farmer Analytics — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/150-tenant-farmer-analytics.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 150 · Farmer Analytics — Krishi-Verse
+  - Farmer Analytics
+  - Active farmers
+  - 1,247
+  - ↑ 12% vs Jul · 98% retention
+  - Growth trend (9 months)
+  - Dec
+  - Jan
+  - Feb
+  - Mar
+  - Apr
+  - May
+  - Jun
+  - Jul
+  - Aug
+  - Activity segments
+  - 🔥 Highly active (5+/mo)
+  - 189 · 15%
+  - 👍 Regular (1-5/mo)
+  - 624 · 50%
+  - 👀 Casual
+  - 328 · 26%
+  - 😴 Inactive 30+d
+  - 106 · 9%
+  - Top performers · Aug
+  - 🏆 Ramesh Patel · ₹84,200
+  - #1
+  - Krishna Mehta · ₹72,150
+  - #2
+  - Pushpa Vyas · ₹58,420
+  - #3
+  - ⚠ 23 farmers inactive 14+ days
+  - Send re-engagement SMS? Past success: 47%
+  - Export CSV Report
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 151-tenant-order-analytics — 151 · Order Analytics — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/151-tenant-order-analytics.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 151 · Order Analytics — Krishi-Verse
+  - Orders Analytics
+  - Orders this month
+  - 847
+  - ↑ 18% vs Jul · ₹4,532 avg value
+  - 7d
+  - 30d
+  - 3 mo
+  - 1 yr
+  - Status breakdown
+  - 789
+  - Delivered
+  - 42
+  - In transit
+  - 12
+  - Pending
+  - 4
+  - Disputed
+  - Top buyers
+  - Mehta Trading Co. · 47 orders
+  - ₹2.1L
+  - Anand Stores · 32 orders
+  - ₹1.4L
+  - Kishan Mills · 28 orders
+  - ₹1.1L
+  - Krishna FPO · 24 orders
+  - ₹98K
+  - Avg fulfillment time
+  - Order → Confirmation
+  - 2.4 hrs
+  - Confirmation → Pickup
+  - 18 hrs
+  - Pickup → Delivery
+  - 26 hrs
+  - Total avg
+  - 2.0 days
+  - Export Report
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 152-tenant-worker-analytics — 152 · Worker Analytics — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/152-tenant-worker-analytics.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 152 · Worker Analytics — Krishi-Verse
+  - Worker Bookings Analytics
+  - Bookings this month
+  - 412
+  - ↑ 24% vs Jul · ₹1.65L total wages paid
+  - Key metrics
+  - 98%
+  - Show-up rate
+  - ⭐ 4.6
+  - Avg worker rating
+  - ₹400
+  - Avg daily wage
+  - 3
+  - Wage disputes
+  - Top workers
+  - 🏆 Sunita Kumari · 28 jobs · ⭐4.7
+  - ₹11,200
+  - Rajesh Solanki · 24 jobs · ⭐4.8
+  - ₹9,600
+  - Meena Vasava · 22 jobs · ⭐4.9
+  - ₹8,800
+  - Most-booked tasks
+  - 🌾 Wheat harvesting
+  - 142 jobs · 34%
+  - 🌱 Cotton picking
+  - 98 jobs · 24%
+  - 🌿 Weeding
+  - 76 jobs · 18%
+  - 💊 Spraying
+  - 42 jobs · 10%
+  - Wage compliance:
+  - 100% paid at or above ₹350 Gujarat minimum wage · 0 violations
+  - Download Report
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 153-tenant-custom-report — 153 · Custom Report — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/153-tenant-custom-report.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 153 · Custom Report — Krishi-Verse
+  - Build Custom Report
+  - Report type
+  - GMV by category & month
+  - Farmer cohort retention
+  - Order fulfillment funnel
+  - Worker booking heatmap
+  - Commission payouts to ambassadors
+  - Custom (build your own)
+  - Date range
+  - From
+  - To
+  - Last 7d
+  - Last 30d
+  - Last 60d
+  - YTD
+  - Filter by
+  - 📍 Region
+  - All Gujarat · 3 districts
+  - ›
+  - 🌾 Crop categories
+  - All categories
+  - ›
+  - 👥 Farmer segments
+  - Active 30d
+  - ›
+  - 💰 Order value range
+  - All values
+  - ›
+  - Metrics to include
+  - Total GMV
+  - Order count
+  - Avg order value
+  - Conversion rate
+  - Cancellation rate
+  - Export format
+  - 📊 CSV
+  - 📑 PDF
+  - 📈 Excel
+  - Preview
+  - Generate Report
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 154-tenant-export-reports — 154 · Export Reports — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/154-tenant-export-reports.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 154 · Export Reports — Krishi-Verse
+  - Reports Archive
+  - Saved & scheduled
+  - 📊
+  - Monthly GMV report
+  - Auto on 1st · Email to anita@anandfpo.com
+  - SCHEDULED
+  - 📈
+  - Weekly farmer activity
+  - Every Mon · 8 AM
+  - SCHEDULED
+  - 💰
+  - NABARD quarterly compliance
+  - Auto on quarter end
+  - SCHEDULED
+  - Recent generated
+  - 📄
+  - Jul 2026 · Monthly GMV
+  - 2.4 MB · CSV · Generated Aug 1
+  - Download
+  - 📄
+  - Worker bookings · Jul
+  - 847 KB · PDF · Aug 2
+  - Download
+  - 📄
+  - Farmer cohort retention Q2
+  - 1.1 MB · Excel · Jul 5
+  - Download
+  - 📄
+  - GST returns · Aug
+  - 320 KB · PDF · Auto-filed
+  - Download
+  - + Build Custom Report
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 155-tenant-disputes — 155 · Disputes Inbox — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/155-tenant-disputes.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 155 · Disputes Inbox — Krishi-Verse
+  - Disputes · 7
+  - Open · 7
+  - In review · 3
+  - Resolved · 142
+  - #DSP-2026-0247 · Quality dispute
+  - Mehta Trading vs Ramesh Patel · 2 days ago
+  - URGENT
+  - "Moisture content claimed 11%, actual 13.5% per lab report. Grade B not Grade A as listed."
+  - 💰 ₹14,400 in escrow
+  - 📎 3 attachments
+  - #DSP-2026-0244 · Wage dispute
+  - Sunita Kumari vs Krishna Mehta · 1 day ago
+  - URGENT
+  - "Worked 8 hrs as agreed. Paid ₹300 instead of ₹400. Check-in/out timestamps available."
+  - #DSP-2026-0241 · Delivery delay
+  - Anand Stores vs Pushpa Vyas · 3 days ago
+  - REVIEW
+  - "Promised 24 hr, took 4 days. Order partially spoiled."
+  - #DSP-2026-0235 · Cancelled order refund
+  - Kishan Mills vs Mahesh Joshi · 5 days ago
+  - EVIDENCE GATHERING
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 156-tenant-dispute-detail — 156 · Dispute Detail — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/156-tenant-dispute-detail.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 156 · Dispute Detail — Krishi-Verse
+  - Dispute #DSP-2026-0247
+  - Quality dispute · Urgent
+  - ₹14,400 in escrow
+  - Resolution due in 5 days · 22 Aug filed
+  - Parties
+  - 🛒 Mehta Trading Co. (Buyer)
+  - Vadodara · GST verified · 187 orders
+  - COMPLAINANT
+  - 🌾 Ramesh Patel (Seller)
+  - Anand · ⭐4.9 · 187 sales · 0 prior disputes
+  - RESPONDENT
+  - The complaint
+  - "Moisture content claimed 11%, actual 13.5% per QC lab report. Grade B not Grade A as listed. Want partial refund."
+  - 📄 Lab report.pdf
+  - 📷 Photos (3)
+  - 📋 Original listing
+  - Seller response
+  - "At time of dispatch moisture was 11%. May have absorbed during transport in monsoon. Willing to accept ₹10/qtl reduction."
+  - 📷 Moisture meter (dispatch)
+  - 📷 Quality cert
+  - Conversation
+  - Buyer · Aug 22, 11:30 AM
+  - Initial complaint filed with lab report.
+  - Seller · Aug 22, 2:15 PM
+  - Submitted dispatch evidence.
+  - Anita (admin) · Aug 23, 10:00 AM
+  - Reviewed both. Lab report from neutral 3rd party convincing. Suggesting ₹2,200 refund (~15%).
+  - Proposed resolution
+  - Refund to buyer
+  - ₹2,200
+  - To seller
+  - ₹12,200
+  - Both parties agreed via chat. No rating impact.
+  - Escalate
+  - Approve Resolution
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 157-tenant-broadcast — 157 · Broadcast Message — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/157-tenant-broadcast.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 157 · Broadcast Message — Krishi-Verse
+  - Broadcast Message
+  - Who to reach
+  - All farmers
+  - 1,247 farmers · ₹62 estimated cost
+  - ✓
+  - Active farmers only
+  - 189 farmers · last 7d
+  - By crop · Wheat farmers
+  - 567 farmers
+  - By location · Anand only
+  - 412 farmers
+  - Custom segment
+  - Build filter
+  - Channels
+  - 📱
+  - App push
+  - Free · instant
+  - 💬
+  - SMS
+  - ₹0.05/msg
+  - 📞
+  - Voice call
+  - ₹0.50/call
+  - Message
+  - Title
+  - Body (auto-translated to GU/HI)
+  - Wheat prices up ₹50/qtl this week in Anand mandi. Check fair price band before listing. Tap to see today's prices.
+  - 147 / 280 chars · Sent in farmer's preferred language
+  - Action button (optional)
+  - View mandi prices
+  - Create listing
+  - Read full message
+  - Quiet hours respected
+  - · No notifications 10 PM - 6 AM
+  - Save Draft
+  - Send to 1,247
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 158-tenant-campaigns — 158 · Campaigns — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/158-tenant-campaigns.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 158 · Campaigns — Krishi-Verse
+  - Targeted Campaigns
+  - Live · 3
+  - Scheduled · 2
+  - Done · 18
+  - 🌾 Wheat harvest reminder
+  - To 567 wheat farmers · Live · Day 3 of 7
+  - LIVE
+  - 567
+  - Sent
+  - 478
+  - Opened 84%
+  - 142
+  - Acted
+  - ⚠ KYC completion drive
+  - To 47 pending farmers · Live
+  - LIVE
+  - 47
+  - Sent
+  - 23
+  - Completed
+  - 49%
+  - Conversion
+  - 🚀 First-time seller promo
+  - To 89 new farmers · Live · Free boost offer
+  - LIVE
+  - 89
+  - Sent
+  - 34
+  - Claimed
+  - 22
+  - Listed
+  - 💡 Suggested campaign:
+  - 23 farmers haven't opened app in 14 days · Re-engagement SMS
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 159-tenant-payment-settings — 159 · Payment Settings — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/159-tenant-payment-settings.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 159 · Payment Settings — Krishi-Verse
+  - Payment Gateway Settings
+  - Active gateways
+  - 💳 Razorpay
+  - Primary · 2.0% fee · Visa/MC/UPI
+  - 📱 PhonePe Business
+  - UPI · 0.4% fee
+  - 🏦 SBI Net Banking
+  - Direct · 0.5% fee
+  - 💵 Cash on delivery
+  - For verified buyers · ₹25 fee
+  - Settlement rules
+  - Escrow hold
+  - 3 days after delivery
+  - Auto-payout
+  - T+0 to farmer bank
+  - Platform fee
+  - 2.5%
+  - TDS
+  - 1% if eligible
+  - GST
+  - Auto-calculated
+  - Tenant bank for receivables
+  - Anand FPO · Operations
+  - SBI · XXXX 4782
+  - IFSC SBIN0001247
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 160-tenant-notifications — 160 · Notification Settings — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/160-tenant-notifications.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 160 · Notification Settings — Krishi-Verse
+  - Notification Settings
+  - Critical alerts
+  - 🆕 New pending approvals
+  - Push + Email
+  - ⚠ Disputes filed
+  - Push + Email + SMS
+  - 💰 Large transactions (>₹50K)
+  - Push
+  - 🚨 Fraud alerts (AI flagged)
+  - Push + Email + SMS
+  - Daily digest
+  - 📊 8 AM summary email
+  - GMV · orders · approvals
+  - 📈 Weekly performance (Mon)
+  - Email · PDF attached
+  - Farmer / buyer SMS limits
+  - SMS quota
+  - 10,000 / month · 8,420 used
+  - Upgrade
+  - SMS sender ID
+  - ANDFPO (DLT registered)
+  - ›
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 161-tenant-integrations — 161 · Integrations — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/161-tenant-integrations.html`
+- **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
+- **Must render (exact design content):**
+  - 161 · Integrations — Krishi-Verse
+  - Integrations
+  - Connected
+  - 🏛
+  - NABARD FPO portal
+  - ✓ Connected · Auto-submit quarterly
+  - LIVE
+  - 💼
+  - GSTN portal
+  - ✓ Connected · GSTR-1 auto-filed
+  - LIVE
+  - 📊
+  - eNAM (mandi prices)
+  - ✓ Connected · Live price feed
+  - LIVE
+  - 🌧
+  - IMD weather API
+  - ✓ Connected · 15-min refresh
+  - LIVE
+  - Available to connect
+  - 📦
+  - Tally ERP / Zoho Books
+  - Export orders/invoices
+  - Connect
+  - 🚛
+  - Delhivery / Porter
+  - 3PL logistics partner
+  - Connect
+  - 🏦
+  - KCC / Crop loan APIs
+  - SBI, BoB, HDFC kisan loans
+  - Connect
+  - 🔬
+  - Quality labs (FSSAI)
+  - Auto-fetch test certificates
+  - Connect
+  - Developer
+  - 🔑
+  - API access
+  - REST · Webhooks · Scale tier
+  - ›
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).

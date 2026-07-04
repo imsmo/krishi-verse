@@ -1,0 +1,292 @@
+# Farmer · Profile / Farm / Bank / Docs — screen build specs
+
+- **Route group:** `src/app/(farmer)/profile`  ·  **Feature/data:** `features/profile`  ·  **Flag (default OFF):** `farmer_profile`
+- Build each screen to FULL design parity (guide §12). Content below is the EXACT design text/values the
+  screen must show (from `docs/design-data/SCREEN-DATA-CATALOG.md`) — render via i18n keys (hi/en/gu),
+  money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
+
+
+## 61-farmer-profile-own — 61 · My Profile — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/61-farmer-profile-own.html`
+- **Route:** `src/app/(farmer)/profile/…`  ·  **Feature:** `features/profile`  ·  **Flag:** `farmer_profile`
+- **Must render (exact design content):**
+  - 61 · My Profile — Krishi-Verse
+  - My Profile
+  - RP
+  - Ramesh Patel
+  - 📍 Anand, Gujarat · Farmer since 2024
+  - ⭐ 4.8
+  - 120 ratings
+  - 87
+  - Sales
+  - 3 yrs
+  - On platform
+  - Verification
+  - Aadhaar KYC
+  - Verified · XXXX-XXXX-2347
+  - ✓ Verified
+  - Bank Account
+  - HDFC Bank · XXXX-XX1234
+  - ✓ Active
+  - Farm Location
+  - GPS verified · 5 acres
+  - ✓ Tagged
+  - Farm Details
+  - 🌾
+  - Crops grown
+  - Wheat, Maize, Chilli, Cucumber
+  - Land holding
+  - 5 acres · Owned
+  - 💧
+  - Irrigation type
+  - Drip + Borewell
+  - Account
+  - Settings
+  - Help & Support
+  - Logout
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 119-farmer-edit-profile — 119 · Edit Profile — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/119-farmer-edit-profile.html`
+- **Route:** `src/app/(farmer)/profile/…`  ·  **Feature:** `features/profile`  ·  **Flag:** `farmer_profile`
+- **Must render (exact design content):**
+  - 119 · Edit Profile — Krishi-Verse
+  - Edit Profile
+  - RP
+  - Change photo
+  - Basic info
+  - Full name *
+  - Display name
+  - Mobile
+  - WhatsApp
+  - Email (optional)
+  - Location
+  - Village *
+  - Taluka
+  - District
+  - Languages spoken
+  - ગુજરાતી ✓
+  - हिंदी ✓
+  - English
+  - About
+  - Bio
+  - 5-acre family farm in Anand. Specialize in wheat, cumin, and cotton. Third-generation farmer.
+  - 112 / 280 characters
+  - Cancel
+  - Save Profile
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 120-farmer-farm-details — 120 · Farm Details — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/120-farmer-farm-details.html`
+- **Route:** `src/app/(farmer)/profile/…`  ·  **Feature:** `features/profile`  ·  **Flag:** `farmer_profile`
+- **Must render (exact design content):**
+  - 120 · Farm Details — Krishi-Verse
+  - My Farm Details
+  - Anand · 5 acres
+  - 3 plots · 2 active crops · Drip irrigated
+  - 5.0
+  - Acres total
+  - 3
+  - Plots
+  - 12
+  - Crops history
+  - My plots
+  - + Add plot
+  - Plot A · 2.0 acres
+  - Survey #487/2 · GPS verified ✓
+  - 🌾 Wheat (Lokwan)
+  - 💧 Drip
+  - Black soil
+  - Plot B · 1.5 acres
+  - Survey #488/1
+  - 🌿 Cumin
+  - 💧 Sprinkler
+  - Sandy loam
+  - Plot C · 1.5 acres
+  - Survey #491/3
+  - 🌱 Cotton (Bt)
+  - 💧 Drip
+  - Recent harvests
+  - 🌱
+  - Cotton (Plot C) · Kharif 2025
+  - Sept 2025 · 14 qtl · ₹98,000
+  - ›
+  - 🌾
+  - Wheat (Plot A) · Rabi 2024-25
+  - Apr 2025 · 28 qtl · ₹78,400
+  - ›
+  - Update Farm Info
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 121-farmer-bank-accounts — 121 · Bank Accounts — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/121-farmer-bank-accounts.html`
+- **Route:** `src/app/(farmer)/profile/…`  ·  **Feature:** `features/profile`  ·  **Flag:** `farmer_profile`
+- **Must render (exact design content):**
+  - 121 · Bank Accounts — Krishi-Verse
+  - Bank Accounts
+  - State Bank of India
+  - XXXX XXXX 2247
+  - Ramesh Bhanubhai Patel
+  - IFSC SBIN0001247
+  - DEFAULT
+  - HDFC Bank
+  - XXXX XXXX 9831
+  - Ramesh Bhanubhai Patel
+  - IFSC HDFC0000287
+  - Make default
+  - UPI IDs
+  - ramesh@okaxis
+  - Linked to SBI ••••2247
+  - VERIFIED
+  - 98765xxxxx@paytm
+  - Linked to HDFC ••••9831
+  - VERIFIED
+  - + Add UPI ID
+  - 🔒
+  - All accounts verified via name-match with Aadhaar. Numbers never shown to buyers.
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 122-farmer-documents — 122 · Documents Wallet — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/122-farmer-documents.html`
+- **Route:** `src/app/(farmer)/profile/…`  ·  **Feature:** `features/profile`  ·  **Flag:** `farmer_profile`
+- **Must render (exact design content):**
+  - 122 · Documents Wallet — Krishi-Verse
+  - My Documents
+  - 🗂
+  - Documents Wallet
+  - 8 of 12 documents · Encrypted & secure
+  - 67%
+  - Identity (3 of 3)
+  - 🪪
+  - Aadhaar Card
+  - XXXX XXXX 7892 · ✓ Verified
+  - ›
+  - 📇
+  - PAN Card
+  - ABCPP1234K · ✓ Linked
+  - ›
+  - 📷
+  - Profile Photo
+  - Matched with Aadhaar ✓
+  - ›
+  - Land documents (2 of 4)
+  - 📋
+  - 7/12 Utara (Plot A)
+  - Verified by talati ✓
+  - ›
+  - 📋
+  - 7/12 Utara (Plot B)
+  - Verification pending
+  - ›
+  - 📋
+  - 7/12 Utara (Plot C)
+  - Required for some schemes
+  - Add
+  - 🗺
+  - 8-A Patrak
+  - Ownership proof
+  - Add
+  - Banking (3 of 3)
+  - 🏦
+  - Bank Passbook · SBI
+  - XXXX 2247 · ✓ Linked
+  - ›
+  - 💳
+  - Kisan Credit Card
+  - SBI · Active · ₹2L limit
+  - ›
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 123-farmer-help — 123 · Help & Support — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/123-farmer-help.html`
+- **Route:** `src/app/(farmer)/profile/…`  ·  **Feature:** `features/profile`  ·  **Flag:** `farmer_profile`
+- **Must render (exact design content):**
+  - 123 · Help & Support — Krishi-Verse
+  - Help & Support
+  - 🤖
+  - Ask AI assistant
+  - Voice · GU/HI/EN
+  - 💬
+  - Chat with support
+  - 9 AM - 7 PM · Free
+  - 📞
+  - Call helpline
+  - 1800-XXX-1234
+  - ⚠
+  - Report a problem
+  - Disputes, fraud, bugs
+  - Talk to Vikas — your ambassador
+  - Available now · Petlad cluster
+  - Call
+  - Popular questions
+  - How long does it take to get paid after selling?
+  - ›
+  - What if my listing is rejected?
+  - ›
+  - How do I dispute a bad rating?
+  - ›
+  - Can I sell without KYC?
+  - ›
+  - How does fair price band work?
+  - ›
+  - Browse by topic
+  - Selling
+  - Payments
+  - Workers
+  - Auctions
+  - Schemes
+  - App issues
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 124-farmer-complaint — 124 · Report Problem — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/124-farmer-complaint.html`
+- **Route:** `src/app/(farmer)/profile/…`  ·  **Feature:** `features/profile`  ·  **Flag:** `farmer_profile`
+- **Must render (exact design content):**
+  - 124 · Report Problem — Krishi-Verse
+  - Report a Problem
+  - What's the issue?
+  - 💰
+  - Payment not received
+  - 📦
+  - Buyer didn't pickup
+  - ⚖
+  - Quality dispute
+  - 🚫
+  - Listing rejected
+  - ⚠
+  - Fraud / scam
+  - 📱
+  - App not working
+  - Which order?
+  - Order / transaction ID
+  - Recent:
+  - #KV-2026-0247
+  - #KV-2026-0231
+  - What happened?
+  - Buyer Anand Stores confirmed order on Aug 10 for 5 quintal wheat at ₹2,880/qtl. Delivery done Aug 12. Payment pending since Aug 13.
+  - 📎 Attach photo
+  - 🎤 Voice note
+  - How to contact you?
+  - 📞 Call me back · +91 98765 12340
+  - 💬 Chat in app
+  - 📧 Email · ramesh@example.com
+  - Typical first response:
+  - within 4 hours
+  - on business days. Critical issues handled in 1 hour.
+  - Cancel
+  - Submit Report
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).

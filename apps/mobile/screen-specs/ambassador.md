@@ -1,0 +1,751 @@
+# Ambassador — screen build specs
+
+- **Route group:** `src/app/(ambassador)`  ·  **Feature/data:** `features/ambassador`  ·  **Flag (default OFF):** `ambassador_app`
+- Build each screen to FULL design parity (guide §12). Content below is the EXACT design text/values the
+  screen must show (from `docs/design-data/SCREEN-DATA-CATALOG.md`) — render via i18n keys (hi/en/gu),
+  money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
+
+
+## 86-ambassador-home — 86 · Ambassador Home — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/86-ambassador-home.html`
+- **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
+- **Must render (exact design content):**
+  - 86 · Ambassador Home — Krishi-Verse
+  - Good morning, ambassador
+  - नमस्ते
+  - Vikas Joshi
+  - 🏆 Top performer · 3rd in Anand cluster
+  - 247
+  - My farmers
+  - 12
+  - This month
+  - ₹6,200
+  - Earned
+  - Onboard a new farmer
+  - Earn ₹50 per completion
+  - Pending onboardings
+  - All 4 →
+  - AK
+  - Anil Kumar
+  - ⚠ Aadhaar pending · 2 days ago
+  - Help
+  - GP
+  - Geeta Patel
+  - ⚠ Bank linking pending · 5 days ago
+  - Help
+  - Today's activity
+  - RP
+  - Ramesh Patel
+  - ✓ Listed Lokwan Wheat · ₹2,880/qtl
+  - 2h
+  - PV
+  - Pushpa Vyas
+  - 📦 Sale complete · ₹14,500
+  - 5h
+  - MJ
+  - Mahesh Joshi
+  - 🔨 Joined live auction
+  - now
+  - Home
+  - Farmers
+  - Leaderboard
+  - Profile
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 87-ambassador-farmers — 87 · My Farmers — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/87-ambassador-farmers.html`
+- **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
+- **Must render (exact design content):**
+  - 87 · My Farmers — Krishi-Verse
+  - My Farmers · 247
+  - All · 247
+  - Active 30d · 189
+  - Inactive · 58
+  - Pending · 4
+  - Top earners
+  - RP
+  - Ramesh Patel ⭐ 4.9
+  - Anand · joined Jan 2024 · 5 acres
+  - Active 2h ago
+  - 42
+  - listings
+  - PV
+  - Pushpa Vyas ⭐ 4.6
+  - Anand · joined Mar 2024 · 3.5 acres
+  - Active 5h ago
+  - 67
+  - listings
+  - MJ
+  - Mahesh Joshi ⭐ 4.8
+  - Petlad · joined Sep 2023 · 8 acres
+  - Active now
+  - 35
+  - listings
+  - KM
+  - Krishna Mehta ⭐ 4.8
+  - Nadiad · joined Feb 2024 · 6 acres
+  - Active yesterday
+  - 52
+  - listings
+  - HP
+  - Hetal Patel ⭐ 4.5
+  - Vadodara · joined Apr 2024 · 4 acres
+  - Inactive 7 days
+  - 19
+  - listings
+  - AK
+  - Anil Kumar
+  - PENDING
+  - Borsad · joined 2 days ago
+  - ⚠ Aadhaar pending
+  - 0
+  - listings
+  - GP
+  - Geeta Patel
+  - PENDING
+  - Petlad · joined 5 days ago
+  - ⚠ Bank pending
+  - 0
+  - listings
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 88-ambassador-onboard-start — 88 · Onboard Farmer — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/88-ambassador-onboard-start.html`
+- **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
+- **Must render (exact design content):**
+  - 88 · Onboard Farmer — Krishi-Verse
+  - Onboard a Farmer
+  - Step 1 of 4
+  - Choose method
+  - How will you onboard?
+  - Choose based on what the farmer has with them. Aadhaar QR is fastest.
+  - 📷
+  - Scan Aadhaar QR
+  - Farmer shows their Aadhaar card · auto-fills name, address, photo
+  - ⚡ Fastest · 2 min
+  - 📝
+  - Type manually
+  - If farmer doesn't have Aadhaar card today
+  - ⏱ ~5 min
+  - 📞
+  - Send SMS signup link
+  - Farmer completes on their own phone · you get notified
+  - ⏱ Farmer's own time
+  - 💰
+  - You earn
+  - ₹50 commission
+  - when farmer completes full onboarding (Aadhaar + bank + first listing).
+  - Back
+  - Continue →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 89-ambassador-onboard-scan — 89 · Scan Aadhaar — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/89-ambassador-onboard-scan.html`
+- **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
+- **Must render (exact design content):**
+  - 89 · Scan Aadhaar — Krishi-Verse
+  - Scan Farmer's Aadhaar
+  - Scan the back of farmer's Aadhaar
+  - The QR code reads name, photo, and address automatically. Auto-uploaded to UIDAI servers.
+  - 📷 Align QR code inside the frame
+  - 💡 Flashlight
+  - 🔄 Switch camera
+  - 💡
+  - If QR doesn't scan:
+  - Card may be damaged. Tap "Type manually" below to enter the 12-digit Aadhaar instead.
+  - Type manually
+  - Use photo
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 90-ambassador-onboard-verify — 90 · Verify Details — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/90-ambassador-onboard-verify.html`
+- **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
+- **Must render (exact design content):**
+  - 90 · Verify Details — Krishi-Verse
+  - Verify Details
+  - Step 3 of 4
+  - Verify with farmer
+  - AK
+  - ✓ Aadhaar matched
+  - Anil Kumar Vasava
+  - UIDAI confirmed
+  - From Aadhaar (auto-filled)
+  - Full name
+  - Anil Kumar Vasava
+  - VERIFIED
+  - Aadhaar number
+  - XXXX XXXX 4521
+  - VERIFIED
+  - Address
+  - Plot 47, Borsad, Anand, Gujarat 388540
+  - VERIFIED
+  - DOB
+  - 15 Jul 1972
+  - VERIFIED
+  - Ask farmer
+  - Mobile *
+  - +91
+  - Primary crops *
+  - Farm size (acres)
+  - Language
+  - Gujarati
+  - Hindi
+  - English
+  - Read each field aloud to farmer in their language. Confirm before continuing.
+  - Back
+  - Verified, Continue →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 91-ambassador-onboard-complete — 91 · Onboarding Complete — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/91-ambassador-onboard-complete.html`
+- **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
+- **Must render (exact design content):**
+  - 91 · Onboarding Complete — Krishi-Verse
+  - Success
+  - Onboarded successfully!
+  - सफलतापूर्वक जोड़ा गया
+  - Anil Kumar is now a registered farmer. He can start listing his crops.
+  - 💰 Commission earned
+  - + ₹50
+  - Credited to your wallet · withdraw anytime
+  - Summary
+  - Farmer
+  - Anil Kumar Vasava
+  - Village
+  - Borsad, Anand
+  - Aadhaar
+  - Verified ✓
+  - Bank
+  - SBI ••••9281 linked
+  - Method
+  - QR scan
+  - Time
+  - 3 min 42 sec
+  - 💡
+  - Next:
+  - Help Anil with his first listing. You earn an additional ₹25 on his first sale.
+  - Done
+  - Help with First Listing
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 92-ambassador-commissions — 92 · My Commissions — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/92-ambassador-commissions.html`
+- **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
+- **Must render (exact design content):**
+  - 92 · My Commissions — Krishi-Verse
+  - Total commissions · Aug 2026
+  - ₹6,200
+  - 12 onboarded · 8 first sales · ↑ 38% vs Jul
+  - ₹4,850
+  - Withdrawable
+  - ₹1,350
+  - Pending 7d
+  - How you earn
+  - 💰
+  - ₹50
+  - when farmer completes onboarding (Aadhaar + bank)
+  - 💰
+  - ₹25
+  - when farmer makes first sale
+  - 💰
+  - 1%
+  - of GMV for first 6 months from your farmers
+  - 🏆
+  - ₹500 bonus
+  - if 10+ onboards in a month
+  - Recent
+  - Onboarded Anil Kumar
+  - Today, 11:42 AM · KYC complete
+  - + ₹50
+  - GMV bonus · Ramesh Patel
+  - Yesterday · 1% of ₹18,420
+  - + ₹184
+  - First sale · Geeta Patel
+  - 2 days ago · ₹8,200 sale
+  - + ₹25
+  - Onboarded Geeta Patel
+  - 5 days ago · KYC complete
+  - + ₹50
+  - GMV bonus · Krishna Mehta
+  - 1 week ago · 1% of ₹42,300
+  - + ₹423
+  - Withdrawal · SBI ••••2247
+  - Aug 1 · UPI
+  - - ₹5,000
+  - Withdraw ₹4,850 to Bank
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 93-ambassador-leaderboard — 93 · Leaderboard — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/93-ambassador-leaderboard.html`
+- **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
+- **Must render (exact design content):**
+  - 93 · Leaderboard — Krishi-Verse
+  - Leaderboard
+  - This month
+  - All time
+  - My cluster
+  - National
+  - 🥈
+  - Rita Pandya
+  - 15
+  - 🥇
+  - Deepak Shah
+  - 18
+  - 🥉
+  - Vikas Joshi · YOU
+  - 12
+  - 3
+  - Vikas Joshi
+  - YOU
+  - Anand cluster · ₹6,200 earned
+  - 12
+  - 4
+  - Hari Mistry
+  - Anand · ₹4,950 earned
+  - 10
+  - 5
+  - Pooja Desai
+  - Vadodara · ₹4,200 earned
+  - 9
+  - 6
+  - Sanjay Trivedi
+  - Surat · ₹3,800 earned
+  - 8
+  - 7
+  - Meera Joshi
+  - Anand · ₹3,200 earned
+  - 7
+  - 8
+  - Ashok Solanki
+  - Nadiad · ₹2,800 earned
+  - 6
+  - 🏆
+  - Onboard 7 more to reach #1
+  - Top spot wins ₹2,000 monthly bonus
+  - Home
+  - Farmers
+  - Leaderboard
+  - Profile
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 94-ambassador-training — 94 · Training Hub — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/94-ambassador-training.html`
+- **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
+- **Must render (exact design content):**
+  - 94 · Training Hub — Krishi-Verse
+  - Training Hub
+  - Learn to onboard better
+  - 8 videos · 3 completed · 32 min remaining
+  - Onboarding fundamentals
+  - How to scan Aadhaar properly
+  - Hindi · Gujarati subtitles · ✓ Completed
+  - Explaining KV to skeptical farmer
+  - Gujarati · ✓ Completed
+  - Bank linking · Aadhaar OTP
+  - Hindi · 2 min watched
+  - First listing · voice mode
+  - Hindi · 🔒 After KYC tutorial
+  - Common challenges
+  - "My phone has no internet" — help
+  - Hindi · ✓ Completed
+  - "Mandi gives cash, why digital?"
+  - Gujarati · Not started
+  - Reference
+  - FAQ cheat sheet (PDF)
+  - Most common 20 questions · 6 pages
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 95-ambassador-profile — 95 · My Profile — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/95-ambassador-profile.html`
+- **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
+- **Must render (exact design content):**
+  - 95 · My Profile — Krishi-Verse
+  - VJ
+  - Vikas Joshi
+  - Petlad cluster · Anand FPO
+  - 247
+  - Farmers
+  - ⭐ 4.8
+  - Rating
+  - 2 yrs
+  - Tenure
+  - Edit Profile
+  - Performance
+  - 🏆
+  - Achievements
+  - 8 badges · Last: Top 3
+  - ›
+  - 📈
+  - My stats
+  - 12 this month · 247 lifetime
+  - ›
+  - 📍
+  - Coverage area
+  - 8 villages · 15 km radius
+  - ›
+  - Money
+  - 💰
+  - Commission earnings
+  - ₹4,850 available · ₹1,350 pending
+  - ›
+  - 🏦
+  - Bank account
+  - SBI ••••2247
+  - ›
+  - Tools
+  - 🎓
+  - Training hub
+  - 3 of 8 videos completed
+  - ›
+  - 📋
+  - FAQ cheat sheet
+  - PDF · keep offline
+  - ›
+  - ❓
+  - Help & support
+  - Call · chat · WhatsApp
+  - ›
+  - App
+  - 🌐
+  - Language
+  - ગુજરાતી
+  - 🔔
+  - Notifications
+  - All on
+  - Log out
+  - Krishi-Verse Ambassador v1.0
+  - Home
+  - Farmers
+  - Leaderboard
+  - Profile
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 162-ambassador-help-listing — 162 · Help with Listing — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/162-ambassador-help-listing.html`
+- **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
+- **Must render (exact design content):**
+  - 162 · Help with Listing — Krishi-Verse
+  - Help Anil's First Listing
+  - AK
+  - Anil Kumar · Borsad
+  - Joined 2 days ago · First listing pending
+  - 📞 Call
+  - 💰
+  - Help Anil complete his first listing today · earn
+  - ₹25 commission
+  - Guided 5-step flow
+  - 1
+  - Crop & quantity
+  - ✓ Wheat (Lokwan) · 3 quintal
+  - 2
+  - Photos
+  - ✓ 4 photos uploaded · Quality verified by AI
+  - 3
+  - Set fair price ← You are here
+  - Today's fair band: ₹2,520 - ₹2,920/qtl (Anand mandi)
+  - Tell Anil:
+  - "આજે માર્કેટ રેટ ₹2,880 છે. તમારે પણ આ ભાવ રાખવો જોઈએ. કમ ભાવ રાખશો તો નુકસાન થશે."
+  - Recommend:
+  - ₹2,850/qtl
+  - 4
+  - Quality grade
+  - Choose A/B/FAQ based on moisture, color
+  - 5
+  - Review & publish
+  - Live within 2 hours
+  - Pass to AI
+  - Help with Step 3 →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 163-ambassador-help-order — 163 · Help with Order — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/163-ambassador-help-order.html`
+- **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
+- **Must render (exact design content):**
+  - 163 · Help with Order — Krishi-Verse
+  - Help Anil with Order
+  - 📦 Order #KV-2026-0312
+  - From: Mehta Trading Co. (Vadodara)
+  - NEW · 2 HRS
+  - Item
+  - 3 quintal Wheat (Lokwan)
+  - Price
+  - ₹2,850 × 3
+  - Total
+  - ₹8,550
+  - 💡
+  - Anil needs help confirming
+  - · This is his 1st order. He's worried about delivery logistics.
+  - Action items
+  - Explain buyer's reputation (⭐4.8 · 187 orders)
+  - Show how escrow protects him
+  - Arrange transport (Porter / local truck)
+  - Help pack with quality marking
+  - Be present during dispatch
+  - 💰
+  - Once delivered, you earn ₹85 (1% GMV bonus for first 6 months)
+  - Schedule Visit
+  - 📞 Call Anil Now
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 164-ambassador-visit-log — 164 · Visit Log — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/164-ambassador-visit-log.html`
+- **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
+- **Must render (exact design content):**
+  - 164 · Visit Log — Krishi-Verse
+  - Visit Log
+  - This month
+  - 28 visits
+  - 142 km traveled · 12 villages
+  - Today's planned
+  - 10:00 AM · BORSAD
+  - Anil Kumar · Help with first listing
+  - +₹25 if completed
+  - 11:30 AM · BORSAD
+  - Geeta Patel · Complete bank linking
+  - Stuck since 5 days · KYC fix
+  - 2:00 PM · PETLAD
+  - Group meeting · 8 farmers
+  - Demo cumin price alerts feature
+  - Yesterday's log
+  - 4:30 PM · PETLAD
+  - ✓ Mahesh Joshi · Helped repost expired listing
+  - "Listing live · sold within 24 hrs"
+  - 2:15 PM · NADIAD
+  - ✓ Krishna Mehta · KCC loan application
+  - "Helped fill SBI KCC form · ₹2L approved"
+  - 11:00 AM · ANAND
+  - ✓ Onboarded 2 new farmers
+  - +₹100 commission
+  - + Log New Visit
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 165-ambassador-video-player — 165 · Training Video — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/165-ambassador-video-player.html`
+- **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
+- **Must render (exact design content):**
+  - 165 · Training Video — Krishi-Verse
+  - 2:14 / 6:21
+  - First listing · voice mode
+  - Hindi · 6 min · Module 2 of 5 · ⭐4.9 (124)
+  - 🐢 0.75×
+  - 1×
+  - 🌐 GU subs
+  - 📥 Offline
+  - Chapters
+  - 0:00 · Open the create listing screen
+  - ✓ Watched
+  - 2:14 · Speak in Gujarati ← Now
+  - PLAYING
+  - 3:42 · Review AI extracted data
+  - ›
+  - 4:58 · Add photos correctly
+  - ›
+  - 5:45 · Confirm & publish
+  - ›
+  - Up next
+  - 🏦
+  - Bank linking · Aadhaar OTP
+  - ⚠
+  - Common KYC mistakes
+  - 💬
+  - Explaining KV in Gujarati
+  - Mark Complete
+  - Take Quiz →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 166-ambassador-quiz — 166 · Knowledge Quiz — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/166-ambassador-quiz.html`
+- **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
+- **Must render (exact design content):**
+  - 166 · Knowledge Quiz — Krishi-Verse
+  - Knowledge Quiz
+  - Onboarding Module 2
+  - Question 3 of 5
+  - ⏱ 1:42
+  - Pass: 4/5 correct
+  - When farmer's Aadhaar QR doesn't scan, what should you do first?
+  - A
+  - Try a different scanning angle and clean the card
+  - B
+  - Switch to "Type manually" — enter 12-digit Aadhaar number
+  - C
+  - Tell the farmer to come back another day
+  - D
+  - Skip Aadhaar verification entirely
+  - 💡 Hint:
+  - Damaged QR is common · we have a fallback for this exact case
+  - Skip
+  - Submit Answer →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 167-ambassador-faq-detail — 167 · FAQ Sheet — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/167-ambassador-faq-detail.html`
+- **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
+- **Must render (exact design content):**
+  - 167 · FAQ Sheet — Krishi-Verse
+  - FAQ Cheat Sheet
+  - 📋
+  - Top 20 questions farmers ask
+  - Available offline · Updated weekly
+  - 🔍
+  - All · 20
+  - Sign-up
+  - Money
+  - Safety
+  - Trust
+  - How do I get my money after selling?
+  - −
+  - Money goes directly to farmer's bank account via UPI within 24 hours of buyer confirming delivery. No cash, no middleman. Farmer sees status in wallet.
+  - Tell farmer:
+  - "પૈસા સીધા તમારા બેંક માં આવશે · ૨૪ કલાક અંદર"
+  - Is my Aadhaar safe?
+  - +
+  - What if buyer doesn't pay?
+  - +
+  - Why is there a 2.5% platform fee?
+  - +
+  - Mandi gives cash, why digital?
+  - +
+  - What if my phone has no internet?
+  - +
+  - Can I sell without listing?
+  - +
+  - Why need bank account?
+  - +
+  - 📥 Download PDF for Offline
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 168-ambassador-withdraw — 168 · Withdraw Commission — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/168-ambassador-withdraw.html`
+- **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
+- **Must render (exact design content):**
+  - 168 · Withdraw Commission — Krishi-Verse
+  - Withdraw to Bank
+  - Available to withdraw
+  - ₹4,850
+  - + ₹1,350 pending (settles in 7d)
+  - Withdraw to
+  - State Bank of India
+  - XXXX XXXX 2247
+  - Vikas Joshi · IFSC SBIN0001247
+  - Amount
+  - ₹
+  - ₹1,000
+  - ₹2,500
+  - All ₹4,850
+  - Summary
+  - Withdrawing
+  - ₹4,850
+  - Bank charge
+  - FREE
+  - You receive
+  - ₹4,850
+  - Money in your bank within 2 hours · IMPS transfer · Tracked
+  - Cancel
+  - Withdraw ₹4,850
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 169-ambassador-targets — 169 · Monthly Targets — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/169-ambassador-targets.html`
+- **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
+- **Must render (exact design content):**
+  - 169 · Monthly Targets — Krishi-Verse
+  - My Targets · Aug 2026
+  - 🎯
+  - 75% of monthly goal
+  - 12 days left to reach ₹2,000 bonus tier
+  - Onboarding goal
+  - 12 of 16 farmers
+  - 75%
+  - Need 4 more · ₹200 bonus on completion
+  - Activity goals
+  - First sales helped
+  - 8 / 10
+  - +₹25 each on completion
+  - Training videos watched
+  - 5 / 8
+  - Farmer satisfaction
+  - ⭐ 4.8 / 5.0
+  - Top performer · Bonus eligible
+  - Bonus tiers
+  - 🥉 10 onboards
+  - +₹500 ✓
+  - 🥈 16 onboards
+  - +₹2,000 ← target
+  - 🥇 25 onboards
+  - +₹5,000 + recognition
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 170-ambassador-goal-setting — 170 · Set Next Month Goals — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/170-ambassador-goal-setting.html`
+- **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
+- **Must render (exact design content):**
+  - 170 · Set Next Month Goals — Krishi-Verse
+  - Plan Sep 2026 Goals
+  - 💡 AI suggestion:
+  - Based on your Aug pace and Petlad cluster opportunities, target
+  - 18 onboards
+  - next month.
+  - Set your targets
+  - New farmer onboardings
+  - Aug actual: 12
+  - −
+  - 18
+  - +
+  - Bonus: ₹2,000 if completed
+  - First sales helped
+  - Aug actual: 8
+  - −
+  - 12
+  - +
+  - Training videos finished
+  - Aug actual: 5 of 8
+  - −
+  - 8
+  - +
+  - Focus areas
+  - 📍 Borsad area
+  - 🌾 Wheat farmers
+  - 👵 Women farmers
+  - 🆕 First-timers
+  - AI Auto-set
+  - Lock In Goals
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).

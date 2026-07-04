@@ -1,0 +1,264 @@
+# Farmer · Govt Schemes — screen build specs
+
+- **Route group:** `src/app/(farmer)/schemes`  ·  **Feature/data:** `features/schemes`  ·  **Flag (default OFF):** `schemes_govt`
+- Build each screen to FULL design parity (guide §12). Content below is the EXACT design text/values the
+  screen must show (from `docs/design-data/SCREEN-DATA-CATALOG.md`) — render via i18n keys (hi/en/gu),
+  money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
+
+
+## 60-farmer-schemes — 60 · Government Schemes — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/60-farmer-schemes.html`
+- **Route:** `src/app/(farmer)/schemes/…`  ·  **Feature:** `features/schemes`  ·  **Flag:** `schemes_govt`
+- **Must render (exact design content):**
+  - 60 · Government Schemes — Krishi-Verse
+  - Government Schemes
+  - Schemes for you
+  - Based on your profile: Farmer · Anand, Gujarat · 5-acre holding
+  - You're eligible for 4 schemes
+  - 🇮🇳
+  - PM-KISAN Samman Nidhi
+  - Ministry of Agriculture · Central scheme
+  - ₹6,000
+  - per year
+  - Direct income support of ₹2,000 every 4 months. Credited directly to your bank account via DBT.
+  - APPLIED · Last installment received Aug 2026
+  - Status →
+  - 🛡️
+  - PMFBY · Pradhan Mantri Fasal Bima
+  - Crop Insurance · Govt of India
+  - ₹60,000
+  - cover per acre
+  - Crop loss insurance for wheat · Premium ₹150/acre. Pay before sowing season.
+  - ELIGIBLE · Apply by 31 Oct
+  - Apply →
+  - 💳
+  - Kisan Credit Card (KCC)
+  - RBI · Through partner bank
+  - up to ₹3,00,000
+  - credit limit
+  - Working capital for farm needs at 7% interest (4% effective with subvention).
+  - ELIGIBLE · 4% effective rate
+  - Apply →
+  - 🌱
+  - Soil Health Card
+  - Dept of Agriculture · Free
+  - FREE
+  - no cost
+  - Detailed soil nutrient report. Receive sample collection schedule from agri-officer.
+  - ELIGIBLE · 2-week processing
+  - Request →
+  - 🚜
+  - Sub-Mission on Agricultural Mechanization
+  - Subsidy on equipment purchase
+  - Up to 50%
+  - subsidy
+  - For tractors, harvesters, drones, etc.
+  - NOT ELIGIBLE · No KCC yet
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 105-farmer-scheme-detail — 105 · Scheme Detail — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/105-farmer-scheme-detail.html`
+- **Route:** `src/app/(farmer)/schemes/…`  ·  **Feature:** `features/schemes`  ·  **Flag:** `schemes_govt`
+- **Must render (exact design content):**
+  - 105 · Scheme Detail — Krishi-Verse
+  - Scheme Detail
+  - Central Govt · Direct Benefit
+  - PM-KISAN Samman Nidhi
+  - ₹6,000 / year
+  - Paid in 3 installments of ₹2,000 every 4 months
+  - You are eligible
+  - Small farmer, land owned, Aadhaar linked
+  - Who can apply?
+  - Land holding
+  - Any cultivable land (no upper limit)
+  - Citizenship
+  - Indian citizen
+  - Age
+  - 18+ years
+  - Excluded
+  - Govt employees, taxpayers, MPs/MLAs, professionals
+  - What you'll need
+  - Aadhaar card · Verified ✓
+  - Bank account · SBI ••••2247 ✓
+  - Land records (7/12 utara) · Need to upload
+  - Self-declaration (auto-generated)
+  - How it works
+  - 1
+  - Fill the form
+  - — auto-filled from your KV profile. Takes ~3 minutes.
+  - 2
+  - Upload land record
+  - — 7/12 utara or talati extract. Photo from phone is OK.
+  - 3
+  - Village officer verifies
+  - — typically 7-14 days.
+  - 4
+  - State govt approves
+  - — ~15-30 days.
+  - 5
+  - Money in your bank
+  - — direct deposit, ₹2,000 per installment.
+  - Official info
+  - Launched by
+  - Ministry of Agriculture, Govt of India
+  - Start year
+  - 2019
+  - Recipients in GJ
+  - 62 lakh farmers
+  - Website
+  - pmkisan.gov.in
+  - Ask AI
+  - Apply Now (3 min)
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 106-farmer-scheme-apply — 106 · Apply: PM-KISAN — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/106-farmer-scheme-apply.html`
+- **Route:** `src/app/(farmer)/schemes/…`  ·  **Feature:** `features/schemes`  ·  **Flag:** `schemes_govt`
+- **Must render (exact design content):**
+  - 106 · Apply: PM-KISAN — Krishi-Verse
+  - Apply: PM-KISAN
+  - Step 1 of 3
+  - Your details
+  - Confirm your details
+  - Auto-filled from your Krishi-Verse profile. Verify each field with your Aadhaar.
+  - ✨ Auto-filled from your KV profile · Tap any field to edit
+  - Full name (as on Aadhaar) *
+  - Aadhaar number *
+  - Mobile *
+  - Father's name *
+  - Date of birth *
+  - Category *
+  - General
+  - OBC
+  - SC
+  - ST
+  - Gender *
+  - Male
+  - Female
+  - Other
+  - Address
+  - Village *
+  - Taluka *
+  - District *
+  - State *
+  - PIN code *
+  - Save Draft
+  - Continue · Land Details →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 107-farmer-scheme-status — 107 · Application Status — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/107-farmer-scheme-status.html`
+- **Route:** `src/app/(farmer)/schemes/…`  ·  **Feature:** `features/schemes`  ·  **Flag:** `schemes_govt`
+- **Must render (exact design content):**
+  - 107 · Application Status — Krishi-Verse
+  - Application Status
+  - ⏳ Under Review
+  - PM-KISAN Samman Nidhi
+  - Application ID · PMK-2026-GJ-AND-024782
+  - Estimated approval:
+  - 15-20 days
+  - Application progress
+  - Application submitted
+  - 14 Aug 2026, 11:42 AM
+  - All documents uploaded. Application ID generated.
+  - Document verification (Auto)
+  - 14 Aug 2026, 11:44 AM
+  - ✓ Aadhaar verified · ✓ Bank verified · ✓ Land record uploaded
+  - Village officer review
+  - In progress · Assigned 16 Aug
+  - Talati: Shri Hareshbhai Pandya · Anand circle. Typically 7-14 days.
+  - State approval
+  - Expected 28 Aug - 5 Sep
+  - First payment
+  - Expected by 10 Sep · ₹2,000 to SBI ••••2247
+  - HP
+  - Hareshbhai Pandya · Talati
+  - Anand circle · Office: 10 AM - 5 PM
+  - Call
+  - Help & FAQs
+  - What if officer takes more than 14 days?
+  - ›
+  - Can I cancel my application?
+  - ›
+  - Where does the ₹2,000 come from?
+  - ›
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 108-farmer-scheme-docs — 108 · Upload Documents — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/108-farmer-scheme-docs.html`
+- **Route:** `src/app/(farmer)/schemes/…`  ·  **Feature:** `features/schemes`  ·  **Flag:** `schemes_govt`
+- **Must render (exact design content):**
+  - 108 · Upload Documents — Krishi-Verse
+  - Upload Documents
+  - Step 2 of 3
+  - Documents
+  - Required documents
+  - 📄
+  - Aadhaar Card
+  - ✓ Already verified from your KV profile
+  - aadhaar_7892.pdf · 245 KB
+  - 🏦
+  - Bank Passbook
+  - ✓ Linked to SBI account ••••2247
+  - passbook_sbi.jpg · 1.2 MB
+  - 📋
+  - Land Record (7/12 Utara)
+  - Must be issued within last 6 months · Photo OK
+  - 📷 Take Photo / Upload
+  - ✍️
+  - Self-declaration (auto)
+  - We'll generate this for you · You sign with Aadhaar OTP
+  - 💡
+  - No 7/12 utara?
+  - Visit talati office, takes 10 minutes. We can SMS you the nearest office address.
+  - Back
+  - Continue · Review →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 109-farmer-my-schemes — 109 · My Applications — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/109-farmer-my-schemes.html`
+- **Route:** `src/app/(farmer)/schemes/…`  ·  **Feature:** `features/schemes`  ·  **Flag:** `schemes_govt`
+- **Must render (exact design content):**
+  - 109 · My Applications — Krishi-Verse
+  - My Scheme Applications
+  - All · 4
+  - Active · 2
+  - Received · 1
+  - Rejected · 1
+  - PM-KISAN Samman Nidhi
+  - Applied 14 Aug · PMK-2026-024782
+  - UNDER REVIEW
+  - ₹6,000 / year
+  - Stage 3 of 5 · Village officer review
+  - ~15 days left
+  - PMSBY Insurance
+  - Applied 22 Jul · PMSBY-2026-009842
+  - PENDING DOCS
+  - ₹2 Lakh cover · ₹20/yr
+  - Action required: Nominee form pending
+  - URGENT
+  - Soil Health Card
+  - Approved 12 Jun · SHC-2026-GJ-AND-748
+  - RECEIVED ✓
+  - 📄 Soil card ready · NPK ratings + recommended fertilizer doses
+  - Download PDF
+  - Crop Insurance (PMFBY)
+  - Rejected 28 Jun · Reason: applied after cutoff
+  - REJECTED
+  - Window closed for Kharif 2026. Reapply for Rabi season starting Oct 2026.
+  - Set reminder
+  - Looking for more schemes?
+  - Browse All Schemes
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).

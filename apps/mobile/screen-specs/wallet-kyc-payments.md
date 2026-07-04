@@ -1,0 +1,364 @@
+# Wallet / KYC / Payments — screen build specs
+
+- **Route group:** `src/app/(farmer)/wallet · kyc`  ·  **Feature/data:** `features/wallet · kyc · payments`  ·  **Flag (default OFF):** `wallet / payments_addmoney`
+- Build each screen to FULL design parity (guide §12). Content below is the EXACT design text/values the
+  screen must show (from `docs/design-data/SCREEN-DATA-CATALOG.md`) — render via i18n keys (hi/en/gu),
+  money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
+
+
+## 15-checkout — 15 · Review Order — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/15-checkout.html`
+- **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
+- **Must render (exact design content):**
+  - 15 · Review Order — Krishi-Verse
+  - Review Order
+  - Your Order
+  - 🌾
+  - Premium Wheat — Lokwan
+  - 2 quintal · Grade A · Ramesh Patel
+  - ₹5,760
+  - Delivery Method
+  - 🚚 Tenant Delivery
+  - Tomorrow · ₹150
+  - 🤝 Self Pickup
+  - Free · Atladara
+  - Payment Method
+  - Wallet Balance
+  - ₹12,450 available
+  - UPI (GPay, PhonePe, Paytm)
+  - Pay direct from bank
+  - Debit / Credit Card
+  - Visa, Mastercard, RuPay
+  - Price Breakup
+  - Subtotal (2 qtl × ₹2,880)
+  - ₹5,760
+  - Delivery
+  - ₹150
+  - Tax (GST 5%)
+  - ₹296
+  - Krishi-Verse Discount
+  - - ₹100
+  - You Pay
+  - ₹6,106
+  - Place Order · Pay ₹6,106
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 70-wallet-withdraw — 70 · Withdraw Money — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/70-wallet-withdraw.html`
+- **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
+- **Must render (exact design content):**
+  - 70 · Withdraw Money — Krishi-Verse
+  - Withdraw Money
+  - Available Balance
+  - ₹15,420.50
+  - Withdrawal limit: ₹50,000/day · 3 transactions left
+  - How much to withdraw?
+  - ₹
+  - 5,000
+  - ₹1,000
+  - ₹5,000
+  - ₹10,000
+  - Max ₹15,420
+  - ⚡ Instant transfer:
+  - Money reaches your bank in 2–5 minutes via IMPS. No fees. Available 24×7.
+  - Transfer to
+  - SBI
+  - State Bank of India
+  - A/c ****4521 · IFSC SBIN0001234
+  - Primary
+  - + Different bank account
+  - Withdraw ₹5,000 →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 71-transaction-detail — 71 · Transaction Detail — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/71-transaction-detail.html`
+- **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
+- **Must render (exact design content):**
+  - 71 · Transaction Detail — Krishi-Verse
+  - Transaction
+  - + ₹2,880
+  - Received from Priya Mehta
+  - ✓ Successful
+  - Transaction Details
+  - Type
+  - Sale payment received
+  - Date
+  - 15 Aug 2026, 10:42 AM
+  - Transaction ID
+  - TXN-2026-08-0142
+  - UPI Ref
+  - 425632156481
+  - Order
+  - #KV-2026-0142
+  - Money Flow
+  - From
+  - Priya Mehta · priya@oksbi
+  - To
+  - Your Krishi Wallet
+  - Subtotal
+  - ₹2,930
+  - Platform fee
+  - −₹50
+  - Net credit
+  - ₹2,880
+  - Download Receipt
+  - Share
+  - Help
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 72-kyc-aadhaar-start — 72 · Verify Aadhaar — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/72-kyc-aadhaar-start.html`
+- **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
+- **Must render (exact design content):**
+  - 72 · Verify Aadhaar — Krishi-Verse
+  - Verify Aadhaar
+  - Verify your Aadhaar
+  - अपना आधार सत्यापित करें
+  - Required by RBI for wallet limits above ₹2,000 and for receiving payments to your bank
+  - Aadhaar Number
+  - An OTP will be sent to your Aadhaar-linked mobile
+  - Why verify?
+  - Higher wallet limits
+  - — Withdraw up to ₹50,000/day after KYC
+  - Government schemes
+  - — Auto-eligibility for PM-KISAN, KCC, insurance
+  - Trust badge
+  - — Verified ✓ shown to buyers, more sales
+  - Loan eligibility
+  - — Apply for KCC, crop insurance, microfinance
+  - 🔒 Your data is safe
+  - We use UIDAI's secure XML API. Aadhaar number is masked after verification. We do NOT store biometric data. RBI-compliant.
+  - Skip for now
+  - Send OTP →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 73-kyc-aadhaar-otp — 73 · Verify OTP — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/73-kyc-aadhaar-otp.html`
+- **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
+- **Must render (exact design content):**
+  - 73 · Verify OTP — Krishi-Verse
+  - Verify OTP
+  - 📱
+  - Enter Aadhaar OTP
+  - We've sent a 6-digit code to mobile
+  - +91 ●●●●● ●5432
+  - (linked to Aadhaar)
+  - Didn't receive? Resend in
+  - ⏱ OTP is valid for 10 minutes
+  - If your Aadhaar-linked number is wrong, visit UIDAI.gov.in to update it before continuing.
+  - Verify Aadhaar →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 74-kyc-bank-setup — 74 · Add Bank Account — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/74-kyc-bank-setup.html`
+- **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
+- **Must render (exact design content):**
+  - 74 · Add Bank Account — Krishi-Verse
+  - Add Bank Account
+  - 🏦
+  - Add your bank account
+  - So we can send your earnings directly to your bank
+  - Enter account details
+  - Account holder name
+  - *
+  - Must match name on Aadhaar
+  - Account number
+  - *
+  - Confirm account number
+  - *
+  - IFSC code
+  - *
+  - ✓ State Bank of India, Anand Branch
+  - Account type
+  - Savings
+  - Current
+  - OR
+  - UPI
+  - Verify via UPI
+  - Faster — just enter your UPI ID. ₹1 sent to verify, returned in seconds.
+  - 🔒
+  - Penny-drop verification:
+  - We'll send ₹1 to your account to verify ownership. The ₹1 is returned within 24 hours. No charges.
+  - Skip
+  - Verify Account →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 173-kyc-selfie — 173 · Verify with Selfie — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/173-kyc-selfie.html`
+- **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
+- **Must render (exact design content):**
+  - 173 · Verify with Selfie — Krishi-Verse
+  - Verify your identity
+  - Step 3 of 3
+  - Live selfie
+  - Take a live selfie
+  - We'll match this with your Aadhaar photo. 5 seconds.
+  - Center your face in the circle
+  - ✓ Good lighting (face well-lit)
+  - ✓ Remove sunglasses, mask
+  - ✓ Look directly at camera
+  - ✓ Slight smile is OK
+  - 🔒
+  - Selfie used only for one-time verification · Not stored permanently
+  - 📷 Take Selfie
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 174-kyc-doc-upload — 174 · Upload Document — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/174-kyc-doc-upload.html`
+- **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
+- **Must render (exact design content):**
+  - 174 · Upload Document — Krishi-Verse
+  - Upload Document
+  - Photo of 7/12 Utara
+  - Land record from talati office. Photo works fine — must show name, survey number, and area.
+  - Align document fully inside dashed box
+  - 📷 Take Photo
+  - 📁 From Gallery
+  - Tips for clear photo
+  - 💡
+  - Bright daylight or ceiling fan light
+  - 📄
+  - Flat surface · no folds or creases
+  - 📸
+  - Camera directly above · not tilted
+  - 🔍
+  - All 4 corners visible · text readable
+  - ⚠ Blurry photos get rejected.
+  - Take time, retry if needed.
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 175-kyc-rejected — 175 · KYC Re-submission — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/175-kyc-rejected.html`
+- **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
+- **Must render (exact design content):**
+  - 175 · KYC Re-submission — Krishi-Verse
+  - KYC Issues
+  - ⚠
+  - Re-submission needed
+  - 2 issues · easy to fix · ~5 minutes
+  - What to fix
+  - 📄 Land record photo blurry
+  - Survey number not readable. Please retake in good light, holding camera directly above.
+  - 📷 Retake Photo
+  - 🏦 Bank name mismatch
+  - Account "Ramesh B Patel" doesn't match Aadhaar "Ramesh Bhanubhai Patel". Visit bank to update OR re-enter correctly.
+  - Re-enter Bank
+  - Need help?
+  - VJ
+  - Vikas Joshi
+  - Your ambassador · 9 AM - 7 PM
+  - 📞 Call
+  - You can browse while fixing. Withdrawals locked until KYC complete.
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 180-upi-management — 180 · UPI IDs — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/180-upi-management.html`
+- **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
+- **Must render (exact design content):**
+  - 180 · UPI IDs — Krishi-Verse
+  - UPI IDs
+  - Linked UPI IDs
+  - ramesh@okaxis
+  - SBI ••••2247 · Default
+  - AXIS PAY
+  - VERIFIED
+  - 98765xxxxx@paytm
+  - SBI ••••2247
+  - PAYTM
+  - VERIFIED
+  - ramesh@oksbi
+  - SBI ••••2247
+  - BHIM SBI
+  - VERIFIED
+  - Add new UPI ID
+  - UPI ID
+  - Common handles
+  - @okhdfcbank
+  - @ybl
+  - @upi
+  - @kotak
+  - UPI verification sends ₹1 test transaction · Refunded immediately
+  - Verify & Add
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 181-autopay — 181 · Auto-Pay — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/181-autopay.html`
+- **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
+- **Must render (exact design content):**
+  - 181 · Auto-Pay — Krishi-Verse
+  - Auto-Pay Mandates
+  - Auto-pay
+  - lets you authorize recurring payments without entering PIN each time. UPI mandate based. Cancel anytime.
+  - Active mandates
+  - 🛡 PMSBY Insurance
+  - ₹20 yearly on 1 June
+  - ACTIVE
+  - Next debit: 1 June 2027
+  - 📱 SMS quota top-up
+  - ₹100 monthly · auto-renews when low
+  - ACTIVE
+  - 🌾 Crop insurance PMFBY
+  - 2% Kharif premium each season
+  - PAUSED
+  - + Set up recurring payment
+  - Limits
+  - Per-transaction
+  - ₹2,000
+  - Monthly cap
+  - ₹5,000
+  - Used this month
+  - ₹120 / ₹5,000
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 182-spending-insights — 182 · Spending Insights — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/182-spending-insights.html`
+- **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
+- **Must render (exact design content):**
+  - 182 · Spending Insights — Krishi-Verse
+  - Spending Insights
+  - Aug 2026 · Spent
+  - ₹3,180
+  - ↓ 12% vs Jul · Mostly labor + inputs
+  - Daily spending
+  - 1
+  - 5
+  - 10
+  - 14
+  - By category
+  - 👷 Worker wages
+  - ₹1,600 · 50%
+  - 💊 Inputs (seeds, fertilizer)
+  - ₹820 · 26%
+  - 🚛 Transport
+  - ₹450 · 14%
+  - 🚀 Listing boosts
+  - ₹176 · 6%
+  - 📋 Other
+  - ₹134 · 4%
+  - 👍 You spend 18% less
+  - than other farmers in Anand with similar 5-acre farms.
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).

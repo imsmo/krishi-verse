@@ -1,0 +1,581 @@
+# System & Settings — screen build specs
+
+- **Route group:** `src/app/(system) · (app)`  ·  **Feature/data:** `features/system`  ·  **Flag (default OFF):** `(core)`
+- Build each screen to FULL design parity (guide §12). Content below is the EXACT design text/values the
+  screen must show (from `docs/design-data/SCREEN-DATA-CATALOG.md`) — render via i18n keys (hi/en/gu),
+  money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
+
+
+## 75-settings — 75 · Settings — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/75-settings.html`
+- **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
+- **Must render (exact design content):**
+  - 75 · Settings — Krishi-Verse
+  - Settings
+  - RP
+  - Ramesh Patel
+  - +91 98765 ●●●●● · Anand, Gujarat
+  - ✓ KYC
+  - ★ Verified Seller
+  - Account
+  - Edit Profile
+  - Name, photo, address, KYC
+  - Bank Accounts
+  - 2 accounts · SBI ****4521 primary
+  - UPI IDs
+  - ramesh@oksbi (primary)
+  - Preferences
+  - Language
+  - English
+  - Notifications
+  - All on
+  - App Theme
+  - System
+  - Security & Privacy
+  - App PIN
+  - Required for payments
+  - On
+  - Privacy
+  - Data, permissions, location
+  - Support
+  - Help & FAQ
+  - Contact Support
+  - Chat · Call · Email
+  - About Krishi-Verse
+  - Logout
+  - Krishi-Verse v1.0.0 (Build 142) · Made with 🌾 in India
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 171-notification-settings — 171 · Notification Settings — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/171-notification-settings.html`
+- **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
+- **Must render (exact design content):**
+  - 171 · Notification Settings — Krishi-Verse
+  - Notification Settings
+  - Money & orders
+  - 💰 Payment received
+  - Push + SMS
+  - 🛒 New order
+  - Push + SMS
+  - 📦 Delivery updates
+  - Push only
+  - Mandi & weather
+  - 📊 Daily price alerts
+  - 6 AM SMS
+  - 🌧 Weather warnings
+  - Critical only
+  - 💡 Crop tips
+  - Weekly digest
+  - Quiet hours
+  - 🔇 10 PM - 6 AM
+  - Critical alerts come through
+  - Channels
+  - 📱 App push
+  - 💬 SMS
+  - Free · works offline
+  - 📧 Email
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 172-notification-detail — 172 · Notification — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/172-notification-detail.html`
+- **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
+- **Must render (exact design content):**
+  - 172 · Notification — Krishi-Verse
+  - Notification
+  - 💰
+  - Payment received!
+  - ₹14,400
+  - From: Mehta Trading Co.
+  - Order
+  - #KV-2026-0247
+  - Item
+  - 5 quintal Wheat (Lokwan)
+  - Buyer
+  - Mehta Trading ⭐4.8
+  - Sale amount
+  - ₹14,400
+  - Platform fee (2.5%)
+  - - ₹360
+  - Credited to wallet
+  - ₹14,040
+  - Time
+  - 22 Aug · 11:42 AM
+  - Quick actions
+  - View Order
+  - Open Wallet
+  - 💰 Withdraw to Bank
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 176-change-phone — 176 · Change Phone — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/176-change-phone.html`
+- **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
+- **Must render (exact design content):**
+  - 176 · Change Phone — Krishi-Verse
+  - Change Phone Number
+  - Current
+  - +91 98765 12340
+  - New mobile number
+  - Enter new 10-digit *
+  - +91
+  - Reason
+  - Lost phone
+  - Switching SIM
+  - Personal preference
+  - ⚠ Important:
+  - • OTP sent to BOTH old & new numbers
+  - • Aadhaar re-verification needed
+  - • 24-hour security cool-down on transactions
+  - • Bank account stays the same
+  - No access to old number?
+  - Visit nearest tenant office (Anand FPO) with Aadhaar, PAN, and new SIM card.
+  - Cancel
+  - Send OTP to Both
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 177-account-delete — 177 · Delete Account — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/177-account-delete.html`
+- **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
+- **Must render (exact design content):**
+  - 177 · Delete Account — Krishi-Verse
+  - Delete Account
+  - ⚠
+  - Delete your account?
+  - Permanent and cannot be undone
+  - What happens
+  - You will lose:
+  - • 42 active listings
+  - • Transaction history
+  - • 187 reviews and ratings
+  - • Wallet balance ₹8,850
+  - Before deletion:
+  - • Withdraw ₹8,850 balance
+  - • Close 3 open orders
+  - • Download your data
+  - • Cancel pending withdrawals
+  - Why leaving?
+  - Not using enough
+  - Found alternative
+  - Privacy concerns
+  - Switching to feature phone
+  - Bad experience
+  - Other
+  - Feedback (optional)
+  - 💡
+  - Alternative:
+  - Pause your account instead. Keeps data for 90 days.
+  - Pause →
+  - Cancel
+  - Confirm Deletion
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 178-privacy-settings — 178 · Privacy — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/178-privacy-settings.html`
+- **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
+- **Must render (exact design content):**
+  - 178 · Privacy — Krishi-Verse
+  - Privacy Settings
+  - Profile visibility
+  - Show profile to buyers
+  - Name · photo · location · ratings
+  - Show phone to verified buyers
+  - After deposit paid
+  - Exact farm location
+  - Only after order confirmed
+  - Data & analytics
+  - Personalized recommendations
+  - Better mandi/crop tips
+  - Share with research partners
+  - Anonymized · ICAR, NABARD
+  - Marketing communications
+  - Promotional SMS, email
+  - Data rights (DPDP Act)
+  - 📥 Download my data
+  - All data · ZIP file
+  - ›
+  - 🗑 Delete specific data
+  - Old orders, voice recs
+  - ›
+  - ✋ Withdraw consent
+  - Stop specific use
+  - ›
+  - 🔒 Compliant with DPDP Act 2023 · Read full
+  - privacy policy
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 179-data-download — 179 · Download Data — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/179-data-download.html`
+- **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
+- **Must render (exact design content):**
+  - 179 · Download Data — Krishi-Verse
+  - Download My Data
+  - 📦
+  - All your data in one ZIP
+  - DPDP Act 2023 right · Free · within 30 days
+  - What's included
+  - 👤 Profile data
+  - Name, photo, settings
+  - 📦 Order history
+  - 187 orders
+  - 📋 Listings
+  - 42 active · all past
+  - 💬 Chats
+  - All conversations
+  - 💰 Wallet & financial
+  - Transactions, fees
+  - 📷 Photos uploaded
+  - All listing/profile photos
+  - 🎤 Voice recordings
+  - Listing voice inputs
+  - 📍 Location history
+  - For analytics
+  - Format
+  - 📊 CSV + JSON
+  - 📑 PDF report
+  - Ready in
+  - 4-24 hours
+  - . Email link · valid 7 days · password protected.
+  - Request Download (Free)
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 183-global-search — 183 · Search — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/183-global-search.html`
+- **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
+- **Must render (exact design content):**
+  - 183 · Search — Krishi-Verse
+  - All · 47
+  - Listings · 28
+  - Sellers · 12
+  - Tips · 7
+  - Top results for "wheat"
+  - 🌾
+  - Premium Wheat — Lokwan
+  - Listing · Ramesh Patel · ₹2,880/qtl
+  - ›
+  - 🌾
+  - Sharbati Wheat (Grade A+)
+  - Listing · Ramesh · ₹3,200/qtl
+  - ›
+  - 📊
+  - Wheat mandi prices today
+  - Mandi · 14 mandis · ₹2,720 - ₹2,920
+  - ›
+  - 💡
+  - Stop wheat rust before it spreads
+  - Tip · 5 min · 12.4k reads
+  - ›
+  - 👤
+  - Krishna Mehta · Wheat seller
+  - Seller · Nadiad · ⭐4.8 · 52 listings
+  - ›
+  - 🌾
+  - Wheat knowledge hub
+  - Crop guide · 47 articles
+  - ›
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 185-permissions — 185 · Permissions — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/185-permissions.html`
+- **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
+- **Must render (exact design content):**
+  - 185 · Permissions — Krishi-Verse
+  - Permissions
+  - 🔐
+  - A few permissions needed
+  - All are explained · You can change later in settings
+  - Required
+  - 📞
+  - SMS access
+  - Auto-read OTP · save you typing
+  - Allow
+  - 📷
+  - Camera
+  - Photo your crop, scan documents
+  - Allow
+  - 🎤
+  - Microphone
+  - Voice listings · speak in Gujarati
+  - Allow
+  - Optional (you can skip)
+  - 📍
+  - Location
+  - Better mandi/weather · GPS to find buyers
+  - Allow
+  - 🔔
+  - Notifications
+  - Order updates · price alerts
+  - Allow
+  - 🔒 We never sell your data. Used only to make app work better for you.
+  - Skip optional
+  - Allow All
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 186-tutorial — 186 · App Tour — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/186-tutorial.html`
+- **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
+- **Must render (exact design content):**
+  - 186 · App Tour — Krishi-Verse
+  - 🎤
+  - Speak your listing
+  - Tap the mic button and tell us in Gujarati or Hindi. We'll fill the form for you.
+  - "Mara 5 quintal lokwan ghau che, 2880 ma vechvana"
+  - Step 2 of 5
+  - Skip Tour
+  - Next →
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 187-language-switcher — 187 · Language — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/187-language-switcher.html`
+- **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
+- **Must render (exact design content):**
+  - 187 · Language — Krishi-Verse
+  - Choose Language
+  - 🌐
+  - Change language
+  - Changes instantly · no app restart
+  - ગુજરાતી
+  - Gujarati · 80% farmers
+  - ✓
+  - हिंदी
+  - Hindi · 90% farmers understand
+  - English
+  - For admins & some buyers
+  - मराठी
+  - Marathi · Coming Q1 2027
+  - SOON
+  - Language settings
+  - SMS in same language
+  - Voice replies (TTS)
+  - Use English for technical terms
+  - Apply Language
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 188-offline — 188 · Offline — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/188-offline.html`
+- **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
+- **Must render (exact design content):**
+  - 188 · Offline — Krishi-Verse
+  - No Internet
+  - 📡
+  - No internet connection
+  - Don't worry — many things still work offline.
+  - ✓ Still works offline:
+  - • View your listings
+  - • View past orders
+  - • Read saved tips
+  - • Draft new listing (syncs later)
+  - • SMS notifications still work
+  - ⚠ Need internet:
+  - Mandi prices · Live chat · Withdrawals · New orders
+  - Use Offline
+  - ↻ Retry Connection
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 189-server-error — 189 · Server Error — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/189-server-error.html`
+- **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
+- **Must render (exact design content):**
+  - 189 · Server Error — Krishi-Verse
+  - 🛠
+  - Something went wrong
+  - Error 500 · Server hiccup
+  - Our servers are having a moment. We've been notified and are fixing it.
+  - What you can do:
+  - • Wait 30 seconds and retry
+  - • Use offline mode
+  - • Try voice or SMS shortcuts
+  - Ref: ERR-2026-AB-8472
+  - 📞 Call Helpline
+  - ↻ Retry
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 190-app-update — 190 · Update Required — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/190-app-update.html`
+- **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
+- **Must render (exact design content):**
+  - 190 · Update Required — Krishi-Verse
+  - 🚀
+  - App update needed
+  - Version 2.4.0 has new features and bug fixes
+  - ✨ What's new:
+  - • Voice in Marathi (beta)
+  - • Faster mandi price refresh
+  - • Auction draft auto-save
+  - • 5 critical bug fixes
+  - Download size: ~18 MB · Free
+  - Skip This Time
+  - 📥 Update Now
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 191-inbox-all — 191 · Messages — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/191-inbox-all.html`
+- **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
+- **Must render (exact design content):**
+  - 191 · Messages — Krishi-Verse
+  - Messages · 4 new
+  - All · 14
+  - Buyers · 8
+  - Workers · 3
+  - Support · 2
+  - PM
+  - Priya Mehta · Buyer
+  - 2m
+  - Can you deliver to Vadodara tomorrow?
+  - AS
+  - Anand Stores · Order #0247
+  - 1h
+  - 📷 Photo · Quality looks great
+  - SK
+  - Sunita Kumari · Worker
+  - 3h
+  - Coming tomorrow at 7 AM for harvesting
+  - VJ
+  - Vikas Joshi · Ambassador
+  - 5h
+  - Will visit Wednesday to help with KCC form
+  - 🤖
+  - Krishi AI · Assistant
+  - yesterday
+  - Here's the full guide for wheat rust treatment...
+  - KM
+  - Kishan Mills
+  - 2d
+  - Thanks for the delivery! ⭐⭐⭐⭐⭐
+  - KV
+  - Krishi-Verse Support
+  - 3d
+  - Your dispute #DSP-0247 has been resolved.
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 192-message-archive — 192 · Archive — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/192-message-archive.html`
+- **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
+- **Must render (exact design content):**
+  - 192 · Archive — Krishi-Verse
+  - Archived Messages · 24
+  - 📦 Archived messages · Auto-deleted after 1 year
+  - RT
+  - Ramani Traders
+  - May 2026
+  - Completed order · 8 quintal wheat · ₹23,040
+  - JK
+  - Jay Kumar (worker)
+  - Apr 2026
+  - Cotton picking · 3 days · ₹1,200
+  - MM
+  - Mahendra Mills
+  - Apr 2026
+  - Sharbati wheat · 12 quintal · ₹38,400
+  - SP
+  - Suresh Patel
+  - Mar 2026
+  - Cotton auction · won at ₹6,850/qtl
+  - NK
+  - Nimesh Kumar
+  - Feb 2026
+  - Cumin trade · 4 quintal · ₹1.12L
+  - Restore Selected
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 195-feedback-cta — 195 · Help us improve — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/195-feedback-cta.html`
+- **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
+- **Must render (exact design content):**
+  - 195 · Help us improve — Krishi-Verse
+  - Feedback
+  - 💛
+  - How is your Krishi-Verse experience?
+  - Your feedback shapes the app
+  - ⭐
+  - Tap stars to rate
+  - What works well?
+  - 🎤 Voice listing ✓
+  - 📊 Mandi prices ✓
+  - 🌧 Weather
+  - 💰 Fast payouts
+  - 🛡 Buyer protection
+  - 👷 Worker booking
+  - What can we improve?
+  - 🎤 Voice note
+  - 📷 Screenshot
+  - 💚 Founder Dev reads every feedback personally · Reply within 48 hours
+  - Maybe Later
+  - Submit Feedback
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
+
+## 196-about — 196 · About Krishi-Verse — Krishi-Verse
+- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/196-about.html`
+- **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
+- **Must render (exact design content):**
+  - 196 · About Krishi-Verse — Krishi-Verse
+  - About
+  - 🌾
+  - Krishi-Verse
+  - Version 2.4.0 · Build 247
+  - Built with ❤️ for farmers, by Dev
+  - India's most farmer-first agri SaaS
+  - App info
+  - 📱 Version
+  - 2.4.0
+  - 🔄 Last updated
+  - 22 Aug 2026
+  - 📦 Download size
+  - 18 MB
+  - 🌐 Languages
+  - 3 (GU, HI, EN)
+  - Mission
+  - "To make every Indian farmer financially empowered, technologically equipped, and digitally connected — without losing the dignity of agriculture."
+  - Legal
+  - 📋 Terms of Service
+  - ›
+  - 🔒 Privacy Policy
+  - ›
+  - 📜 Licenses (Open Source)
+  - ›
+  - 💼 Krishi-Verse Pvt Ltd
+  - CIN U72200GJ2024
+  - Connect
+  - 📧 hello@krishi-verse.in
+  - ›
+  - 🌐 krishi-verse.in
+  - ›
+  - 💬 WhatsApp: +91 90990 12340
+  - ›
+  - Made in Anand, Gujarat 🇮🇳
+  - © 2026 Krishi-Verse Pvt Ltd
+- **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
+- **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
+- **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
