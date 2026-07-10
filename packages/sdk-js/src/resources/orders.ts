@@ -4,7 +4,7 @@
 // client only reflects what's allowed. Lifecycle POSTs carry an Idempotency-Key (Law 3): a retried "confirm" from a
 // flaky network can't double-apply. Money is bigint minor-unit strings (Law 2).
 import { HttpClient } from '../http';
-import { OrderListItem, OrderDetail, WalletPaymentResult, Page } from '../types';
+import { OrderListItem, OrderDetail, WalletPaymentResult, OrderTracking, OrderBuyerSummary, Page } from '../types';
 
 export type OrderRole = 'buyer' | 'seller';
 
@@ -20,6 +20,18 @@ export class OrdersResource {
   }
   async get(id: string, signal?: AbortSignal): Promise<OrderDetail> {
     return (await this.http.request<OrderDetail>('GET', `orders/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  /** Order-tracking feed (buyer/seller): stamped order-status transitions + the shipment's status/location
+   *  timeline (real per-step timestamps; lat/lng when a rider has posted a ping). No ETA is returned — the
+   *  caller shows ETA as unknown rather than fabricating one. */
+  async tracking(id: string, signal?: AbortSignal): Promise<OrderTracking> {
+    return (await this.http.request<OrderTracking>('GET', `orders/${encodeURIComponent(id)}/tracking`, { signal })).data;
+  }
+
+  /** Buyer trust summary for the seller's accept/reject decision (seller/moderator only): the buyer's order
+   *  counts in this tenant + their verified business type. Coarse, non-PII signals; no distance/tenure (§13). */
+  async buyerSummary(id: string, signal?: AbortSignal): Promise<OrderBuyerSummary> {
+    return (await this.http.request<OrderBuyerSummary>('GET', `orders/${encodeURIComponent(id)}/buyer-summary`, { signal })).data;
   }
 
   // --- lifecycle (idempotent transitions; the server re-validates state + ownership) ---

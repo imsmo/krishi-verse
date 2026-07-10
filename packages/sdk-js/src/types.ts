@@ -158,7 +158,15 @@ export interface QuietHours { starts: string; ends: string; timezone: string; }
 
 // --- orders (module 5) — money is bigint minor-unit STRINGS (Law 2) ---
 /** One row in the buyer/seller order timeline (CQRS read-model). `counterparty` is the other party's userId. */
-export interface OrderListItem { id: string; orderNo: string; status: string; totalMinor: string; counterparty: string | null; createdAt?: string; }
+export interface OrderListItem {
+  id: string; orderNo: string; status: string; totalMinor: string; counterparty: string | null; createdAt?: string;
+  /** The order's primary (first) line item — crop title + qty for the list card (screen 56). null when no items. */
+  primaryItem?: { title: string; quantity: number; unitCode: string } | null;
+  /** Total number of line items on the order (drives a "+N more" hint). */
+  itemCount?: number;
+}
+/** Buyer trust summary for the seller's accept/reject decision (screen 57). Coarse, non-PII signals only. */
+export interface OrderBuyerSummary { ordersAsBuyer: number; completedAsBuyer: number; businessType: string | null; }
 /** A line item on an order — snake_case mirrors the order_items read row; money fields are bigint strings. */
 export interface OrderItemLine {
   listing_id: string; product_id: string | null; title_snapshot: string; quantity: number; delivered_quantity: number | null;
@@ -177,6 +185,23 @@ export interface Shipment {
   id: string; orderId: string; status: string; partnerId?: string | null; vehicleId?: string | null; riderUserId?: string | null;
   awbNo?: string | null; scheduledPickupAt?: string | null; pickedUpAt?: string | null; deliveredAt?: string | null;
   podMediaId?: string | null; requiresOtp: boolean; chargeMinor?: string | null;
+}
+
+// --- order tracking (module 5) — stamped status timeline + shipment location feed (GET orders/:id/tracking) ---
+/** One order-status transition with its real timestamp (per-step time). */
+export interface OrderEventPoint { fromStatus: string | null; toStatus: string; at: string; note: string | null; }
+/** One shipment tracking point: a status transition or a rider location ping (lat/lng when posted). */
+export interface ShipmentEventPoint { status: string; at: string; lat: number | null; lng: number | null; note: string | null; }
+export interface TrackingShipment {
+  id: string; status: string; riderUserId: string | null; awbNo: string | null;
+  scheduledPickupAt: string | null; pickedUpAt: string | null; deliveredAt: string | null;
+}
+/** The order-tracking feed. No ETA field exists (the app shows ETA as "—" rather than fabricating one). */
+export interface OrderTracking {
+  orderId: string; status: string; createdAt: string; completedAt: string | null;
+  orderEvents: OrderEventPoint[];
+  shipment: TrackingShipment | null;
+  shipmentEvents: ShipmentEventPoint[];
 }
 
 // --- reviews (module 5) ---
@@ -439,12 +464,22 @@ export interface LessonProgress { lessonId: string; completedAt: string | null; 
 // --- learning resources / tips (creator-content; P-20 tips + crop hub) ---
 /** A curated learning resource (tip / article / video / blog / post / audio). `box=browse` returns only
  * APPROVED resources (server-enforced). `body` is inline text; `externalUrl`/`mediaId` is the asset. `topicId`
- * is a catalogue topic id (no public name endpoint yet). Read-only for the app. */
+ * is a catalogue topic id; `topicName` is the server-resolved label for it (null when it doesn't resolve —
+ * never fabricated). Read-only for the app. */
 export type ResourceKind = 'video' | 'blog' | 'post' | 'audio' | 'article';
 export interface LearningResource {
   id: string; channelId: string | null; ownerUserId: string; kind: ResourceKind; title: string;
-  externalUrl: string | null; mediaId: string | null; topicId: string | null; languageCode: string | null;
+  externalUrl: string | null; mediaId: string | null; topicId: string | null; topicName?: string | null; languageCode: string | null;
   body: string | null; status: string; reviewedBy?: string | null; reviewedAt?: string | null; createdAt?: string;
+}
+
+/** Editorial crop-agronomy calendar (P1-5). A reference growth-stage timeline for a crop/season, optionally
+ * region-scoped. `stages` are stored editorial content (name + day window + optional advisory); the app renders
+ * only what the server returns. NOT personalised to a farm (variety/price/soil-moisture stay omitted, §13). */
+export interface CropCalendarStage { name: string; dayFrom: number; dayTo: number; advisory: string | null; }
+export interface CropCalendar {
+  id: string; cropName: string; season: string; regionId: string | null; regionName: string | null;
+  durationDaysMin: number; durationDaysMax: number; stages: CropCalendarStage[]; source: string | null;
 }
 
 // --- AI assistant (P-20 AI-chat) — ASSUMED contract; no farmer-facing endpoint is live yet (flagged) ---
@@ -628,26 +663,45 @@ export interface Mandi { id: string; defaultName: string; regionId: string | nul
 export interface MandiPrice {
   id: string; mandiId: string | null; regionId: string | null; productId: string; gradeOptionId: string | null; priceDate: string;
   minMinor: string | null; maxMinor: string | null; modalMinor: string; unitCode: string; arrivalsQty: number | null; source: string | null;
-  // API-W11 catalogue name-join (null if the id no longer resolves — degrade, never blank the row).
-  productName?: string | null; gradeName?: string | null; regionName?: string | null;
+  // API-W11 catalogue name-join + P1-3 commodity category (null if the id no longer resolves — degrade, never blank the row).
+  productName?: string | null; gradeName?: string | null; regionName?: string | null; categoryId?: string | null; categoryName?: string | null;
 }
 /** A price prediction band (p10/p50/p90 bigint minor). */
 export interface PricePrediction {
   productId: string; regionId: string | null; gradeOptionId: string | null; targetDate: string; p10Minor: string; p50Minor: string; p90Minor: string; confidence: number | null; modelVersion: string | null; createdAt?: string;
-  productName?: string | null; gradeName?: string | null; regionName?: string | null;
+  productName?: string | null; gradeName?: string | null; regionName?: string | null; categoryId?: string | null; categoryName?: string | null;
 }
-/** The live pulse for a (product, region): the latest price, the prediction band, and recent history. */
-export interface MandiPulse { latest: MandiPrice | null; band: PricePrediction | null; history: MandiPrice[]; }
+/** Day-over-day change on the pulse latest (P1-3). All money bigint minor strings; changeBps in basis points
+ *  (signed). Null when there is no earlier observed day (rendered honestly, never fabricated). */
+export interface MandiPulseChange { previousModalMinor: string; previousDate: string; changeMinor: string; changeBps: number; }
+/** The live pulse for a (product, region): the latest price, the prediction band, recent history + day-over-day Δ. */
+export interface MandiPulse { latest: MandiPrice | null; band: PricePrediction | null; history: MandiPrice[]; change?: MandiPulseChange | null; }
 /** The caller's price alert (threshold subscription). thresholdMinor is bigint minor. */
 export interface PriceAlert { id: string; productId: string; regionId: string | null; direction: 'above' | 'below'; thresholdMinor: string; isActive: boolean; createdAt?: string; }
+/** The caller's own alert-trigger activity counts (P1-3). Backed by the on-ingest trigger log; 0 when none fired. */
+export interface AlertActivity { triggeredToday: number; triggeredThisWeek: number; }
 /** A regional weather advisory (read-only ingested reference data). `advisoryTextKey` is an i18n key. */
 export interface WeatherAlert { id: string; regionId: string; alertTypeId: string | null; severity: string; validFrom: string | null; validTo: string | null; advisoryTextKey: string; payload?: Record<string, unknown> | null; source: string | null; createdAt?: string; }
 
 // --- geocoded forecast (P0-12). Temps °C, precip mm, prob 0-100, wind km/h — provider units normalised server-side.
-export interface ForecastDay { date: string; tempMinC: number; tempMaxC: number; precipMm: number; precipProbPct: number; windKph: number; code: string; }
-export interface NormalisedForecast { lat: number; lng: number; providerCode: string; fetchedAt: string; days: ForecastDay[]; }
+// P1-4 extended daily metrics + hourly strip are OPTIONAL (present only when the provider returned them; never faked).
+export interface ForecastDay {
+  date: string; tempMinC: number; tempMaxC: number; precipMm: number; precipProbPct: number; windKph: number; code: string;
+  feelsLikeMinC?: number | null; feelsLikeMaxC?: number | null; uvIndexMax?: number | null; windDirDeg?: number | null;
+  sunrise?: string | null; sunset?: string | null;
+}
+export interface ForecastHour {
+  time: string; tempC: number; feelsLikeC?: number | null; humidityPct?: number | null; precipProbPct: number;
+  windKph: number; pressureHpa?: number | null; uvIndex?: number | null; code: string;
+}
+export interface NormalisedForecast {
+  lat: number; lng: number; providerCode: string; fetchedAt: string; days: ForecastDay[];
+  hours?: ForecastHour[]; placeName?: string | null;   // P1-4 hourly strip + reverse-geocoded header label
+}
 /** Either a real forecast (degraded:false) or — provider down + regionId given — degraded:true with advisories. */
 export interface ForecastResult { degraded: boolean; source: 'forecast' | 'advisory'; providerCode: string | null; forecast: NormalisedForecast | null; advisories: WeatherAlert[]; }
+/** The caller's own weather advisory content prefs (P1-4). Channel delivery lives in notification settings. */
+export interface WeatherPrefs { morningAdvisory: boolean; weeklyOutlook: boolean; severeOnly: boolean; }
 
 /** A dispute (moderation view for a tenant with dispute.resolve). resolutionAmountMinor is bigint minor. */
 export interface Dispute {

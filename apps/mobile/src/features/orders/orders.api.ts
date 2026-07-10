@@ -5,7 +5,7 @@
 // be legal, and blind replay of a stale transition is wrong; so they run online, idempotent (Law 3 key), and the
 // caller surfaces the precise server outcome (409 = already moved, 403 = not allowed). PoD captures the buyer OTP
 // + an uploaded photo and delivers the shipment server-side.
-import type { OrderListItem, OrderDetail, OrderRole, Shipment } from '@krishi-verse/sdk-js';
+import type { OrderListItem, OrderDetail, OrderRole, Shipment, OrderTracking, OrderBuyerSummary } from '@krishi-verse/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { cache } from '../../core/offline/sqlite.db';
 import { currentScope } from '../../core/offline/scope';
@@ -30,6 +30,12 @@ export async function getOrder(id: string): Promise<OrderDetail | null> {
   try { return await apiClient().orders.get(id); } catch { return null; }
 }
 
+/** Buyer trust summary for the seller's accept/reject decision (screen 57): the buyer's order counts in this
+ * tenant + verified business type. Seller-only server-side; degrades to null so the screen shows §13 "—". */
+export async function orderBuyerSummary(id: string): Promise<OrderBuyerSummary | null> {
+  try { return await apiClient().orders.buyerSummary(id); } catch { return null; }
+}
+
 // --- lifecycle transitions (online, idempotent; throw so the screen can show the precise outcome) ---
 export function confirmOrder(id: string): Promise<{ ok: boolean }> { return apiClient().orders.confirm(id, newId()); }
 export function packOrder(id: string): Promise<{ ok: boolean }> { return apiClient().orders.markPacked(id, newId()); }
@@ -49,4 +55,18 @@ export async function getOrderShipment(orderId: string): Promise<Shipment | null
 /** Record proof-of-delivery: buyer OTP (+ optional uploaded photo mediaId) → deliver the shipment. Idempotent. */
 export function recordPod(shipmentId: string, otp: string, podMediaId?: string): Promise<Shipment> {
   return apiClient().shipments.deliver(shipmentId, { otp: otp.trim(), podMediaId }, newId());
+}
+
+/** The order-TRACKING feed (buyer/seller, party-scoped): stamped order-status transitions + the shipment's
+ * status/location timeline (real per-step timestamps; lat/lng when a rider posted a ping). Read-through SWR
+ * cache so the last-known timeline shows offline; degrades to null on a hard failure (the screen falls back to
+ * the order+shipment-derived timeline). No ETA is returned — the screen shows ETA as unknown, never fabricated. */
+export async function getOrderTracking(orderId: string): Promise<OrderTracking | null> {
+  try {
+    const { value } = await cache.read<OrderTracking>({
+      scope: currentScope(), ns: 'orders.tracking', parts: [orderId], policy: POLICY.shortList,
+      fetcher: () => apiClient().orders.tracking(orderId),
+    });
+    return value ?? null;
+  } catch { return null; }
 }

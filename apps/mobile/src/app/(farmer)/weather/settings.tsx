@@ -7,12 +7,15 @@
 // advisory live in notification settings, linked here), the voice-call channel, and a "my crops" selection (no
 // crops-for-weather contract) — shown as info rows / coming-soon, never wired to a fake mutation.
 import React, { useCallback, useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Button, Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { WeatherPrefs } from '@krishi-verse/sdk-js';
+import { Button, Card, EmptyState, StatusPill, Toggle, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
-import { defaultRegionId } from '../../../features/market/market.api';
+import { defaultRegionId, getWeatherPrefs, saveWeatherPrefs } from '../../../features/market/market.api';
+
+const DEFAULT_PREFS: WeatherPrefs = { morningAdvisory: true, weeklyOutlook: true, severeOnly: false };
 
 const CRITICAL = [
   { icon: '⛈', key: 'heavyRain' }, { icon: '🌨', key: 'hail' }, { icon: '🌡', key: 'heatWave' }, { icon: '❄', key: 'frost' },
@@ -24,10 +27,24 @@ export default function WeatherSettings() {
   const enabled = useFlag('mandi_weather');
   const notifOn = useFlag('notifications');
   const [region, setRegion] = useState<string | null>(null);
+  const [prefs, setPrefs] = useState<WeatherPrefs>(DEFAULT_PREFS);
+  const [savingKey, setSavingKey] = useState<keyof WeatherPrefs | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => { setRegion(await defaultRegionId()); setLoading(false); }, []);
+  const load = useCallback(async () => {
+    const [r, p] = await Promise.all([defaultRegionId(), getWeatherPrefs()]);
+    setRegion(r); setPrefs(p ?? DEFAULT_PREFS); setLoading(false);
+  }, []);
   useFocusEffect(useCallback(() => { if (enabled) { setLoading(true); load(); } }, [enabled, load]));
+
+  // Optimistic toggle → persist (P1-4). On failure, revert and tell the user (never a fake "saved").
+  const setPref = async (key: keyof WeatherPrefs, value: boolean) => {
+    const prev = prefs; const next = { ...prefs, [key]: value };
+    setPrefs(next); setSavingKey(key);
+    try { await saveWeatherPrefs(next); }
+    catch { setPrefs(prev); Alert.alert(t('weatherSettings.title'), t('common.error.generic')); }
+    finally { setSavingKey(null); }
+  };
 
   if (!enabled) return <ScreenScaffold title={t('weatherSettings.title')}><EmptyState title={t('common.unavailable')} /></ScreenScaffold>;
 
@@ -54,10 +71,15 @@ export default function WeatherSettings() {
             ))}
           </Card>
 
-          {/* Daily advisory (§13: delivery managed in notification settings) */}
+          {/* Daily advisory content prefs — REAL persistence (P1-4). Channel delivery still links to notif settings. */}
           <Card style={{ marginTop: space[3] }}>
             <Text style={styles.section}>{t('weatherSettings.dailyTitle')}</Text>
-            <PrefRow icon="🌅" title={t('weatherSettings.morning.title')} desc={t('weatherSettings.morning.desc')} onPress={notifOn ? toPrefs : undefined} />
+            <ToggleRow icon="🌅" title={t('weatherSettings.morning.title')} desc={t('weatherSettings.morning.desc')}
+              value={prefs.morningAdvisory} busy={savingKey === 'morningAdvisory'} onChange={(v) => setPref('morningAdvisory', v)} />
+            <ToggleRow icon="📅" title={t('weatherSettings.weekly.title')} desc={t('weatherSettings.weekly.desc')}
+              value={prefs.weeklyOutlook} busy={savingKey === 'weeklyOutlook'} onChange={(v) => setPref('weeklyOutlook', v)} />
+            <ToggleRow icon="⚠️" title={t('weatherSettings.severeOnly.title')} desc={t('weatherSettings.severeOnly.desc')}
+              value={prefs.severeOnly} busy={savingKey === 'severeOnly'} onChange={(v) => setPref('severeOnly', v)} />
             <PrefRow icon="📞" title={t('weatherSettings.voice.title')} desc={t('weatherSettings.voice.desc')} badge={t('weatherSettings.soon')} />
           </Card>
 
@@ -91,6 +113,18 @@ export default function WeatherSettings() {
   );
 }
 
+function ToggleRow({ icon, title, desc, value, busy, onChange }: { icon: string; title: string; desc?: string; value: boolean; busy: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <View style={styles.prefRow}>
+      <Text style={styles.icon}>{icon}</Text>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.rowTitle}>{title}</Text>
+        {desc ? <Text style={styles.rowDesc}>{desc}</Text> : null}
+      </View>
+      <Toggle label="" value={value} onValueChange={onChange} disabled={busy} />
+    </View>
+  );
+}
 function PrefRow({ icon, title, desc, badge, onPress }: { icon: string; title: string; desc?: string; badge?: string; onPress?: () => void }) {
   const body = (
     <View style={styles.prefRow}>

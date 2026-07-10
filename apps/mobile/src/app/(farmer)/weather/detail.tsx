@@ -16,7 +16,7 @@ import { Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { weatherAlerts, weatherForecast, defaultRegionId, defaultLatLng } from '../../../features/market/market.api';
-import { weatherSeverityTone, forecastDayLabel, weatherEmoji, weatherConditionKey, pickPrimaryAdvisory } from '../../../features/market/market';
+import { weatherSeverityTone, forecastDayLabel, weatherEmoji, weatherConditionKey, pickPrimaryAdvisory, hourLabel, uvBand, windCompass } from '../../../features/market/market';
 
 export default function WeatherDetail() {
   const { t, lang } = useTranslation();
@@ -40,6 +40,11 @@ export default function WeatherDetail() {
 
   const days = forecast?.forecast?.days ?? [];
   const today: ForecastDay | undefined = days[0];
+  const hours = (forecast?.forecast?.hours ?? []).slice(0, 12);   // next ~12h strip (server bounds to 24)
+  const nowHr = hours[0];                                          // current hour = richest real metrics source
+  const place = forecast?.forecast?.placeName;                    // reverse-geocoded label (null → generic)
+  const uvKey = uvBand(today?.uvIndexMax ?? nowHr?.uvIndex ?? null);
+  const compass = windCompass(today?.windDirDeg ?? null);
   const primary = pickPrimaryAdvisory(items);
   const updated = forecast?.forecast?.fetchedAt;
 
@@ -54,16 +59,27 @@ export default function WeatherDetail() {
             <View style={styles.hero}>
               <Text style={styles.heroEmoji}>{weatherEmoji(today.code)}</Text>
               <Text style={styles.heroTemp}>{Math.round(today.tempMaxC)}°C</Text>
-              <Text style={styles.heroCond}>{t(`weather.cond.${weatherConditionKey(today.code)}`)} · {t('weatherDetail.feelsLike', { t: '—' })}</Text>
-              <Text style={styles.heroLoc}>📍 {t('weather.yourArea')}{updated ? ` · ${t('weather.updated', { ago: safeRel(updated, lang) })}` : ''}</Text>
+              <Text style={styles.heroCond}>{t(`weather.cond.${weatherConditionKey(today.code)}`)}{today.feelsLikeMaxC != null ? ` · ${t('weatherDetail.feelsLike', { t: `${Math.round(today.feelsLikeMaxC)}°C` })}` : ''}</Text>
+              <Text style={styles.heroLoc}>📍 {place ?? t('weather.yourArea')}{updated ? ` · ${t('weather.updated', { ago: safeRel(updated, lang) })}` : ''}</Text>
             </View>
           ) : forecast?.degraded ? <Card style={{ marginBottom: space[3] }}><Text style={styles.muted}>{t('weather.forecast.degraded')}</Text></Card> : null}
 
-          {/* Hourly (§13: no hourly contract) */}
-          <Card style={{ marginTop: space[3] }}>
-            <Text style={styles.section}>{t('weatherDetail.hourly')}</Text>
-            <Text style={styles.muted}>{t('weatherDetail.hourlySoon')}</Text>
-          </Card>
+          {/* Hourly strip (P1-4: real provider hourly). Degrades to nothing when the provider omits hourly. */}
+          {hours.length ? (
+            <Card style={{ marginTop: space[3] }}>
+              <Text style={styles.section}>{t('weatherDetail.hourly')}</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hourRow}>
+                {hours.map((h) => (
+                  <View key={h.time} style={styles.hourCell}>
+                    <Text style={styles.hourTime}>{hourLabel(h.time, lang)}</Text>
+                    <Text style={styles.hourEmoji}>{weatherEmoji(h.code)}</Text>
+                    <Text style={styles.hourTemp}>{Math.round(h.tempC)}°</Text>
+                    <Text style={styles.hourRain}>💧{h.precipProbPct}%</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            </Card>
+          ) : null}
 
           {/* Featured advisory */}
           {primary ? (
@@ -79,14 +95,14 @@ export default function WeatherDetail() {
           <Card style={{ marginTop: space[3] }}>
             <Text style={styles.section}>{t('weatherDetail.conditions')}</Text>
             <View style={styles.grid}>
-              <Cond label={t('weather.humidity')} value="—" />
-              <Cond label={t('weather.wind')} value={today ? t('weather.kmh', { n: Math.round(today.windKph) }) : '—'} />
-              <Cond label={t('weather.uv')} value="—" />
-              <Cond label={t('weatherDetail.pressure')} value="—" />
-              <Cond label={t('weatherDetail.visibility')} value="—" />
-              <Cond label={t('weatherDetail.sunrise')} value="—" />
+              <Cond label={t('weather.humidity')} value={nowHr?.humidityPct != null ? `${nowHr.humidityPct}%` : '—'} />
+              <Cond label={t('weather.wind')} value={today ? `${t('weather.kmh', { n: Math.round(today.windKph) })}${compass ? ` ${t(`weather.compass.${compass}`)}` : ''}` : '—'} />
+              <Cond label={t('weather.uv')} value={today?.uvIndexMax != null ? `${Math.round(today.uvIndexMax)}${uvKey ? ` · ${t(`weather.uvBand.${uvKey}`)}` : ''}` : '—'} />
+              <Cond label={t('weatherDetail.pressure')} value={nowHr?.pressureHpa != null ? t('weatherDetail.hpa', { n: Math.round(nowHr.pressureHpa) }) : '—'} />
+              <Cond label={t('weatherDetail.feelsLikeShort')} value={today?.feelsLikeMaxC != null ? `${Math.round(today.feelsLikeMaxC)}°C` : '—'} />
+              <Cond label={t('weatherDetail.sunrise')} value={today?.sunrise ? hourLabel(today.sunrise, lang) : '—'} />
             </View>
-            <Text style={styles.note}>{t('weatherDetail.condSoon')}</Text>
+            {/* §13: visibility isn't in the requested provider field set → honest "—" above (never invented). */}
           </Card>
 
           {/* For your crop (§13: crop-stage personalisation; show real regional advisories) */}
@@ -140,6 +156,13 @@ const styles = StyleSheet.create({
   alert: { backgroundColor: color.warningLight, borderRadius: radius.md, borderLeftWidth: 4, padding: space[3], marginTop: space[3] },
   alertHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: space[3] },
   alertTitle: { flex: 1, fontFamily: font.body, fontSize: font.size.md, color: color.ink800, fontWeight: font.weight.semibold },
+
+  hourRow: { gap: space[3], paddingVertical: space[1] },
+  hourCell: { alignItems: 'center', gap: 2, minWidth: 48 },
+  hourTime: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink500 },
+  hourEmoji: { fontSize: 20 },
+  hourTemp: { fontFamily: font.display, fontSize: font.size.md, color: color.ink900, fontWeight: font.weight.bold },
+  hourRain: { fontFamily: font.body, fontSize: font.size.xs, color: color.infoDark },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
   cond: { width: '31%', flexGrow: 1, backgroundColor: color.page, borderRadius: radius.md, padding: space[3], gap: 2 },

@@ -99,6 +99,10 @@ export const EnvSchema = z.object({
   WEATHER_PROVIDER_API_KEY: z.string().default(''),          // optional api key (aggregators that require one)
   WEATHER_CACHE_TTL_SEC: z.coerce.number().int().positive().max(86400).default(3600),  // 1h forecast cache (cost cap)
   WEATHER_FORECAST_DAYS: z.coerce.number().int().min(1).max(16).default(7),
+  // P1-4 reverse-geocoder for the weather header place-name (best-effort; 'none' ⇒ generic label)
+  WEATHER_GEOCODE_KIND: z.string().default('bigdatacloud'),   // 'bigdatacloud' (default, free) | 'none' (degrade)
+  WEATHER_GEOCODE_URL: z.string().default(''),               // override base URL; default bigdatacloud public
+  WEATHER_GEOCODE_API_KEY: z.string().default(''),           // optional api key
   // --- governed farmer AI assistant (P1-13) ---
   AI_SERVICES_URL: z.string().default(''),                   // base URL of the internal ai-services tier; '' ⇒ degrade
   AI_SERVICES_SHARED_SECRET: z.string().default(''),         // s2s bearer (must match ai-services API_SHARED_SECRET)

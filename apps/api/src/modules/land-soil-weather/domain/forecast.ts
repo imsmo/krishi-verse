@@ -2,7 +2,7 @@
 // tenant-prefixed cache key (rounded so nearby farms share a cache entry — bounds provider cost/Law: cap & meter),
 // Open-Meteo WMO weather-code → normalised condition, and a tiny derived agronomy hint. No fabrication: every
 // number here is computed from provider input only.
-import { ForecastDay, NormalisedForecast } from '../gateway/weather-forecast.port';
+import { ForecastDay, ForecastHour, NormalisedForecast } from '../gateway/weather-forecast.port';
 
 export function isValidLat(lat: number): boolean { return Number.isFinite(lat) && lat >= -90 && lat <= 90; }
 export function isValidLng(lng: number): boolean { return Number.isFinite(lng) && lng >= -180 && lng <= 180; }
@@ -30,11 +30,24 @@ export function wmoToCondition(code: number): string {
 }
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
+const pct = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
+/** PURE: a real optional number from a provider array cell, or null (never a fabricated 0). */
+function optNum(arr: number[] | undefined, i: number): number | null {
+  const v = arr?.[i];
+  return v == null || !Number.isFinite(Number(v)) ? null : round1(Number(v));
+}
+function optStr(arr: string[] | undefined, i: number): string | null {
+  const v = arr?.[i];
+  return v ? String(v) : null;
+}
 
-/** Map a raw Open-Meteo daily payload into our normalised ForecastDay[]. Defensive: skips malformed rows. */
+/** Map a raw Open-Meteo daily payload into our normalised ForecastDay[]. Defensive: skips malformed rows.
+ *  Extended P1-4 metrics (apparent temp / UV / wind bearing / sunrise-set) attach only when present (null else). */
 export function normaliseOpenMeteoDaily(daily: {
   time?: string[]; temperature_2m_min?: number[]; temperature_2m_max?: number[];
   precipitation_sum?: number[]; precipitation_probability_max?: number[]; wind_speed_10m_max?: number[]; weather_code?: number[];
+  apparent_temperature_min?: number[]; apparent_temperature_max?: number[]; uv_index_max?: number[];
+  wind_direction_10m_dominant?: number[]; sunrise?: string[]; sunset?: string[];
 }): ForecastDay[] {
   const t = daily.time ?? [];
   const out: ForecastDay[] = [];
@@ -46,9 +59,43 @@ export function normaliseOpenMeteoDaily(daily: {
       tempMinC: round1(Number(daily.temperature_2m_min?.[i] ?? 0)),
       tempMaxC: round1(Number(daily.temperature_2m_max?.[i] ?? 0)),
       precipMm: round1(Number(daily.precipitation_sum?.[i] ?? 0)),
-      precipProbPct: Math.max(0, Math.min(100, Math.round(Number(daily.precipitation_probability_max?.[i] ?? 0)))),
+      precipProbPct: pct(Number(daily.precipitation_probability_max?.[i] ?? 0)),
       windKph: round1(Number(daily.wind_speed_10m_max?.[i] ?? 0)),
       code: wmoToCondition(Number(daily.weather_code?.[i] ?? -1)),
+      feelsLikeMinC: optNum(daily.apparent_temperature_min, i),
+      feelsLikeMaxC: optNum(daily.apparent_temperature_max, i),
+      uvIndexMax: optNum(daily.uv_index_max, i),
+      windDirDeg: optNum(daily.wind_direction_10m_dominant, i),
+      sunrise: optStr(daily.sunrise, i),
+      sunset: optStr(daily.sunset, i),
+    });
+  }
+  return out;
+}
+
+/** Map a raw Open-Meteo hourly payload into ForecastHour[] (P1-4), keeping only entries at/after `fromMs` and
+ *  capping to `max` (default 24) — bounded per Law 8. Defensive: skips malformed rows; missing metrics → null. */
+export function normaliseOpenMeteoHourly(hourly: {
+  time?: string[]; temperature_2m?: number[]; apparent_temperature?: number[]; relative_humidity_2m?: number[];
+  precipitation_probability?: number[]; weather_code?: number[]; surface_pressure?: number[]; wind_speed_10m?: number[]; uv_index?: number[];
+}, fromMs: number = Date.now(), max = 24): ForecastHour[] {
+  const t = hourly.time ?? [];
+  const out: ForecastHour[] = [];
+  for (let i = 0; i < t.length && out.length < max; i++) {
+    const time = t[i];
+    if (!time) continue;
+    const ts = Date.parse(time);
+    if (Number.isFinite(ts) && ts + 3600_000 <= fromMs) continue;   // drop fully-elapsed hours (keep the current hour)
+    out.push({
+      time,
+      tempC: round1(Number(hourly.temperature_2m?.[i] ?? 0)),
+      feelsLikeC: optNum(hourly.apparent_temperature, i),
+      humidityPct: hourly.relative_humidity_2m?.[i] == null ? null : pct(Number(hourly.relative_humidity_2m[i])),
+      precipProbPct: pct(Number(hourly.precipitation_probability?.[i] ?? 0)),
+      windKph: round1(Number(hourly.wind_speed_10m?.[i] ?? 0)),
+      pressureHpa: optNum(hourly.surface_pressure, i),
+      uvIndex: optNum(hourly.uv_index, i),
+      code: wmoToCondition(Number(hourly.weather_code?.[i] ?? -1)),
     });
   }
   return out;

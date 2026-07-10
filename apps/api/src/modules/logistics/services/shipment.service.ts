@@ -104,6 +104,19 @@ export class ShipmentService {
       }, { userId: actor.userId }));
   }
 
+  /** Assigned rider (or a manager) posts a live GPS ping → appends a lat/lng tracking event at the current
+   *  status (no state transition). Powers the buyer/seller tracking feed's "last seen" point. */
+  async postLocation(tenantId: string, actor: ShipmentActor, id: string, loc: { lat: number; lng: number; note?: string }) {
+    return timed(this.metrics, 'logistics.location_ping', { tenant: tenantId }, () =>
+      this.uow.run(tenantId, async (tx) => {
+        const s = await this.repo.getForUpdate(tx, tenantId, id);
+        if (!s) throw new ShipmentNotFoundError(id);
+        this.assertManagerOrRider(actor, s);
+        await this.repo.insertLocationEvent(tx, tenantId, id, s.status, loc.lat, loc.lng, loc.note ?? null);
+        return { ok: true };
+      }, { userId: actor.userId }));
+  }
+
   async getById(tenantId: string, actor: ShipmentActor, id: string) {
     const s = await this.repo.getById(tenantId, id);
     if (!s) throw new ShipmentNotFoundError(id);

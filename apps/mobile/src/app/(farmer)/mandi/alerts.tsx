@@ -10,11 +10,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { PriceAlert } from '@krishi-verse/sdk-js';
+import type { PriceAlert, AlertActivity } from '@krishi-verse/sdk-js';
 import { Button, Card, Input, EmptyState, MoneyText, StatusPill, Toggle, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
-import { listAlerts, createAlert, setAlertActive } from '../../../features/market/market.api';
+import { listAlerts, createAlert, setAlertActive, alertActivity } from '../../../features/market/market.api';
 import { buildAlertDraft, alertTone, alertSummary } from '../../../features/market/market';
 
 const DIRS = ['above', 'below'] as const;
@@ -25,13 +25,17 @@ export default function MandiAlerts() {
   const router = useRouter();
   const enabled = useFlag('mandi_weather');
   const [items, setItems] = useState<PriceAlert[]>([]);
+  const [activity, setActivity] = useState<AlertActivity | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [direction, setDirection] = useState<'above' | 'below'>('above');
   const [rupees, setRupees] = useState(rupeesParam ?? '');
   const [error, setError] = useState<string | undefined>();
 
-  const load = useCallback(async () => { const r = await listAlerts(); setItems(r.items); setLoading(false); }, []);
+  const load = useCallback(async () => {
+    const [r, act] = await Promise.all([listAlerts(), alertActivity()]);
+    setItems(r.items); setActivity(act); setLoading(false);
+  }, []);
   useEffect(() => { if (enabled) load(); }, [enabled, load]);
 
   if (!enabled) return <ScreenScaffold title={t('mandi.alerts.title')}><EmptyState title={t('common.unavailable')} /></ScreenScaffold>;
@@ -82,11 +86,10 @@ export default function MandiAlerts() {
               {/* Stats header */}
               <View style={styles.statsRow}>
                 <Stat value={String(stats.active)} label={t('mandi.alerts.statActive')} tone="primary" />
-                <Stat value="—" label={t('mandi.alerts.statTriggeredToday')} />
-                <Stat value="—" label={t('mandi.alerts.statThisWeek')} />
+                <Stat value={activity ? String(activity.triggeredToday) : '—'} label={t('mandi.alerts.statTriggeredToday')} />
+                <Stat value={activity ? String(activity.triggeredThisWeek) : '—'} label={t('mandi.alerts.statThisWeek')} />
                 <Stat value={t('mandi.alerts.smsFree')} label={t('mandi.alerts.statSms')} />
               </View>
-              <Text style={styles.gapNote}>{t('mandi.alerts.triggeredSoon')}</Text>
 
               <View style={styles.listHead}>
                 <Text style={styles.section}>{t('mandi.alerts.activeTitle')}</Text>

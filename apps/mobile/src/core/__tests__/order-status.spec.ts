@@ -1,7 +1,25 @@
 // Unit tests for the PURE order/shipment status logic (features/orders/order-status). No React/native deps
 // (ui PillTone is type-only). This is the navigation-only action map that mirrors the server state machine — the
 // server remains the authority, so these tests pin the UX surface, not security.
-import { orderStatusTone, nextActions, isValidPodOtp, trackingSteps, TRACKING_SEQUENCE, matchesOrderFilter, orderProgress, orderListCta, orderTimeline, orderBannerKey, ORDER_TIMELINE_STEPS, sellerOrderTab, matchesSellerTab, sellerOrderStats, sellerNetMinor, decisionMinutesLeft, buyerOrderTab, matchesBuyerTab, buyerOrderCounts, counterpartyLabel } from '../../features/orders/order-status';
+import { orderStatusTone, nextActions, isValidPodOtp, trackingSteps, TRACKING_SEQUENCE, matchesOrderFilter, orderProgress, orderListCta, orderTimeline, orderBannerKey, ORDER_TIMELINE_STEPS, sellerOrderTab, matchesSellerTab, sellerOrderStats, sellerNetMinor, decisionMinutesLeft, buyerOrderTab, matchesBuyerTab, buyerOrderCounts, counterpartyLabel, moreItemsCount, businessTypeKey } from '../../features/orders/order-status';
+
+describe('P1-2 seller decision + received context helpers', () => {
+  it('moreItemsCount = itemCount-1 when >1, else 0 (and safe on null/undefined)', () => {
+    expect(moreItemsCount(3)).toBe(2);
+    expect(moreItemsCount(1)).toBe(0);
+    expect(moreItemsCount(0)).toBe(0);
+    expect(moreItemsCount(null)).toBe(0);
+    expect(moreItemsCount(undefined)).toBe(0);
+  });
+  it('businessTypeKey maps known verified types to an i18n key, unknown/absent → null (§13)', () => {
+    expect(businessTypeKey('pvt_ltd')).toBe('orderDecision.bizType.pvt_ltd');
+    expect(businessTypeKey('fpo')).toBe('orderDecision.bizType.fpo');
+    expect(businessTypeKey('other')).toBe('orderDecision.bizType.other');
+    expect(businessTypeKey('not_a_type')).toBeNull();
+    expect(businessTypeKey(null)).toBeNull();
+    expect(businessTypeKey(undefined)).toBeNull();
+  });
+});
 
 describe('counterpartyLabel (screen 22 — never render a raw userId)', () => {
   it('returns null for a raw UUID counterparty (so the card falls back to the order #)', () => {

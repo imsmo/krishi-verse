@@ -29,6 +29,23 @@ export class PriceAlertRepository {
     const p = a.toProps();
     await tx.query(`UPDATE price_alerts SET is_active=$3, updated_at=now() WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`, [p.id, p.tenantId, p.isActive]);
   }
+  /** Append a trigger-log row IN the ingest tx (Law 4), alongside the PriceAlertTriggered outbox event. */
+  async insertTrigger(tx: TxContext, row: { tenantId: string; alertId: string; userId: string; productId: string; regionId: string | null; direction: string; modalMinor: bigint; thresholdMinor: bigint }): Promise<void> {
+    await tx.query(
+      `INSERT INTO price_alert_triggers (tenant_id, alert_id, user_id, product_id, region_id, direction, modal_minor, threshold_minor, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$3)`,
+      [row.tenantId, row.alertId, row.userId, row.productId, row.regionId, row.direction, row.modalMinor.toString(), row.thresholdMinor.toString()]);
+  }
+  /** Per-user trigger counts: today (since midnight) + last 7 days. Bounded index scan; no PII. */
+  async triggerCounts(tenantId: string, userId: string): Promise<{ today: number; thisWeek: number }> {
+    const r = await this.replica.forTenant(tenantId).query<{ today: string; week: string }>(
+      `SELECT
+         count(*) FILTER (WHERE triggered_at >= date_trunc('day', now())) AS today,
+         count(*) FILTER (WHERE triggered_at >= now() - interval '7 days') AS week
+       FROM price_alert_triggers WHERE tenant_id=$1 AND user_id=$2 AND deleted_at IS NULL`, [tenantId, userId]);
+    const row = r.rows[0];
+    return { today: row ? Number(row.today) : 0, thisWeek: row ? Number(row.week) : 0 };
+  }
   /** Active alerts for a product, region matching (or alert region unset). Bounded — evaluated per ingest. */
   async matchActive(tx: TxContext, tenantId: string, productId: string, regionId: string | null, max = 500): Promise<PriceAlert[]> {
     const params: unknown[] = [tenantId, productId]; let where = `tenant_id=$1 AND product_id=$2 AND is_active=true AND deleted_at IS NULL`;

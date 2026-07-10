@@ -23,4 +23,9 @@ export class ShipmentsResource {
   async deliver(id: string, input: { otp: string; podMediaId?: string }, idempotencyKey: string): Promise<Shipment> {
     return (await this.http.request<Shipment>('POST', `shipments/${encodeURIComponent(id)}/deliver`, { idempotencyKey, body: input })).data;
   }
+  /** Assigned rider (or manager) posts a live GPS ping (lat/lng + optional note) → appends a tracking point
+   *  to the shipment timeline (no status change). Server enforces rider/manager authorization. */
+  async postLocation(id: string, loc: { lat: number; lng: number; note?: string }): Promise<{ ok: boolean }> {
+    return (await this.http.request<{ ok: boolean }>('POST', `shipments/${encodeURIComponent(id)}/location`, { body: loc })).data;
+  }
 }

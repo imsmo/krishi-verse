@@ -32,6 +32,7 @@ import { LessonProgressRepository } from './repositories/lesson-progress.reposit
 import { LearningChannelRepository } from './repositories/learning-channel.repository';
 import { LearningResourceRepository } from './repositories/learning-resource.repository';
 import { LiveSessionRepository } from './repositories/live-session.repository';
+import { CropCalendarReadModel } from './read-models/crop-calendar.read-model';
 import { streamProviderProvider } from './gateway/stream.provider';
 
 @Module({
@@ -41,6 +42,7 @@ import { streamProviderProvider } from './gateway/stream.provider';
     LearningChannelService, LearningResourceService, LiveSessionService,
     InstructorRepository, CourseRepository, CourseLessonRepository, EnrollmentRepository, LessonProgressRepository,
     LearningChannelRepository, LearningResourceRepository, LiveSessionRepository,
+    CropCalendarReadModel,
     streamProviderProvider,
   ],
   exports: [CourseService, EnrollmentService, LearningChannelService, LiveSessionService],

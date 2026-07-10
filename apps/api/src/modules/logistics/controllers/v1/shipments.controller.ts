@@ -13,7 +13,7 @@ import { RequestContext } from '../../../../core/tenancy-context/request-context
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { ShipmentService } from '../../services/shipment.service';
 import { CreateShipmentSchema, CreateShipmentDto } from '../../dto/create-shipment.dto';
-import { AssignShipmentSchema, AssignShipmentDto, SchedulePickupSchema, SchedulePickupDto, DeliverShipmentSchema, DeliverShipmentDto, FailShipmentSchema, FailShipmentDto } from '../../dto/update-shipment.dto';
+import { AssignShipmentSchema, AssignShipmentDto, SchedulePickupSchema, SchedulePickupDto, DeliverShipmentSchema, DeliverShipmentDto, FailShipmentSchema, FailShipmentDto, ShipmentLocationSchema, ShipmentLocationDto } from '../../dto/update-shipment.dto';
 import { QueryShipmentsSchema, QueryShipmentsDto } from '../../dto/query-shipment.dto';
 import { ShipmentPermissions, canManageLogistics } from '../../policies/logistics.policies';
 
@@ -65,6 +65,10 @@ export class ShipmentsController {
   @Post(':id/fail')
   fail(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(FailShipmentSchema) dto: FailShipmentDto) {
     return this.shipments.markFailed(ctx.tenantId, this.actor(ctx), id, dto, ipOf(r)).then((data) => ({ data }));
+  }
+  @Post(':id/location')
+  location(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(ShipmentLocationSchema) dto: ShipmentLocationDto) {
+    return this.shipments.postLocation(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data }));
   }
   @Post(':id/cancel') @RequirePermissions(ShipmentPermissions.Manage)
   cancel(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) { return this.shipments.cancel(ctx.tenantId, this.actor(ctx), id, ipOf(r)).then((data) => ({ data })); }

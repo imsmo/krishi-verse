@@ -11,7 +11,7 @@ const PERIOD_DAYS: Record<TrendPeriod, number> = { '1W': 7, '1M': 30, '3M': 90, 
 function big(v: string): bigint { try { return BigInt(v); } catch { return 0n; } }
 
 /** History sorted newest-first (does not mutate input). Pure. */
-export function sortedDesc(history: readonly HistoryRow[]): HistoryRow[] {
+export function sortedDesc<T extends HistoryRow>(history: readonly T[]): T[] {
   return [...history].sort((a, b) => new Date(b.priceDate).getTime() - new Date(a.priceDate).getTime());
 }
 

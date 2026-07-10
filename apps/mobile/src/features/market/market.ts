@@ -75,6 +75,36 @@ export function historyTrendPct(history: Pick<MandiPrice, 'modalMinor'>[]): numb
   return priceChangePct(history[1].modalMinor, history[0].modalMinor);
 }
 
+/** Server-computed day-over-day Δ in basis points → percent rounded to 1 dp (display only). The server is the
+ * authority on the actual previous day (P1-3 pulse.change); this only formats it. Null passes through. */
+export function bpsToPct(bps: number | null | undefined): number | null {
+  if (bps == null || !Number.isFinite(bps)) return null;
+  return Math.round(bps / 10) / 10;
+}
+
+// --- forecast extended metrics (P1-4) — all inputs are real provider numbers; presentation only, no fabrication ---
+/** Short hour label for an ISO time (e.g. '3 PM'); falls back to the raw string on parse failure. Pure. */
+export function hourLabel(iso: string, lang: string = 'en'): string {
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return iso;
+  return new Date(t).toLocaleTimeString(lang === 'en' ? 'en-IN' : lang === 'gu' ? 'gu-IN' : 'hi-IN', { hour: 'numeric' });
+}
+/** WHO UV-index band → i18n key suffix (`weather.uvBand.<key>`), or null when UV is unavailable (§13, never faked). */
+export function uvBand(uv: number | null | undefined): 'low' | 'moderate' | 'high' | 'veryHigh' | 'extreme' | null {
+  if (uv == null || !Number.isFinite(uv)) return null;
+  if (uv < 3) return 'low';
+  if (uv < 6) return 'moderate';
+  if (uv < 8) return 'high';
+  if (uv < 11) return 'veryHigh';
+  return 'extreme';
+}
+/** Wind bearing (deg) → 8-point compass code, or null when absent. Pure. */
+export function windCompass(deg: number | null | undefined): 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW' | null {
+  if (deg == null || !Number.isFinite(deg)) return null;
+  const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const;
+  return dirs[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
+}
+
 // --- forecast (P0-12) ---
 /** A short weekday label for a forecast day's ISO date (e.g. 'Wed'); falls back to the raw date on parse failure. */
 export function forecastDayLabel(day: Pick<ForecastDay, 'date'>): string {
@@ -86,8 +116,8 @@ export function forecastDaySummary(day: ForecastDay): string {
   return `${Math.round(day.tempMinC)}–${Math.round(day.tempMaxC)}°C · ${day.precipProbPct}%`;
 }
 
-/** Active/total counts for the price-alerts dashboard header. Pure — triggered-today / this-week counts need a
- * trigger-history read-model the contract doesn't expose yet (§13), so the screen degrades those to "—". */
+/** Active/total counts for the price-alerts dashboard header. Pure. (Triggered-today / this-week counts are now
+ * served by market.alertActivity — P1-3 — so the screen shows real numbers, not "—".) */
 export function alertSummary(alerts: readonly Pick<PriceAlert, 'isActive'>[]): { active: number; total: number } {
   let active = 0;
   for (const a of alerts) if (a.isActive) active++;

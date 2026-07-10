@@ -42,8 +42,12 @@ export class MandiPriceService {
           for (const alert of await this.alerts.matchActive(tx, tenantId, price.productId, price.regionId)) {
             if (!alert.isCrossedBy(price.modalMinor)) continue;
             fired++;
+            const ap = alert.toProps();
             await this.outbox.write(tx, { tenantId, aggregateType: 'price_alert', aggregateId: alert.id, eventType: MarketEventType.PriceAlertTriggered,
-              payload: { v: 1, alertId: alert.id, userId: alert.userId, productId: price.productId, modalMinor: price.modalMinor.toString(), thresholdMinor: alert.toProps().thresholdMinor.toString(), direction: alert.toProps().direction } });
+              payload: { v: 1, alertId: alert.id, userId: alert.userId, productId: price.productId, modalMinor: price.modalMinor.toString(), thresholdMinor: ap.thresholdMinor.toString(), direction: ap.direction } });
+            // Append the trigger-log row IN this tx (Law 4) so the per-user "triggered today/this week" count (P1-3)
+            // can never drift from the fired events.
+            await this.alerts.insertTrigger(tx, { tenantId, alertId: alert.id, userId: alert.userId, productId: price.productId, regionId: price.regionId, direction: ap.direction, modalMinor: price.modalMinor, thresholdMinor: ap.thresholdMinor });
           }
           this.metrics.inc('market.alerts.fired', { tenant: tenantId }, fired);
           return { ...price.toJSON(), alertsFired: fired };

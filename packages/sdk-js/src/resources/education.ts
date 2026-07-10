@@ -3,7 +3,7 @@
 // lesson PROGRESS (seconds watched + quiz score + completed). Enrollments/progress are the caller's OWN (server
 // resolves the learner — no IDOR). Money is bigint minor strings (Law 2). Gated server-side by the `education` flag.
 import { HttpClient } from '../http';
-import { Course, CourseLesson, Enrollment, LessonProgress, LearningResource, ResourceKind, Page } from '../types';
+import { Course, CourseLesson, Enrollment, LessonProgress, LearningResource, ResourceKind, CropCalendar, Page } from '../types';
 
 export class CoursesResource {
   constructor(private readonly http: HttpClient) {}
@@ -53,5 +53,9 @@ export class ResourcesResource {
   async list(params: { kind?: ResourceKind; topicId?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<LearningResource>> {
     const r = await this.http.request<LearningResource[]>('GET', 'education/resources', { query: { box: 'browse', kind: params.kind, topicId: params.topicId, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  /** Editorial crop-agronomy calendars (P1-5): reference growth-stage timelines by crop/season/region (read-only). */
+  async cropCalendars(params: { crop?: string; season?: string; regionId?: string; limit?: number } = {}, signal?: AbortSignal): Promise<CropCalendar[]> {
+    return (await this.http.request<CropCalendar[]>('GET', 'education/resources/crop-calendars', { query: { crop: params.crop, season: params.season, regionId: params.regionId, limit: params.limit }, signal })).data;
   }
 }

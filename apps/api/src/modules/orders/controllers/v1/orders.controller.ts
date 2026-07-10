@@ -12,6 +12,8 @@ import { OrderPaymentService } from '../../services/order-payment.service';
 import { OrderItemService } from '../../services/order-item.service';
 import { CheckoutGroupService } from '../../services/checkout-group.service';
 import { OrderTimelineReadModel } from '../../read-models/order-timeline.read-model';
+import { OrderTrackingReadModel } from '../../read-models/order-tracking.read-model';
+import { OrderBuyerSummaryReadModel } from '../../read-models/order-buyer-summary.read-model';
 import { TenantOrderStatsReadModel } from '../../read-models/tenant-order-stats.read-model';
 import { QueryOrderSchema, QueryOrderDto } from '../../dto/query-order.dto';
 import { CancelOrderSchema, CancelOrderDto, DisputeOrderSchema, DisputeOrderDto } from '../../dto/update-order.dto';
@@ -27,6 +29,8 @@ export class OrdersController {
     private readonly orders: OrderService,
     private readonly orderPay: OrderPaymentService,
     private readonly timeline: OrderTimelineReadModel,
+    private readonly tracking: OrderTrackingReadModel,
+    private readonly buyerSummary: OrderBuyerSummaryReadModel,
     private readonly orderItems: OrderItemService,
     private readonly groups: CheckoutGroupService,
     private readonly stats: TenantOrderStatsReadModel,
@@ -55,6 +59,11 @@ export class OrdersController {
 
   /** An order's frozen line items (buyer/seller/moderator). */
   @Get(':id/items') items(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.orderItems.listForOrder(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
+  /** Order-tracking feed (buyer/seller/moderator): stamped order-status transitions + the shipment's
+   *  status/location timeline (real per-step timestamps; lat/lng when a rider has posted one). */
+  @Get(':id/tracking') trackingFeed(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.tracking.tracking(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
+  /** Buyer trust summary for the seller's accept/reject decision (seller/moderator only). */
+  @Get(':id/buyer-summary') buyerSummaryFor(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.buyerSummary.forOrder(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
   /** Seller records the delivered quantity for one line (partial fulfilment). */
   @Post(':id/items/:listingId/delivered') @RequirePermissions(OrderPermissions.Manage)
   recordDelivered(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Param('listingId') listingId: string, @ZodBody(RecordDeliveredItemSchema) dto: RecordDeliveredItemDto) {

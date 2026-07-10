@@ -11,6 +11,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CACHE_SERVICE, CacheService } from '../../../core/cache/cache.service';
 import { AppConfig } from '../../../core/config/app-config';
 import { WEATHER_FORECAST, WeatherForecastProvider, NormalisedForecast } from '../gateway/weather-forecast.port';
+import { REVERSE_GEOCODE, ReverseGeocodeProvider } from '../gateway/reverse-geocode.port';
 import { WeatherAlertService } from './weather-alert.service';
 import { areValidCoords, forecastCacheKey } from '../domain/forecast';
 import { InvalidCoordinatesError, WeatherProviderUnavailableError } from '../domain/land-soil-weather.errors';
@@ -28,6 +29,7 @@ export class ForecastService {
   private readonly log = new Logger('ForecastService');
   constructor(
     @Inject(WEATHER_FORECAST) private readonly provider: WeatherForecastProvider,
+    @Inject(REVERSE_GEOCODE) private readonly geocoder: ReverseGeocodeProvider,
     @Inject(CACHE_SERVICE) private readonly cache: CacheService,
     private readonly config: AppConfig,
     private readonly advisories: WeatherAlertService,
@@ -44,6 +46,9 @@ export class ForecastService {
 
     try {
       const fc = await this.provider.fetch({ lat: q.lat, lng: q.lng, days });
+      // Best-effort reverse-geocode the header place-name (P1-4). Never blocks or fails the forecast — a provider
+      // error resolves to null and the header shows a generic label (never a fabricated place). Cached with the fc.
+      fc.placeName = await this.geocoder.reverse(q.lat, q.lng).catch(() => null);
       await this.cache.set(key, fc, cfg.cacheTtlSec);   // cache only successes (never an error)
       return { degraded: false, source: 'forecast', providerCode: fc.providerCode, forecast: fc, advisories: [] };
     } catch (e) {

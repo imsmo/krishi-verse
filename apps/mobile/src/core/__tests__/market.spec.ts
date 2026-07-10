@@ -4,12 +4,47 @@
 import {
   priceChangePct, changeTone, changeArrow, rupeesToThresholdMinor, buildAlertDraft,
   alertTone, weatherSeverityTone, isAdvisoryActive, historyTrendPct,
-  weatherEmoji, weatherConditionKey, pickPrimaryAdvisory, alertSummary,
+  weatherEmoji, weatherConditionKey, pickPrimaryAdvisory, alertSummary, bpsToPct, uvBand, windCompass,
 } from '../../features/market/market';
 import type { MandiPrice, WeatherAlert } from '@krishi-verse/sdk-js';
 
+describe('uvBand', () => {
+  it('maps WHO UV bands; null when absent', () => {
+    expect(uvBand(0)).toBe('low');
+    expect(uvBand(2.9)).toBe('low');
+    expect(uvBand(3)).toBe('moderate');
+    expect(uvBand(6)).toBe('high');
+    expect(uvBand(8)).toBe('veryHigh');
+    expect(uvBand(11)).toBe('extreme');
+    expect(uvBand(null)).toBeNull();
+    expect(uvBand(undefined)).toBeNull();
+  });
+});
+
+describe('windCompass', () => {
+  it('maps bearing to 8-point compass; wraps; null when absent', () => {
+    expect(windCompass(0)).toBe('N');
+    expect(windCompass(45)).toBe('NE');
+    expect(windCompass(90)).toBe('E');
+    expect(windCompass(200)).toBe('S');
+    expect(windCompass(360)).toBe('N');
+    expect(windCompass(-45)).toBe('NW');
+    expect(windCompass(null)).toBeNull();
+  });
+});
+
+describe('bpsToPct', () => {
+  it('converts server basis points to a 1dp percent; null passes through', () => {
+    expect(bpsToPct(250)).toBe(2.5);
+    expect(bpsToPct(-1234)).toBe(-12.3);
+    expect(bpsToPct(0)).toBe(0);
+    expect(bpsToPct(null)).toBeNull();
+    expect(bpsToPct(undefined)).toBeNull();
+  });
+});
+
 describe('alertSummary', () => {
-  it('counts active and total (triggered counts are §13 — not derivable here)', () => {
+  it('counts active and total (triggered counts now served by alertActivity, P1-3)', () => {
     expect(alertSummary([{ isActive: true }, { isActive: false }, { isActive: true }])).toEqual({ active: 2, total: 3 });
     expect(alertSummary([])).toEqual({ active: 0, total: 0 });
   });

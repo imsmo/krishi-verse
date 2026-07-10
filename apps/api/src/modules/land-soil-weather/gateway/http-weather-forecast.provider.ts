@@ -7,7 +7,7 @@ import { Logger } from '@nestjs/common';
 import { ResilienceService } from '../../../core/resilience/resilience.service';
 import { WeatherForecastProvider, ForecastQuery, NormalisedForecast } from './weather-forecast.port';
 import { WeatherProviderUnavailableError } from '../domain/land-soil-weather.errors';
-import { normaliseOpenMeteoDaily, gridRound } from '../domain/forecast';
+import { normaliseOpenMeteoDaily, normaliseOpenMeteoHourly, gridRound } from '../domain/forecast';
 
 const DEP = 'weather-forecast';
 
@@ -25,16 +25,18 @@ export class HttpWeatherForecastProvider implements WeatherForecastProvider {
     const lat = gridRound(q.lat), lng = gridRound(q.lng);
     return this.resilience.run<NormalisedForecast>(DEP, async () => {
       const base = this.cfg.baseUrl.replace(/\/$/, '');
-      const daily = 'temperature_2m_min,temperature_2m_max,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,weather_code';
-      const url = `${base}/v1/forecast?latitude=${lat}&longitude=${lng}&daily=${daily}&forecast_days=${days}&timezone=auto`;
+      const daily = 'temperature_2m_min,temperature_2m_max,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,weather_code,apparent_temperature_min,apparent_temperature_max,uv_index_max,wind_direction_10m_dominant,sunrise,sunset';
+      const hourly = 'temperature_2m,apparent_temperature,relative_humidity_2m,precipitation_probability,weather_code,surface_pressure,wind_speed_10m,uv_index';
+      const url = `${base}/v1/forecast?latitude=${lat}&longitude=${lng}&daily=${daily}&hourly=${hourly}&forecast_days=${days}&timezone=auto`;
       const headers: Record<string, string> = { accept: 'application/json' };
       if (this.cfg.apiKey) headers.authorization = `Bearer ${this.cfg.apiKey}`;   // aggregators that need a key
       const res = await fetch(url, { headers });
       if (!res.ok) throw new Error(`weather provider responded ${res.status}`);   // transient → retry → fallback throws
-      const out = (await res.json().catch(() => ({}))) as { daily?: any };
+      const out = (await res.json().catch(() => ({}))) as { daily?: any; hourly?: any };
       const fcDays = normaliseOpenMeteoDaily(out.daily ?? {});
       if (fcDays.length === 0) throw new Error('weather provider returned no days');
-      return { lat, lng, providerCode: this.providerCode, fetchedAt: new Date().toISOString(), days: fcDays };
+      const fcHours = normaliseOpenMeteoHourly(out.hourly ?? {});   // next ~24h (bounded); [] when provider omits hourly
+      return { lat, lng, providerCode: this.providerCode, fetchedAt: new Date().toISOString(), days: fcDays, hours: fcHours };
     }, {
       // GETs are safe to retry; on exhaustion surface a typed 503 — the service degrades to advisory, never fakes.
       fallback: () => { this.log.warn(`weather provider unavailable for ${lat},${lng}`); throw new WeatherProviderUnavailableError(); },

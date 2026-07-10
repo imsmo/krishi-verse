@@ -267,6 +267,10 @@ export class AppConfig {
     // noop/degrade adapter (always falls back to regional advisory — a forecast is never fabricated).
     const kind = (this.env.WEATHER_PROVIDER_KIND || 'open-meteo').toLowerCase();
     const baseUrl = this.env.WEATHER_PROVIDER_URL || (kind === 'open-meteo' ? 'https://api.open-meteo.com' : '');
+    // P1-4: reverse-geocoder for the header place-name (BigDataCloud public endpoint by default — free, no key).
+    // Best-effort: `enabled` ⇒ bind the HTTP adapter; otherwise the noop (returns null → generic "your area").
+    const geocodeKind = (this.env.WEATHER_GEOCODE_KIND || 'bigdatacloud').toLowerCase();
+    const geocodeUrl = this.env.WEATHER_GEOCODE_URL || (geocodeKind === 'bigdatacloud' ? 'https://api.bigdatacloud.net' : '');
     return {
       kind,
       enabled: kind !== 'none' && !!baseUrl,
@@ -274,6 +278,12 @@ export class AppConfig {
       apiKey: this.env.WEATHER_PROVIDER_API_KEY || '',
       cacheTtlSec: this.env.WEATHER_CACHE_TTL_SEC,   // forecast cache TTL (cost/rate-limit control)
       forecastDays: this.env.WEATHER_FORECAST_DAYS,
+      geocode: {
+        kind: geocodeKind,
+        enabled: geocodeKind !== 'none' && !!geocodeUrl,
+        baseUrl: geocodeUrl,
+        apiKey: this.env.WEATHER_GEOCODE_API_KEY || '',
+      },
     };
   }
   get assistant() {

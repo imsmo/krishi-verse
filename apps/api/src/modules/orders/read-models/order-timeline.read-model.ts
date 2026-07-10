@@ -17,7 +17,19 @@ export class OrderTimelineReadModel {
     const rows = await this.repo.listFor(tenantId, q.role, userId, { status: q.status, cursor, limit: q.limit + 1 });
     const hasMore = rows.length > q.limit;
     const page = hasMore ? rows.slice(0, q.limit) : rows;
-    const items = page.map((o) => { const p = o.toProps(); return { id: p.id, orderNo: p.orderNo, status: p.status, totalMinor: p.totalMinor.toString(), counterparty: q.role === 'buyer' ? p.sellerUserId : p.buyerUserId, createdAt: p.createdAt }; });
+    // Enrich each card with its PRIMARY line item (crop title + qty) + total item count (screen 56 seller list /
+    // screen 22 buyer list). One bounded, partition-pruned batch read for the whole page; degrades to no-item.
+    const primary = await this.repo.primaryItemsFor(tenantId, page.map((o) => { const p = o.toProps(); return { id: p.id, createdAt: p.createdAt }; }));
+    const items = page.map((o) => {
+      const p = o.toProps();
+      const pi = primary.get(p.id) ?? null;
+      return {
+        id: p.id, orderNo: p.orderNo, status: p.status, totalMinor: p.totalMinor.toString(),
+        counterparty: q.role === 'buyer' ? p.sellerUserId : p.buyerUserId, createdAt: p.createdAt,
+        primaryItem: pi ? { title: pi.title, quantity: pi.quantity, unitCode: pi.unitCode } : null,
+        itemCount: pi ? pi.itemCount : 0,
+      };
+    });
     const last = page[page.length - 1];
     const nextCursor = hasMore && last ? enc(JSON.stringify({ c: new Date(last.toProps().createdAt).toISOString(), id: last.id })) : null;
     return { items, nextCursor };

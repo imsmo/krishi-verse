@@ -124,6 +124,36 @@ export class OrderRepository {
     return r.rows.map(toDomain);
   }
 
+  /** The PRIMARY line item (first by creation) + total item count for a page of orders — enriches the order-list
+   *  read-model with a crop title + qty (screen 56). `refs` carry each order's createdAt so we bound the scan to
+   *  the page's partition window (Law 8) instead of scanning every order_items partition. Bounded by the page. */
+  async primaryItemsFor(tenantId: string, refs: { id: string; createdAt: Date | string }[]): Promise<Map<string, { title: string; quantity: number; unitCode: string; itemCount: number }>> {
+    const out = new Map<string, { title: string; quantity: number; unitCode: string; itemCount: number }>();
+    if (refs.length === 0) return out;
+    const ids = refs.map((r) => r.id);
+    const minCreated = refs.reduce((m, r) => { const d = new Date(r.createdAt); return d < m ? d : m; }, new Date(refs[0].createdAt));
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT order_id, title_snapshot, quantity::float8 AS quantity, unit_code, cnt FROM (
+         SELECT order_id, title_snapshot, quantity, unit_code,
+           row_number() OVER (PARTITION BY order_id ORDER BY created_at ASC, id ASC) AS rn,
+           count(*)     OVER (PARTITION BY order_id) AS cnt
+         FROM order_items
+         WHERE tenant_id=$1 AND order_id = ANY($2) AND order_created_at >= $3 - interval '5 seconds'
+       ) s WHERE rn = 1`,
+      [tenantId, ids, minCreated]);
+    for (const row of r.rows) out.set(row.order_id, { title: row.title_snapshot, quantity: Number(row.quantity), unitCode: row.unit_code, itemCount: Number(row.cnt) });
+    return out;
+  }
+
+  /** Buyer trust summary for the seller's accept/reject decision (screen 57): how many orders this buyer has
+   *  placed (total + completed) in this tenant. tenant-scoped counts only — no PII. */
+  async buyerOrderCounts(tenantId: string, buyerUserId: string): Promise<{ ordersAsBuyer: number; completedAsBuyer: number }> {
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT count(*)::int AS total, count(*) FILTER (WHERE status='completed')::int AS completed
+         FROM orders WHERE tenant_id=$1 AND buyer_user_id=$2`, [tenantId, buyerUserId]);
+    return { ordersAsBuyer: r.rows[0]?.total ?? 0, completedAsBuyer: r.rows[0]?.completed ?? 0 };
+  }
+
   async itemsOf(tenantId: string, orderId: string): Promise<any[]> {
     const r = await this.replica.forTenant(tenantId).query(
       `SELECT listing_id, product_id, title_snapshot, quantity, delivered_quantity, unit_code, unit_price_minor, line_total_minor, gst_rate_pct, batch_id

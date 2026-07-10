@@ -4,7 +4,7 @@
 // text search (ReDoS-safe plain includes), kind grouping/labels, saved-tips set math, and assistant input
 // validation. Saved tips are DEVICE-LOCAL bookmarks (no server endpoint yet — flagged); we keep tiny snapshots.
 import type { PillTone } from '@krishi-verse/ui-native';
-import type { LearningResource, ResourceKind } from '@krishi-verse/sdk-js';
+import type { LearningResource, ResourceKind, CropCalendar, CropCalendarStage } from '@krishi-verse/sdk-js';
 
 /** The resource kinds we surface, in display order (a "category" is a kind — there's no topic-name endpoint). */
 export const RESOURCE_KINDS: ResourceKind[] = ['article', 'video', 'blog', 'post', 'audio'];
@@ -23,10 +23,61 @@ export function kindTone(kind: string): PillTone {
   }
 }
 
-/** The design's topic-category chips (screen 55). Only 'all' is satisfiable today — the resource read-model
- * carries a topicId (uuid) but NO topic NAME/slug, so the named categories await a topic taxonomy (§13). Pure. */
+/** Legacy fixed vocab (kept for back-compat / tests). The live topic chips are now built dynamically from the
+ * SERVER-resolved `topicName` on each resource (see distinctTopics) — no longer a §13 gap. Pure. */
 export const TIP_CATEGORIES = ['all', 'crops', 'pest', 'soil', 'market'] as const;
 export type TipCategory = (typeof TIP_CATEGORIES)[number];
+
+/** A topic chip for the tips library (screen 55). `id` is null for the synthetic "All" chip. Pure. */
+export interface TopicChip { id: string | null; name: string }
+/** Build the topic-category chips from the page's REAL, server-resolved topic names (P1-5). Only topics that
+ * actually resolved to a name appear (unknown/absent → not shown; never fabricated). "All" is prepended.
+ * Deduped by topicId, ordered by first appearance so the chips are stable. Pure. */
+export function distinctTopics<T extends Pick<LearningResource, 'topicId' | 'topicName'>>(items: T[], allLabel: string): TopicChip[] {
+  const seen = new Set<string>();
+  const chips: TopicChip[] = [{ id: null, name: allLabel }];
+  for (const r of items) {
+    const id = r.topicId; const name = r.topicName;
+    if (id && name && !seen.has(id)) { seen.add(id); chips.push({ id, name }); }
+  }
+  return chips;
+}
+/** Filter tips by a selected topic id (null ⇒ all). Pure; stable order preserved. */
+export function filterByTopic<T extends Pick<LearningResource, 'topicId'>>(items: T[], topicId: string | null): T[] {
+  if (!topicId) return items;
+  return items.filter((r) => r.topicId === topicId);
+}
+
+// --- crop-agronomy calendars (P1-5, screen 104) — editorial reference timelines, never personalised (§13) ---
+/** The four agronomy seasons, in display order. */
+export const CROP_SEASONS = ['kharif', 'rabi', 'zaid', 'perennial'] as const;
+/** i18n key for a season label → `content.cropHub.season.<s>`. Unknown → the raw value's key ('other'). Pure. */
+export function seasonLabelKey(season: string | null | undefined): string {
+  const s = (season ?? '').toLowerCase();
+  return (CROP_SEASONS as readonly string[]).includes(s) ? `content.cropHub.season.${s}` : 'content.cropHub.season.other';
+}
+/** Order a calendar's stages by their day window (dayFrom, then dayTo). Pure; does not mutate the input. */
+export function sortStages(stages: CropCalendarStage[]): CropCalendarStage[] {
+  return [...stages].sort((a, b) => (a.dayFrom - b.dayFrom) || (a.dayTo - b.dayTo));
+}
+/** A "day X–Y" window label for a stage (both days from the stored editorial content — not derived from a date). */
+export function stageDayLabel(stage: Pick<CropCalendarStage, 'dayFrom' | 'dayTo'>): string {
+  const from = Math.max(0, Math.round(stage.dayFrom));
+  const to = Math.max(from, Math.round(stage.dayTo));
+  return from === to ? `${from}` : `${from}–${to}`;
+}
+/** A "min–max days" duration label for a calendar (both from stored content). Collapses when equal. Pure. */
+export function durationLabel(cal: Pick<CropCalendar, 'durationDaysMin' | 'durationDaysMax'>): string {
+  const min = Math.max(0, Math.round(cal.durationDaysMin));
+  const max = Math.max(min, Math.round(cal.durationDaysMax));
+  return min === max ? `${min}` : `${min}–${max}`;
+}
+/** Distinct crop names present across a set of calendars, in first-appearance order (for a crop picker). Pure. */
+export function cropNames<T extends Pick<CropCalendar, 'cropName'>>(cals: T[]): string[] {
+  const seen = new Set<string>(); const out: string[] = [];
+  for (const c of cals) { const n = (c.cropName ?? '').trim(); if (n && !seen.has(n)) { seen.add(n); out.push(n); } }
+  return out;
+}
 
 /** Estimated read time (minutes, ≥1) from a tip body at `wpm` words/minute — DERIVED from the real body text, not
  * a fabricated field. Empty/whitespace body → 1. Pure. */

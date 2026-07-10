@@ -19,20 +19,23 @@ import { CropSeasonService } from './services/crop-season.service';
 import { SoilTestService } from './services/soil-test.service';
 import { WeatherAlertService } from './services/weather-alert.service';
 import { ForecastService } from './services/forecast.service';
+import { WeatherPrefsService } from './services/weather-prefs.service';
 import { weatherForecastProvider } from './gateway/weather-forecast.provider';
+import { reverseGeocodeProvider } from './gateway/reverse-geocode.provider';
 import { WeatherAdvisoryPushJob } from './jobs/weather-advisory-push.job';
 import { LandParcelRepository } from './repositories/land-parcel.repository';
 import { CropSeasonRepository } from './repositories/crop-season.repository';
 import { SoilTestRepository } from './repositories/soil-test.repository';
 import { WeatherAlertRepository } from './repositories/weather-alert.repository';
+import { WeatherPrefsRepository } from './repositories/weather-prefs.repository';
 
 @Module({
   controllers: [ParcelsController, CropSeasonsController, SoilTestsController],
   providers: [
-    LandParcelService, CropSeasonService, SoilTestService, WeatherAlertService, ForecastService,
-    weatherForecastProvider, WeatherAdvisoryPushJob,
-    LandParcelRepository, CropSeasonRepository, SoilTestRepository, WeatherAlertRepository,
+    LandParcelService, CropSeasonService, SoilTestService, WeatherAlertService, ForecastService, WeatherPrefsService,
+    weatherForecastProvider, reverseGeocodeProvider, WeatherAdvisoryPushJob,
+    LandParcelRepository, CropSeasonRepository, SoilTestRepository, WeatherAlertRepository, WeatherPrefsRepository,
   ],
-  exports: [LandParcelService, CropSeasonService, SoilTestService, WeatherAlertService, ForecastService, WeatherAdvisoryPushJob],
+  exports: [LandParcelService, CropSeasonService, SoilTestService, WeatherAlertService, ForecastService, WeatherPrefsService, WeatherAdvisoryPushJob],
 })
 export class LandSoilWeatherModule {}

@@ -3,21 +3,21 @@
 // ReDoS-safe) + a thumbnail card carrying a kind glyph, kind tag, title, DERIVED read-time and the REAL content
 // language. Tap a tip for detail; links to saved tips + crop hub + the AI assistant + voice search.
 // Behind `tips_assistant`. Degrade-never-die.
-// §13 gaps (no contract → rendered honestly, never faked):
-//  • The design's topic tabs (Crops/Pest/Soil/Market) are TOPICS — the resource read-model carries a topicId
-//    (uuid) but NO topic NAME/slug, so only "All" is satisfiable. The other tabs are shown DISABLED with a
-//    footnote (never wired to a fake filter).
+// §13 (rendered honestly, never faked):
+//  • Topic chips are now REAL — the resource read-model carries the server-resolved topic NAME (P1-5), so the
+//    chips are built dynamically from the topics actually present on this page (+ an "All" chip). Topics that
+//    don't resolve to a name simply don't appear (never a fabricated label).
 //  • A per-tip VIEW COUNT ("2.4k views") has no contract on the resource read-model → omitted, never invented.
 //  • A thumbnail IMAGE isn't carried either → a kind glyph stands in (design's emoji thumb).
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
+import { View, Text, FlatList, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import type { LearningResource } from '@krishi-verse/sdk-js';
 import { Input, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { listTips } from '../../../features/content/content.api';
-import { searchResources, kindLabelKey, readTimeMinutes, languageLabelKey, TIP_CATEGORIES, type TipCategory } from '../../../features/content/content';
+import { searchResources, kindLabelKey, readTimeMinutes, languageLabelKey, distinctTopics, filterByTopic } from '../../../features/content/content';
 
 /** Design's emoji thumb stands in for the (absent) thumbnail image — chosen by resource kind. Pure. */
 function kindGlyph(kind: string): string {

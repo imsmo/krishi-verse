@@ -1,15 +1,24 @@
 // apps/mobile/src/features/market/mandi-list.ts · PURE helpers for the "Today's Mandi Prices" list (screen 52).
 // No React / no SDK — small derivations over the server's MandiPrice[] rows used by the screen + its unit tests.
-// NOTE (§13): the price read-model carries no commodity CATEGORY and no day-over-day CHANGE%, so the screen
-// renders the category chips disabled and omits the change badge rather than fabricating either. These helpers
-// only surface what the rows actually contain (latest date + the region/yard header).
+// P1-3: the price read-model now carries the commodity CATEGORY (categoryName), so the category chips are built
+// from the REAL distinct categories present in the loaded rows (never a hard-coded taxonomy) and filter live.
+// These helpers only surface what the rows actually contain (latest date, region/yard header, categories).
 
-export interface PriceRow { priceDate: string; regionName?: string | null }
+export interface PriceRow { priceDate: string; regionName?: string | null; categoryName?: string | null }
 
-/** The category chip codes the design shows. 'all' is the only one the current contract can satisfy; the rest are
- * rendered but disabled until the price read-model carries a category (§13). Pure constant. */
-export const MANDI_CATEGORIES = ['all', 'grains', 'pulses', 'vegetables', 'spices', 'cash_crops'] as const;
-export type MandiCategory = (typeof MANDI_CATEGORIES)[number];
+/** Distinct, non-empty commodity categories present in the rows (sorted) — the dynamic filter chips beyond "All".
+ * Pure; returns real catalogue names only, never a guessed taxonomy. */
+export function distinctCategories(rows: readonly { categoryName?: string | null }[]): string[] {
+  const set = new Set<string>();
+  for (const r of rows) { const c = (r.categoryName ?? '').trim(); if (c) set.add(c); }
+  return [...set].sort((a, b) => a.localeCompare(b));
+}
+
+/** Filter rows by a selected category name; the sentinel 'all' (or empty) returns every row. Pure. */
+export function filterByCategory<T extends { categoryName?: string | null }>(rows: readonly T[], category: string): T[] {
+  if (!category || category === 'all') return [...rows];
+  return rows.filter((r) => (r.categoryName ?? '') === category);
+}
 
 /** The most recent priceDate across the rows (ISO string) or null when there are none — drives the
  * "Updated … ago" header. Pure. */

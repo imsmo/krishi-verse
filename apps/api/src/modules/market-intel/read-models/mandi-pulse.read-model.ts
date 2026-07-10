@@ -6,6 +6,22 @@ import { MandiPriceRepository } from '../repositories/mandi-price.repository';
 import { PricePredictionRepository } from '../repositories/price-prediction.repository';
 import { MarketNamesReadModel, withNames } from './market-names.read-model';
 
+/** PURE (float-free): day-over-day change from the recent history (sorted price_date DESC). Compares the latest
+ *  modal to the modal of the most recent STRICTLY-EARLIER price_date. Δ in basis points = (latest−prev)/prev·10000
+ *  via bigint (truncated). Returns null when there is no earlier day or the previous modal is 0 (no fabrication). */
+export function dayOverDayChange(history: { priceDate: string; modalMinor: string }[]): { previousModalMinor: string; previousDate: string; changeMinor: string; changeBps: number } | null {
+  if (history.length < 2) return null;
+  const latest = history[0];
+  const prevRow = history.find((h) => h.priceDate < latest.priceDate);
+  if (!prevRow) return null;
+  const cur = BigInt(latest.modalMinor);
+  const prev = BigInt(prevRow.modalMinor);
+  if (prev === 0n) return null;
+  const diff = cur - prev;
+  const changeBps = Number((diff * 10000n) / prev);
+  return { previousModalMinor: prev.toString(), previousDate: prevRow.priceDate, changeMinor: diff.toString(), changeBps };
+}
+
 @Injectable()
 export class MandiPulseReadModel {
   constructor(
@@ -23,10 +39,13 @@ export class MandiPulseReadModel {
     const historyJson = history.map((h) => h.toJSON());
     const rows = [...(latestJson ? [latestJson] : []), ...(bandJson ? [bandJson] : []), ...historyJson];
     const maps = await this.names.resolve(tenantId, rows as any);
+    // Day-over-day Δ% from the loaded history (pure; null when there's no earlier day → rendered honestly).
+    const change = dayOverDayChange(historyJson.map((h: any) => ({ priceDate: h.priceDate, modalMinor: h.modalMinor })));
     return {
       latest: latestJson ? withNames(latestJson as any, maps) : null,
       band: bandJson ? withNames(bandJson as any, maps) : null,
       history: historyJson.map((h) => withNames(h as any, maps)),
+      change,
     };
   }
 }

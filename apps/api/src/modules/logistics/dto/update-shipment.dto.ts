@@ -24,3 +24,12 @@ export type DeliverShipmentDto = z.infer<typeof DeliverShipmentSchema>;
 
 export const FailShipmentSchema = z.object({ reason: z.string().min(1).max(500) }).strict();
 export type FailShipmentDto = z.infer<typeof FailShipmentSchema>;
+
+// rider location ping: append a lat/lng tracking point (no status change). Coordinates are validated
+// to real WGS84 ranges; a short optional note (e.g. "at Karjan checkpoint").
+export const ShipmentLocationSchema = z.object({
+  lat: z.coerce.number().min(-90).max(90),
+  lng: z.coerce.number().min(-180).max(180),
+  note: z.string().max(200).optional(),
+}).strict();
+export type ShipmentLocationDto = z.infer<typeof ShipmentLocationSchema>;

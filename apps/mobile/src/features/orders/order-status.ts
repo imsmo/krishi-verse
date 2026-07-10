@@ -215,13 +215,17 @@ function reachedStepIndex(status: string): number {
   }
 }
 
-/** Per-step real timestamps we actually hold (§13: the contract has NO transition log, so payment/seller/
- * out-for-delivery times are null — the UI shows the step without a fabricated time). */
+/** Per-step real timestamps. With the tracking feed (GET orders/:id/tracking) every order-status transition is
+ * stamped, so payment/seller/out-for-delivery times are now REAL when present; anything the feed doesn't carry
+ * stays null (§13 — the UI shows the step without a fabricated time). */
 export interface OrderTimelineTimestamps {
-  placed?: string | null;     // order.createdAt
-  ready?: string | null;      // shipment.pickedUpAt (closest real "ready/handover" time)
-  delivered?: string | null;  // shipment.deliveredAt
-  completed?: string | null;  // order.completedAt
+  placed?: string | null;
+  payment?: string | null;
+  seller?: string | null;
+  ready?: string | null;
+  out_for_delivery?: string | null;
+  delivered?: string | null;
+  completed?: string | null;
 }
 
 /** Build the detail-screen timeline from the REAL order status + whatever timestamps the contract provides.
@@ -232,8 +236,8 @@ export function orderTimeline(status: string, ts: OrderTimelineTimestamps = {}):
   const reached = reachedStepIndex(status);
   const last = ORDER_TIMELINE_STEPS.length - 1;
   const atFor: Record<OrderStepKey, string | null> = {
-    placed: ts.placed ?? null, payment: null, seller: null, ready: ts.ready ?? null,
-    out_for_delivery: null, delivered: ts.delivered ?? null, completed: ts.completed ?? null,
+    placed: ts.placed ?? null, payment: ts.payment ?? null, seller: ts.seller ?? null, ready: ts.ready ?? null,
+    out_for_delivery: ts.out_for_delivery ?? null, delivered: ts.delivered ?? null, completed: ts.completed ?? null,
   };
   return ORDER_TIMELINE_STEPS.map((key, i) => {
     // A cancelled/refunded order genuinely placed step 0 (done) then stopped — no active frontier; rest pending.
@@ -258,6 +262,66 @@ export function trackTimestamps(
     delivered: shipment?.deliveredAt ?? null,
     completed: order?.completedAt ?? null,
   };
+}
+
+// --- seller decision + received-list context (P1-2) ---
+/** How many ADDITIONAL line items beyond the primary one (drives a "+N more" hint on the received card). Pure. */
+export function moreItemsCount(itemCount: number | null | undefined): number {
+  return itemCount && itemCount > 1 ? itemCount - 1 : 0;
+}
+/** The known business-KYC types (mirrors the server CHECK). Anything else → no honest label (§13). */
+const BUSINESS_TYPES = new Set(['proprietorship', 'partnership', 'pvt_ltd', 'llp', 'fpo', 'cooperative', 'trader', 'huf', 'other']);
+/** i18n key for a buyer's verified business type, or null when absent/unknown (screen shows nothing, never faked). Pure. */
+export function businessTypeKey(businessType: string | null | undefined): string | null {
+  return businessType && BUSINESS_TYPES.has(businessType) ? `orderDecision.bizType.${businessType}` : null;
+}
+
+// --- tracking feed → timeline (P1-1: real per-step timestamps from the stamped order_events log) ---
+/** Minimal shapes from the SDK OrderTracking feed (kept local so this stays pure/`import type`-free). */
+export interface OrderEventLike { toStatus: string; at: string }
+export interface ShipmentEventLike { status: string; at: string; lat: number | null; lng: number | null }
+export interface TrackingLike {
+  createdAt?: string | null; completedAt?: string | null;
+  orderEvents?: readonly OrderEventLike[];
+  shipment?: { pickedUpAt?: string | null; deliveredAt?: string | null } | null;
+  shipmentEvents?: readonly ShipmentEventLike[];
+}
+
+/** First (earliest) timestamp at which the order reached a given status, from the stamped transition log. */
+function firstAtForStatus(events: readonly OrderEventLike[] | undefined, status: string): string | null {
+  if (!events) return null;
+  for (const e of events) if (e.toStatus === status) return e.at; // events arrive oldest-first
+  return null;
+}
+
+/** Build the 7-step timeline timestamps from the REAL tracking feed. Order-status transitions supply
+ * payment/seller (both at 'confirmed' in this order model), ready, out-for-delivery, delivered and completed;
+ * the shipment's pickedUpAt/deliveredAt are honest fallbacks. Nothing is invented — a step with no matching
+ * stamped event stays null (§13). Pure. */
+export function trackTimestampsFromEvents(t: TrackingLike): OrderTimelineTimestamps {
+  const oe = t.orderEvents;
+  const confirmedAt = firstAtForStatus(oe, 'confirmed');
+  return {
+    placed: firstAtForStatus(oe, 'created') ?? t.createdAt ?? null,
+    payment: confirmedAt,                                           // order confirms only once paid
+    seller: confirmedAt,                                            // seller acceptance == 'confirmed'
+    ready: firstAtForStatus(oe, 'ready') ?? t.shipment?.pickedUpAt ?? null,
+    out_for_delivery: firstAtForStatus(oe, 'out_for_delivery') ?? null,
+    delivered: firstAtForStatus(oe, 'delivered') ?? t.shipment?.deliveredAt ?? null,
+    completed: firstAtForStatus(oe, 'completed') ?? t.completedAt ?? null,
+  };
+}
+
+/** The most recent shipment location ping (a rider GPS point), or null when none has been posted. Used to show
+ * an honest "last updated <time>" on the tracking map — never a fabricated ETA or checkpoint name (§13). Pure. */
+export function lastKnownLocation(events: readonly ShipmentEventLike[] | undefined): { lat: number; lng: number; at: string } | null {
+  if (!events || events.length === 0) return null;
+  let best: { lat: number; lng: number; at: string } | null = null;
+  for (const e of events) {
+    if (e.lat == null || e.lng == null) continue;
+    if (!best || e.at > best.at) best = { lat: e.lat, lng: e.lng, at: e.at };
+  }
+  return best;
 }
 
 export type OrderBannerKey = 'placed' | 'preparing' | 'on_the_way' | 'delivered' | 'completed' | 'cancelled';

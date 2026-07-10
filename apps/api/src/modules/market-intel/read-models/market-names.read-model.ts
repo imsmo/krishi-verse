@@ -27,25 +27,51 @@ export class MarketNamesReadModel {
     return out;
   }
 
-  /** Resolve the product/grade/region names referenced by the given rows. */
+  /** Resolve each product's commodity CATEGORY (products.category_id → categories.default_name). Keyed by
+   *  productId so withNames can attach the category to any row that carries that product (P1-3). Bounded by the
+   *  same page-scoped product-id set; missing/unknown → absent (degrade, never throw). */
+  private async categoryMap(tenantId: string, productIds: string[]): Promise<Record<string, { categoryId: string; categoryName: string | null }>> {
+    if (productIds.length === 0) return {};
+    const r = await this.replica.forTenant(tenantId).query<{ product_id: string; category_id: string; category_name: string | null }>(
+      `SELECT p.id AS product_id, p.category_id, c.default_name AS category_name
+         FROM products p LEFT JOIN categories c ON c.id = p.category_id
+        WHERE p.id = ANY($1)`, [productIds]);
+    const out: Record<string, { categoryId: string; categoryName: string | null }> = {};
+    for (const row of r.rows) out[row.product_id] = { categoryId: row.category_id, categoryName: row.category_name };
+    return out;
+  }
+
+  /** Resolve the product/grade/region names + product category referenced by the given rows. */
   async resolve(tenantId: string, rows: { productId?: string | null; gradeOptionId?: string | null; regionId?: string | null }[]) {
-    const [products, grades, regions] = await Promise.all([
-      this.nameMap(tenantId, 'products', distinctIds(rows, (r) => r.productId)),
+    const productIds = distinctIds(rows, (r) => r.productId);
+    const [products, grades, regions, categories] = await Promise.all([
+      this.nameMap(tenantId, 'products', productIds),
       this.nameMap(tenantId, 'attribute_options', distinctIds(rows, (r) => r.gradeOptionId)),
       this.nameMap(tenantId, 'admin_regions', distinctIds(rows, (r) => r.regionId)),
+      this.categoryMap(tenantId, productIds),
     ]);
-    return { products, grades, regions };
+    return { products, grades, regions, categories };
   }
 }
 
-/** PURE: attach resolved names onto a row JSON (no I/O). Unknown id → null name (degrade, never throw). */
+export interface NameMaps {
+  products: Record<string, string>;
+  grades: Record<string, string>;
+  regions: Record<string, string>;
+  categories: Record<string, { categoryId: string; categoryName: string | null }>;
+}
+
+/** PURE: attach resolved names + commodity category onto a row JSON (no I/O). Unknown id → null (degrade, never throw). */
 export function withNames<T extends { productId?: string | null; gradeOptionId?: string | null; regionId?: string | null }>(
-  row: T, maps: { products: Record<string, string>; grades: Record<string, string>; regions: Record<string, string> },
-): T & { productName: string | null; gradeName: string | null; regionName: string | null } {
+  row: T, maps: NameMaps,
+): T & { productName: string | null; gradeName: string | null; regionName: string | null; categoryId: string | null; categoryName: string | null } {
+  const cat = row.productId ? maps.categories[row.productId] ?? null : null;
   return {
     ...row,
     productName: row.productId ? maps.products[row.productId] ?? null : null,
     gradeName: row.gradeOptionId ? maps.grades[row.gradeOptionId] ?? null : null,
     regionName: row.regionId ? maps.regions[row.regionId] ?? null : null,
+    categoryId: cat?.categoryId ?? null,
+    categoryName: cat?.categoryName ?? null,
   };
 }

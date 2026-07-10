@@ -8,9 +8,11 @@ import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { LearningResourceService } from '../../services/learning-resource.service';
+import { CropCalendarReadModel } from '../../read-models/crop-calendar.read-model';
 import { EducationPermissions, canAuthor, canPublish, isEducationAdmin, canHost, canModerateContent } from '../../policies/education.policies';
 import { CreateResourceSchema, CreateResourceDto } from '../../dto/create-resource.dto';
 import { QueryResourcesSchema, QueryResourcesDto } from '../../dto/query-resource.dto';
+import { QueryCropCalendarSchema, QueryCropCalendarDto } from '../../dto/query-crop-calendar.dto';
 import { ModerateChannelSchema, ModerateChannelDto } from '../../dto/register-channel.dto';
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
@@ -19,8 +21,14 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('education')
 export class ResourcesController {
-  constructor(private readonly svc: LearningResourceService) {}
+  constructor(private readonly svc: LearningResourceService, private readonly cropCalendars: CropCalendarReadModel) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canAuthor: canAuthor(ctx), canPublish: canPublish(ctx), isAdmin: isEducationAdmin(ctx), canHost: canHost(ctx), canModerate: canModerateContent(ctx) }; }
+
+  // Editorial crop-agronomy calendars (P1-5): reference growth-stage timelines by crop/season/region (read-only).
+  @Get('crop-calendars')
+  cropCalendars_(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryCropCalendarSchema) q: QueryCropCalendarDto) {
+    return this.cropCalendars.list(ctx.tenantId, q).then((data) => ({ data }));
+  }
 
   @Post() @RequirePermissions(EducationPermissions.Host)
   publish(@CurrentContext() ctx: RequestContext, @ZodBody(CreateResourceSchema) dto: CreateResourceDto) { return this.svc.publish(ctx.tenantId, this.actor(ctx), dto).then((data) => ({ data })); }

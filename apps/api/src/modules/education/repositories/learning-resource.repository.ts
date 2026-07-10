@@ -45,4 +45,15 @@ export class LearningResourceRepository {
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM learning_resources WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);
   }
+  /** Resolve topic_id → lookup_values.default_name for a BOUNDED set of ids (the current page). Closes the §13
+   *  "topicId but no name" gap on the tips screens. Unknown ids simply don't appear (degrade, never fabricate). */
+  async topicNames(tenantId: string, ids: string[]): Promise<Record<string, string>> {
+    const unique = [...new Set(ids.filter(Boolean))];
+    if (unique.length === 0) return {};
+    const r = await this.replica.forTenant(tenantId).query<{ id: string; default_name: string }>(
+      `SELECT id, default_name FROM lookup_values WHERE id = ANY($1)`, [unique]);
+    const out: Record<string, string> = {};
+    for (const row of r.rows) out[row.id] = row.default_name;
+    return out;
+  }
 }

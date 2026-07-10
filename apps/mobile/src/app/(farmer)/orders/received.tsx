@@ -4,10 +4,11 @@
 // per-order cards. A NEW order card offers Reject / Accept Order → cancelOrder / confirmOrder (idempotent, Law 3,
 // flag-gated by `orders_fulfilment`; the SERVER re-authorises every transition). Money via MoneyText (Law 2).
 // Degrade-never-die: loading skeleton, designed empty, inline retry.
-// §13 gaps (no contract → rendered honestly, never faked): the list read-model has no crop title / quantity /
-// buyer location / buyer rating / acceptance-deadline countdown / review-rating — so the card title is the
-// counterparty, NEW shows a generic "Action needed" (not a fake "2 hours left"), and a dedicated seller
-// order-stats endpoint is the production path for exact period totals.
+// The list read-model now carries the PRIMARY line item (crop title + qty) + item count (P1-2), so the card
+// leads with the crop and shows "500 kg · +2 more"; the counterparty is the secondary line. §13 (still no
+// contract → honest): buyer location / buyer rating / an acceptance-deadline countdown aren't on the list
+// read-model, so NEW shows a generic "Action needed" (never a fake "2 hours left"), and a dedicated seller
+// order-stats endpoint remains the production path for exact period totals (these are the loaded-page totals).
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -17,7 +18,7 @@ import { Button, Card, EmptyState, MoneyText, StatusPill, ScreenScaffold, Skelet
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { listOrders, confirmOrder, cancelOrder } from '../../../features/orders/orders.api';
-import { orderStatusTone, sellerOrderStats, matchesSellerTab, sellerOrderTab, type SellerTab } from '../../../features/orders/order-status';
+import { orderStatusTone, sellerOrderStats, matchesSellerTab, sellerOrderTab, moreItemsCount, type SellerTab } from '../../../features/orders/order-status';
 
 const TABS: SellerTab[] = ['new', 'active', 'completed'];
 
@@ -115,7 +116,7 @@ function Stat({ label, value, tone, children }: { label: string; value?: string;
 }
 
 function SellerOrderCard({ item, t, lang, canAct, busyAccept, busyReject, onOpen, onAccept, onReject }: {
-  item: OrderListItem; t: (k: string, p?: Record<string, unknown>) => string; lang: string; canAct: boolean;
+  item: OrderListItem; t: (k: string, p?: Record<string, string | number>) => string; lang: string; canAct: boolean;
   busyAccept: boolean; busyReject: boolean; onOpen: () => void; onAccept: () => void; onReject: () => void;
 }) {
   const isNew = sellerOrderTab(item.status) === 'new';
@@ -131,8 +132,22 @@ function SellerOrderCard({ item, t, lang, canAct, busyAccept, busyReject, onOpen
         <View style={styles.cardBody}>
           <View style={styles.thumb}><Text style={styles.thumbGlyph}>📦</Text></View>
           <View style={{ flex: 1 }}>
-            {/* §13: crop title not on the list read-model → counterparty is the card title. */}
-            <Text style={styles.party} numberOfLines={1}>{item.counterparty ?? t('orders.counterpartyUnknown')}</Text>
+            {/* Lead with the REAL primary crop + qty; counterparty is the secondary line. Degrades to the
+                counterparty as title when the read-model carries no item (older orders / no line). */}
+            {item.primaryItem ? (
+              <>
+                <Text style={styles.party} numberOfLines={1}>
+                  {item.primaryItem.title}
+                  {moreItemsCount(item.itemCount) > 0 ? <Text style={styles.moreItems}>  {t('ordersRecv.moreItems', { n: moreItemsCount(item.itemCount) })}</Text> : null}
+                </Text>
+                <Text style={styles.qtyLine} numberOfLines={1}>
+                  {`${item.primaryItem.quantity} ${item.primaryItem.unitCode}`}
+                  {item.counterparty ? ` · ${item.counterparty}` : ''}
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.party} numberOfLines={1}>{item.counterparty ?? t('orders.counterpartyUnknown')}</Text>
+            )}
             <MoneyText minor={item.totalMinor} currencyCode="INR" langCode={lang} size="md" />
           </View>
         </View>
@@ -170,5 +185,7 @@ const styles = StyleSheet.create({
   thumb: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: color.earth100, alignItems: 'center', justifyContent: 'center' },
   thumbGlyph: { fontSize: 22 },
   party: { fontFamily: font.body, fontSize: font.size.md, color: color.ink800, fontWeight: font.weight.semibold, marginBottom: 2 },
+  moreItems: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink500, fontWeight: font.weight.regular },
+  qtyLine: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink500, marginBottom: 2 },
   actions: { flexDirection: 'row', gap: space[3], alignItems: 'center', marginTop: space[3] },
 });

@@ -76,6 +76,14 @@ export class ShipmentRepository {
       [shipmentId, tenantId, status, note]);
   }
 
+  /** Append a rider LOCATION ping (lat/lng) at the shipment's CURRENT status — a tracking point, not a
+   *  state change (status is unchanged; the event row carries the coordinates + optional note). */
+  async insertLocationEvent(tx: TxContext, tenantId: string, shipmentId: string, status: ShipmentStatus, lat: number, lng: number, note: string | null): Promise<void> {
+    await tx.query(
+      `INSERT INTO shipment_events (id, shipment_id, tenant_id, status, lat, lng, note) VALUES (uuid_generate_v7(),$1,$2,$3,$4,$5,$6)`,
+      [shipmentId, tenantId, status, lat, lng, note]);
+  }
+
   async listFor(tenantId: string, q: ShipmentListQuery): Promise<Shipment[]> {
     const params: unknown[] = [tenantId];
     let where = `tenant_id=$1`;

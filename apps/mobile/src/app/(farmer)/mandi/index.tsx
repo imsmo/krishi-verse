@@ -15,13 +15,14 @@ import { Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font,
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { listPrices, defaultRegionId } from '../../../features/market/market.api';
-import { latestPriceDate, headerRegion, MANDI_CATEGORIES } from '../../../features/market/mandi-list';
+import { latestPriceDate, headerRegion, distinctCategories, filterByCategory } from '../../../features/market/mandi-list';
 
 export default function MandiPrices() {
   const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('mandi_weather');
   const [items, setItems] = useState<MandiPrice[]>([]);
+  const [category, setCategory] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
 
@@ -35,6 +36,8 @@ export default function MandiPrices() {
 
   const region = useMemo(() => headerRegion(items), [items]);
   const updated = useMemo(() => latestPriceDate(items), [items]);
+  const categories = useMemo(() => ['all', ...distinctCategories(items)], [items]);
+  const visible = useMemo(() => filterByCategory(items, category), [items, category]);
 
   if (!enabled) return <ScreenScaffold title={t('mandi.title')}><EmptyState title={t('common.unavailable')} /></ScreenScaffold>;
 
@@ -44,7 +47,7 @@ export default function MandiPrices() {
         <EmptyState title={t('mandi.empty.title')} message={t('mandi.empty.message')} actionLabel={t('common.retry')} onAction={load} />
       ) : (
         <FlatList
-          data={items}
+          data={visible}
           keyExtractor={(p) => p.id}
           ListHeaderComponent={
             <View>
@@ -54,18 +57,18 @@ export default function MandiPrices() {
                 <Text style={styles.metaTxt}>📍 {region ?? t('mandi.regionUnknown')}</Text>
                 {updated ? <Text style={styles.metaTxt}>🕐 {t('mandi.updated', { ago: safeRelative(updated, lang) })}</Text> : null}
               </View>
-              {/* Category chips — only "All" is wired; the rest await a category field on the price read-model (§13). */}
+              {/* Category chips — "All" + the REAL distinct commodity categories in the loaded rows (P1-3); tapping filters. */}
               <View style={styles.chips}>
-                {MANDI_CATEGORIES.map((c) => {
-                  const active = c === 'all';
+                {categories.map((c) => {
+                  const active = c === category;
+                  const label = c === 'all' ? t('mandi.category.all') : c;
                   return (
-                    <View key={c} style={[styles.chip, active ? styles.chipOn : styles.chipDisabled]} accessibilityState={{ disabled: !active, selected: active }}>
-                      <Text style={[styles.chipTxt, active && styles.chipTxtOn]}>{t(`mandi.category.${c}`)}</Text>
-                    </View>
+                    <Pressable key={c} onPress={() => setCategory(c)} style={[styles.chip, active ? styles.chipOn : styles.chipIdle]} accessibilityRole="button" accessibilityState={{ selected: active }}>
+                      <Text style={[styles.chipTxt, active && styles.chipTxtOn]}>{label}</Text>
+                    </Pressable>
                   );
                 })}
               </View>
-              <Text style={styles.note}>{t('mandi.filterSoon')}</Text>
             </View>
           }
           renderItem={({ item }) => (
@@ -105,7 +108,7 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2], marginTop: space[3] },
   chip: { paddingHorizontal: space[3], paddingVertical: space[2], borderRadius: radius.pill },
   chipOn: { backgroundColor: color.primary600 },
-  chipDisabled: { backgroundColor: color.earth100, opacity: 0.6 },
+  chipIdle: { backgroundColor: color.earth100 },
   chipTxt: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink600, fontWeight: font.weight.semibold },
   chipTxtOn: { color: color.white },
   note: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink400, marginTop: space[2], marginBottom: space[3] },

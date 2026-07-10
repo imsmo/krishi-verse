@@ -1,5 +1,5 @@
 // Unit tests for the PURE mandi-list helpers (features/market/mandi-list). No React/SDK deps.
-import { latestPriceDate, headerRegion, MANDI_CATEGORIES } from '../../features/market/mandi-list';
+import { latestPriceDate, headerRegion, distinctCategories, filterByCategory } from '../../features/market/mandi-list';
 
 describe('latestPriceDate', () => {
   it('returns the most recent priceDate; null when empty', () => {
@@ -19,10 +19,26 @@ describe('headerRegion', () => {
   });
 });
 
-describe('MANDI_CATEGORIES', () => {
-  it('starts with all + the five design categories', () => {
-    expect(MANDI_CATEGORIES[0]).toBe('all');
-    expect(MANDI_CATEGORIES).toHaveLength(6);
-    expect(MANDI_CATEGORIES).toContain('spices');
+describe('distinctCategories', () => {
+  it('returns distinct non-empty categories sorted; ignores blanks/nulls', () => {
+    expect(distinctCategories([
+      { categoryName: 'Vegetables' }, { categoryName: 'Grains' }, { categoryName: 'Vegetables' },
+      { categoryName: null }, { categoryName: '  ' }, {},
+    ])).toEqual(['Grains', 'Vegetables']);
+    expect(distinctCategories([])).toEqual([]);
+  });
+});
+
+describe('filterByCategory', () => {
+  const rows = [
+    { id: 1, categoryName: 'Grains' }, { id: 2, categoryName: 'Vegetables' }, { id: 3, categoryName: null },
+  ];
+  it('"all" (or empty) returns every row', () => {
+    expect(filterByCategory(rows, 'all')).toHaveLength(3);
+    expect(filterByCategory(rows, '')).toHaveLength(3);
+  });
+  it('filters to the exact category name', () => {
+    expect(filterByCategory(rows, 'Grains').map((r) => r.id)).toEqual([1]);
+    expect(filterByCategory(rows, 'Spices')).toEqual([]);
   });
 });

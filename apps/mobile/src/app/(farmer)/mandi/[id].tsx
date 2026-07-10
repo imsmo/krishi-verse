@@ -82,6 +82,8 @@ export default function CommodityDetail() {
           <View style={styles.hero}>
             <View style={styles.heroThumb}><Text style={styles.heroGlyph}>🌾</Text></View>
             <Text style={styles.heroName}>{latest.productName ?? title}{latest.gradeName ? ` · ${latest.gradeName}` : ''}</Text>
+            {/* Commodity category (P1-3) — real catalogue join; omitted (never faked) when the id doesn't resolve. */}
+            {latest.categoryName ? <View style={styles.catChip}><Text style={styles.catChipTxt}>{latest.categoryName}</Text></View> : null}
             <Text style={styles.heroSub}>{t('mandiDetail.todaysRate')}</Text>
             <MoneyText minor={latest.modalMinor} currencyCode={cc} langCode={lang} size="3xl" />
             <Text style={styles.heroUnit}>{t('mandi.perUnit', { unit: latest.unitCode })}</Text>
@@ -167,6 +169,8 @@ const styles = StyleSheet.create({
   heroGlyph: { fontSize: 28 },
   heroName: { fontFamily: font.display, fontSize: font.size.lg, fontWeight: font.weight.bold, color: color.ink900, textAlign: 'center' },
   heroSub: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink500, marginBottom: space[2] },
+  catChip: { backgroundColor: color.earth100, borderRadius: radius.pill, paddingHorizontal: space[2], paddingVertical: 2, marginTop: space[1] },
+  catChipTxt: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink600, fontWeight: font.weight.semibold },
   heroUnit: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink500 },
   change: { fontFamily: font.body, fontSize: font.size.md, fontWeight: font.weight.bold, marginTop: space[1] },
   changeUp: { color: color.success }, changeDown: { color: color.danger },

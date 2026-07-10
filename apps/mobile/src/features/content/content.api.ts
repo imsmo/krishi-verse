@@ -6,7 +6,7 @@
 // (POST ai/assistant/messages, idempotent) — no farmer AI endpoint is live, so askAssistant DEGRADES to an
 // honest "unavailable" result and the screen NEVER fabricates an answer. Voice-search reuses on-device STT, then
 // filters cached tips locally. Degrade-never-die throughout.
-import type { LearningResource, ResourceKind, AssistantReply } from '@krishi-verse/sdk-js';
+import type { LearningResource, ResourceKind, AssistantReply, CropCalendar } from '@krishi-verse/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { cache } from '../../core/offline/sqlite.db';
 import { POLICY } from '../../core/offline/cache-policies';
@@ -27,6 +27,18 @@ export async function listTips(params: { kind?: ResourceKind; cursor?: string } 
     });
     return value;
   } catch { return { items: [], nextCursor: null }; }
+}
+
+/** Editorial crop-agronomy calendars (P1-5, crop-hub). Read-through SWR cache → instant + offline. Degrades to
+ *  an empty list (the screen then shows an honest "not available" state; NEVER a fabricated calendar). */
+export async function listCropCalendars(params: { crop?: string; season?: string } = {}): Promise<CropCalendar[]> {
+  try {
+    const { value } = await cache.read<CropCalendar[]>({
+      scope: TIPS_SCOPE, ns: 'crop-calendars', parts: [params.crop ?? '', params.season ?? ''], policy: POLICY.shortList,
+      fetcher: async () => apiClient().resources.cropCalendars({ crop: params.crop, season: params.season, limit: 100 }),
+    });
+    return value;
+  } catch { return []; }
 }
 
 /** A single tip by id. There's no get-by-id endpoint, so we read the (cached) list and find it. Null if absent. */

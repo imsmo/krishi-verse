@@ -2,7 +2,7 @@
 // (guide §3). Reads degrade-never-die (null/empty). createAlert is idempotent (Law 3) and throws so the screen
 // shows the precise outcome. Money is bigint minor strings (Law 2). Alert delivery is a server-side PUSH (P-04) —
 // the app only subscribes; the server fires when a price crosses the threshold.
-import type { Mandi, MandiPrice, MandiPulse, PriceAlert, WeatherAlert, ForecastResult } from '@krishi-verse/sdk-js';
+import type { Mandi, MandiPrice, MandiPulse, PriceAlert, AlertActivity, WeatherAlert, ForecastResult, WeatherPrefs } from '@krishi-verse/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 
@@ -33,6 +33,10 @@ export function createAlert(input: { productId: string; regionId?: string | null
 export function setAlertActive(id: string, active: boolean): Promise<PriceAlert> {
   return active ? apiClient().market.activateAlert(id) : apiClient().market.deactivateAlert(id);
 }
+/** The caller's own alert-trigger counts (today / this week). Degrades to null so the stats render "—", never faked. */
+export async function alertActivity(): Promise<AlertActivity | null> {
+  try { return await apiClient().market.alertActivity(); } catch { return null; }
+}
 
 // --- weather (regional advisories; regionId required by the server) ---
 export async function weatherAlerts(regionId: string, activeOnly = true): Promise<WeatherAlert[]> {
@@ -43,6 +47,15 @@ export async function weatherAlerts(regionId: string, activeOnly = true): Promis
  * region's advisories if the provider is down. Returns null on a hard failure (screen falls back to advisories). */
 export async function weatherForecast(lat: number, lng: number, regionId?: string | null): Promise<ForecastResult | null> {
   try { return await apiClient().weather.forecast({ lat, lng, regionId: regionId ?? undefined }); } catch { return null; }
+}
+
+/** The caller's weather advisory content prefs (P1-4). Degrades to null so the screen can fall back to defaults. */
+export async function getWeatherPrefs(): Promise<WeatherPrefs | null> {
+  try { return await apiClient().weather.prefs(); } catch { return null; }
+}
+/** Persist the caller's weather advisory prefs (P1-4). Throws so the screen shows the precise outcome. */
+export function saveWeatherPrefs(p: WeatherPrefs): Promise<WeatherPrefs> {
+  return apiClient().weather.savePrefs(p);
 }
 
 /** The farmer's region from their default (or first) saved address — "weather by location" without a geocoder.

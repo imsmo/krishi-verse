@@ -3,20 +3,21 @@
 // the buyer card (real ⭐ from reviews.summary), order items, the payment breakdown (subtotal − platform fee =
 // You receive, all real OrderDetail money via MoneyText/Law 2), and Reject / Accept. Accept→confirmOrder,
 // Reject→cancelOrder (idempotent Law 3, flag-gated `orders_fulfilment`; the SERVER re-authorises). Degrade-never-die.
-// §13 gaps (no contract → rendered honestly, never faked): buyer business-type / distance / lifetime-order-count /
-// payment-rate / years-on-platform, item grade & harvest year, delivery method, and the buyer's free-text note —
-// the order/review contracts don't expose these, so those rows show "—" / a coming-soon line, never a fabricated value.
+// Buyer trust context is now REAL (P1-2): the buyer's verified business type + their completed-order count come
+// from the seller-scoped buyer-summary read (orderBuyerSummary), alongside the public review ⭐. §13 (still no
+// contract → honest "—" / coming-soon, never faked): buyer distance / payment-rate / years-on-platform, item
+// grade & harvest year, delivery method, and the buyer's free-text note aren't exposed, so those stay omitted.
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { OrderDetail, OrderRole, ReviewSummary } from '@krishi-verse/sdk-js';
+import type { OrderDetail, OrderRole, ReviewSummary, OrderBuyerSummary } from '@krishi-verse/sdk-js';
 import { SdkError } from '@krishi-verse/sdk-js';
 import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, Icon, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
-import { getOrder, confirmOrder, cancelOrder } from '../../../features/orders/orders.api';
+import { getOrder, confirmOrder, cancelOrder, orderBuyerSummary } from '../../../features/orders/orders.api';
 import { buyerReviewSummary } from '../../../features/reviews/reviews.api';
-import { sellerNetMinor, decisionMinutesLeft } from '../../../features/orders/order-status';
+import { sellerNetMinor, decisionMinutesLeft, businessTypeKey } from '../../../features/orders/order-status';
 
 export default function OrderDecision() {
   const { id, party, role } = useLocalSearchParams<{ id: string; party?: string; role?: string }>();
@@ -26,6 +27,7 @@ export default function OrderDecision() {
   const orderRole: OrderRole = role === 'buyer' ? 'buyer' : 'seller';
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [buyer, setBuyer] = useState<ReviewSummary | null>(null);
+  const [summary, setSummary] = useState<OrderBuyerSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState<'accept' | 'reject' | null>(null);
@@ -36,6 +38,7 @@ export default function OrderDecision() {
     const o = await getOrder(id);
     setOrder(o); setFailed(!o);
     if (o?.buyerUserId) setBuyer(await buyerReviewSummary(o.buyerUserId)); // public summary; degrades to zeros
+    setSummary(await orderBuyerSummary(id)); // seller-scoped trust summary; degrades to null → §13 "—"
     setLoading(false);
   }, [id]);
   useEffect(() => { load(); }, [load]);
@@ -93,6 +96,10 @@ export default function OrderDecision() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.buyerName} numberOfLines={1}>{partyName ?? t('orders.counterpartyUnknown')}</Text>
                 <Text style={styles.buyerRole}>{t('orderDecision.buyerRole')}</Text>
+                {/* Verified business type (real; only when the buyer has a verified business-KYC profile). */}
+                {businessTypeKey(summary?.businessType) ? (
+                  <View style={styles.bizChip}><Text style={styles.bizChipTxt}>{t(businessTypeKey(summary!.businessType)!)}</Text></View>
+                ) : null}
               </View>
               {buyer && buyer.count > 0 ? (
                 <View style={styles.ratingPill}>
@@ -101,13 +108,13 @@ export default function OrderDecision() {
                 </View>
               ) : null}
             </View>
-            {/* §13: lifetime order count / payment-rate / tenure aren't in the order or review contract → degrade to "—". */}
+            {/* Reviews + completed-orders are REAL; payment-rate has no honest contract → §13 "—". */}
             <View style={styles.trustRow}>
               <Trust value={buyer && buyer.count > 0 ? String(buyer.count) : '—'} label={t('orderDecision.reviews')} />
+              <Trust value={summary ? String(summary.completedAsBuyer) : '—'} label={t('orderDecision.ordersPlaced')} />
               <Trust value="—" label={t('orderDecision.paymentRate')} />
-              <Trust value="—" label={t('orderDecision.onPlatform')} />
             </View>
-            <Text style={styles.note}>{t('orderDecision.buyerStatsSoon')}</Text>
+            {!summary ? <Text style={styles.note}>{t('orderDecision.buyerStatsSoon')}</Text> : null}
           </Card>
 
           {/* Order items */}
@@ -177,7 +184,7 @@ function initials(name: string | null): string {
   const p = name.trim().split(/\s+/);
   return ((p[0]?.[0] ?? '') + (p[1]?.[0] ?? '')).toUpperCase() || '—';
 }
-function humanLeft(mins: number, t: (k: string, p?: Record<string, unknown>) => string): string {
+function humanLeft(mins: number, t: (k: string, p?: Record<string, string | number>) => string): string {
   const h = Math.floor(mins / 60); const m = mins % 60;
   return h > 0 ? t('orderDecision.hm', { h, m }) : t('orderDecision.m', { m });
 }
@@ -200,6 +207,8 @@ const styles = StyleSheet.create({
   avatarTxt: { fontFamily: font.display, fontSize: font.size.md, color: color.primary700, fontWeight: font.weight.bold },
   buyerName: { fontFamily: font.body, fontSize: font.size.md, color: color.ink900, fontWeight: font.weight.bold },
   buyerRole: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink500, marginTop: 1 },
+  bizChip: { alignSelf: 'flex-start', marginTop: space[1], backgroundColor: color.primary50, paddingHorizontal: space[2], paddingVertical: 2, borderRadius: radius.pill },
+  bizChipTxt: { fontFamily: font.body, fontSize: font.size.xs, color: color.primary800, fontWeight: font.weight.semibold },
   ratingPill: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: color.accent50, paddingHorizontal: space[2], paddingVertical: 4, borderRadius: radius.pill },
   ratingTxt: { fontFamily: font.body, fontSize: font.size.sm, color: color.accent700, fontWeight: font.weight.bold },
   trustRow: { flexDirection: 'row', gap: space[2], marginTop: space[4] },

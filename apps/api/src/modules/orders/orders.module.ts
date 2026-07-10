@@ -21,6 +21,8 @@ import { OrderService } from './services/order.service';
 import { OrderPaymentService } from './services/order-payment.service';
 import { OrderItemService } from './services/order-item.service';
 import { OrderTimelineReadModel } from './read-models/order-timeline.read-model';
+import { OrderTrackingReadModel } from './read-models/order-tracking.read-model';
+import { OrderBuyerSummaryReadModel } from './read-models/order-buyer-summary.read-model';
 import { TenantOrderStatsReadModel } from './read-models/tenant-order-stats.read-model';
 import { OrdersPublisher } from './events/orders.publisher';
 import { CartRepository } from './repositories/cart.repository';
@@ -44,7 +46,7 @@ import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handl
   controllers: [CartsController, CheckoutController, OrdersController],
   providers: [
     CartService, CartItemService, CheckoutService, CheckoutGroupService, OrderService, OrderPaymentService, OrderItemService,
-    OrderTimelineReadModel, TenantOrderStatsReadModel, OrdersPublisher,
+    OrderTimelineReadModel, OrderTrackingReadModel, OrderBuyerSummaryReadModel, TenantOrderStatsReadModel, OrdersPublisher,
     CartRepository, CartItemRepository, CheckoutGroupRepository, OrderRepository, OrderItemRepository, DeliveryZoneRepository,
     SellerConfirmTimeoutJob, AutoCompleteQualityWindowJob, AbandonedCartsJob,
     PaymentSucceededHandler, OfferAcceptedHandler, QuoteAcceptedHandler, ShipmentDeliveredHandler, DisputeOpenedHandler, DisputeResolvedHandler,

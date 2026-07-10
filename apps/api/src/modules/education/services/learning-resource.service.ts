@@ -60,7 +60,10 @@ export class LearningResourceService {
   async list(tenantId: string, actor: EducationActor, q: { box: 'browse' | 'mine' | 'all'; channelId?: string; kind?: string; topicId?: string; status?: string; cursor?: { c: string; id: string }; limit: number }) {
     if (q.box === 'all' && !actor.canModerate) throw new CreatorForbiddenError('requires content.moderate');
     const rows = await this.repo.listFor(tenantId, { box: q.box, ownerUserId: q.box === 'mine' ? actor.userId : undefined, channelId: q.channelId, kind: q.kind, topicId: q.topicId, status: q.status, cursor: q.cursor, limit: q.limit });
-    const items = rows.map((r) => r.toJSON());
+    const base = rows.map((r) => r.toJSON());
+    // Resolve the page's topic names (P1-5) so the tips screens can show a real topic label + build category chips.
+    const topicNames = await this.repo.topicNames(tenantId, base.map((r: any) => r.topicId).filter(Boolean));
+    const items = base.map((r: any) => ({ ...r, topicName: r.topicId ? topicNames[r.topicId] ?? null : null }));
     const last = items[items.length - 1] as any;
     const nextCursor = items.length === q.limit && last ? Buffer.from(`${last.createdAt?.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;
     return { items, nextCursor };

@@ -46,6 +46,12 @@ export class PriceAlertService {
     const nextCursor = items.length === q.limit && last ? Buffer.from(`${last.createdAt?.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;
     return { items, nextCursor };
   }
+  /** The caller's own alert-trigger activity: how many of their alerts fired today / in the last 7 days (P1-3).
+   *  Backed by the append-only trigger log written on ingest (never fabricated; 0 when nothing fired). */
+  async activity(tenantId: string, actor: MarketActor): Promise<{ triggeredToday: number; triggeredThisWeek: number }> {
+    const c = await this.repo.triggerCounts(tenantId, actor.userId);
+    return { triggeredToday: c.today, triggeredThisWeek: c.thisWeek };
+  }
   private async flush(tx: TxContext, tenantId: string, id: string, evts: DomainEvent[]): Promise<void> {
     for (const e of evts) await this.outbox.write(tx, { tenantId, aggregateType: 'price_alert', aggregateId: id, eventType: e.type, payload: { v: 1, ...e.payload } });
   }

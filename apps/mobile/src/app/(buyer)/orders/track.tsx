@@ -4,20 +4,22 @@
 // when the shipment names a rider) and a "Mark Delivered" that confirms receipt (completeOrder — idempotent, Law 3;
 // releases escrow server-side). Behind `buyer_app`. Degrade-never-die (skeleton / friendly retry).
 //
-// §13 (no contract → rendered honestly, never faked): there is NO live GPS/route/ETA feed → the map is a decorative
-// placeholder and the ETA shows "—" rather than a fabricated "1h 28m / 18 km away / Karjan checkpoint"; the driver
-// NAME + vehicle plate aren't in the shipment contract (only an opaque riderUserId) → we show a generic "Driver
-// assigned" + a masked call, never "Hareshbhai · GJ-23-AB-7821"; steps with no contract timestamp show no time.
+// §13 (no contract → rendered honestly, never faked): there is NO ETA feed → the ETA shows "—" rather than a
+// fabricated "1h 28m / 18 km away / Karjan checkpoint"; the driver NAME + vehicle plate aren't in the shipment
+// contract (only an opaque riderUserId) → we show a generic "Driver assigned" + a masked call, never
+// "Hareshbhai · GJ-23-AB-7821". The status timeline + per-step times are now REAL — driven by the stamped
+// order-tracking feed (order_events transitions); when a rider has posted a GPS ping we show an honest
+// "last updated <time>" (no reverse-geocoded place name). Steps with no stamped event still show no time.
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { Shipment, OrderDetail } from '@krishi-verse/sdk-js';
+import type { Shipment, OrderDetail, OrderTracking } from '@krishi-verse/sdk-js';
 import { Button, Card, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
 import { formatDate } from '@krishi-verse/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
-import { getOrder, getOrderShipment, completeOrder } from '../../../features/orders/orders.api';
-import { orderTimeline, trackTimestamps, type OrderTimelineStep } from '../../../features/orders/order-status';
+import { getOrder, getOrderShipment, getOrderTracking, completeOrder } from '../../../features/orders/orders.api';
+import { orderTimeline, trackTimestamps, trackTimestampsFromEvents, lastKnownLocation, type OrderTimelineStep } from '../../../features/orders/order-status';
 import { openDirect, startMaskedCall } from '../../../features/messaging/messaging.api';
 
 export default function BuyerTrack() {
@@ -27,14 +29,15 @@ export default function BuyerTrack() {
   const enabled = useFlag('buyer_app');
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [shipment, setShipment] = useState<Shipment | null>(null);
+  const [tracking, setTracking] = useState<OrderTracking | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (!orderId) return;
     setLoading(true);
-    const [o, s] = await Promise.all([getOrder(orderId), getOrderShipment(orderId)]);
-    setOrder(o); setShipment(s);
+    const [o, s, tr] = await Promise.all([getOrder(orderId), getOrderShipment(orderId), getOrderTracking(orderId)]);
+    setOrder(o); setShipment(s); setTracking(tr);
     setLoading(false);
   }, [orderId]);
   useEffect(() => { if (enabled) load(); }, [enabled, load]);
@@ -46,8 +49,12 @@ export default function BuyerTrack() {
   if (loading) return <ScreenScaffold title={t('track.title')}><SkeletonCard lines={3} /><SkeletonCard lines={6} /></ScreenScaffold>;
   if (!order) return <ScreenScaffold title={t('track.title')}><EmptyState title={t('track.noShipment.title')} message={t('track.noShipment.message')} actionLabel={t('common.retry')} onAction={load} /></ScreenScaffold>;
 
-  const steps = orderTimeline(order.status, trackTimestamps(order, shipment));
-  const riderId = shipment?.riderUserId ?? null;
+  // Prefer the REAL stamped tracking feed (per-step transition times); fall back to the order+shipment-derived
+  // times when the feed isn't available yet (offline / not fetched) — degrade-never-die, never fabricated.
+  const ts = tracking ? trackTimestampsFromEvents(tracking) : trackTimestamps(order, shipment);
+  const steps = orderTimeline(order.status, ts);
+  const riderId = tracking?.shipment?.riderUserId ?? shipment?.riderUserId ?? null;
+  const lastLoc = lastKnownLocation(tracking?.shipmentEvents);
 
   const messageFarmer = async () => {
     const convo = await openDirect(order.sellerUserId, orderId).catch(() => null);
@@ -88,6 +95,9 @@ export default function BuyerTrack() {
           <View>
             <Text style={styles.etaLabel}>{t('track.eta')}</Text>
             <Text style={styles.etaValue}>—</Text>
+            {/* §13: no ETA feed → "—". When a rider posted a GPS ping we surface an honest last-updated time
+                (never a fabricated place name / "X km away"). */}
+            {lastLoc ? <Text style={styles.lastUpdate}>{t('track.lastUpdate', { time: safeDate(lastLoc.at, lang) })}</Text> : null}
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={styles.etaLabel}>{t('track.driver')}</Text>
@@ -136,6 +146,7 @@ const styles = StyleSheet.create({
   etaLabel: { fontFamily: font.body, fontSize: 10, fontWeight: font.weight.bold, color: color.ink500, textTransform: 'uppercase', letterSpacing: 0.5 },
   etaValue: { fontFamily: font.display, fontSize: font.size.lg, fontWeight: font.weight.bold, color: color.ink800, marginTop: 2 },
   driverValue: { fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.bold, color: color.ink800, marginTop: 2 },
+  lastUpdate: { fontFamily: font.body, fontSize: 10, color: color.ink500, marginTop: 2 },
   h3: { fontFamily: font.display, fontSize: font.size.md, fontWeight: font.weight.bold, color: color.ink800, marginBottom: space[2] },
   step: { flexDirection: 'row', gap: space[3], paddingVertical: space[3], alignItems: 'flex-start' },
   stepDivider: { borderBottomWidth: 1, borderBottomColor: color.ink100, borderStyle: 'dashed' },

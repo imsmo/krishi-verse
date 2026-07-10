@@ -27,6 +27,8 @@ export class PriceAlertsController {
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryAlertsSchema) q: QueryAlertsDto) {
     return this.svc.list(ctx.tenantId, this.actor(ctx), { activeOnly: q.activeOnly, cursor: decodeCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
+  @Get('activity')
+  activity(@CurrentContext() ctx: RequestContext) { return this.svc.activity(ctx.tenantId, this.actor(ctx)).then((data) => ({ data })); }
   @Post(':id/activate')
   activate(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.setActive(ctx.tenantId, this.actor(ctx), id, true).then((data) => ({ data })); }
   @Post(':id/deactivate')
