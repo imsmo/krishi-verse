@@ -9,6 +9,12 @@ export const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
   PORT: z.coerce.number().default(3000),
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(1), // # of trusted proxies/LB hops in front of the API
+  // CORS allowlist for the 4 Next.js web apps (tenant/admin/storefront/partner) that call this API from the
+  // browser — comma-separated exact origins, e.g. "https://sell.krishi-verse.in,https://admin.krishi-verse.in".
+  // Mobile apps and server-to-server webhooks never send an Origin header and are unaffected either way.
+  // Empty (default) ⇒ CORS is left OFF entirely — identical to today's (no-CORS) behavior. Required in
+  // production (assertProductionSecurity) once real web-app origins exist.
+  WEB_ORIGINS: z.string().default(''),
 
   // --- data stores (required) ---
   DATABASE_URL: z.string().min(1),
@@ -146,6 +152,13 @@ export const EnvSchema = z.object({
   // --- kyc-expiry-reminders cadence job (wave-1 follow-on; identity bank-KYC gate now lifted this) ---
   KYC_EXPIRY_JOB_ENABLED: z.enum(['true', 'false']).default('true'),
   KYC_EXPIRY_JOB_INTERVAL_MS: z.coerce.number().int().min(60_000).max(86_400_000).default(86_400_000), // default: once/day
+  // --- payout-execution cadence job (S5 review P0: PayoutExecutionJob existed but was registered
+  // NOWHERE — a queued payout (POST /v1/payouts) never disbursed to the bank). Frequent cadence
+  // (default 5 min, NOT the once/day settlement-statements default) — a labourer/seller's wallet
+  // funds are already reserved once queued, so this must not wait a day like a reporting job.
+  PAYOUT_EXECUTION_JOB_ENABLED: z.enum(['true', 'false']).default('true'),
+  PAYOUT_EXECUTION_JOB_INTERVAL_MS: z.coerce.number().int().min(30_000).max(86_400_000).default(300_000), // default: every 5 min
+  PAYOUT_EXECUTION_JOB_BATCH_SIZE: z.coerce.number().int().min(1).max(1000).default(100), // max payouts claimed per tick
 });
 
 export type Env = z.infer<typeof EnvSchema>;

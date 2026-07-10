@@ -7,6 +7,16 @@
 // it never races the general PayoutExecutionJob, and a payout already claimed by either is never
 // double-disbursed (the gateway dedups on the payout idempotency key). NOT a DI provider — apps/worker
 // instantiates it with the privileged Pool + the (DI-constructed) PayoutBatchService.
+//
+// S5 REVIEW P0 DISPOSITION — GA-DEFERRED (deliberately NOT wired into core/jobs/jobs.runner.ts):
+// PayoutExecutionCadenceJob (payout-execution.cadence-job.ts), wired for the pilot, drives
+// PayoutRepository.claimQueued, which claims with `ORDER BY priority ASC, created_at ASC` and NO
+// priority filter — so wage-lane payouts (priority=WAGE_LANE_PRIORITY=10) are ALREADY claimed and
+// disbursed ahead of default-priority (100) payouts by that job alone, every 5-minute tick, up to its
+// batch limit. This job's only distinct value over that is a separate `payout_batches` bookkeeping
+// envelope (`batchType: 'wage_lane'`) for reporting "what the wage lane settled this run" — not
+// required for a wage payout to actually reach the bank. Revisit for GA if a dashboard needs wage-lane
+// disbursement reported as its own auditable batch rather than interleaved with the general job's ticks.
 import type { Pool } from 'pg';
 import { PayoutBatchService, RunBatchResult } from '../services/payout-batch.service';
 import { WAGE_LANE_PRIORITY } from '../domain/payout.state';

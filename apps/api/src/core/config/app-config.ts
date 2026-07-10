@@ -40,6 +40,14 @@ export class AppConfig {
     if (env.JWT_ACCESS_SECRET === env.JWT_REFRESH_SECRET) p.push('JWT access and refresh secrets must differ');
     if (env.AUTH_EXPOSE_OTP === 'true') p.push('AUTH_EXPOSE_OTP must be false in production');
 
+    // --- CORS: the 4 Next.js web apps call this API from the browser and NEED an explicit allowlist in
+    // production (mobile apps + server-to-server webhooks are unaffected either way — they send no Origin
+    // header). An empty list in prod would either leave real web traffic unable to read responses, or (worse)
+    // signal the allowlist was simply never configured — fail loud at boot rather than silently.
+    if (env.WEB_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean).length === 0) {
+      p.push('WEB_ORIGINS must be set in production (comma-separated allowed web-app origins)');
+    }
+
     // --- primary database: must be a real managed endpoint, least-privilege role, strong password ---
     for (const [label, url] of [['DATABASE_URL', env.DATABASE_URL], ['DATABASE_REPLICA_URL', env.DATABASE_REPLICA_URL]] as const) {
       if (!url) continue;
@@ -155,6 +163,10 @@ export class AppConfig {
   /** Tenant-webhook signing-secret encryption key (P1-11). Empty = unset (fail-closed in prod). */
   get webhookSigningKek() { return this.env.WEBHOOK_SIGNING_KEK; }
   get trustProxyHops() { return this.env.TRUST_PROXY_HOPS; }
+  /** CORS allowlist for the 4 Next.js web apps. Empty ⇒ CORS left off entirely (main.ts skips app.enableCors,
+   *  matching today's no-CORS behavior byte-for-byte). Mobile apps + server-to-server webhooks send no Origin
+   *  header, so they are never affected by this list either way. */
+  get corsOrigins(): string[] { return this.env.WEB_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean); }
 
   get db() {
     return {
@@ -235,6 +247,14 @@ export class AppConfig {
       kycExpiryReminders: {
         enabled: this.env.KYC_EXPIRY_JOB_ENABLED !== 'false',
         intervalMs: this.env.KYC_EXPIRY_JOB_INTERVAL_MS,
+      },
+      // S5 review P0: payout disbursement was completely unwired (PayoutExecutionJob existed, ran
+      // nowhere). Frequent cadence (default every 5 min) — same per-job env-gate convention as the
+      // two jobs above, independent of the runner-wide JOBS_ENABLED switch.
+      payoutExecution: {
+        enabled: this.env.PAYOUT_EXECUTION_JOB_ENABLED !== 'false',
+        intervalMs: this.env.PAYOUT_EXECUTION_JOB_INTERVAL_MS,
+        batchSize: this.env.PAYOUT_EXECUTION_JOB_BATCH_SIZE,
       },
     };
   }

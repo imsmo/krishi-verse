@@ -10,6 +10,7 @@ import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
 import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
 import { SettlementStatementsCadenceJob } from './jobs/settlement-statements.cadence-job';
+import { PayoutExecutionCadenceJob } from './jobs/payout-execution.cadence-job';
 import { PaymentsController } from './controllers/v1/payments.controller';
 import { PaymentWebhooksController } from './controllers/v1/payment-webhooks.controller';
 import { PayoutsController } from './controllers/v1/payouts.controller';
@@ -154,6 +155,15 @@ import { AutopayController } from './controllers/v1/autopay.controller';
         new SettlementStatementsCadenceJob(config.jobs.settlementStatements.intervalMs, lines, statements),
       inject: [AppConfig, SettlementLineRepository, SettlementStatementService],
     },
+    {
+      // S5 REVIEW P0: the (previously-registered-nowhere) payout-disbursement cadence job — every 5 min
+      // by default (core/jobs/jobs.runner.ts hosts it; this factory just supplies the configured
+      // interval + batch size — see AppConfig.jobs.payoutExecution).
+      provide: PayoutExecutionCadenceJob,
+      useFactory: (config: AppConfig, repo: PayoutRepository, payouts: PayoutService) =>
+        new PayoutExecutionCadenceJob(config.jobs.payoutExecution.intervalMs, repo, payouts, config.jobs.payoutExecution.batchSize),
+      inject: [AppConfig, PayoutRepository, PayoutService],
+    },
   ],
   exports: [PaymentService, PayoutService, PayoutBatchService, ChargePricingService, WalletBalanceReadModel],
 })
@@ -167,6 +177,7 @@ export class PaymentsModule implements OnModuleInit {
     private readonly bookingClockedOut: BookingClockedOutHandler,
     private readonly config: AppConfig,
     private readonly settlementStatementsCadenceJob: SettlementStatementsCadenceJob,
+    private readonly payoutExecutionCadenceJob: PayoutExecutionCadenceJob,
   ) {}
   onModuleInit(): void {
     this.registry.register(this.orderCompleted);   // settlement split + settlement line
@@ -175,5 +186,8 @@ export class PaymentsModule implements OnModuleInit {
     this.registry.register(this.bookingClockedOut); // labour.wages_paid → promote wage payouts (flag wage_priority_payout)
     // per-job env gate (SETTLEMENT_STATEMENTS_JOB_ENABLED), independent of the runner-wide JOBS_ENABLED kill-switch
     if (this.config.jobs.settlementStatements.enabled) this.jobRegistry.register(this.settlementStatementsCadenceJob);
+    // S5 REVIEW P0: PAYOUT_EXECUTION_JOB_ENABLED (default true) — without this, POST /v1/payouts queues
+    // a payout that never disburses (PayoutExecutionJob existed but was registered nowhere).
+    if (this.config.jobs.payoutExecution.enabled) this.jobRegistry.register(this.payoutExecutionCadenceJob);
   }
 }

@@ -31,6 +31,8 @@ const SECURE_RAW: Record<string, string> = {
   // KV-BL-063: the outbox relay timer's dedicated connection — MUST be kv_relay (BYPASSRLS), distinct
   // from the app's own kv_app DATABASE_URL above.
   RELAY_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Relay-Passw0rd-7z@db.cluster.ap-south-1.rds.amazonaws.com:5432/krishiverse',
+  // ZAP-hardening: the 4 Next.js web apps' origins allowed to read cross-origin responses (CORS).
+  WEB_ORIGINS: 'https://sell.krishi-verse.in,https://admin.krishi-verse.in,https://www.krishi-verse.in,https://partners.krishi-verse.in',
 };
 
 const envWith = (overrides: Record<string, string | undefined>): Env => {
@@ -90,6 +92,8 @@ describe('AppConfig.collectProductionProblems (fail-closed)', () => {
     ['jobs DB on localhost', { JOBS_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Jobs-Passw0rd-7z@localhost:5432/krishiverse' }, /JOBS_DATABASE_URL must not point at localhost/],
     ['jobs DB weak password', { JOBS_DATABASE_URL: 'postgresql://kv_relay:dev@db.rds.amazonaws.com:5432/krishiverse' }, /JOBS_DATABASE_URL must use a strong/],
     ['jobs DB sslmode=disable', { JOBS_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Jobs-Passw0rd-7z@db.rds.amazonaws.com:5432/krishiverse?sslmode=disable' }, /JOBS_DATABASE_URL must require TLS/],
+    ['WEB_ORIGINS unset (CORS allowlist required in prod)', { WEB_ORIGINS: undefined }, /WEB_ORIGINS must be set/],
+    ['WEB_ORIGINS blank/whitespace-only', { WEB_ORIGINS: '  ,  ,' }, /WEB_ORIGINS must be set/],
   ])('flags %s', (_label, overrides, pattern) => {
     const problems = AppConfig.collectProductionProblems(envWith(overrides));
     expect(problems.length).toBeGreaterThan(0);
