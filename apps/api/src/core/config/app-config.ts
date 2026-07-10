@@ -105,6 +105,20 @@ export class AppConfig {
       }
     }
 
+    // --- scheduled-jobs runner (P0-9-follow-on): same kv_relay/BYPASSRLS requirement as the outbox relay ---
+    if (env.JOBS_ENABLED !== 'false') {
+      const jobsUrl = (env.JOBS_DATABASE_URL && env.JOBS_DATABASE_URL.length > 0) ? env.JOBS_DATABASE_URL
+        : (env.RELAY_DATABASE_URL && env.RELAY_DATABASE_URL.length > 0) ? env.RELAY_DATABASE_URL : env.DATABASE_URL;
+      const u = AppConfig.tryParsePg(jobsUrl);
+      if (!u) p.push('JOBS_DATABASE_URL (or RELAY_DATABASE_URL/DATABASE_URL fallback) is not a valid postgres URL');
+      else {
+        if (u.user !== 'kv_relay') p.push('JOBS_DATABASE_URL must connect as kv_relay (the BYPASSRLS relay role, migration 0018), not kv_app/superuser');
+        if (/^(localhost|127\.|::1|0\.0\.0\.0)/.test(u.host)) p.push('JOBS_DATABASE_URL must not point at localhost in production');
+        if (!u.password || /^(postgres|password|dev|changeme|admin|secret)$/i.test(u.password) || u.password.length < 12) p.push('JOBS_DATABASE_URL must use a strong, non-default password (from Secrets Manager)');
+        if (u.sslDisabled) p.push('JOBS_DATABASE_URL must require TLS (sslmode=require), not disable it');
+      }
+    }
+
     // --- P0-13 decommission dev affordances: catch these at BOOT, not at the first upload/intent ---
     // Media downloads are gated on a CLEAN AV scan; the scan-result webhook is HMAC-verified with MEDIA_SCAN_SECRET.
     // An empty/weak secret means the webhook rejects every scan (no media ever clears) — fail at boot, not silently.
@@ -199,6 +213,29 @@ export class AppConfig {
       poolMax: this.env.RELAY_POOL_MAX,
       intervalMs: this.env.RELAY_INTERVAL_MS,
       batchSize: this.env.RELAY_BATCH_SIZE,
+    };
+  }
+  /** Scheduled-jobs runner (P0-9-follow-on): in-process host for the pilot's CADENCE-driven
+   * domain-handler jobs (core/jobs/jobs.runner.ts) — the time-based sibling of `relay` above. Falls
+   * back to the relay's kv_relay URL, then DATABASE_URL, for local dev where one role has both. */
+  get jobs() {
+    const url = (this.env.JOBS_DATABASE_URL && this.env.JOBS_DATABASE_URL.length > 0) ? this.env.JOBS_DATABASE_URL
+      : (this.env.RELAY_DATABASE_URL && this.env.RELAY_DATABASE_URL.length > 0) ? this.env.RELAY_DATABASE_URL : this.env.DATABASE_URL;
+    return {
+      enabled: this.env.JOBS_ENABLED !== 'false',
+      databaseUrl: url,
+      poolMax: this.env.JOBS_POOL_MAX,
+      settlementStatements: {
+        enabled: this.env.SETTLEMENT_STATEMENTS_JOB_ENABLED !== 'false',
+        intervalMs: this.env.SETTLEMENT_STATEMENTS_JOB_INTERVAL_MS,
+      },
+      // KV-BL-P0-9-follow-on: KYC-expiry reminders, wired now that the identity bank-KYC gate has
+      // landed (kyc_documents.valid_until is populated for verified docs). Same per-job env-gate
+      // convention as settlementStatements above, independent of the runner-wide JOBS_ENABLED switch.
+      kycExpiryReminders: {
+        enabled: this.env.KYC_EXPIRY_JOB_ENABLED !== 'false',
+        intervalMs: this.env.KYC_EXPIRY_JOB_INTERVAL_MS,
+      },
     };
   }
   get razorpay(){ return { keyId: this.env.RAZORPAY_KEY_ID, webhookSecret: this.env.RAZORPAY_WEBHOOK_SECRET }; }

@@ -30,6 +30,8 @@ import { PgOutboxWriter } from './outbox/outbox.writer.pg';
 import { OutboxHandlerRegistry } from './outbox/outbox.dispatcher';
 import { OUTBOX_HANDLER_REGISTRY } from './outbox/event-envelope';
 import { OutboxRelayRunner } from './outbox/relay.runner';
+import { ScheduledJobRegistry, SCHEDULED_JOB_REGISTRY } from './jobs/scheduled-job.registry';
+import { ScheduledJobsRunner } from './jobs/jobs.runner';
 import { QUOTA_SERVICE } from './quota/quota.service';
 import { PgQuotaService } from './quota/quota.service.pg';
 import { IDEMPOTENCY_SERVICE } from './idempotency/idempotency.service';
@@ -77,6 +79,13 @@ import { MetricsController } from './observability/metrics.controller';
     // every module's onModuleInit has registered its handlers — RealtimeFanoutRegistrar just below,
     // OrdersModule, PaymentsModule, …). Own dedicated kv_relay pool; see relay.runner.ts.
     OutboxRelayRunner,
+    // P0-9-follow-on: registry + runner for the pilot's CADENCE-driven domain-handler jobs (settlement
+    // statement generation, …) — the time-based sibling of OutboxRelayRunner above. Modules register a
+    // ScheduledJob into SCHEDULED_JOB_REGISTRY at their own onModuleInit (see payments.module.ts); the
+    // runner starts OnApplicationBootstrap once every module has registered. Own dedicated kv_relay
+    // pool; see core/jobs/jobs.runner.ts.
+    ScheduledJobRegistry, { provide: SCHEDULED_JOB_REGISTRY, useExisting: ScheduledJobRegistry },
+    ScheduledJobsRunner,
     // realtime fan-out: bridge selected outbox events → Redis Pub/Sub for the realtime-gateway pods.
     // Redis-backed when REDIS_URL is set, else a no-op (Law 12: the platform runs fine without live fan-out).
     // Uses a DEDICATED pub connection (pub/sub must not share the cache client). Gated by `realtime_fanout`.
@@ -121,6 +130,7 @@ import { MetricsController } from './observability/metrics.controller';
     ResilienceService, RESILIENCE,
     WALLET_SERVICE, InProcessWalletClient, LedgerRepository, ReconciliationService,
     OutboxHandlerRegistry, OUTBOX_HANDLER_REGISTRY,
+    ScheduledJobRegistry, SCHEDULED_JOB_REGISTRY,
     AuthGuard, PermissionsGuard, TenantResolver, TenantSlugResolver, TenantContextMiddleware, RequestIdMiddleware,
     TokenService, TOKEN_SERVICE, OtpService, OTP_SERVICE, RefreshTokenService,
     RoleCacheService, ROLE_CACHE_SERVICE, SMS_SENDER,

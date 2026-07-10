@@ -5,17 +5,21 @@
 // Search, Metrics) is provided by CoreModule (global) and injected by token.
 import { Module } from '@nestjs/common';
 import { MediaModule } from '../../core/media/media.module';   // OBJECT_STORE for public listing-gallery presign
+import { CommunicationModule } from '../communication/communication.module'; // ConversationService for :id/inquiries (KV-BL-031)
 
 // Controllers (HTTP edge)
 import { ListingsController } from './controllers/listings.controller';
 import { BoostsController } from './controllers/boosts.controller';
 import { GroupLotsController } from './controllers/group-lots.controller';
 import { SellersController } from './controllers/sellers.controller';
+import { TrustDocumentsController } from './controllers/trust-documents.controller';
 
 // Application services
 import { ListingService } from './services/listing.service';
 import { ListingBoostService } from './services/listing-boost.service';
 import { ListingViewService } from './services/listing-view.service';
+import { ListingInquiryService } from './services/listing-inquiry.service';
+import { ListingTrustDocumentService } from './services/listing-trust-document.service';
 import { ListingAttributeService } from './services/listing-attribute.service';
 import { GroupLotService } from './services/group-lot.service';
 import { GroupLotPledgeService } from './services/group-lot-pledge.service';
@@ -36,6 +40,7 @@ import { ListingBoostRepository } from './repositories/listing-boost.repository'
 import { GroupLotRepository } from './repositories/group-lot.repository';
 import { GroupLotPledgeRepository } from './repositories/group-lot-pledge.repository';
 import { ListingMediaRepository } from './repositories/listing-media.repository';
+import { ListingTrustDocumentRepository } from './repositories/listing-trust-document.repository';
 
 // Event handlers (consume domain/integration events)
 import { OrderCompletedHandler } from './events/handlers/order-completed.handler';
@@ -47,13 +52,14 @@ import { BoostExpiryJob } from './jobs/boost-expiry.job';
 import { PublishScheduledJob } from './jobs/publish-scheduled.job';
 
 @Module({
-  imports: [MediaModule],
-  controllers: [ListingsController, BoostsController, GroupLotsController, SellersController],
+  imports: [MediaModule, CommunicationModule],
+  controllers: [ListingsController, BoostsController, GroupLotsController, SellersController, TrustDocumentsController],
   providers: [
-    ListingService, ListingBoostService, ListingViewService, ListingAttributeService, GroupLotService, GroupLotPledgeService,
+    ListingService, ListingBoostService, ListingViewService, ListingInquiryService, ListingTrustDocumentService,
+    ListingAttributeService, GroupLotService, GroupLotPledgeService,
     ListingSearchReadModel, MandiBandReadModel, ListingAnalyticsReadModel, SellerProfileReadModel, ListingGalleryReadModel, ListingLinksReadModel,
     ListingRepository, PriceHistoryRepository, ListingAttributeRepository,
-    ListingBoostRepository, GroupLotRepository, GroupLotPledgeRepository, ListingMediaRepository,
+    ListingBoostRepository, GroupLotRepository, GroupLotPledgeRepository, ListingMediaRepository, ListingTrustDocumentRepository,
     OrderCompletedHandler, AuctionSettledHandler,
     ExpireListingsJob, BoostExpiryJob, PublishScheduledJob,
   ],

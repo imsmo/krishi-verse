@@ -73,6 +73,12 @@ run('orders ↔ payments end-to-end via outbox relay (integration, real Postgres
     await makeTenant(admin, tenantA, 'A');
     await makeUser(admin, buyer); await makeUser(admin, seller);
     await admin.query(`INSERT INTO bank_accounts (id, user_id, tenant_id, account_kind, vault_ref) VALUES ($1,$2,$3,'upi','vault_seller') ON CONFLICT DO NOTHING`, [bankAccountId, seller, tenantA]);
+    // S3 review finding: requestPayout now gates on kyc_status='verified' — seed a verified role for
+    // the seller (this fixture predates the KYC gate; makeUser() alone leaves no role row).
+    await admin.query(
+      `INSERT INTO user_tenant_roles (id, user_id, tenant_id, role_id, kyc_status, is_active)
+       SELECT gen_random_uuid(), $1, $2, r.id, 'verified', true FROM roles r WHERE r.code='farmer'
+       ON CONFLICT (user_id, tenant_id, role_id) DO NOTHING`, [seller, tenantA]);
     // an order awaiting payment (minimal row — the relay handler only needs the header)
     await admin.query(
       `INSERT INTO orders (id, tenant_id, order_no, buyer_user_id, seller_user_id, source, currency_code, subtotal_minor, total_minor, status, version, created_at)

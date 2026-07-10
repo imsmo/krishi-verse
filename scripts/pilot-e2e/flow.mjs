@@ -16,6 +16,16 @@
 // buyer" step, just done at the DB layer because that is the only mechanism that exists today.
 // Every step AFTER that is a real HTTP call exercising OTP login, listings, orders, payments and
 // notifications exactly as a client would.
+//
+// KV-BL-066 (Sprint S3) update: the role-grant HALF of Step 0 (INSERT INTO user_tenant_roles for
+// farmer/customer) is no longer the only mechanism — POST /v1/onboarding/roles (authenticated,
+// non-admin, gated by the `selfserve_onboarding` flag; see apps/api/src/modules/identity/
+// controllers/v1/onboarding.controller.ts + services/onboarding.service.ts) now lets an
+// already-OTP-logged-in user self-grant farmer or customer without an admin. The TENANT + first-user
+// bootstrap (rows above this comment: tenants/users) is still SQL — creating a tenant is genuinely
+// god-mode and out of scope for this endpoint. Rewiring this script to call the new endpoint instead
+// of direct SQL is deliberately deferred to S4 (kept as direct SQL here so this proven E2E script
+// doesn't change behaviour mid-sprint).
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

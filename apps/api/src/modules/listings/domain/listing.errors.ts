@@ -37,3 +37,9 @@ export class ListingNotEditableError extends DomainError {
 export class InvalidRepostDurationError extends DomainError {
   constructor(days: number) { super('LISTING_INVALID_REPOST_DURATION', `Repost duration must be 1–60 days (got ${days})`, 422, { days }); }
 }
+export class InvalidExtendDurationError extends DomainError {
+  constructor(days: number) { super('LISTING_INVALID_EXTEND_DURATION', `Extend duration must be 1–30 days (got ${days})`, 422, { days }); }
+}
+export class TrustDocumentMediaInvalidError extends DomainError {
+  constructor() { super('LISTING_TRUST_DOCUMENT_MEDIA_INVALID', 'Media asset is not a clean, owned document', 422, {}); }
+}

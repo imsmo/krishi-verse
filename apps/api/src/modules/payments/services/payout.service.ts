@@ -4,6 +4,8 @@
 // WALLET port) → queue a payout row → outbox + audit. The actual disbursement (RazorpayX) is driven
 // by the worker's payout-execution job (next wave). Idempotent on the caller's key; the wallet debit
 // is itself idempotent, so a retry can never double-debit.
+// S3 review finding: requestPayout is gated on the caller's KYC (kyc_status='verified' on any active
+// role in this tenant) BEFORE any debit/ledger work — see the KycRequiredError check first in the tx.
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
@@ -14,10 +16,12 @@ import { WALLET_SERVICE, WalletPort } from '../../../core/wallet/wallet.port';
 import { userMain, platform, PlatformAccount } from '../../../core/wallet/account-codes';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { Payout } from '../domain/payout.entity';
+import { mapProviderFailureCode, PAYOUT_FAILURE_REASON_FALLBACK } from '../domain/payout-failure-reason.map';
 import { PayoutRepository } from '../repositories/payout.repository';
 import { PAYOUT_GATEWAY, PayoutGateway } from '../gateway/payout-gateway.port';
 import { CreatePayoutDto } from '../dto/create-payout.dto';
 import { BadRequestError, ForbiddenError } from '../../../shared/errors/app-error';
+import { KycRequiredError } from '../domain/payments.errors';
 
 export interface PayoutActor { userId: string; canModerate: boolean; }
 
@@ -39,6 +43,12 @@ export class PayoutService {
     return this.idem.remember(idemKey, userId, 'payments.request_payout', () =>
       timed(this.metrics, 'payments.request_payout', { tenant: tenantId }, async () =>
         this.uow.run(tenantId, async (tx) => {
+          // S3 review finding: gate money-out on verified KYC BEFORE any debit/ledger work — an
+          // unapproved self-serve caller (kyc_status 'none' straight off POST /v1/onboarding/roles)
+          // must never reach the wallet debit below. 'pending'/'rejected'/'expired' fail closed too.
+          if (!(await this.repo.callerKycVerified(tx, tenantId, userId))) {
+            throw new KycRequiredError();
+          }
           if (!(await this.repo.bankAccountBelongsTo(tx, tenantId, userId, dto.bankAccountId))) {
             throw new ForbiddenError('bank account does not belong to you');   // anti-IDOR / anti-fraud
           }
@@ -106,15 +116,36 @@ export class PayoutService {
       }, { userId: 'system' }));
   }
 
-  async getById(tenantId: string, actor: PayoutActor, id: string) {
+  /** KV-BL-023 (03_API_CONTRACT_DELTA.md §payouts, PILOT-BLOCKING, screens 442/516): `lang` defaults to 'en' for
+   *  any pre-existing caller that doesn't pass one (additive — response shape only gains fields, never changes
+   *  existing ones). Always call with `ctx.lang` from the controller when available. */
+  async getById(tenantId: string, actor: PayoutActor, id: string, lang = 'en') {
     const p = await this.repo.getVisible(tenantId, id, actor.userId, actor.canModerate);
     if (!p) throw new BadRequestError('payout not found');
-    return this.serialize(p);
+    const labels = await this.repo.failureReasonLabels(tenantId, lang);
+    return this.serialize(p, labels);
   }
-  async list(tenantId: string, userId: string, q: { cursor?: { c: string; id: string }; limit: number }) {
-    const items = (await this.repo.listForUser(tenantId, userId, q)).map((p) => this.serialize(p));
+  async list(tenantId: string, userId: string, q: { cursor?: { c: string; id: string }; limit: number }, lang = 'en') {
+    const labels = await this.repo.failureReasonLabels(tenantId, lang);
+    const items = (await this.repo.listForUser(tenantId, userId, q)).map((p) => this.serialize(p, labels));
     const last = items[items.length - 1];
     return { items, nextCursor: items.length === q.limit && last ? Buffer.from(`${last.createdAt}|${last.id}`).toString('base64') : null };
   }
-  private serialize(p: Payout) { const v = p.toProps(); return { id: v.id, status: v.status, amountMinor: v.amountMinor.toString(), currencyCode: v.currencyCode, bankAccountId: v.bankAccountId, createdAt: v.createdAt }; }
+  /** `failureReason` (raw provider text, unchanged/additive — kept for anyone already reading it) alongside the
+   *  NEW `failureReasonLocalized` (KV-BL-023): mapProviderFailureCode() buckets the raw `failure_code`, then the
+   *  bucket resolves to a locale-aware label via the `payout_failure_reason` lookup_values vocabulary (falls back
+   *  to the 'other' bucket's own label if somehow the map returns a bucket the vocabulary doesn't have, so this
+   *  NEVER throws and NEVER exposes the raw gateway code to the client). Both fields are null for a payout with
+   *  no failure (queued/processing/success). */
+  private serialize(p: Payout, labels: Map<string, string>) {
+    const v = p.toProps();
+    const failureReasonLocalized = v.failureCode
+      ? (labels.get(mapProviderFailureCode(v.failureCode)) ?? labels.get(PAYOUT_FAILURE_REASON_FALLBACK) ?? null)
+      : null;
+    return {
+      id: v.id, status: v.status, amountMinor: v.amountMinor.toString(), currencyCode: v.currencyCode,
+      bankAccountId: v.bankAccountId, createdAt: v.createdAt,
+      failureReason: v.failureReason, failureReasonLocalized,
+    };
+  }
 }

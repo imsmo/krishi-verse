@@ -1,7 +1,7 @@
 // modules/listings/__tests__/listing.entity.spec.ts
 // Pure unit tests for the aggregate's business invariants. No DB, no framework.
 import { Listing, ListingProps } from '../domain/listing.entity';
-import { InsufficientStockError, InvalidPriceError, ListingNotEditableError, InvalidRepostDurationError } from '../domain/listing.errors';
+import { InsufficientStockError, InvalidPriceError, ListingNotEditableError, InvalidRepostDurationError, InvalidExtendDurationError } from '../domain/listing.errors';
 import { IllegalListingTransitionError } from '../domain/listing.errors';
 
 const baseCreate = {
@@ -93,5 +93,65 @@ describe('Listing aggregate', () => {
   it('repost() refuses an illegal source state (e.g. a live published listing)', () => {
     const l = Listing.create({ ...baseCreate }); l.publish(); // published → published is illegal
     expect(() => l.repost(7)).toThrow(IllegalListingTransitionError);
+  });
+
+  describe('extend() — KV-BL-031 (screen 112 EXTEND cta)', () => {
+    it('pushes expiresAt out by `days` from the CURRENT expiry when it is still in the future', () => {
+      const l = Listing.create({ ...baseCreate });
+      l.publish(new Date('2026-01-01T00:00:00Z'));
+      // simulate an existing future expiry via repost's side-effect-free path: reconstruct with an expiresAt
+      const withExpiry = Listing.rehydrate({ ...l.toProps(), expiresAt: new Date('2026-01-10T00:00:00Z') });
+      withExpiry.pullEvents();
+      withExpiry.extend(5, new Date('2026-01-05T00:00:00Z'));
+      expect(withExpiry.toProps().expiresAt).toEqual(new Date('2026-01-15T00:00:00Z')); // +5 days from the OLD expiry, not from now
+    });
+
+    it('extends from `now` when expiresAt is null (a published listing with no expiry set yet)', () => {
+      const l = Listing.create({ ...baseCreate });
+      l.publish(new Date('2026-01-01T00:00:00Z'));
+      l.pullEvents();
+      l.extend(3, new Date('2026-01-01T00:00:00Z'));
+      expect(l.toProps().expiresAt).toEqual(new Date('2026-01-04T00:00:00Z'));
+    });
+
+    it('extends from `now` (not the stale past expiry) when the current expiresAt has already lapsed', () => {
+      const l = Listing.create({ ...baseCreate });
+      l.publish();
+      const withExpiry = Listing.rehydrate({ ...l.toProps(), expiresAt: new Date('2025-01-01T00:00:00Z') });
+      withExpiry.pullEvents();
+      withExpiry.extend(2, new Date('2026-01-01T00:00:00Z'));
+      expect(withExpiry.toProps().expiresAt).toEqual(new Date('2026-01-03T00:00:00Z'));
+    });
+
+    it('does NOT touch quantityAvailable/status — only expiresAt moves', () => {
+      const l = Listing.create({ ...baseCreate, quantityTotal: 10 });
+      l.publish(); l.pullEvents();
+      l.extend(4);
+      expect(l.quantityAvailable).toBe(10);
+      expect(l.status).toBe('published');
+    });
+
+    it('emits listing.extended (and nothing else)', () => {
+      const l = Listing.create({ ...baseCreate });
+      l.publish(); l.pullEvents();
+      l.extend(10, new Date('2026-01-01T00:00:00Z'));
+      const events = l.pullEvents();
+      expect(events).toHaveLength(1);
+      expect(events[0].type).toBe('listing.extended');
+    });
+
+    it('rejects an out-of-bounds or non-integer duration (domain re-validates the zod 1..30 bound)', () => {
+      const mk = () => { const l = Listing.create({ ...baseCreate }); l.publish(); return l; };
+      expect(() => mk().extend(0)).toThrow(InvalidExtendDurationError);
+      expect(() => mk().extend(31)).toThrow(InvalidExtendDurationError);
+      expect(() => mk().extend(1.5)).toThrow(InvalidExtendDurationError);
+    });
+
+    it('refuses to extend a non-published listing (e.g. draft or expired)', () => {
+      const draft = Listing.create({ ...baseCreate });
+      expect(() => draft.extend(5)).toThrow(ListingNotEditableError);
+      const expired = Listing.create({ ...baseCreate }); expired.publish(); expired.expire();
+      expect(() => expired.extend(5)).toThrow(ListingNotEditableError);
+    });
   });
 });

@@ -84,10 +84,25 @@ describe('AppConfig.collectProductionProblems (fail-closed)', () => {
     ['relay DB on localhost', { RELAY_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Relay-Passw0rd-7z@localhost:5432/krishiverse' }, /RELAY_DATABASE_URL must not point at localhost/],
     ['relay DB weak password', { RELAY_DATABASE_URL: 'postgresql://kv_relay:dev@db.rds.amazonaws.com:5432/krishiverse' }, /RELAY_DATABASE_URL must use a strong/],
     ['relay DB sslmode=disable', { RELAY_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Relay-Passw0rd-7z@db.rds.amazonaws.com:5432/krishiverse?sslmode=disable' }, /RELAY_DATABASE_URL must require TLS/],
+    // P0-9-follow-on: scheduled-jobs runner shares the kv_relay-BYPASSRLS requirement (falls back to
+    // RELAY_DATABASE_URL, then DATABASE_URL, when JOBS_DATABASE_URL is unset).
+    ['jobs DB explicitly set but not kv_relay', { JOBS_DATABASE_URL: 'postgresql://kv_app:Str0ng-Jobs-Passw0rd-7z@db.rds.amazonaws.com:5432/krishiverse' }, /JOBS_DATABASE_URL must connect as kv_relay/],
+    ['jobs DB on localhost', { JOBS_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Jobs-Passw0rd-7z@localhost:5432/krishiverse' }, /JOBS_DATABASE_URL must not point at localhost/],
+    ['jobs DB weak password', { JOBS_DATABASE_URL: 'postgresql://kv_relay:dev@db.rds.amazonaws.com:5432/krishiverse' }, /JOBS_DATABASE_URL must use a strong/],
+    ['jobs DB sslmode=disable', { JOBS_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Jobs-Passw0rd-7z@db.rds.amazonaws.com:5432/krishiverse?sslmode=disable' }, /JOBS_DATABASE_URL must require TLS/],
   ])('flags %s', (_label, overrides, pattern) => {
     const problems = AppConfig.collectProductionProblems(envWith(overrides));
     expect(problems.length).toBeGreaterThan(0);
     expect(problems.join('; ')).toMatch(pattern as RegExp);
+  });
+
+  it('JOBS_ENABLED=false skips the jobs kv_relay check even with a kv_app JOBS_DATABASE_URL', () => {
+    const problems = AppConfig.collectProductionProblems(envWith({ JOBS_ENABLED: 'false', JOBS_DATABASE_URL: 'postgresql://kv_app:Str0ng-Db-Passw0rd-9x@db.rds.amazonaws.com:5432/krishiverse' }));
+    expect(problems.join('; ')).not.toMatch(/JOBS_DATABASE_URL/);
+  });
+
+  it('JOBS_DATABASE_URL unset falls back to the already-valid RELAY_DATABASE_URL (no extra problems)', () => {
+    expect(AppConfig.collectProductionProblems(envWith({}))).toEqual([]); // SECURE_RAW has no JOBS_DATABASE_URL
   });
 
   it('does NOT run the prod gate outside production', () => {

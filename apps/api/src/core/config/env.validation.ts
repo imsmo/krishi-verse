@@ -128,6 +128,24 @@ export const EnvSchema = z.object({
   RELAY_POOL_MAX: z.coerce.number().int().min(1).max(20).default(4),
   RELAY_INTERVAL_MS: z.coerce.number().int().min(100).max(60000).default(750),      // tick cadence
   RELAY_BATCH_SIZE: z.coerce.number().int().min(1).max(1000).default(100),          // max events claimed per tick
+
+  // --- scheduled-jobs runner (P0-9-follow-on) ---
+  // The api hosts the pilot's CADENCE-driven domain-handler jobs (core/jobs/jobs.runner.ts) the same
+  // way RELAY_* above hosts the EVENT-driven outbox relay — see WORKER-RUNTIME.md "Deferred:
+  // domain-handler jobs" + ADR-0001's amendment. Each registered job also runs under its own Postgres
+  // advisory lock (multi-pod safe), so N api pods each running this timer never double-run a job.
+  JOBS_ENABLED: z.enum(['true', 'false']).default('true'),
+  // Dedicated connection — MUST be kv_relay (BYPASSRLS), same reasoning as RELAY_DATABASE_URL: cadence
+  // jobs like settlement-statement generation scan un-statemented lines ACROSS every tenant. Empty ⇒
+  // falls back to RELAY_DATABASE_URL, then DATABASE_URL (local dev convenience only).
+  JOBS_DATABASE_URL: z.string().optional(),
+  JOBS_POOL_MAX: z.coerce.number().int().min(1).max(20).default(2),
+  // --- settlement-statements cadence job ---
+  SETTLEMENT_STATEMENTS_JOB_ENABLED: z.enum(['true', 'false']).default('true'),
+  SETTLEMENT_STATEMENTS_JOB_INTERVAL_MS: z.coerce.number().int().min(60_000).max(86_400_000).default(86_400_000), // default: once/day
+  // --- kyc-expiry-reminders cadence job (wave-1 follow-on; identity bank-KYC gate now lifted this) ---
+  KYC_EXPIRY_JOB_ENABLED: z.enum(['true', 'false']).default('true'),
+  KYC_EXPIRY_JOB_INTERVAL_MS: z.coerce.number().int().min(60_000).max(86_400_000).default(86_400_000), // default: once/day
 });
 
 export type Env = z.infer<typeof EnvSchema>;

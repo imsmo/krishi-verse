@@ -43,6 +43,15 @@ export class PayoutNotFoundError extends NotFoundError {
 export class PayoutWebhookSignatureError extends AppError {
   constructor() { super('PAYOUT_WEBHOOK_BAD_SIGNATURE', 'Invalid payout webhook signature', 401); }
 }
+/** S3 review finding: an unverified caller (kyc_status none/pending/rejected/expired on every active
+ *  role in this tenant) reached money-out. Gates PayoutService.requestPayout BEFORE any debit/ledger
+ *  work (reviewer also suggested mirroring this on BankAccountService.add* — that service lives in
+ *  modules/identity, out of scope for this change; see the payments-module hardening note). 403,
+ *  deliberately generic message — never echoes back which kyc_status the caller is actually in (no
+ *  enumeration of verification state). */
+export class KycRequiredError extends DomainError {
+  constructor() { super('KYC_REQUIRED', 'Complete KYC verification before this action', 403); }
+}
 
 /** A UPI autopay mandate was not found in the caller's scope (404, never 403 — no enumeration). */
 export class MandateNotFoundError extends NotFoundError {

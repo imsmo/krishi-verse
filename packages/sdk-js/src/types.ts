@@ -65,6 +65,17 @@ export interface ListingAnalytics {
   activeBoost: { endsAt: string } | null;
 }
 
+/** One buyer-inquiry thread on the seller's own listing (KV-BL-031, screen 112). Owner-only; keyset-paginated. */
+export interface ListingInquiry {
+  conversationId: string; buyerUserId: string | null; lastMessagePreview: string | null; unreadCount: number;
+}
+
+/** A document (lab report / certification / other) linked to a listing to raise its trust badge (KV-BL-031).
+ *  verifiedAt stays null until an ops verification flow (out of scope here) sets it. */
+export interface ListingTrustDocument {
+  id: string; listingId: string; mediaAssetId: string; docType: 'lab_report' | 'certification' | 'other'; verifiedAt: string | null;
+}
+
 // --- buyer favourites (module: buyer) ---
 export type SavedEntityType = 'listing' | 'product' | 'seller' | 'worker' | 'course' | 'tip';
 /** A buyer's saved item (polymorphic favourite). */
@@ -99,7 +110,10 @@ export interface PaymentSummary { id: string; status: string; amountMinor: strin
 export interface InvoiceSummary { id: string; invoiceNo: string; orderId: string; sellerGstin: string | null; buyerGstin: string | null; totalMinor: string; taxBreakup: Record<string, unknown>; pdfMediaId: string | null; createdAt: string; }
 /** A short-lived presigned PDF download URL for an invoice. */
 export interface InvoiceDownload { invoiceNo: string; url: string; expiresInSec: number; }
-export interface PayoutSummary { id: string; status: string; amountMinor: string; currencyCode: string; purpose?: string; createdAt?: string; }
+// failureReason/failureReasonLocalized (KV-BL-023, 03_API_CONTRACT_DELTA.md §payouts): both null unless status
+// is 'failed'/'reversed'. failureReason is the raw provider text (kept, additive); failureReasonLocalized is the
+// stable, locale-resolved label (payout_failure_reason lookup_values, via mapProviderFailureCode() server-side).
+export interface PayoutSummary { id: string; status: string; amountMinor: string; currencyCode: string; purpose?: string; createdAt?: string; failureReason?: string | null; failureReasonLocalized?: string | null; }
 /** Reconciled wallet balance (server-truth, bigint minor-unit strings). */
 export interface WalletBalance { userId: string; currencyCode: string; availableMinor: string; heldMinor: string; isFrozen: boolean; }
 /** One ledger entry in the caller's wallet statement. amountMinor is SIGNED (+credit / −debit). */
@@ -266,7 +280,8 @@ export interface ListingOffer {
 }
 
 // --- messaging (communication) ---
-export type ConversationContext = 'order' | 'requirement' | 'dispute' | 'booking' | 'direct' | 'support_ticket';
+// 'listing' (KV-BL-031): a buyer-inquiry thread scoped to one listing — see 03_API_CONTRACT_DELTA.md.
+export type ConversationContext = 'order' | 'requirement' | 'dispute' | 'booking' | 'direct' | 'support_ticket' | 'listing';
 export interface Conversation {
   id: string; contextType: string; contextId: string | null; isLocked: boolean; createdAt?: string;
   // Enriched inbox-summary fields (server read-model, P0-1). Present on the list endpoint; optional so a bare
@@ -275,6 +290,9 @@ export interface Conversation {
   lastMessageAt?: string | null; lastMessageBody?: string | null;
   lastMessageHasAttachment?: boolean; lastMessageHasVoice?: boolean;
   counterpartyName?: string | null; counterpartyRole?: string | null;
+  /** The other participant's raw user id (KV-BL-031: backs listings.inquiries()'s buyerUserId). Present on
+   *  enriched inbox-summary reads; optional so a bare open()/get() response still satisfies the type. */
+  counterpartyUserId?: string | null;
 }
 /** A chat message. Exactly one of body/voiceMediaId/attachmentMediaId carries the content; media are referenced
  * by id only (the bytes live in S3). NO raw PII. */

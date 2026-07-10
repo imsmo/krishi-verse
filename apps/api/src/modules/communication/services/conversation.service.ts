@@ -10,7 +10,7 @@ import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempoten
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { Conversation } from '../domain/conversation.entity';
-import { DomainEvent, ContextType } from '../domain/messaging.events';
+import { DomainEvent, ContextType, MULTI_THREAD_CONTEXT_TYPES } from '../domain/messaging.events';
 import { ConversationRepository } from '../repositories/conversation.repository';
 import { OpenConversationDto } from '../dto/open-conversation.dto';
 import { ConversationNotFoundError, MessagingForbiddenError } from '../domain/messaging.errors';
@@ -31,17 +31,47 @@ export class ConversationService {
     return this.idem.remember(idemKey, actor.userId, 'comm.conversation.open', () =>
       timed(this.metrics, 'comm.conversation.open', { tenant: tenantId }, () =>
         this.uow.run(tenantId, async (tx) => {
-          // idempotent for context-linked threads: reuse the existing one (caller must already belong to it)
-          if (dto.contextType !== 'direct' && dto.contextId) {
+          // Idempotent for GENUINELY 1:1 context-linked threads: reuse the single existing one (caller must
+          // already belong to it). MULTI_THREAD_CONTEXT_TYPES ('direct', 'listing') skip this — several distinct
+          // threads legitimately share the same (contextType, contextId) there (e.g. many buyers inquiring about
+          // one listing), so the actor-scoped lookup below is used instead (never someone else's thread).
+          if (!MULTI_THREAD_CONTEXT_TYPES.has(dto.contextType) && dto.contextId) {
             const existing = await this.repo.findByContext(tenantId, dto.contextType, dto.contextId, tx);
             if (existing) {
               if (!(await this.repo.isParticipant(tenantId, existing.id, actor.userId, tx))) throw new MessagingForbiddenError('not a participant of this context thread');
               return existing.toJSON();
             }
+          } else if (dto.contextType === 'listing' && dto.contextId) {
+            // Reuse THIS actor's own existing listing-inquiry thread (if any) instead of opening a duplicate
+            // every time they tap "message seller" again — but never another buyer's thread for the same listing.
+            const existing = await this.repo.findByContextForActor(tenantId, dto.contextType, dto.contextId, actor.userId, tx);
+            if (existing) return existing.toJSON();
           }
           const id = uuidv7();
           const convo = Conversation.open({ id, tenantId, contextType: dto.contextType as ContextType, contextId: dto.contextId ?? null });
-          await this.repo.insert(tx, convo);
+          try {
+            await this.repo.insert(tx, convo);
+          } catch (e: any) {
+            // 0063: uq_conversations_context_1to1 backs the "one thread per (tenant, contextType,
+            // contextId)" invariant this branch already assumed — a concurrent open() for the SAME
+            // 1:1 context can lose the race between the findByContext read above and this insert.
+            // Mirrors the 23505-on-unique-race handling in OnboardingService.grantRole: never surface
+            // the race as an error, just re-fetch the row the other request just committed and hand
+            // back THAT conversation instead (idempotent open, Law 3). Only reachable for genuinely
+            // 1:1 context types — 'direct'/'listing' have no such constraint to race on.
+            if (e?.code === '23505' && !MULTI_THREAD_CONTEXT_TYPES.has(dto.contextType) && dto.contextId) {
+              // S4 REVIEW FIX: the 23505 aborted THIS transaction — any further query on `tx` throws
+              // 25P02 ("current transaction is aborted"). Re-fetch the winner's row OFF-TX (replica/pool
+              // read, same as the pre-insert lookup path), exactly like OnboardingService.grantRole
+              // recovers outside the failed tx. The unique index 0063 guarantees the winner exists.
+              const existing = await this.repo.findByContext(tenantId, dto.contextType, dto.contextId);
+              if (existing) {
+                if (!(await this.repo.isParticipant(tenantId, existing.id, actor.userId))) throw new MessagingForbiddenError('not a participant of this context thread');
+                return existing.toJSON();
+              }
+            }
+            throw e;
+          }
           const others = [...new Set(dto.participantUserIds.filter((u) => u !== actor.userId))];
           await this.repo.addParticipants(tx, id, [{ userId: actor.userId, role: 'owner' }, ...others.map((u) => ({ userId: u, role: 'member' as const }))]);
           await this.flush(tx, tenantId, id, convo.pullEvents());
@@ -54,7 +84,7 @@ export class ConversationService {
     if (!c) throw new ConversationNotFoundError(id);   // 404 for a non-participant (no IDOR)
     return c.toJSON();
   }
-  async list(tenantId: string, actor: MessagingActor, q: { contextType?: string; cursor?: { c: string; id: string }; limit: number }) {
+  async list(tenantId: string, actor: MessagingActor, q: { contextType?: string; contextId?: string; cursor?: { c: string; id: string }; limit: number }) {
     const rows = await this.repo.listForUser(tenantId, actor.userId, q);
     const items = rows.map((c) => c.toJSON());
     const last = items[items.length - 1] as any;
@@ -64,7 +94,7 @@ export class ConversationService {
   /** The caller's inbox as enriched summaries (contract-gap P0-1). Keyset (created_at|id), same cursor grammar as
    * list(). `archived` splits inbox from archive. Membership is enforced by the JOIN in the read — a non-participant
    * simply never appears (no IDOR). */
-  async listSummaries(tenantId: string, actor: MessagingActor, q: { archived: boolean; contextType?: string; cursor?: { c: string; id: string }; limit: number }) {
+  async listSummaries(tenantId: string, actor: MessagingActor, q: { archived: boolean; contextType?: string; contextId?: string; cursor?: { c: string; id: string }; limit: number }) {
     const rows = await this.repo.listSummariesForUser(tenantId, actor.userId, q);
     const last = rows[rows.length - 1];
     const nextCursor = rows.length === q.limit && last ? Buffer.from(`${last.createdAt.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;

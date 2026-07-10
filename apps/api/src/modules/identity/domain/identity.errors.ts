@@ -44,6 +44,34 @@ export class UnderageError extends DomainError {
   constructor(minAge: number) { super('UNDERAGE', `Must be at least ${minAge} years old for this role`, 422, { minAge }); }
 }
 
+// --- self-serve onboarding (KV-BL-066) ---
+export type SelfServeIneligibleReason = 'platform_role' | 'invite_only' | 'not_pilot_ga' | 'unknown_role';
+/** A role code submitted to POST /v1/onboarding/roles that this pilot will not self-grant. Always 403 —
+ *  never 404 — so we don't leak which role codes exist vs. don't via status-code enumeration. */
+export class SelfServeRoleNotEligibleError extends DomainError {
+  constructor(roleCode: string, reason: SelfServeIneligibleReason) {
+    const messages: Record<SelfServeIneligibleReason, string> = {
+      platform_role: `'${roleCode}' is a platform role and can never be self-assigned`,
+      invite_only: `'${roleCode}' is invite-only; ask your tenant admin to assign it`,
+      not_pilot_ga: `'${roleCode}' is not yet available for self-serve onboarding at pilot`,
+      unknown_role: `'${roleCode}' is not a recognised role`,
+    };
+    super('SELFSERVE_ROLE_NOT_ELIGIBLE', messages[reason], 403, { role: roleCode, reason });
+  }
+}
+
+// --- bank accounts (KV-BL-067 follow-up) ---
+/** S3 review finding mirrored on the identity side: adding a NEW payout destination (add /
+ *  addFullBankAccount / the tokenise path) must never be reachable by a caller whose kyc_status is
+ *  none/pending/rejected/expired on every active role in this tenant — only 'verified' proceeds.
+ *  Mirrors modules/payments' KycRequiredError (403, deliberately generic message — never echoes back
+ *  which kyc_status the caller is actually in; no enumeration of verification state). The EXISTING
+ *  bank-accounts GET/list stays ungated — it's read-only and adds nothing an attacker couldn't already
+ *  infer from a 403 on the write path. */
+export class BankAccountKycRequiredError extends DomainError {
+  constructor() { super('BANK_ACCOUNT_KYC_REQUIRED', 'Complete KYC verification before adding a payout destination', 403); }
+}
+
 // --- eKYC (P0-11) ---
 /** The submitted Aadhaar/PAN failed format/checksum validation — rejected BEFORE any provider call (anti-abuse). */
 export class InvalidGovIdError extends DomainError {

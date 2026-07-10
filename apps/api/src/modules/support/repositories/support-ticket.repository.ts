@@ -39,6 +39,13 @@ export class SupportTicketRepository {
     const r = await tx.query(`SELECT 1 FROM support_tickets WHERE ticket_no=$1 LIMIT 1`, [ticketNo]);
     return (r.rowCount ?? 0) > 0;
   }
+  /** 03_API_CONTRACT_DELTA.md §520 (thread bridge, KV-BL-034/052 sibling): persist the link from a ticket to
+   *  its lazily-created conversation. First-writer-wins (`conversation_id IS NULL` guard) — idempotent even if
+   *  a caller-side race means this is invoked twice for the same ticket (see SupportThreadService). */
+  async linkConversation(tx: TxContext, tenantId: string, ticketId: string, conversationId: string): Promise<void> {
+    await tx.query(`UPDATE support_tickets SET conversation_id=$3, updated_at=now() WHERE id=$1 AND tenant_id=$2 AND conversation_id IS NULL`,
+      [ticketId, tenantId, conversationId]);
+  }
   async update(tx: TxContext, t: SupportTicket): Promise<void> {
     const p = t.toProps();
     await tx.query(`UPDATE support_tickets SET severity=$3, status=$4, assignee_user_id=$5, first_responded_at=$6, resolved_at=$7, csat_score=$8, updated_at=now()

@@ -32,9 +32,43 @@ export class PayoutRepository {
     return (r.rowCount ?? 0) > 0;
   }
 
+  /** S3 review finding: money-out KYC gate. Payout is user-level (not role-specific), so this passes
+   *  as soon as the caller has kyc_status='verified' on ANY of their active roles in this tenant —
+   *  'none'/'pending'/'rejected'/'expired' all fail closed. `user_tenant_roles` is a shared core table
+   *  (communication's broadcast.repository reads it the same cross-module way) so payments queries it
+   *  directly rather than reaching into modules/identity. Read-only, tenant-scoped (Law 1); run inside
+   *  the caller's tx so the check and the debit that follows see the same snapshot. */
+  async callerKycVerified(tx: TxContext, tenantId: string, userId: string): Promise<boolean> {
+    const r = await tx.query(
+      `SELECT 1 FROM user_tenant_roles WHERE tenant_id=$1 AND user_id=$2 AND is_active=true AND kyc_status='verified' AND deleted_at IS NULL LIMIT 1`,
+      [tenantId, userId]);
+    return (r.rowCount ?? 0) > 0;
+  }
+
   async resolvePurposeId(tx: TxContext, code: string): Promise<string | null> {
     const r = await tx.query<{ id: string }>(`SELECT id FROM lookup_values WHERE type_code='payout_purpose' AND tenant_id IS NULL AND code=$1 AND is_active=true`, [code]);
     return r.rows[0]?.id ?? null;
+  }
+
+  /** KV-BL-023: locale-resolved labels for the (tiny, ~5-row) `payout_failure_reason` lookup_values vocabulary —
+   *  bucket code → display name, platform + this tenant's own values (a tenant row shadows a platform row of the
+   *  same code), same COALESCE(translations.text, default_name) resolution LookupsService.values() uses. Loaded
+   *  once per list()/getById() call (the vocabulary is tiny and bounded — no per-row query, no cache needed). */
+  async failureReasonLabels(tenantId: string, lang: string): Promise<Map<string, string>> {
+    const lc = (lang || 'en').trim().toLowerCase().split(/[-_]/)[0] || 'en';
+    const r = await this.replica.forTenant(tenantId).query<{ code: string; name: string }>(
+      `WITH v AS (
+         SELECT DISTINCT ON (lv.code) lv.id, lv.code, lv.default_name
+           FROM lookup_values lv
+          WHERE lv.type_code = 'payout_failure_reason' AND lv.is_active = true AND (lv.tenant_id IS NULL OR lv.tenant_id = $1)
+          ORDER BY lv.code, (lv.tenant_id IS NULL)
+       )
+       SELECT v.code, COALESCE(t.text, v.default_name) AS name
+         FROM v
+         LEFT JOIN translations t
+           ON t.entity_type = 'lookup_value' AND t.entity_id = v.id AND t.field = 'name' AND t.language_code = $2`,
+      [tenantId, lc]);
+    return new Map(r.rows.map((x) => [x.code, x.name]));
   }
 
   /** Insert a queued payout. Idempotent at the unique idempotency_key (returns existing id on replay). */

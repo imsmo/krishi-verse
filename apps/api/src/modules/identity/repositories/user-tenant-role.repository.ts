@@ -59,6 +59,17 @@ export class UserTenantRoleRepository {
       [tenantId, userId]);
     return r.rowCount! > 0;
   }
+  /** KV-BL-067 follow-up: mirrors modules/payments' PayoutRepository.callerKycVerified — the caller
+   *  passes as soon as kyc_status='verified' on ANY of their active roles in this tenant (bank-account
+   *  ownership is user-level, not role-specific); 'none'/'pending'/'rejected'/'expired' all fail closed.
+   *  Read-only, tenant-scoped (Law 1), served off the replica like the other identity pre-tx checks
+   *  (findExisting/isMember) — this is a gate, not a debit, so replica lag is an acceptable trade-off. */
+  async callerKycVerified(tenantId: string, userId: string): Promise<boolean> {
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT 1 FROM user_tenant_roles WHERE tenant_id=$1 AND user_id=$2 AND is_active=true AND kyc_status='verified' AND deleted_at IS NULL LIMIT 1`,
+      [tenantId, userId]);
+    return (r.rowCount ?? 0) > 0;
+  }
   async setKycStatus(tx: TxContext, tenantId: string, userId: string, roleId: string | null, status: KycStatus): Promise<void> {
     await tx.query(
       `UPDATE user_tenant_roles SET kyc_status=$4, updated_at=now()

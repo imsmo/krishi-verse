@@ -93,6 +93,71 @@ describe('ListingService authorization (security regression guard)', () => {
   });
 });
 
+describe('ListingService.extend — KV-BL-031 (screen 112 EXTEND cta)', () => {
+  const published = { sellerUserId: 'owner-A', id: 'L1', version: 1, status: 'published', priceMinor: 100n };
+  function listingStub(overrides: Record<string, unknown> = {}) {
+    const props = { ...published, expiresAt: null, ...overrides };
+    return {
+      sellerUserId: props.sellerUserId,
+      extend: jest.fn(function (this: any, days: number) { this._extended = days; }),
+      toProps: () => ({ ...props, expiresAt: props.expiresAt ?? new Date('2026-02-01T00:00:00Z') }),
+      pullEvents: () => [{ type: 'listing.extended', listingId: 'L1', expiresAt: '2026-02-01T00:00:00.000Z', days: 5 }],
+    };
+  }
+
+  it('wraps the call in idempotency.remember keyed by (idemKey, userId, "listings.extend")', async () => {
+    const { svc, repo, idem } = build();
+    repo.getForUpdate.mockResolvedValue(listingStub());
+    await svc.extend('t1', { userId: 'owner-A', canModerate: false }, 'idem-ext-1', 'L1', 5);
+    expect(idem.remember).toHaveBeenCalledWith('idem-ext-1', 'owner-A', 'listings.extend', expect.any(Function));
+  });
+
+  it('a retry with the SAME Idempotency-Key does not call the entity/repo twice (idem.remember short-circuits)', async () => {
+    const { svc, repo, idem } = build();
+    let calls = 0;
+    idem.remember.mockImplementation(async (_k: string, _u: string, _o: string, fn: any) => {
+      calls += 1;
+      return calls === 1 ? fn() : { id: 'L1', expiresAt: 'cached' }; // 2nd call: idem service returns the CACHED result, fn never re-invoked
+    });
+    repo.getForUpdate.mockResolvedValue(listingStub());
+    const first = await svc.extend('t1', { userId: 'owner-A', canModerate: false }, 'idem-ext-2', 'L1', 5);
+    const second = await svc.extend('t1', { userId: 'owner-A', canModerate: false }, 'idem-ext-2', 'L1', 5);
+    expect(repo.update).toHaveBeenCalledTimes(1); // the entity/repo only ran on the FIRST attempt
+    expect(second).toEqual({ id: 'L1', expiresAt: 'cached' });
+    expect(first).not.toEqual(second);
+  });
+
+  it('persists via repo.update and flushes listing.extended to the outbox in the same tx', async () => {
+    const { svc, repo, outbox } = build();
+    repo.getForUpdate.mockResolvedValue(listingStub());
+    await svc.extend('t1', { userId: 'owner-A', canModerate: false }, 'idem-ext-3', 'L1', 5);
+    expect(repo.update).toHaveBeenCalledTimes(1);
+    const eventTypes = outbox.write.mock.calls.map((c: any[]) => c[1].eventType);
+    expect(eventTypes).toContain('listing.extended');
+  });
+
+  it('returns { id, expiresAt } from the post-extend listing state', async () => {
+    const { svc, repo } = build();
+    repo.getForUpdate.mockResolvedValue(listingStub({ expiresAt: new Date('2026-03-01T00:00:00Z') }));
+    const res = await svc.extend('t1', { userId: 'owner-A', canModerate: false }, 'idem-ext-4', 'L1', 5);
+    expect(res).toEqual({ id: 'L1', expiresAt: '2026-03-01T00:00:00.000Z' });
+  });
+
+  it('a non-owner WITHOUT moderate permission is rejected with ForbiddenError (owner-only)', async () => {
+    const { svc, repo } = build();
+    repo.getForUpdate.mockResolvedValue(listingStub());
+    await expect(svc.extend('t1', { userId: 'intruder-B', canModerate: false }, 'idem-ext-5', 'L1', 5))
+      .rejects.toBeInstanceOf(ForbiddenError);
+  });
+
+  it('a moderator MAY extend a listing they do not own, and it is audited', async () => {
+    const { svc, repo, audit } = build();
+    repo.getForUpdate.mockResolvedValue(listingStub());
+    await svc.extend('t1', { userId: 'admin-Z', canModerate: true }, 'idem-ext-6', 'L1', 5);
+    expect(audit.write).toHaveBeenCalled();
+  });
+});
+
 describe('ListingService.getPublicById (data-exposure regression guard)', () => {
   it('hides a DRAFT listing from an anonymous viewer (404, not the data)', async () => {
     const { svc, repo } = build();

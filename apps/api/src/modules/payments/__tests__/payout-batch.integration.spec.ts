@@ -66,6 +66,16 @@ run('payout batch + wage lane + async webhook (integration, real Postgres + RLS)
     await makeUser(admin, sellerA); await makeUser(admin, sellerB);
     await admin.query(`INSERT INTO bank_accounts (id, user_id, tenant_id, account_kind, vault_ref) VALUES ($1,$2,$3,'upi','fa_a') ON CONFLICT DO NOTHING`, [bankA, sellerA, tenantA]);
     await admin.query(`INSERT INTO bank_accounts (id, user_id, tenant_id, account_kind, vault_ref) VALUES ($1,$2,$3,'upi','fa_b') ON CONFLICT DO NOTHING`, [bankB, sellerB, tenantB]);
+    // S3 review finding: requestPayout now gates on kyc_status='verified' — seed a verified role for
+    // each seller (this fixture predates the KYC gate; makeUser() alone leaves no role row).
+    await admin.query(
+      `INSERT INTO user_tenant_roles (id, user_id, tenant_id, role_id, kyc_status, is_active)
+       SELECT gen_random_uuid(), $1, $2, r.id, 'verified', true FROM roles r WHERE r.code='farmer'
+       ON CONFLICT (user_id, tenant_id, role_id) DO NOTHING`, [sellerA, tenantA]);
+    await admin.query(
+      `INSERT INTO user_tenant_roles (id, user_id, tenant_id, role_id, kyc_status, is_active)
+       SELECT gen_random_uuid(), $1, $2, r.id, 'verified', true FROM roles r WHERE r.code='farmer'
+       ON CONFLICT (user_id, tenant_id, role_id) DO NOTHING`, [sellerB, tenantB]);
     await admin.query(`INSERT INTO feature_flags (key, is_enabled, rollout_pct, rules) VALUES ('wage_priority_payout', true, 100, '{}'::jsonb) ON CONFLICT (key) DO UPDATE SET is_enabled=true, rollout_pct=100`);
 
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });

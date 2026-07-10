@@ -12,15 +12,20 @@ const COLS = `id, tenant_id, context_type, context_id, is_locked, created_at`;
 function toDomain(r: any): Conversation {
   return Conversation.rehydrate({ id: r.id, tenantId: r.tenant_id, contextType: r.context_type as ContextType, contextId: r.context_id, isLocked: r.is_locked, createdAt: r.created_at });
 }
-export interface ConversationListQuery { contextType?: string; cursor?: { c: string; id: string }; limit: number; }
+// KV-BL-031: contextId narrows a list to ONE context row (e.g. one listing's inquiry threads). Optional and
+// orthogonal to contextType — the caller is expected to pass both together for a meaningful filter, but the SQL
+// only applies whichever is present (same permissive style as the rest of this repo's query builders).
+export interface ConversationListQuery { contextType?: string; contextId?: string; cursor?: { c: string; id: string }; limit: number; }
 export interface ConversationSummaryQuery extends ConversationListQuery { archived: boolean; }
 /** The enriched inbox row (contract-gap P0-1): base conversation + a preview of the last message, the caller's
- * unread count, the (single) counterparty's display name + role, and the caller's per-participant archive flag. */
+ * unread count, the (single) counterparty's display name + role + raw user id, and the caller's per-participant
+ * archive flag. counterpartyUserId (KV-BL-031) backs the listings/:id/inquiries `buyerUserId` field — additive,
+ * optional consumers of this summary that predate it are unaffected. */
 export interface ConversationSummary {
   id: string; contextType: string; contextId: string | null; isLocked: boolean; createdAt: Date;
   isArchived: boolean; unreadCount: number;
   lastMessageAt: Date | null; lastMessageBody: string | null; lastMessageHasAttachment: boolean; lastMessageHasVoice: boolean;
-  counterpartyName: string | null; counterpartyRole: string | null;
+  counterpartyName: string | null; counterpartyRole: string | null; counterpartyUserId: string | null;
 }
 function toSummary(r: any): ConversationSummary {
   return {
@@ -28,7 +33,7 @@ function toSummary(r: any): ConversationSummary {
     isArchived: r.is_archived === true, unreadCount: Number(r.unread ?? 0),
     lastMessageAt: r.last_at ?? null, lastMessageBody: r.last_body ?? null,
     lastMessageHasAttachment: r.last_att != null, lastMessageHasVoice: r.last_voice != null,
-    counterpartyName: r.other_name ?? null, counterpartyRole: r.other_role ?? null,
+    counterpartyName: r.other_name ?? null, counterpartyRole: r.other_role ?? null, counterpartyUserId: r.other_id ?? null,
   };
 }
 
@@ -64,10 +69,24 @@ export class ConversationRepository {
        WHERE c.id=$1 AND c.tenant_id=$2 AND cp.user_id=$3 AND c.deleted_at IS NULL`, [id, tenantId, userId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
-  /** A single open conversation already attached to a context (idempotent open). */
+  /** A single open conversation already attached to a context (idempotent open). ONLY correct for context types
+   *  that are genuinely 1:1 per (tenant, contextType, contextId) — see MULTI_THREAD_CONTEXT_TYPES; the service
+   *  must not call this for 'direct'/'listing', where many threads can legitimately share a context. */
   async findByContext(tenantId: string, contextType: string, contextId: string, tx?: TxContext): Promise<Conversation | null> {
     const sql = `SELECT ${COLS} FROM conversations WHERE tenant_id=$1 AND context_type=$2 AND context_id=$3 AND deleted_at IS NULL ORDER BY created_at LIMIT 1`;
     const r = tx ? await tx.query(sql, [tenantId, contextType, contextId]) : await this.replica.forTenant(tenantId).query(sql, [tenantId, contextType, contextId]);
+    return r.rows[0] ? toDomain(r.rows[0]) : null;
+  }
+  /** Reuse lookup for MULTI-thread context types (KV-BL-031: 'listing'): finds the existing thread for this
+   *  context that the SAME actor already belongs to (so a retry with a fresh idempotency key still reuses the
+   *  caller's own thread), instead of the single-row-per-context lookup above which would hand back a DIFFERENT
+   *  buyer's conversation. */
+  async findByContextForActor(tenantId: string, contextType: string, contextId: string, actorUserId: string, tx?: TxContext): Promise<Conversation | null> {
+    const sql = `SELECT ${COLS.split(', ').map((c) => 'c.' + c).join(', ')} FROM conversations c
+                 JOIN conversation_participants cp ON cp.conversation_id=c.id
+                 WHERE c.tenant_id=$1 AND c.context_type=$2 AND c.context_id=$3 AND cp.user_id=$4 AND c.deleted_at IS NULL
+                 ORDER BY c.created_at LIMIT 1`;
+    const r = tx ? await tx.query(sql, [tenantId, contextType, contextId, actorUserId]) : await this.replica.forTenant(tenantId).query(sql, [tenantId, contextType, contextId, actorUserId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
   async participantIds(tenantId: string, conversationId: string, tx?: TxContext): Promise<string[]> {
@@ -94,6 +113,7 @@ export class ConversationRepository {
     const params: unknown[] = [tenantId, userId]; let where = `c.tenant_id=$1 AND cp.user_id=$2 AND c.deleted_at IS NULL`;
     const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
     if (q.contextType) where += ` AND c.context_type=${p(q.contextType)}`;
+    if (q.contextId) where += ` AND c.context_id=${p(q.contextId)}`;
     if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (c.created_at < ${cc} OR (c.created_at=${cc} AND c.id < ${ci}))`; }
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(
@@ -110,6 +130,7 @@ export class ConversationRepository {
     const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
     let where = `c.tenant_id=$1 AND cp.user_id=$2 AND c.deleted_at IS NULL AND cp.is_archived=$3`;
     if (q.contextType) where += ` AND c.context_type=${p(q.contextType)}`;
+    if (q.contextId) where += ` AND c.context_id=${p(q.contextId)}`;
     if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (c.created_at < ${cc} OR (c.created_at=${cc} AND c.id < ${ci}))`; }
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(
@@ -118,7 +139,7 @@ export class ConversationRepository {
               (SELECT count(*)::int FROM messages m
                  WHERE m.conversation_id=c.id AND m.sender_user_id IS DISTINCT FROM $2
                    AND (cp.last_read_at IS NULL OR m.created_at > cp.last_read_at)) AS unread,
-              ou.full_name AS other_name, op.role AS other_role
+              ou.full_name AS other_name, op.role AS other_role, op.user_id AS other_id
        FROM conversations c
        JOIN conversation_participants cp ON cp.conversation_id=c.id AND cp.user_id=$2
        LEFT JOIN LATERAL (SELECT body, attachment_media_id, voice_media_id, created_at

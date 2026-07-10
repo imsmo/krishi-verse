@@ -31,9 +31,9 @@ export class PayoutsController {
   @Get()
   list(@CurrentContext() ctx: RequestContext, @Query('cursor') cursor?: string, @Query('limit') limit?: string) {
     const lim = Math.min(Math.max(Number(limit) || 20, 1), 100);
-    return this.payouts.list(ctx.tenantId, ctx.userId, { cursor: decodeCursor(cursor), limit: lim }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
+    return this.payouts.list(ctx.tenantId, ctx.userId, { cursor: decodeCursor(cursor), limit: lim }, ctx.lang).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
 
   @Get(':id')
-  get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.payouts.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
+  get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.payouts.getById(ctx.tenantId, this.actor(ctx), id, ctx.lang).then((data) => ({ data })); }
 }

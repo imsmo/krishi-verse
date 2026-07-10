@@ -53,16 +53,18 @@ describe('ForecastService', () => {
   const sample: NormalisedForecast = { lat: 19.076, lng: 72.877, providerCode: 'open-meteo', fetchedAt: 'now', days: [{ date: '2026-06-25', tempMinC: 26, tempMaxC: 33, precipMm: 1, precipProbPct: 20, windKph: 10, code: 'clouds' }] };
   const config = { weather: { forecastDays: 7, cacheTtlSec: 3600 } } as any;
 
-  function build(opts: { providerFetch?: jest.Mock; cacheGet?: jest.Mock } = {}) {
+  function build(opts: { providerFetch?: jest.Mock; cacheGet?: jest.Mock; geocoderReverse?: jest.Mock } = {}) {
     const cacheStore: Record<string, unknown> = {};
     const cache = {
       get: opts.cacheGet ?? jest.fn(async (k: string) => cacheStore[k] ?? null),
       set: jest.fn(async (k: string, v: unknown) => { cacheStore[k] = v; }),
     } as any;
     const provider = { providerCode: 'open-meteo', fetch: opts.providerFetch ?? jest.fn(async () => sample) } as any;
+    // P1-4: best-effort reverse-geocode of the header place-name — REVERSE_GEOCODE is the service's 2nd ctor dep.
+    const geocoder = { providerCode: 'geocoder-x', reverse: opts.geocoderReverse ?? jest.fn(async () => 'Test Locality') } as any;
     const advisories = { listForRegion: jest.fn(async () => [{ id: 'a1', severity: 'warning' }]) } as any;
-    const svc = new ForecastService(provider, cache, config, advisories);
-    return { svc, cache, provider, advisories };
+    const svc = new ForecastService(provider, geocoder, cache, config, advisories);
+    return { svc, cache, provider, geocoder, advisories };
   }
 
   it('rejects invalid coordinates before calling the provider', async () => {
@@ -72,13 +74,23 @@ describe('ForecastService', () => {
   });
 
   it('fetches + caches on a miss, then serves from cache on the next call', async () => {
-    const { svc, provider, cache } = build();
+    const { svc, provider, cache, geocoder } = build();
     const r1 = await svc.forecast('t1', { lat: 19.076, lng: 72.877 });
     expect(r1.source).toBe('forecast'); expect(r1.forecast).toEqual(sample);
+    // P1-4: the header place-name is best-effort reverse-geocoded and cached alongside the forecast.
+    expect(geocoder.reverse).toHaveBeenCalledWith(19.076, 72.877);
+    expect(r1.forecast!.placeName).toBe('Test Locality');
     expect(cache.set).toHaveBeenCalledTimes(1);
     const r2 = await svc.forecast('t1', { lat: 19.076, lng: 72.877 });
     expect(r2.source).toBe('forecast');
     expect(provider.fetch).toHaveBeenCalledTimes(1); // second call hit cache
+  });
+
+  it('a reverse-geocode failure degrades placeName to null WITHOUT failing the forecast (P1-4: best-effort, never fabricate)', async () => {
+    const { svc } = build({ geocoderReverse: jest.fn(async () => { throw new Error('geocoder unavailable'); }) });
+    const r = await svc.forecast('t1', { lat: 19.076, lng: 72.877 });
+    expect(r.source).toBe('forecast');
+    expect(r.forecast!.placeName).toBeNull();
   });
 
   it('DEGRADES to regional advisories (never fabricates) when the provider is down + regionId given', async () => {

@@ -128,6 +128,27 @@ export class ListingService {
     });
   }
 
+  /** EXTEND — push an active listing's expiry out by `days` WITHOUT resetting stats/views (screen 112's EXTEND
+   *  cta; KV-BL-031). Ownership-enforced; idempotency-keyed (Law 3) — a retried tap with the SAME Idempotency-Key
+   *  returns the cached result rather than extending twice. */
+  async extend(tenantId: string, actor: ListingActor, idemKey: string, id: string, days: number): Promise<{ id: string; expiresAt: string | null }> {
+    return this.idem.remember(idemKey, actor.userId, 'listings.extend', () =>
+      timed(this.metrics, 'listing.extend', { tenant: tenantId }, async () => {
+        let expiresAt: Date | null = null;
+        await this.uow.run(tenantId, async (tx) => {
+          const listing = await this.repo.getForUpdate(tx, tenantId, id);
+          this.assertCanMutate(listing, actor);
+          listing.extend(days);
+          await this.repo.update(tx, listing);
+          await this.flushEvents(tx, tenantId, id, listing.pullEvents());
+          await this.auditOverride(tx, tenantId, actor, listing, 'listing.extended');
+          expiresAt = listing.toProps().expiresAt ?? null;
+        }, { userId: actor.userId });
+        await this.cache.del(cacheKey(tenantId, id));
+        return { id, expiresAt: expiresAt ? (expiresAt as Date).toISOString() : null };
+      }));
+  }
+
   /** CHANGE PRICE — ownership + optimistic-locked, writes price history, emits event. */
   async changePrice(tenantId: string, actor: ListingActor, id: string, newPriceMinor: bigint, expectedVersion: number): Promise<void> {
     await timed(this.metrics, 'listing.change_price', { tenant: tenantId }, async () => {

@@ -17,10 +17,12 @@ function priceHarness(opts: { matching?: PriceAlert[] } = {}) {
   const idem = { remember: jest.fn(async (_k: string, _u: string, _e: string, fn: any) => fn()) };
   const metrics = { inc: jest.fn(), observe: jest.fn() };
   const prices = { insert: jest.fn(), recentModals: jest.fn() };
-  const alerts = { matchActive: jest.fn(async () => opts.matching ?? []) };
+  // insertTrigger: the P1-3 per-user trigger-log append (PriceAlertRepository.insertTrigger) — the service
+  // calls it once per crossed alert, in-tx, alongside the PriceAlertTriggered outbox event.
+  const alerts = { matchActive: jest.fn(async () => opts.matching ?? []), insertTrigger: jest.fn(async () => undefined) };
   const names = { resolveCommodityName: jest.fn(), resolveMandiName: jest.fn() }; // MarketNamesReadModel stub (7th dep)
   const svc = new MandiPriceService(uow as any, outbox as any, idem as any, metrics as any, prices as any, alerts as any, names as any);
-  return { svc, writes, prices };
+  return { svc, writes, prices, alerts };
 }
 const ops = { userId: 'ops', canManage: true };
 const learner = { userId: 'u1', canManage: false };
@@ -37,6 +39,8 @@ describe('MandiPriceService.ingest', () => {
     expect(out.alertsFired).toBe(2);
     expect(h.writes.filter((e) => e.eventType === 'market.price_alert_triggered')).toHaveLength(2);
     expect(h.writes.some((e) => e.eventType === 'market.price_ingested')).toBe(true);
+    // P1-3: the trigger-log append runs once per CROSSED alert, in the same tx as the outbox event.
+    expect(h.alerts.insertTrigger).toHaveBeenCalledTimes(2);
   });
 });
 

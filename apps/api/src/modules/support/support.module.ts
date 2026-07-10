@@ -6,19 +6,24 @@
 // overdue tickets. Money-free. Gated by the `support` flag (default OFF).
 //
 // SCOPE: tickets (open/assign/respond/transition/resolve/close/reopen/CSAT) + SLA due + dispute auto-open +
-// SLA-breach escalation job. DEFERRED: threaded replies (link to communication conversations) + CSAT-survey
-// dispatch (via the notification spine) + auto-routing/round-robin assignment + knowledge-base deflection.
+// SLA-breach escalation job + the ticket→conversation thread bridge (03_API_CONTRACT_DELTA.md §520,
+// SupportThreadService — glue onto communication's already-built conversations engine, not a new chat system).
+// DEFERRED: CSAT-survey dispatch (via the notification spine) + auto-routing/round-robin assignment +
+// knowledge-base deflection.
 import { Module, OnModuleInit, Inject } from '@nestjs/common';
 import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
+import { CommunicationModule } from '../communication/communication.module'; // ConversationService for :id/thread (§520)
 import { TicketsController } from './controllers/v1/tickets.controller';
 import { SupportTicketService } from './services/support-ticket.service';
+import { SupportThreadService } from './services/support-thread.service';
 import { SupportTicketRepository } from './repositories/support-ticket.repository';
 import { DisputeEscalatedHandler } from './events/handlers/dispute-escalated.handler';
 
 @Module({
+  imports: [CommunicationModule],
   controllers: [TicketsController],
-  providers: [SupportTicketService, SupportTicketRepository],
+  providers: [SupportTicketService, SupportThreadService, SupportTicketRepository],
   exports: [SupportTicketService],
 })
 export class SupportModule implements OnModuleInit {

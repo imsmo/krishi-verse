@@ -10,6 +10,7 @@ import { CurrentContext } from '../../../../core/tenancy-context/current-context
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { SupportTicketService } from '../../services/support-ticket.service';
+import { SupportThreadService } from '../../services/support-thread.service';
 import { SupportPermissions, canHandleSupport } from '../../policies/support.policies';
 import { OpenTicketSchema, OpenTicketDto } from '../../dto/create-support-ticket.dto';
 import { AssignTicketSchema, AssignTicketDto, TransitionTicketSchema, TransitionTicketDto, CsatSchema, CsatDto } from '../../dto/update-support-ticket.dto';
@@ -21,7 +22,7 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('support')
 export class TicketsController {
-  constructor(private readonly svc: SupportTicketService) {}
+  constructor(private readonly svc: SupportTicketService, private readonly threads: SupportThreadService) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, isAgent: canHandleSupport(ctx) }; }
 
   @Post()
@@ -35,6 +36,14 @@ export class TicketsController {
   }
   @Get(':id')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
+
+  /** 03_API_CONTRACT_DELTA.md §520 (screen 520, PILOT-BLOCKING): lazily creates (first call) or returns the
+   *  conversation linked to this ticket. Requester-or-agent-only (404 anti-IDOR, same convention as GET :id).
+   *  The client then drives the actual chat via the EXISTING communication conversations/:id/messages GET/POST. */
+  @Get(':id/thread')
+  thread(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    return this.threads.getOrCreateThread(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data }));
+  }
 
   @Post(':id/assign') @RequirePermissions(SupportPermissions.Handle)
   assign(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(AssignTicketSchema) dto: AssignTicketDto) { return this.svc.assign(ctx.tenantId, this.actor(ctx), id, dto.assigneeUserId, ctx.requestId).then((data) => ({ data })); }

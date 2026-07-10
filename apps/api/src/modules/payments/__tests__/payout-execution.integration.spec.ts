@@ -67,6 +67,12 @@ run('payout execution + reconciliation (integration, real Postgres)', () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
     await makeTenant(admin, tenantA, 'A'); await makeUser(admin, seller);
     await admin.query(`INSERT INTO bank_accounts (id, user_id, tenant_id, account_kind, vault_ref) VALUES ($1,$2,$3,'upi','fa_seller') ON CONFLICT DO NOTHING`, [bankAccountId, seller, tenantA]);
+    // S3 review finding: requestPayout now gates on kyc_status='verified' — seed a verified role for
+    // the seller (this fixture predates KV-BL-0xx/the KYC gate; makeUser() alone leaves no role row).
+    await admin.query(
+      `INSERT INTO user_tenant_roles (id, user_id, tenant_id, role_id, kyc_status, is_active)
+       SELECT gen_random_uuid(), $1, $2, r.id, 'verified', true FROM roles r WHERE r.code='farmer'
+       ON CONFLICT (user_id, tenant_id, role_id) DO NOTHING`, [seller, tenantA]);
 
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
     pools = new PgPoolProvider(config);

@@ -4,7 +4,7 @@
 import { Money } from '../../../shared/utils/money';
 import { ListingStatus, assertTransition, isPurchasable } from './listing.state';
 import {
-  InsufficientStockError, InvalidPriceError, ListingNotEditableError, InvalidRepostDurationError,
+  InsufficientStockError, InvalidPriceError, ListingNotEditableError, InvalidRepostDurationError, InvalidExtendDurationError,
 } from './listing.errors';
 
 export interface ListingProps {
@@ -43,7 +43,8 @@ export type ListingDomainEvent =
   | { type: 'listing.price_changed'; listingId: string; oldPriceMinor: string; newPriceMinor: string }
   | { type: 'listing.stock_changed'; listingId: string; available: number }
   | { type: 'listing.sold_out'; listingId: string }
-  | { type: 'listing.status_changed'; listingId: string; from: ListingStatus; to: ListingStatus };
+  | { type: 'listing.status_changed'; listingId: string; from: ListingStatus; to: ListingStatus }
+  | { type: 'listing.extended'; listingId: string; expiresAt: string; days: number };
 
 const EDITABLE_STATUSES: ReadonlySet<ListingStatus> = new Set(['draft', 'pending_approval', 'published', 'paused']);
 
@@ -125,6 +126,20 @@ export class Listing {
     this.props.publishedAt = now;
     this.props.expiresAt = new Date(now.getTime() + durationDays * 86_400_000);
     this.events.push({ type: 'listing.published', listingId: this.props.id, priceMinor: this.props.priceMinor.toString() });
+  }
+
+  /** EXTEND — push an ACTIVE listing's expiry out by `days`, WITHOUT resetting quantity/stats/views (screen 112's
+   *  EXTEND cta; KV-BL-031). Distinct from repost(): repost relaunches a lapsed/sold-out listing with a fresh
+   *  window (new publishedAt, state transition); extend only ever touches expiresAt on an already-'published'
+   *  listing — no transition, no other field moves, so views/analytics/quantity are provably untouched. Extends
+   *  from the CURRENT expiresAt when it's still in the future (adds to the remaining window); from `now` when
+   *  expiresAt is null or already in the past (a published listing may never have had an expiry set). */
+  extend(days: number, now: Date = new Date()): void {
+    if (!Number.isInteger(days) || days < 1 || days > 30) throw new InvalidExtendDurationError(days);
+    if (this.props.status !== 'published') throw new ListingNotEditableError(this.props.id, this.props.status);
+    const base = this.props.expiresAt && this.props.expiresAt > now ? this.props.expiresAt : now;
+    this.props.expiresAt = new Date(base.getTime() + days * 86_400_000);
+    this.events.push({ type: 'listing.extended', listingId: this.props.id, expiresAt: this.props.expiresAt.toISOString(), days });
   }
 
   changePrice(newPriceMinor: bigint): void {

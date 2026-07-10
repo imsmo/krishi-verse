@@ -1,6 +1,6 @@
 // @krishi-verse/sdk-js · listings resource (the marketplace browse surface, GET /v1/listings).
 import { HttpClient } from '../http';
-import { ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, ListingAnalytics, SellerPublicProfile, GalleryItem, Page } from '../types';
+import { ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, ListingAnalytics, ListingInquiry, ListingTrustDocument, SellerPublicProfile, GalleryItem, Page } from '../types';
 
 export class ListingsResource {
   constructor(private readonly http: HttpClient) {}
@@ -82,6 +82,24 @@ export class ListingsResource {
    *  { ok } when the `listing_views` flag is on, 404 when it's off; a dropped impression is acceptable. */
   async recordView(id: string): Promise<{ ok: boolean }> {
     return (await this.http.request<{ ok: boolean }>('POST', `listings/${encodeURIComponent(id)}/view`)).data;
+  }
+
+  /** Push an active listing's expiry out by `days` WITHOUT resetting stats/views (screen 112's EXTEND cta;
+   *  KV-BL-031). Owner-only (server-enforced). Idempotency-keyed (Law 3) — a retried tap returns the same result. */
+  async extend(id: string, days: number, idempotencyKey: string): Promise<{ id: string; expiresAt: string | null }> {
+    return (await this.http.request<{ id: string; expiresAt: string | null }>('POST', `listings/${encodeURIComponent(id)}/extend`, { idempotencyKey, body: { days } })).data;
+  }
+
+  /** Paginated buyer inquiries into the caller's OWN listing (owner-only, 404 else; keyset cursor). */
+  async inquiries(id: string, params: { cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<ListingInquiry>> {
+    const r = await this.http.request<ListingInquiry[]>('GET', `listings/${encodeURIComponent(id)}/inquiries`, { query: { cursor: params.cursor, limit: params.limit ?? 20 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+
+  /** Link an already-uploaded, clean media asset (kind='document') to a listing as a trust document (lab report /
+   *  certification / other). verifiedAt stays null until an ops verification flow (out of scope) sets it. */
+  async attachTrustDocument(id: string, dto: { mediaAssetId: string; docType: 'lab_report' | 'certification' | 'other' }): Promise<ListingTrustDocument> {
+    return (await this.http.request<ListingTrustDocument>('POST', `listings/${encodeURIComponent(id)}/trust-documents`, { body: dto })).data;
   }
 }
 

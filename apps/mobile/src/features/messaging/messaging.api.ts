@@ -13,11 +13,15 @@ export interface MessagesPage { items: Message[]; nextCursor: string | null }
 export function openDirect(participantUserId: string, contextId?: string): Promise<Conversation> {
   return apiClient().conversations.open({ contextType: 'direct', contextId, participantUserIds: [participantUserId] }, newId());
 }
-/** Send a buyer inquiry about a listing: open (or reuse) the direct conversation with the seller (context = the
- * listing) then post the first message. Both calls are idempotent (Law 3). Returns the conversation so the screen
- * navigates to the thread. Throws on a real error (403 messaging off / not allowed) so the screen degrades. */
+/** Send a buyer inquiry about a listing: open (or reuse THIS buyer's own thread) the 'listing'-context conversation
+ * with the seller, then post the first message. Both calls are idempotent (Law 3). contextType is 'listing' (not
+ * 'direct') so the seller's GET /v1/listings/:id/inquiries can find it (KV-BL-031) — the server reuses the
+ * caller's own existing thread for this listing rather than opening a duplicate on every tap, while a DIFFERENT
+ * buyer inquiring about the same listing correctly gets their OWN separate thread (never this one). Returns the
+ * conversation so the screen navigates to the thread. Throws on a real error (403 messaging off / not allowed) so
+ * the screen degrades. */
 export async function sendInquiry(sellerUserId: string, listingId: string, body: string): Promise<Conversation> {
-  const convo = await openDirect(sellerUserId, listingId);
+  const convo = await apiClient().conversations.open({ contextType: 'listing', contextId: listingId, participantUserIds: [sellerUserId] }, newId());
   await postText(convo.id, body.trim());
   return convo;
 }

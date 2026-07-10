@@ -14,6 +14,7 @@ import { BadRequestError } from '../../../shared/errors/app-error';
 import { FeatureFlag, FeatureFlagGuard } from '../../../core/feature-flags/flags.guard';
 import { ListingService } from '../services/listing.service';
 import { ListingViewService } from '../services/listing-view.service';
+import { ListingInquiryService } from '../services/listing-inquiry.service';
 import { ListingSearchReadModel } from '../read-models/listing-search.read-model';
 import { ListingAnalyticsReadModel } from '../read-models/listing-analytics.read-model';
 import { ListingGalleryReadModel } from '../read-models/listing-gallery.read-model';
@@ -22,9 +23,15 @@ import { ListingBoostService } from '../services/listing-boost.service';
 import { CreateListingDto, CreateListingSchema } from '../dto/create-listing.dto';
 import { ChangePriceDto, ChangePriceSchema } from '../dto/change-price.dto';
 import { RepostListingDto, RepostListingSchema } from '../dto/repost-listing.dto';
+import { ExtendListingDto, ExtendListingSchema } from '../dto/extend-listing.dto';
 import { QueryListingDto, QueryListingSchema } from '../dto/query-listing.dto';
+import { QueryListingInquiriesDto, QueryListingInquiriesSchema } from '../dto/query-listing-inquiries.dto';
 import { ListingNotFoundError } from '../domain/listing.errors';
 import { ListingPermissions, canModerate } from '../listings.policies';
+
+// Same opaque base64 "c|id" keyset cursor grammar as communication's ConversationsController — the inquiries
+// endpoint forwards straight into ConversationService's cursor, so it must decode/encode identically.
+const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
 
 @Controller({ path: 'listings', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
@@ -32,6 +39,7 @@ export class ListingsController {
   constructor(
     private readonly service: ListingService,
     private readonly views: ListingViewService,
+    private readonly inquiryService: ListingInquiryService,
     private readonly searchRM: ListingSearchReadModel,
     private readonly analyticsRM: ListingAnalyticsReadModel,
     private readonly galleryRM: ListingGalleryReadModel,
@@ -90,6 +98,20 @@ export class ListingsController {
     return { data };
   }
 
+  /** Paginated buyer inquiries into the caller's OWN listing (screen 112, KV-BL-031). Owner-only: a non-owner
+   *  non-moderator gets 404 (anti-IDOR, same convention as :id/analytics above). Keyset-paginated (opaque cursor). */
+  @Get(':id/inquiries')
+  async inquiries(
+    @CurrentContext() ctx: RequestContext, @Param('id') id: string,
+    @ZodQuery(QueryListingInquiriesSchema) q: QueryListingInquiriesDto,
+  ) {
+    const res = await this.inquiryService.list(
+      ctx.tenantId, { userId: ctx.userId, canModerate: canModerate(ctx) }, id,
+      { cursor: decodeCursor(q.cursor), limit: q.limit },
+    );
+    return { data: res.items, meta: { nextCursor: res.nextCursor } };
+  }
+
   /** Record ONE per-impression view (P1-15). Authenticated (bounds abuse, gives a clean tenant) + flag-gated
    *  (`listing_views`, seeded OFF). FIRE-AND-FORGET: emits a single tiny `views.listing_viewed` outbox event onto
    *  the high-volume pipeline — counting happens off-band in the stream-processor, so there is NO synchronous
@@ -136,5 +158,22 @@ export class ListingsController {
       id, { newPriceMinor: dto.newPriceMinor ? BigInt(dto.newPriceMinor) : undefined, durationDays: dto.durationDays ?? 7 },
     );
     return { data: { ok: true } };
+  }
+
+  /** EXTEND — push an ACTIVE listing's expiry out by `days` WITHOUT resetting stats/views (screen 112's EXTEND
+   *  cta; KV-BL-031). Distinct from repost (which relaunches a lapsed/sold-out listing with a fresh window).
+   *  Owner-only (server re-checks ownership). Idempotency-keyed (Law 3) — a retried tap returns the same result. */
+  @Post(':id/extend')
+  @RequirePermissions(ListingPermissions.Update)
+  async extend(
+    @CurrentContext() ctx: RequestContext, @Param('id') id: string,
+    @Headers('idempotency-key') idemKey: string,
+    @ZodBody(ExtendListingSchema) dto: ExtendListingDto,
+  ) {
+    if (!idemKey) throw new BadRequestError('Idempotency-Key header required');
+    const data = await this.service.extend(
+      ctx.tenantId, { userId: ctx.userId, canModerate: canModerate(ctx) }, idemKey, id, dto.days,
+    );
+    return { data };
   }
 }

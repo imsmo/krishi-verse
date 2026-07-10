@@ -8,6 +8,8 @@ import { Inject, Module, OnModuleInit } from '@nestjs/common';
 import { ResilienceService } from '../../core/resilience/resilience.service';
 import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
+import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
+import { SettlementStatementsCadenceJob } from './jobs/settlement-statements.cadence-job';
 import { PaymentsController } from './controllers/v1/payments.controller';
 import { PaymentWebhooksController } from './controllers/v1/payment-webhooks.controller';
 import { PayoutsController } from './controllers/v1/payouts.controller';
@@ -144,21 +146,34 @@ import { AutopayController } from './controllers/v1/autopay.controller';
       },
       inject: [ResilienceService, AppConfig],
     },
+    {
+      // KV-BL-P0-9-follow-on: the nightly settlement-statements cadence job (core/jobs/jobs.runner.ts
+      // hosts it; this factory just supplies the configured interval — see AppConfig.jobs.settlementStatements).
+      provide: SettlementStatementsCadenceJob,
+      useFactory: (config: AppConfig, lines: SettlementLineRepository, statements: SettlementStatementService) =>
+        new SettlementStatementsCadenceJob(config.jobs.settlementStatements.intervalMs, lines, statements),
+      inject: [AppConfig, SettlementLineRepository, SettlementStatementService],
+    },
   ],
   exports: [PaymentService, PayoutService, PayoutBatchService, ChargePricingService, WalletBalanceReadModel],
 })
 export class PaymentsModule implements OnModuleInit {
   constructor(
     @Inject(OUTBOX_HANDLER_REGISTRY) private readonly registry: OutboxHandlerRegistry,
+    @Inject(SCHEDULED_JOB_REGISTRY) private readonly jobRegistry: ScheduledJobRegistry,
     private readonly orderCompleted: OrderCompletedHandler,
     private readonly tradeInvoice: TradeInvoiceHandler,
     private readonly disputeResolved: DisputeResolvedHandler,
     private readonly bookingClockedOut: BookingClockedOutHandler,
+    private readonly config: AppConfig,
+    private readonly settlementStatementsCadenceJob: SettlementStatementsCadenceJob,
   ) {}
   onModuleInit(): void {
     this.registry.register(this.orderCompleted);   // settlement split + settlement line
     this.registry.register(this.tradeInvoice);     // buyer GST invoice (fan-out to the same event)
     this.registry.register(this.disputeResolved);  // dispute refund: escrow → buyer wallet (flag dispute_refunds)
     this.registry.register(this.bookingClockedOut); // labour.wages_paid → promote wage payouts (flag wage_priority_payout)
+    // per-job env gate (SETTLEMENT_STATEMENTS_JOB_ENABLED), independent of the runner-wide JOBS_ENABLED kill-switch
+    if (this.config.jobs.settlementStatements.enabled) this.jobRegistry.register(this.settlementStatementsCadenceJob);
   }
 }

@@ -35,7 +35,7 @@ export class ConversationsController {
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryConversationsSchema) q: QueryConversationsDto) {
     // Enriched inbox summaries (contract-gap P0-1): each row carries the last-message preview, the caller's unread
     // count, the counterparty name/role, and the per-participant archive flag. `archived` splits inbox vs archive.
-    return this.convos.listSummaries(ctx.tenantId, this.actor(ctx), { archived: q.archived, contextType: q.contextType, cursor: decodeCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
+    return this.convos.listSummaries(ctx.tenantId, this.actor(ctx), { archived: q.archived, contextType: q.contextType, contextId: q.contextId, cursor: decodeCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
   @Get(':id')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.convos.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
