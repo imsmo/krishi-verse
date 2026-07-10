@@ -72,7 +72,12 @@ export const EnvSchema = z.object({
   SMS_PROVIDER: z.enum(['noop', 'msg91', 'twilio']).default('noop'),
   MSG91_AUTH_KEY: z.string().default(''),
   MSG91_SENDER_ID: z.string().default(''),              // DLT-registered 6-char header
-  MSG91_OTP_TEMPLATE_ID: z.string().default(''),        // DLT-approved OTP template id (carries the {code} var)
+  MSG91_OTP_TEMPLATE_ID: z.string().default(''),        // DLT-approved OTP template id (carries the {code} var) — default/fallback locale
+  // Optional PER-LANGUAGE DLT template ids (DLT approves each language's exact text as a SEPARATE template).
+  // Unset ⇒ falls back to MSG91_OTP_TEMPLATE_ID for that locale (e.g. only one language registered so far).
+  MSG91_OTP_TEMPLATE_ID_HI: z.string().default(''),
+  MSG91_OTP_TEMPLATE_ID_GU: z.string().default(''),
+  MSG91_OTP_TEMPLATE_ID_EN: z.string().default(''),
   MSG91_BASE_URL: z.string().default('https://control.msg91.com'),
   TWILIO_ACCOUNT_SID: z.string().default(''),
   TWILIO_AUTH_TOKEN: z.string().default(''),

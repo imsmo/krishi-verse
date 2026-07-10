@@ -58,6 +58,32 @@ describe('Msg91SmsSender.sendOtp', () => {
   it('raw send() is rejected (DLT forbids free-text)', async () => {
     await expect(new Msg91SmsSender(cfg, resilience).send('+919812345678', 'hello')).rejects.toThrow(/not DLT-permitted/);
   });
+
+  it('selects the DLT template registered for the caller locale when configured', async () => {
+    const multi = { ...cfg, otpTemplateIdByLocale: { hi: 'TPL_HI', gu: 'TPL_GU' } };
+    let body: any = null;
+    global.fetch = (async (_url: string, init: any) => { body = JSON.parse(init.body); return { ok: true, status: 200, json: async () => ({ type: 'success' }) }; }) as any;
+
+    await new Msg91SmsSender(multi, resilience).sendOtp('+919812345678', { ...ctx, locale: 'hi' }, 'x');
+    expect(body.template_id).toBe('TPL_HI');
+
+    await new Msg91SmsSender(multi, resilience).sendOtp('+919812345678', { ...ctx, locale: 'gu' }, 'x');
+    expect(body.template_id).toBe('TPL_GU');
+  });
+
+  it('falls back to the default template id when the locale has no dedicated DLT template', async () => {
+    const multi = { ...cfg, otpTemplateIdByLocale: { hi: 'TPL_HI' } };
+    let body: any = null;
+    global.fetch = (async (_url: string, init: any) => { body = JSON.parse(init.body); return { ok: true, status: 200, json: async () => ({ type: 'success' }) }; }) as any;
+
+    // 'en' has no dedicated entry in otpTemplateIdByLocale → falls back to cfg.otpTemplateId ('TPL1')
+    await new Msg91SmsSender(multi, resilience).sendOtp('+919812345678', { ...ctx, locale: 'en' }, 'x');
+    expect(body.template_id).toBe('TPL1');
+
+    // no locale at all → same fallback
+    await new Msg91SmsSender(multi, resilience).sendOtp('+919812345678', { ...ctx, locale: undefined }, 'x');
+    expect(body.template_id).toBe('TPL1');
+  });
 });
 
 describe('TwilioSmsSender', () => {

@@ -13,6 +13,9 @@ export interface Msg91Config {
   authKey: string;
   senderId: string;
   otpTemplateId: string;
+  /** Optional per-locale DLT template ids (DLT approves each language's exact text separately). A locale not
+   *  present here falls back to `otpTemplateId`. */
+  otpTemplateIdByLocale?: Record<string, string>;
   baseUrl: string;
 }
 
@@ -32,13 +35,16 @@ export class Msg91SmsSender extends SmsSender {
 
   async sendOtp(phone: string, ctx: SmsOtpContext, _renderedMessage: string): Promise<void> {
     const mobile = toMsg91Mobile(phone);
+    // DLT approves each language's exact SMS text as a SEPARATE template — send via the template registered for
+    // the caller's locale; fall back to the default template id when that locale has no dedicated one configured.
+    const templateId = (ctx.locale && this.cfg.otpTemplateIdByLocale?.[ctx.locale]) || this.cfg.otpTemplateId;
     await this.resilience.run<void>(DEP, async () => {
       const url = `${this.cfg.baseUrl.replace(/\/$/, '')}/api/v5/otp`;
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'content-type': 'application/json', authkey: this.cfg.authKey },
         body: JSON.stringify({
-          template_id: this.cfg.otpTemplateId,
+          template_id: templateId,
           sender: this.cfg.senderId,
           mobile,
           otp: ctx.code,                       // our code; the DLT template renders it

@@ -240,6 +240,14 @@ export class AppConfig {
         authKey: this.env.MSG91_AUTH_KEY,
         senderId: this.env.MSG91_SENDER_ID,
         otpTemplateId: this.env.MSG91_OTP_TEMPLATE_ID,
+        // DLT approves each language's exact SMS text as a SEPARATE template — a farmer requesting the OTP in
+        // hi/gu should get the DLT template registered for THAT language, not whatever the default happens to be.
+        // Any locale left unset here falls back to `otpTemplateId` (single-template deployments keep working).
+        otpTemplateIdByLocale: {
+          ...(this.env.MSG91_OTP_TEMPLATE_ID_EN ? { en: this.env.MSG91_OTP_TEMPLATE_ID_EN } : {}),
+          ...(this.env.MSG91_OTP_TEMPLATE_ID_HI ? { hi: this.env.MSG91_OTP_TEMPLATE_ID_HI } : {}),
+          ...(this.env.MSG91_OTP_TEMPLATE_ID_GU ? { gu: this.env.MSG91_OTP_TEMPLATE_ID_GU } : {}),
+        },
         baseUrl: this.env.MSG91_BASE_URL,
         configured: this.env.MSG91_AUTH_KEY.length > 0 && this.env.MSG91_OTP_TEMPLATE_ID.length > 0,
       },
