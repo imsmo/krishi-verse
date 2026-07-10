@@ -34,3 +34,16 @@ export function healthItems(input: { photoCount: number; boostActive: boolean })
   if (input.boostActive) items.push({ id: 'boosted', tone: 'good', labelKey: 'listingDetail.health.boosted' });
   return items;
 }
+
+// --- EXTEND (screen 112 EXTEND cta, KV-BL-031) ---
+export const EXTEND_MIN_DAYS = 1;
+export const EXTEND_MAX_DAYS = 30;
+export const EXTEND_DEFAULT_DAYS = 7;
+
+/** Clamp a days value to the API's accepted range [1,30] (ExtendListingSchema mirror) and coerce to an integer —
+ * pure, so the +/- stepper can never submit an out-of-range or fractional value regardless of tap sequence. */
+export function clampExtendDays(days: number): number {
+  const n = Math.round(days);
+  if (!Number.isFinite(n)) return EXTEND_DEFAULT_DAYS;
+  return Math.min(EXTEND_MAX_DAYS, Math.max(EXTEND_MIN_DAYS, n));
+}

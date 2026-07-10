@@ -115,6 +115,12 @@ secrets/
 *-credentials.json
 gha-creds-*.json
 
+# Pilot load-test gate (Sprint S5, ops/load-tests/pilot/) — holds live staging bearer tokens +
+# per-run k6 JSON summaries; the *.env pattern above already covers profile.env itself.
+ops/load-tests/pilot/tokens.json
+ops/load-tests/pilot/results/*
+!ops/load-tests/pilot/results/.gitkeep
+
 # ----------------------------------------------------------------------------
 # Infrastructure as Code (Terraform)
 # ----------------------------------------------------------------------------

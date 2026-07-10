@@ -68,3 +68,9 @@ export function openTicket(input: TicketInput): Promise<SupportTicket> {
 export function rateTicket(id: string, score: number): Promise<SupportTicket> {
   return apiClient().support.submitCsat(id, score);
 }
+/** GET /v1/support/tickets/:id/thread (screen 520, KV-BL-034/052) — lazily creates (first call) or returns the
+ * existing chat thread linked to this ticket. Requester-or-agent-only (404 for a stranger). THROWS on failure so
+ * the "Chat with support" tap can show a precise error rather than silently doing nothing. */
+export function openTicketThread(id: string): Promise<{ conversationId: string }> {
+  return apiClient().support.thread(id);
+}

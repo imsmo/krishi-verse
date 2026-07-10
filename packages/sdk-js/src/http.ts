@@ -55,8 +55,15 @@ export class HttpClient {
       const text = await res.text();
       const json = text ? safeParse(text) : {};
       if (!res.ok) {
-        const e = (json ?? {}) as { code?: string; message?: string; requestId?: string; [k: string]: unknown };
-        throw new SdkError(e.code ?? 'API_ERROR', res.status, e.message ?? `HTTP ${res.status}`, e.requestId ?? res.headers.get('x-request-id') ?? undefined, e);
+        // The API's real error wire-shape (core/http/exception.filter's AllExceptionsFilter) is
+        // { error: { code, message, details }, meta: { request_id, timestamp } } — NOT a flat
+        // {code,message,requestId} object. Accept both: unwrap `error` when present (the real contract), else
+        // fall back to a flat body (defensive — also keeps older/hand-rolled test fixtures working).
+        type ErrShape = { code?: string; message?: string; requestId?: string; details?: Record<string, unknown>; [k: string]: unknown };
+        const raw = (json ?? {}) as { error?: ErrShape; meta?: { request_id?: string } } & ErrShape;
+        const e: ErrShape = raw.error ?? raw;
+        const requestId = e.requestId ?? raw.meta?.request_id ?? res.headers.get('x-request-id') ?? undefined;
+        throw new SdkError(e.code ?? 'API_ERROR', res.status, e.message ?? `HTTP ${res.status}`, requestId, e.details ?? e);
       }
       return (json && typeof json === 'object' && 'data' in (json as object)) ? (json as Envelope<T>) : { data: json as T };
     } catch (err) {

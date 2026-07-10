@@ -30,3 +30,27 @@ export function defaultActiveRole(serverRoles: string[]): AppRole {
   const match = serverRoles.find((r) => VALID.has(r)) as AppRole | undefined;
   return match ?? 'farmer';
 }
+
+// --- self-serve onboarding (KV-BL-066, screens 04/433 role picker) ---
+// The app's nav-facing AppRole codes predate/diverge from the RBAC catalogue's role codes
+// (db/seeds/core/0004_roles_permissions.sql) for a few roles — 'buyer' is the API's 'customer', 'trader' is
+// 'vyapari', 'owner' is 'tenant_admin'. This is the ONE place that mapping lives, so onboarding.selectRole()
+// always submits a code the API actually recognises.
+const BACKEND_ROLE_CODE: Record<AppRole, string> = {
+  farmer: 'farmer', buyer: 'customer', worker: 'worker', trader: 'vyapari', owner: 'tenant_admin', ambassador: 'ambassador',
+};
+export function backendRoleCode(role: AppRole): string { return BACKEND_ROLE_CODE[role]; }
+
+/** Self-serve eligibility AT THIS PILOT, mirrored from the API's onboarding.service.ts (SELF_SERVE_ALLOWED /
+ * INVITE_ONLY — the pilot allow-list is farmer+customer only; everything else is either invite-only forever or
+ * not yet turned on for self-serve). This is a CLIENT-SIDE HINT ONLY, used to label a role card honestly (design
+ * canon 433's "invite only" / "coming soon" chips) — it never blocks a tap, and the server re-checks + is the
+ * sole authority: POST /v1/onboarding/roles can still 403 regardless of what this says. */
+export type RoleEligibility = 'self_serve' | 'invite_only' | 'not_pilot_ga';
+const SELF_SERVE_ROLES: ReadonlySet<AppRole> = new Set(['farmer', 'buyer']);
+const INVITE_ONLY_ROLES: ReadonlySet<AppRole> = new Set(['owner', 'ambassador']);
+export function roleEligibility(role: AppRole): RoleEligibility {
+  if (SELF_SERVE_ROLES.has(role)) return 'self_serve';
+  if (INVITE_ONLY_ROLES.has(role)) return 'invite_only';
+  return 'not_pilot_ga';
+}

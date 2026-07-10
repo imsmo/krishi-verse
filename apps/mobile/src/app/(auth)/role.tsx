@@ -3,17 +3,22 @@
 // ("How will you use Krishi-Verse?" + helper), five role cards each with a gradient icon tile, the English name
 // with its Devanagari vernacular beside it, a one-line description, and a chevron; the selected card gets the
 // green border + tint. A pinned "Continue as <role>" CTA carries the pick forward.
-// The selection is persisted (the account can hold several roles; this sets the ACTIVE one) and only drives
-// navigation/which dashboard to show — the SERVER remains the sole authority on what the user may actually do
-// (§4). Copy via i18n (hi/en/gu); tokens-only; ≥48px targets; a11y radio semantics.
+// KV-BL-066 (screens 04/433 canon): Continue now actually GRANTS the role server-side — POST
+// /v1/onboarding/roles (Idempotency-Key) — before navigating on. Farmer + Buyer are self-serve at this pilot; the
+// other cards carry an honest "Invite only" / "Coming soon" chip (mirrored client-side from the API's own
+// SELF_SERVE_ALLOWED/INVITE_ONLY, role-switcher.ts) so nothing looks tappable-but-secretly-dead — but every card
+// stays tappable and the SERVER remains the sole authority: a 403 (SELFSERVE_ROLE_NOT_ELIGIBLE) is caught and
+// shown as an inline banner (design canon: invite banner), never a silent failure or a fake local grant.
 import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ROLES, type AppRole, type RoleDef } from '../../core/auth/role-switcher';
-import { Button, Icon, IconBadge, type IconName, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
+import { SdkError } from '@krishi-verse/sdk-js';
+import { ROLES, backendRoleCode, roleEligibility, type AppRole, type RoleDef } from '../../core/auth/role-switcher';
+import { Button, Icon, IconBadge, StatusPill, type IconName, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useAuth } from '../../core/auth/auth.store';
+import { grantRole } from '../../features/onboarding/role-select.api';
 
 // The five roles shown on this screen, IN THE DESIGN'S ORDER, each with its glyph + gradient (verbatim from the
 // 04-role design's .role-icon.* tones, mapped to theme tokens where they exist; tenant purple is a design
@@ -32,16 +37,28 @@ const DEF: Record<AppRole, RoleDef> = Object.fromEntries(ROLES.map((r) => [r.rol
 export default function RoleScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { selectRole } = useAuth();
+  const { selectRole, loadProfile } = useAuth();
   const [picked, setPicked] = useState<AppRole>('farmer');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | undefined>();
 
   const onContinue = async () => {
     if (busy) return;
-    setBusy(true);
+    setBusy(true); setError(undefined);
     try {
-      await selectRole(picked);
+      // Self-serve-grant the role server-side (KV-BL-066) BEFORE navigating on — Law 4: the server is the sole
+      // authority on what the account may do, so this is never a purely-local pick.
+      await grantRole(backendRoleCode(picked));
+      await selectRole(picked);   // local UI state: which dashboard/nav this device shows
+      await loadProfile();        // refresh state.profile.roles from the server (now includes the new grant)
       router.replace('/(auth)/profile');
+    } catch (e) {
+      if (e instanceof SdkError && e.code === 'SELFSERVE_ROLE_NOT_ELIGIBLE') {
+        const reason = (e.details as { reason?: string } | undefined)?.reason;
+        setError(reason === 'invite_only' ? t('role.error.inviteOnly') : reason === 'not_pilot_ga' ? t('role.error.notPilotGa') : t('role.error.notEligible'));
+      } else {
+        setError(t('role.error.generic'));
+      }
     } finally {
       setBusy(false);
     }
@@ -68,6 +85,7 @@ export default function RoleScreen() {
           {ROLE_CARDS.map((c) => {
             const def = DEF[c.role];
             const active = c.role === picked;
+            const eligibility = roleEligibility(c.role);
             return (
               <Pressable
                 key={c.role}
@@ -84,13 +102,32 @@ export default function RoleScreen() {
                     <Text style={styles.vern}>  {t(`role.vern.${c.role}`)}</Text>
                   </Text>
                   <Text style={styles.desc}>{t(def.descKey)}</Text>
+                  {eligibility !== 'self_serve' ? (
+                    <View style={styles.badgeRow}>
+                      <StatusPill
+                        label={eligibility === 'invite_only' ? t('role.badge.inviteOnly') : t('role.badge.comingSoon')}
+                        tone={eligibility === 'invite_only' ? 'info' : 'neutral'}
+                      />
+                    </View>
+                  ) : null}
                 </View>
                 <Icon name="chevron-right" size={20} color={active ? color.primary600 : color.ink400} />
               </Pressable>
             );
           })}
         </View>
+
+        {/* Invite footnote (design canon 433) — the two roles above with the "Invite only" chip are added by a
+            tenant admin/FPO, never self-serve pick; this never blocks the tap, only sets honest expectations. */}
+        <Text style={styles.footnote}>{t('role.inviteFootnote')}</Text>
       </ScrollView>
+
+      {error ? (
+        <View style={styles.errorBanner} accessibilityRole="alert">
+          <Text style={styles.errorGlyph}>⚠</Text>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : null}
 
       <View style={styles.actions}>
         <Button title={t('role.continueAs', { role: t(DEF[picked].i18nKey) })} size="lg" onPress={onContinue} loading={busy} />
@@ -117,6 +154,12 @@ const styles = StyleSheet.create({
   name: { fontFamily: font.body, fontSize: font.size.lg, fontWeight: font.weight.bold, color: color.ink800, lineHeight: 22 },
   vern: { fontFamily: font.vernacular, fontSize: font.size.md, fontWeight: font.weight.semibold, color: color.primary700 },
   desc: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink500, marginTop: 2 },
+  badgeRow: { marginTop: space[2] },
+  footnote: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink400, marginTop: space[4], lineHeight: 18 },
+
+  errorBanner: { flexDirection: 'row', alignItems: 'flex-start', gap: space[2], marginHorizontal: space[5], marginBottom: space[2], padding: space[3], borderRadius: radius.md, backgroundColor: color.dangerLight },
+  errorGlyph: { fontSize: font.size.md, color: color.dangerDark },
+  errorText: { flex: 1, fontFamily: font.body, fontSize: font.size.sm, color: color.dangerDark, lineHeight: 19 },
 
   actions: { paddingHorizontal: space[5], paddingTop: space[2], paddingBottom: space[4] },
 });

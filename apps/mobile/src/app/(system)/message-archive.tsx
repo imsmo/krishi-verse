@@ -65,7 +65,19 @@ export default function MessageArchive() {
           const when = item.lastMessageAt ?? item.createdAt;
           return (
             <Card style={styles.row}>
-              <Pressable style={{ flex: 1 }} onPress={() => router.push({ pathname: '/(buyer)/chat/[id]', params: { id: item.id } } as never)} accessibilityRole="button">
+              <Pressable
+                style={{ flex: 1 }}
+                onPress={() => router.push({
+                  pathname: '/(system)/chat/[id]',
+                  params: {
+                    id: item.id,
+                    ...(item.counterpartyUserId ? { peerId: item.counterpartyUserId } : {}),
+                    ...(item.counterpartyName ? { peerName: item.counterpartyName } : {}),
+                    context: item.contextType,
+                  },
+                } as never)}
+                accessibilityRole="button"
+              >
                 <Text style={styles.title} numberOfLines={1}>{item.counterpartyName || t(`chat.context.${item.contextType}`)}</Text>
                 <Text style={styles.sub} numberOfLines={1}>{previewText}</Text>
                 {when ? <Text style={styles.month}>{safeMonth(when, lang)}</Text> : null}

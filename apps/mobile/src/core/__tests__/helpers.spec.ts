@@ -1,6 +1,6 @@
 // Unit tests for the dependency-free helpers: phone normalization, resend cooldown, role routing, numerals.
 import { normalizeIndianPhone, resendSecondsRemaining } from '../auth/otp.helpers';
-import { isAppRole, homeRouteFor, defaultActiveRole } from '../auth/role-switcher';
+import { isAppRole, homeRouteFor, defaultActiveRole, backendRoleCode, roleEligibility } from '../auth/role-switcher';
 import { compactIndian, localizeDigits } from '../i18n/numerals';
 
 describe('normalizeIndianPhone', () => {
@@ -25,6 +25,26 @@ describe('role-switcher', () => {
   it('defaults active role to first known server role', () => {
     expect(defaultActiveRole(['random', 'trader'])).toBe('trader');
     expect(defaultActiveRole([])).toBe('farmer');
+  });
+
+  // KV-BL-066 (screens 04/433 role picker): the backend RBAC role codes diverge from the app's nav-facing
+  // AppRole names for a few roles — onboarding.selectRole() must submit the code the API actually recognises.
+  it('maps AppRole to the backend RBAC role code (KV-BL-066)', () => {
+    expect(backendRoleCode('farmer')).toBe('farmer');
+    expect(backendRoleCode('buyer')).toBe('customer');
+    expect(backendRoleCode('trader')).toBe('vyapari');
+    expect(backendRoleCode('owner')).toBe('tenant_admin');
+    expect(backendRoleCode('ambassador')).toBe('ambassador');
+    expect(backendRoleCode('worker')).toBe('worker');
+  });
+
+  it('mirrors the API self-serve pilot allow-list for role-card eligibility hints (client HINT only)', () => {
+    expect(roleEligibility('farmer')).toBe('self_serve');
+    expect(roleEligibility('buyer')).toBe('self_serve');
+    expect(roleEligibility('owner')).toBe('invite_only');
+    expect(roleEligibility('ambassador')).toBe('invite_only');
+    expect(roleEligibility('trader')).toBe('not_pilot_ga');
+    expect(roleEligibility('worker')).toBe('not_pilot_ga');
   });
 });
 

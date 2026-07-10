@@ -550,6 +550,16 @@ export interface SupportTicket {
   conversationId: string | null; slaFirstResponseDue: string | null; slaResolutionDue: string | null;
   firstRespondedAt: string | null; resolvedAt: string | null; csatScore: number | null; createdAt?: string;
 }
+/** GET /v1/support/tickets/:id/thread (screen 520) — lazily creates (server-side, first call) or returns the
+ * existing `conversations` row linked to this ticket. The caller then drives the actual two-way chat via the
+ * EXISTING communication conversations/:id/messages GET/POST (this is glue only, never a second chat system). */
+export interface SupportThread { conversationId: string; }
+
+// --- self-serve onboarding (KV-BL-066, screens 04/433 role picker) ---
+/** POST /v1/onboarding/roles result. `alreadyGranted` is true on a repeat/idempotent call (the role was already
+ * held) — same 200, no duplicate grant. `roles` is the caller's full active-role list in this tenant, post-grant,
+ * so the app can refresh its local role state without a second round-trip. */
+export interface OnboardRoleResult { roleCode: string; alreadyGranted: boolean; roles: string[]; }
 
 // --- DPDP privacy (P-23 data-download / account-delete / change-phone) — ASSUMED contracts (endpoints not live) ---
 /** A data-subject request (export or erasure). `status` is server-driven (pending→processing→ready/done). The app

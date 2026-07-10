@@ -3,7 +3,7 @@
 // seller-listings SDK method yet; the box=mine query is the API's owner filter). Creates are OFFLINE-FIRST: if
 // the device is offline the op is enqueued (OfflineQueue) with a stable idempotency key and replayed later, so
 // the farmer never loses a listing started in a low-signal field (Law 3 idempotency + Law 12 degrade-never-die).
-import type { ListingCard, CreateListingInput, ListingAnalytics, GalleryItem, BoostTier, BoostWalletPayResult } from '@krishi-verse/sdk-js';
+import type { ListingCard, CreateListingInput, ListingAnalytics, GalleryItem, BoostTier, BoostWalletPayResult, ListingInquiry } from '@krishi-verse/sdk-js';
 import { apiClient } from '../../core/api/client';
 import type { QueuedOp, ReplayResult } from '../../core/api/offline-queue';
 import { registerOpHandler, enqueueOp } from '../../core/offline/sync-queue';
@@ -132,6 +132,24 @@ export async function payListingBoost(id: string, boostTierId: string, idempoten
  * the wallet already captured payment (Law 2). */
 export async function startBoost(id: string, dto: { boostTierId: string; priceMinor: string; currencyCode?: string; days: number; paymentTxnId: string }): Promise<{ ok: boolean }> {
   return apiClient().listings.startBoost(id, dto, newId());
+}
+
+/** Push an ACTIVE listing's expiry out by `days` (screen 112 EXTEND cta, KV-BL-031). Idempotency-keyed per tap
+ * (Law 3) so a double-tap/retry never double-extends. Errors are RETHROWN (immediate-feedback action, same
+ * convention as repost/boost) so the screen can show a precise message. On success the detail/list caches are
+ * invalidated so the refreshed expiry shows next read. */
+export async function extendListing(id: string, days: number): Promise<{ id: string; expiresAt: string | null }> {
+  const res = await apiClient().listings.extend(id, days, newId());
+  await cache.invalidate(currentScope(), 'listings.mine');
+  await cache.invalidate(currentScope(), 'listings.detail', [id]);
+  return res;
+}
+
+/** Paginated buyer inquiries into the caller's OWN listing (screen 112 "Recent inquiries", KV-BL-031). Owner-only
+ * on the server (404 for non-owners — anti-IDOR). Degrades to an empty page on failure so the screen shows its
+ * empty/coming-soon state rather than an error (a non-critical read, same convention as myListings). */
+export async function listingInquiries(id: string, params: { cursor?: string; limit?: number } = {}): Promise<{ items: ListingInquiry[]; nextCursor: string | null }> {
+  try { return await apiClient().listings.inquiries(id, params); } catch { return { items: [], nextCursor: null }; }
 }
 
 /** The replay handler, registered on the shared offline queue (dispatched by op.type). */

@@ -37,4 +37,5 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   ForecastDay, ForecastHour, NormalisedForecast, ForecastResult, WeatherPrefs,
   LearningResource, ResourceKind, CropCalendar, CropCalendarStage, AssistantReply, AssistantStatus,
   Scheme, SchemeAuthority, EligibilityResult, ApplicationStatus, SchemeApplication, SchemeApplicationDocument, DbtTransfer,
-  SupportTicket, TicketSeverity, TicketStatus, LandParcel, PrivacyRequest } from './types';
+  SupportTicket, TicketSeverity, TicketStatus, SupportThread, LandParcel, PrivacyRequest,
+  OnboardRoleResult, ListingInquiry, ListingTrustDocument } from './types';

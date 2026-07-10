@@ -75,7 +75,19 @@ export default function Messages() {
             : item.isLocked ? t('chat.locked') : t(`chat.context.${item.contextType}`);
           const when = item.lastMessageAt ?? item.createdAt;
           return (
-            <Pressable onPress={() => router.push({ pathname: '/(buyer)/chat/[id]', params: { id: item.id } } as never)} accessibilityRole="button" style={styles.row}>
+            <Pressable
+              onPress={() => router.push({
+                pathname: '/(system)/chat/[id]',
+                params: {
+                  id: item.id,
+                  ...(item.counterpartyUserId ? { peerId: item.counterpartyUserId } : {}),
+                  ...(item.counterpartyName ? { peerName: item.counterpartyName } : {}),
+                  context: item.contextType,
+                },
+              } as never)}
+              accessibilityRole="button"
+              style={styles.row}
+            >
               <Text style={styles.icon}>💬</Text>
               <View style={{ flex: 1 }}>
                 <Text style={styles.title} numberOfLines={1}>{item.counterpartyName || t(`chat.context.${item.contextType}`)}</Text>

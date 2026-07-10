@@ -2,11 +2,15 @@
 // support channels (Ask AI / raise a request / call / report), popular questions + topic chips (route to the AI
 // assistant), and the caller's REAL support requests (tickets — status + CSAT on a resolved one). Behind
 // `farmer_profile`. Degrade-never-die.
-// §13 gaps (no contract → rendered honestly, never faked):
+// "Chat with support" (screen 520, KV-BL-034/052): opens a NEW general ticket (channel='app', severity P2), then
+// GET /v1/support/tickets/:id/thread lazily creates/returns its chat thread, then routes to the shared cross-role
+// chat screen — this is the CTA screen 520's own header comment named as previously "pointed nowhere" (it used to
+// fall back to the raise-a-complaint form instead). Each of "My support requests" below also gets a small "Chat"
+// action that opens that SAME ticket's existing thread (never a new one — the thread endpoint is idempotent per
+// ticket). Business-hours / live-presence copy has no contract (§13) → never implied; the channel always raises a
+// real ticket + thread, whether or not an agent is currently online.
 //  • The CALL helpline number ("1800-XXX-1234") isn't in app config/contract → shown as a coming-soon channel,
 //    never a fabricated working number wired to tel:.
-//  • A live "Chat with support" presence + "9 AM-7 PM" window has no contract → the channel raises a real support
-//    request (complaint) rather than implying a live agent is online.
 //  • "Talk to Vikas — your ambassador · Available now · Petlad cluster" — there is no farmer→ambassador assignment
 //    contract → a coming-soon block, never a fabricated ambassador name/availability.
 import React, { useCallback, useState } from 'react';
@@ -16,7 +20,7 @@ import type { SupportTicket } from '@krishi-verse/sdk-js';
 import { Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
-import { myTickets, rateTicket } from '../../../features/profile/profile.api';
+import { myTickets, rateTicket, openTicket, openTicketThread } from '../../../features/profile/profile.api';
 import { ticketStatusTone, canRateCsat } from '../../../features/profile/profile';
 
 const FAQS = ['payout', 'rejected', 'rating', 'kyc', 'priceBand'] as const;
@@ -28,6 +32,8 @@ export default function Help() {
   const enabled = useFlag('farmer_profile');
   const [items, setItems] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
+  // 'new' while opening a fresh support chat; a ticket id while opening THAT ticket's existing thread.
+  const [chatBusy, setChatBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => { const r = await myTickets(); setItems(r.items); setLoading(false); }, []);
   useFocusEffect(useCallback(() => { if (enabled) { setLoading(true); load(); } else setLoading(false); }, [enabled, load]));
@@ -40,12 +46,29 @@ export default function Help() {
   };
   const askTopic = () => router.push('/(farmer)/assistant');
 
+  // "Chat with support": open (or reuse, for an existing ticket) a chat thread, then route to it. `existingTicketId`
+  // omitted → raises a fresh general ticket first (channel='app', severity P2 — same default as the rest of this
+  // module); passed → reuses that ticket's own thread (idempotent server-side, never a duplicate).
+  const openSupportChat = async (existingTicketId?: string) => {
+    if (chatBusy) return;
+    setChatBusy(existingTicketId ?? 'new');
+    try {
+      const ticketId = existingTicketId ?? (await openTicket({ subject: t('profile.help.chatSubject'), severity: 'P2' })).id;
+      const { conversationId } = await openTicketThread(ticketId);
+      router.push({ pathname: '/(system)/chat/[id]', params: { id: conversationId, title: t('chat.context.support_ticket'), context: 'support_ticket' } });
+    } catch {
+      Alert.alert(t('profile.help.chat'), t('profile.help.chatFailed'));
+    } finally {
+      setChatBusy(null);
+    }
+  };
+
   return (
     <ScreenScaffold title={t('profile.help')}>
       {/* Channels */}
       <View style={styles.channels}>
         <Channel icon="🤖" title={t('profile.help.askAi')} sub={t('profile.help.askAiSub')} onPress={() => router.push('/(farmer)/assistant')} />
-        <Channel icon="💬" title={t('profile.help.chat')} sub={t('profile.help.chatSub')} onPress={() => router.push('/(farmer)/profile/complaint')} />
+        <Channel icon="💬" title={t('profile.help.chat')} sub={chatBusy === 'new' ? t('common.loading') : t('profile.help.chatSub')} onPress={() => openSupportChat()} disabled={chatBusy === 'new'} />
         <Channel icon="📞" title={t('profile.help.call')} sub={t('profile.help.callSoon')} disabled />
         <Channel icon="⚠" title={t('profile.help.report')} sub={t('profile.help.reportSub')} onPress={() => router.push('/(farmer)/profile/complaint')} />
       </View>
@@ -86,6 +109,9 @@ export default function Help() {
             <StatusPill label={t(`profile.help.status.${item.status}`, { defaultValue: item.status })} tone={ticketStatusTone(item.status)} />
           </View>
           {item.subject ? <Text style={styles.subject} numberOfLines={2}>{item.subject}</Text> : null}
+          <Pressable onPress={() => openSupportChat(item.id)} disabled={chatBusy === item.id} accessibilityRole="button" style={styles.ticketChatBtn}>
+            <Text style={styles.ticketChatTxt}>{chatBusy === item.id ? t('common.loading') : `💬 ${t('profile.help.chat')}`}</Text>
+          </Pressable>
           {canRateCsat(item.status) && item.csatScore == null ? (
             <View style={styles.csat}>
               <Text style={styles.csatLabel}>{t('profile.help.rate')}</Text>
@@ -130,6 +156,8 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   no: { fontFamily: font.body, fontSize: font.size.md, fontWeight: font.weight.semibold, color: color.ink800 },
   subject: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink600, marginTop: space[1] },
+  ticketChatBtn: { alignSelf: 'flex-start', minHeight: 36, justifyContent: 'center', marginTop: space[2] },
+  ticketChatTxt: { fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.semibold, color: color.primary700 },
   muted: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink500 },
   csat: { marginTop: space[3] },
   csatLabel: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink500, marginBottom: space[1] },

@@ -1,27 +1,35 @@
 // apps/mobile/src/app/(farmer)/listings/[id].tsx · screen 112 (My Listing detail) — rebuilt to the Phase-1
 // design (Krishi_Verse_Design_System/screens/112-farmer-my-listing-detail.html): crop hero + status badge +
-// photo count, title + ₹/quintal + meta line, a 7-day stats strip (Views · Inquiries · Offers), four quick
-// actions (Edit · Boost · Stats · Remove), Recent inquiries, and a Listing-health checklist. Thin screen over
+// photo count, title + ₹/quintal + meta line, a 7-day stats strip (Views · Inquiries · Offers), quick actions
+// (Edit · Extend · Boost · Stats · Remove), Recent inquiries, and a Listing-health checklist. Thin screen over
 // features/listings; degrade-never-die (Law 12); money via MoneyText (paise); ≥48px targets; i18n(hi/en/gu).
 //
 // Real data: title/price/qty/status (GET /listings/:id), Views + Offers + publishedAt (GET /listings/:id/analytics,
 // owner-only — anti-IDOR), photo count (GET /listings/:id/media). Edit is real; Boost is flag-gated (listing_boost
-// OFF until wallet pay lands) — never a fake boosted state. FLAGGED GAPS (§13, never faked): Inquiries count, the
-// Recent-inquiries list, grade/moisture, fair-price + verified-location chips, lab-report/expiry health rows, and
-// a listing Remove endpoint are not exposed by the read-model/SDK yet → shown as "—" / hidden / "coming soon".
+// OFF until wallet pay lands) — never a fake boosted state.
+// EXTEND (KV-BL-031): a 1-30 day stepper + confirm → POST /listings/:id/extend (Idempotency-Key); the refreshed
+// expiry comes straight back in the response (the read-model has no expiresAt field to show BEFORE extending, so
+// none is shown until the caller actually extends — never fabricated).
+// INQUIRIES (KV-BL-031): GET /listings/:id/inquiries → real buyer-inquiry rows (conversationId/lastMessagePreview/
+// unreadCount; no buyer name on this contract, so rows show a generic "Buyer inquiry" label, never a fabricated
+// name) → tap opens the existing cross-role chat thread screen. FLAGGED GAPS (§13, never faked): grade/moisture,
+// fair-price + verified-location chips, lab-report health row, and a listing Remove endpoint are not exposed by
+// the read-model/SDK yet → hidden / "coming soon".
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { ListingCard, ListingAnalytics } from '@krishi-verse/sdk-js';
+import type { ListingCard, ListingAnalytics, ListingInquiry } from '@krishi-verse/sdk-js';
+import { SdkError } from '@krishi-verse/sdk-js';
 import { EmptyState, MoneyText, SkeletonCard, Icon, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
+import { formatDate } from '@krishi-verse/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
-import { getListing, listingAnalytics, listingMedia } from '../../../features/listings/listings.api';
-import { relativeAge, healthItems, type RelativeAge } from '../../../features/listings/listing-detail';
+import { getListing, listingAnalytics, listingMedia, extendListing, listingInquiries } from '../../../features/listings/listings.api';
+import { relativeAge, healthItems, clampExtendDays, EXTEND_MIN_DAYS, EXTEND_MAX_DAYS, EXTEND_DEFAULT_DAYS, type RelativeAge } from '../../../features/listings/listing-detail';
 import { cropEmoji } from '../../../features/listings/my-listings';
 
-function ageLabel(t: (k: string, p?: Record<string, unknown>) => string, a: RelativeAge | null): string | null {
+function ageLabel(t: (k: string, p?: Record<string, string | number>) => string, a: RelativeAge | null): string | null {
   if (!a) return null;
   if (a.unit === 'today') return t('listingDetail.listedToday');
   return t(`listingDetail.listedAgo.${a.unit}`, { n: a.value });
@@ -37,13 +45,22 @@ export default function ListingDetail() {
   const [photoCount, setPhotoCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [inquiries, setInquiries] = useState<ListingInquiry[]>([]);
+
+  // EXTEND panel state (screen 112 EXTEND cta, KV-BL-031).
+  const [extending, setExtending] = useState(false);
+  const [extendDays, setExtendDays] = useState(EXTEND_DEFAULT_DAYS);
+  const [extendBusy, setExtendBusy] = useState(false);
+  const [extendError, setExtendError] = useState<string | undefined>();
+  const [newExpiresAt, setNewExpiresAt] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true); setFailed(false);
-    const [res, an, media] = await Promise.all([getListing(id), listingAnalytics(id), listingMedia(id)]);
+    const [res, an, media, inq] = await Promise.all([getListing(id), listingAnalytics(id), listingMedia(id), listingInquiries(id)]);
     setListing(res.listing); setFailed(!res.listing);
     setAnalytics(an); setPhotoCount(media.length);
+    setInquiries(inq.items);
     setLoading(false);
   }, [id]);
   useEffect(() => { load(); }, [load]);
@@ -57,9 +74,38 @@ export default function ListingDetail() {
   const onRepost = () => router.push({ pathname: '/(farmer)/listings/repost', params: { id: id! } });
   const onRemove = () => Alert.alert(t('listingDetail.remove'), t('listingDetail.removeSoon'));
 
+  const onOpenExtend = () => { setExtending(true); setExtendError(undefined); setNewExpiresAt(null); };
+  const onConfirmExtend = () => {
+    if (!id || extendBusy) return;
+    Alert.alert(
+      t('listingDetail.extend.confirmTitle'),
+      t('listingDetail.extend.confirmMessage', { n: extendDays }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('listingDetail.extend.cta'),
+          onPress: async () => {
+            setExtendBusy(true); setExtendError(undefined);
+            try {
+              const res = await extendListing(id, extendDays);
+              setNewExpiresAt(res.expiresAt);
+            } catch (e) {
+              setExtendError(e instanceof SdkError && e.isValidation ? t('listingDetail.extend.invalidDays') : t('common.error.generic'));
+            } finally { setExtendBusy(false); }
+          },
+        },
+      ],
+    );
+  };
+  const onOpenInquiry = (inq: ListingInquiry) => router.push({
+    pathname: '/(system)/chat/[id]',
+    params: { id: inq.conversationId, ...(inq.buyerUserId ? { peerId: inq.buyerUserId } : {}), context: 'listing' },
+  });
+
   const statusKey = listing?.status === 'draft' ? 'preview.status.draft' : listing?.status === 'sold' ? 'listings.badge.sold' : 'listingDetail.statusActive';
   const listed = ageLabel(t, relativeAge(analytics?.publishedAt));
   const health = listing ? healthItems({ photoCount, boostActive: !!analytics?.activeBoost }) : [];
+  const newExpiresLabel = newExpiresAt ? (() => { try { return formatDate(newExpiresAt, lang, { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return newExpiresAt; } })() : null;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -100,28 +146,92 @@ export default function ListingDetail() {
           <Text style={styles.sectionLabel}>{t('listingDetail.last7')}</Text>
           <View style={styles.statsRow}>
             <StatCell value={analytics ? String(analytics.views) : '—'} label={t('listingDetail.views')} tone={color.primary600} />
-            {/* Inquiries: no listing-scoped inquiry count in the read-model yet (§13 gap) — shown as "—", never faked. */}
-            <StatCell value="—" label={t('listingDetail.inquiries')} tone={color.info} />
+            <StatCell value={String(inquiries.length)} label={t('listingDetail.inquiries')} tone={color.info} />
             <StatCell value={analytics ? String(analytics.offers) : '—'} label={t('listingDetail.offers')} tone={color.accent700} />
           </View>
 
           {/* Quick actions */}
           <View style={styles.actions}>
             <ActionTile icon="✏️" label={t('listingDetail.edit')} onPress={onEdit} />
-            {listing.status === 'expired' || listing.status === 'sold_out' ? <ActionTile icon="♻️" label={t('listingDetail.repost')} onPress={onRepost} /> : null}
+            {listing.status === 'expired' || listing.status === 'sold_out' ? (
+              <ActionTile icon="♻️" label={t('listingDetail.repost')} onPress={onRepost} />
+            ) : listing.status === 'published' ? (
+              // EXTEND is only valid on an already-'published' listing (the domain entity rejects any other
+              // status) — never shown for draft/paused/rejected/pending_approval, matching the server rule.
+              <ActionTile icon="⏰" label={t('listingDetail.extend.cta')} onPress={onOpenExtend} />
+            ) : null}
             {boostOn ? <ActionTile icon="🚀" label={t('listingDetail.boost')} onPress={onBoost} /> : null}
             <ActionTile icon="📊" label={t('listingDetail.stats')} onPress={() => router.push({ pathname: '/(farmer)/listings/analytics', params: { id: id! } })} />
             <ActionTile icon="🗑" label={t('listingDetail.remove')} onPress={onRemove} danger />
           </View>
 
-          {/* Recent inquiries — header + designed empty/flag (no listing-scoped inquiry list endpoint yet, §13). */}
+          {/* EXTEND panel (screen 112 EXTEND cta, KV-BL-031): 1-30 day stepper → confirm → refreshed expiry. */}
+          {extending ? (
+            <View style={styles.extendPanel}>
+              <Text style={styles.extendTitle}>{t('listingDetail.extend.title')}</Text>
+              {newExpiresLabel ? (
+                <>
+                  <Text style={styles.extendDone}>{t('listingDetail.extend.done', { date: newExpiresLabel })}</Text>
+                  <Pressable onPress={() => setExtending(false)} accessibilityRole="button" style={styles.extendCloseBtn}>
+                    <Text style={styles.extendCloseTxt}>{t('common.ok')}</Text>
+                  </Pressable>
+                </>
+              ) : (
+                <>
+                  <View style={styles.stepperRow}>
+                    <Pressable
+                      onPress={() => setExtendDays((d) => clampExtendDays(d - 1))}
+                      disabled={extendDays <= EXTEND_MIN_DAYS}
+                      accessibilityRole="button" accessibilityLabel={t('listingDetail.extend.minus')}
+                      style={[styles.stepperBtn, extendDays <= EXTEND_MIN_DAYS && styles.stepperBtnOff]}
+                    >
+                      <Text style={styles.stepperGlyph}>−</Text>
+                    </Pressable>
+                    <Text style={styles.stepperValue}>{t('listingDetail.extend.days', { n: extendDays })}</Text>
+                    <Pressable
+                      onPress={() => setExtendDays((d) => clampExtendDays(d + 1))}
+                      disabled={extendDays >= EXTEND_MAX_DAYS}
+                      accessibilityRole="button" accessibilityLabel={t('listingDetail.extend.plus')}
+                      style={[styles.stepperBtn, extendDays >= EXTEND_MAX_DAYS && styles.stepperBtnOff]}
+                    >
+                      <Text style={styles.stepperGlyph}>+</Text>
+                    </Pressable>
+                  </View>
+                  {extendError ? <Text style={styles.extendError}>{extendError}</Text> : null}
+                  <View style={styles.extendActions}>
+                    <Pressable onPress={() => setExtending(false)} disabled={extendBusy} accessibilityRole="button" style={styles.extendCancelBtn}>
+                      <Text style={styles.extendCancelTxt}>{t('common.cancel')}</Text>
+                    </Pressable>
+                    <Pressable onPress={onConfirmExtend} disabled={extendBusy} accessibilityRole="button" style={styles.extendConfirmBtn}>
+                      <Text style={styles.extendConfirmTxt}>{extendBusy ? t('common.loading') : t('listingDetail.extend.confirm')}</Text>
+                    </Pressable>
+                  </View>
+                </>
+              )}
+            </View>
+          ) : null}
+
+          {/* Recent inquiries (KV-BL-031): real buyer-inquiry rows → tap opens the chat thread. */}
           <View style={styles.sectionHead}>
             <Text style={styles.sectionTitle}>{t('listingDetail.recentInquiries')}</Text>
-            {analytics && analytics.offers > 0 ? <Text style={styles.viewAll}>{t('listingDetail.viewAll', { n: analytics.offers })} →</Text> : null}
           </View>
-          <View style={styles.inqEmpty}>
-            <Text style={styles.inqEmptyTxt}>{t('listingDetail.inquiriesSoon')}</Text>
-          </View>
+          {inquiries.length === 0 ? (
+            <View style={styles.inqEmpty}>
+              <Text style={styles.inqEmptyTxt}>{t('listingDetail.inquiriesEmpty')}</Text>
+            </View>
+          ) : (
+            <View style={styles.inqList}>
+              {inquiries.map((inq) => (
+                <Pressable key={inq.conversationId} onPress={() => onOpenInquiry(inq)} accessibilityRole="button" style={styles.inqRow}>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.inqFrom} numberOfLines={1}>{t('listingDetail.inquiryFrom')}</Text>
+                    <Text style={styles.inqPreview} numberOfLines={1}>{inq.lastMessagePreview || t('listingDetail.inquiryNoPreview')}</Text>
+                  </View>
+                  {inq.unreadCount > 0 ? <View style={styles.inqBadge}><Text style={styles.inqBadgeTxt}>{inq.unreadCount}</Text></View> : <Text style={styles.chev}>›</Text>}
+                </Pressable>
+              ))}
+            </View>
+          )}
 
           {/* Listing health (from real photo count + boost; lab-report/expiry rows flagged) */}
           <Text style={[styles.sectionTitle, { marginTop: space[5], marginBottom: space[2] }]}>{t('listingDetail.health')}</Text>
@@ -129,7 +239,7 @@ export default function ListingDetail() {
             {health.map((h) => (
               <View key={h.id} style={styles.healthRow}>
                 <Text style={[styles.healthIcon, { color: h.tone === 'good' ? color.successDark : color.accent700 }]}>{h.tone === 'good' ? '✓' : '⚠'}</Text>
-                <Text style={styles.healthTxt}>{t(h.labelKey, { n: h.count })}</Text>
+                <Text style={styles.healthTxt}>{t(h.labelKey, { n: h.count ?? 0 })}</Text>
               </View>
             ))}
           </View>
@@ -197,4 +307,29 @@ const styles = StyleSheet.create({
   healthRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3], borderTopWidth: 1, borderTopColor: color.ink100 },
   healthIcon: { fontSize: font.size.md, fontWeight: font.weight.bold, width: 18, textAlign: 'center' },
   healthTxt: { flex: 1, fontFamily: font.body, fontSize: font.size.sm, color: color.ink700 },
+
+  extendPanel: { marginTop: space[4], padding: space[4], borderRadius: radius.lg, backgroundColor: color.card, borderWidth: 1, borderColor: color.earth200, ...shadow.card },
+  extendTitle: { fontFamily: font.body, fontSize: font.size.md, fontWeight: font.weight.bold, color: color.ink800, marginBottom: space[3] },
+  stepperRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[4] },
+  stepperBtn: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: color.primary50, borderWidth: 1, borderColor: color.primary200 },
+  stepperBtnOff: { opacity: 0.4 },
+  stepperGlyph: { fontFamily: font.body, fontSize: font.size.xl, fontWeight: font.weight.bold, color: color.primary700 },
+  stepperValue: { fontFamily: font.display, fontSize: font.size.lg, fontWeight: font.weight.bold, color: color.ink800, minWidth: 96, textAlign: 'center' },
+  extendError: { fontFamily: font.body, fontSize: font.size.sm, color: color.dangerDark, textAlign: 'center', marginTop: space[3] },
+  extendActions: { flexDirection: 'row', gap: space[2], marginTop: space[4] },
+  extendCancelBtn: { flex: 1, minHeight: 48, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: color.earth200 },
+  extendCancelTxt: { fontFamily: font.body, fontSize: font.size.md, fontWeight: font.weight.semibold, color: color.ink700 },
+  extendConfirmBtn: { flex: 1.4, minHeight: 48, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: color.primary600 },
+  extendConfirmTxt: { fontFamily: font.body, fontSize: font.size.md, fontWeight: font.weight.bold, color: color.white },
+  extendDone: { fontFamily: font.body, fontSize: font.size.sm, color: color.successDark, textAlign: 'center' },
+  extendCloseBtn: { minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: space[3] },
+  extendCloseTxt: { fontFamily: font.body, fontSize: font.size.md, fontWeight: font.weight.semibold, color: color.primary700 },
+
+  inqList: { gap: space[2] },
+  inqRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 56, padding: space[3], borderRadius: radius.md, backgroundColor: color.card, borderWidth: 1, borderColor: color.earth200 },
+  inqFrom: { fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.bold, color: color.ink800 },
+  inqPreview: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink500, marginTop: 2 },
+  inqBadge: { minWidth: 20, height: 20, paddingHorizontal: 6, borderRadius: 10, backgroundColor: color.primary600, alignItems: 'center', justifyContent: 'center' },
+  inqBadgeTxt: { fontFamily: font.body, fontSize: font.size.xs, fontWeight: font.weight.bold, color: color.white },
+  chev: { fontFamily: font.body, fontSize: font.size.xl, color: color.ink400 },
 });

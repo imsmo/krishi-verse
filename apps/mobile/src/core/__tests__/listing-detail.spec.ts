@@ -1,5 +1,5 @@
-// Unit tests for the PURE listing-detail helpers (screen 112): relative age + health checklist.
-import { relativeAge, healthItems } from '../../features/listings/listing-detail';
+// Unit tests for the PURE listing-detail helpers (screen 112): relative age + health checklist + EXTEND clamp.
+import { relativeAge, healthItems, clampExtendDays, EXTEND_MIN_DAYS, EXTEND_MAX_DAYS } from '../../features/listings/listing-detail';
 
 describe('relativeAge', () => {
   const now = Date.parse('2026-06-30T10:00:00Z');
@@ -28,5 +28,23 @@ describe('healthItems', () => {
     const ids = healthItems({ photoCount: 4, boostActive: true }).map((i) => i.id);
     expect(ids).not.toContain('lab-report');
     expect(ids).not.toContain('expiry');
+  });
+});
+
+describe('clampExtendDays (screen 112 EXTEND cta, KV-BL-031)', () => {
+  it('clamps to the API-accepted range [1,30]', () => {
+    expect(clampExtendDays(0)).toBe(EXTEND_MIN_DAYS);
+    expect(clampExtendDays(-5)).toBe(EXTEND_MIN_DAYS);
+    expect(clampExtendDays(31)).toBe(EXTEND_MAX_DAYS);
+    expect(clampExtendDays(1000)).toBe(EXTEND_MAX_DAYS);
+  });
+  it('passes through valid in-range integers', () => {
+    expect(clampExtendDays(1)).toBe(1);
+    expect(clampExtendDays(7)).toBe(7);
+    expect(clampExtendDays(30)).toBe(30);
+  });
+  it('rounds a fractional value', () => {
+    expect(clampExtendDays(7.6)).toBe(8);
+    expect(clampExtendDays(7.4)).toBe(7);
   });
 });

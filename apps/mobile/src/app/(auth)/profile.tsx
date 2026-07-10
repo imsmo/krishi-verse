@@ -17,11 +17,12 @@ import { captureFromCamera, pickFromGallery, type PickedImage } from '../../core
 import { getCurrentFix } from '../../core/location';
 import { FARM_SIZES, EMPTY_SETUP_FORM, type ProfileSetupForm, type FarmSize } from '../../features/onboarding/profile-setup';
 import { submitProfileSetup, saveDraft } from '../../features/onboarding/profile-setup.api';
+import { homeRouteFor } from '../../core/auth/role-switcher';
 
 export default function ProfileSetup() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { loadProfile } = useAuth();
+  const { state, loadProfile } = useAuth();
 
   const [form, setForm] = useState<ProfileSetupForm>(EMPTY_SETUP_FORM);
   const [picked, setPicked] = useState<PickedImage | null>(null);
@@ -50,7 +51,10 @@ export default function ProfileSetup() {
     else setGpsState('denied');
   };
 
-  const goHome = async () => { await loadProfile(); router.replace('/(farmer)/home'); };
+  // The role picker (screen 04) already granted + set the ACTIVE role server-side/locally before landing here —
+  // route to THAT role's home (not a hardcoded farmer home), so a self-serve buyer grant doesn't strand the
+  // caller on the farmer dashboard. Falls back to farmer when no active role is known yet (defensive).
+  const goHome = async () => { await loadProfile(); router.replace(homeRouteFor(state.activeRole) as never); };
 
   const onSaveDraft = async () => {
     if (draftBusy) return;

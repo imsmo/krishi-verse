@@ -280,6 +280,57 @@ describe('HttpClient via resources', () => {
     expect(rated.csatScore).toBe(5);
   });
 
+  it('listings.extend POSTs :id/extend with an idempotency key + days body, returns the new expiresAt', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'l1', expiresAt: '2026-08-09T00:00:00Z' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const r = await c.listings.extend('l1', 14, 'idem-ext-1');
+    expect(calls[0].url).toBe('https://api.test/v1/listings/l1/extend');
+    expect(calls[0].init.method).toBe('POST');
+    expect(JSON.parse(calls[0].init.body as string)).toEqual({ days: 14 });
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-ext-1');
+    expect(r.expiresAt).toBe('2026-08-09T00:00:00Z');
+  });
+
+  it('listings.inquiries GETs :id/inquiries (owner-only), keyset paginated', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: [{ conversationId: 'c1', buyerUserId: 'u2', lastMessagePreview: 'Moisture content?', unreadCount: 1 }], meta: { nextCursor: null } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const page = await c.listings.inquiries('l1');
+    expect(calls[0].url).toBe('https://api.test/v1/listings/l1/inquiries?limit=20');
+    expect(page.items[0].conversationId).toBe('c1');
+    expect(page.items[0].buyerUserId).toBe('u2');
+  });
+
+  it('onboarding.selectRole POSTs /v1/onboarding/roles with an idempotency key + role body', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { roleCode: 'farmer', alreadyGranted: false, roles: ['farmer'] } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const r = await c.onboarding.selectRole('farmer', 'idem-role-1');
+    expect(calls[0].url).toBe('https://api.test/v1/onboarding/roles');
+    expect(calls[0].init.method).toBe('POST');
+    expect(JSON.parse(calls[0].init.body as string)).toEqual({ role: 'farmer' });
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-role-1');
+    expect(r).toEqual({ roleCode: 'farmer', alreadyGranted: false, roles: ['farmer'] });
+  });
+
+  it('onboarding.selectRole surfaces a 403 SELFSERVE_ROLE_NOT_ELIGIBLE with the reason in details (real API error envelope: {error:{code,message,details}, meta:{request_id}})', async () => {
+    const { fn } = fakeFetch(() => ({
+      status: 403,
+      body: { error: { code: 'SELFSERVE_ROLE_NOT_ELIGIBLE', message: "'ambassador' is invite-only", details: { role: 'ambassador', reason: 'invite_only' } }, meta: { request_id: 'req-42', timestamp: '2026-07-10T00:00:00Z' } },
+    }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    await expect(c.onboarding.selectRole('ambassador', 'idem-role-2')).rejects.toMatchObject({
+      code: 'SELFSERVE_ROLE_NOT_ELIGIBLE', status: 403, requestId: 'req-42', details: { role: 'ambassador', reason: 'invite_only' },
+    });
+  });
+
+  it('support.thread GETs :id/thread and returns the linked conversationId', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { conversationId: 'c9' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const r = await c.support.thread('tk1');
+    expect(calls[0].url).toBe('https://api.test/v1/support/tickets/tk1/thread');
+    expect(calls[0].init.method).toBe('GET');
+    expect(r.conversationId).toBe('c9');
+  });
+
   it('parcels.register POSTs /v1/land/parcels with an idempotency key + areaValue string', async () => {
     const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'p1', ownerUserId: 'u1', regionId: null, surveyNo: '12/3', bhulekhRef: null, area: '2.5000', areaUnit: 'acre', irrigationTypeId: null, boundaryGeojson: null, verificationStatus: 'pending', isTenantFarmed: false } } }));
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
@@ -634,7 +685,7 @@ describe('HttpClient via resources', () => {
     const mcc = await c.dairy.createMcc({ code: 'M1', defaultName: 'Anand MCC' }, 'idem-1');
     expect(calls[0].url).toBe('https://api.test/v1/dairy/mccs');
     expect(calls[0].init.method).toBe('POST');
-    expect(calls[0].init.headers['idempotency-key']).toBe('idem-1');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-1');
     expect(mcc.id).toBe('mcc1');
 
     await c.dairy.listMccs({ activeOnly: true });
@@ -642,7 +693,7 @@ describe('HttpClient via resources', () => {
 
     await c.dairy.recordCollection({ membershipId: 'm1', shift: 'morning', collectedOn: '2026-06-20', weightKg: '12.5', fatPct: '4.2', snfPct: '8.5' }, 'idem-2');
     expect(calls[2].url).toBe('https://api.test/v1/dairy/collections');
-    expect(calls[2].init.headers['idempotency-key']).toBe('idem-2');
+    expect((calls[2].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-2');
 
     await c.dairy.generateBill({ membershipId: 'm1', periodStart: '2026-06-01', periodEnd: '2026-06-15' }, 'idem-3');
     expect(calls[3].url).toBe('https://api.test/v1/dairy/milk-bills/generate');
@@ -652,7 +703,7 @@ describe('HttpClient via resources', () => {
     expect(calls[5].url).toBe('https://api.test/v1/dairy/milk-bills/b1/approve');
     const paid = await c.dairy.payBill('b1', 'idem-4');
     expect(calls[6].url).toBe('https://api.test/v1/dairy/milk-bills/b1/pay');
-    expect(calls[6].init.headers['idempotency-key']).toBe('idem-4');
+    expect((calls[6].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-4');
     expect(paid.status).toBe('paid');
   });
 
@@ -669,11 +720,11 @@ describe('HttpClient via resources', () => {
     await c.labour.createBooking({ demandTypeCode: 'harvest', taskSkillId: 's1', regionId: 'r1', skillLevel: 'unskilled', workersNeeded: 2, startDate: '2026-07-01', endDate: '2026-07-03', wageOfferedMinor: '50000', farmLat: 22.3, farmLng: 70.8 }, 'idem-b1');
     expect(calls[0].url).toBe('https://api.test/v1/labour/bookings');
     expect(calls[0].init.method).toBe('POST');
-    expect(calls[0].init.headers['idempotency-key']).toBe('idem-b1');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-b1');
 
     await c.labour.assignWorker('b1', { workerId: 'w1', wageMinor: '50000' }, 'idem-a1');
     expect(calls[1].url).toBe('https://api.test/v1/labour/bookings/b1/assignments');
-    expect(calls[1].init.headers['idempotency-key']).toBe('idem-a1');
+    expect((calls[1].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-a1');
 
     await c.labour.startBooking('b1');
     expect(calls[2].url).toBe('https://api.test/v1/labour/bookings/b1/start');
@@ -681,7 +732,7 @@ describe('HttpClient via resources', () => {
     expect(calls[3].url).toBe('https://api.test/v1/labour/bookings/b1/complete');
     const paid = await c.labour.payWages('b1', 'idem-pay');
     expect(calls[4].url).toBe('https://api.test/v1/labour/bookings/b1/pay');
-    expect(calls[4].init.headers['idempotency-key']).toBe('idem-pay');
+    expect((calls[4].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-pay');
     expect(paid.workersPaid).toBe(1);
 
     await c.labour.bookingAssignments('b1', { status: 'accepted' });
@@ -714,7 +765,7 @@ describe('HttpClient via resources', () => {
     expect(earn.items[0].amountMinor).toBe('12000');
     const po = await c.ambassadors.payout('amb1', 'idem-po');
     expect(calls[5].url).toBe('https://api.test/v1/ambassadors/amb1/payout');
-    expect(calls[5].init.headers['idempotency-key']).toBe('idem-po');
+    expect((calls[5].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-po');
     expect(po.paidMinor).toBe('12000');
     await c.ambassadors.activateReferral('r1');
     expect(calls[6].url).toBe('https://api.test/v1/ambassadors/referrals/r1/activate');
@@ -769,10 +820,10 @@ describe('HttpClient via resources', () => {
     await c.groupLots.create({ productId: 'p1', targetQuantity: '100.000', unitCode: 'kg', pledgeDeadline: '2026-08-01T00:00:00.000Z', coordinationFeeBps: 500 }, 'idem-gl');
     expect(calls[2].url).toBe('https://api.test/v1/group-lots');
     expect(calls[2].init.method).toBe('POST');
-    expect(calls[2].init.headers['idempotency-key']).toBe('idem-gl');
+    expect((calls[2].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-gl');
     const pledged = await c.groupLots.pledge('g1', { farmerUserId: 'f1', quantity: '25' }, 'idem-pl');
     expect(calls[3].url).toBe('https://api.test/v1/group-lots/g1/pledges');
-    expect(calls[3].init.headers['idempotency-key']).toBe('idem-pl');
+    expect((calls[3].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-pl');
     expect(pledged.progressBps).toBe(2500);
     await c.groupLots.markReady('g1');
     expect(calls[4].url).toBe('https://api.test/v1/group-lots/g1/ready');
@@ -828,7 +879,7 @@ describe('HttpClient via resources', () => {
     const r = await c.assistant.ask({ message: 'How do I treat aphids on okra?', languageCode: 'en' }, 'idem-asst-1');
     expect(calls[0].url).toBe('https://api.test/v1/ai/assistant/messages');
     expect(calls[0].init.method).toBe('POST');
-    expect(calls[0].init.headers['idempotency-key']).toBe('idem-asst-1');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-asst-1');
     expect(r.status).toBe('answered');
     expect(r.sessionId).toBe('s1');
     expect(r.reply).toContain('neem');

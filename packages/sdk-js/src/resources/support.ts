@@ -4,13 +4,19 @@
 // actions (assign/respond/transition) are NOT exposed here — they need support.handle and live in the console.
 // Gated server-side by the `support` flag.
 import { HttpClient } from '../http';
-import { SupportTicket, Page } from '../types';
+import { SupportTicket, SupportThread, Page } from '../types';
 
 export class SupportResource {
   constructor(private readonly http: HttpClient) {}
   /** Open a ticket. `severity` defaults server-side to P2; needs a subject or a category. Idempotent (Law 3). */
   async open(input: { subject?: string; categoryId?: string; severity?: 'P0' | 'P1' | 'P2' | 'P3'; channel?: string }, idempotencyKey: string): Promise<SupportTicket> {
     return (await this.http.request<SupportTicket>('POST', 'support/tickets', { idempotencyKey, body: { channel: input.channel ?? 'app', subject: input.subject, categoryId: input.categoryId, severity: input.severity } })).data;
+  }
+  /** GET /v1/support/tickets/:id/thread (screen 520) — lazily creates (first call) or returns the existing chat
+   * thread linked to this ticket. Requester-or-agent-only (404 for a stranger — no IDOR). The caller then drives
+   * the actual conversation via `conversations.listMessages`/`postMessage` on the returned conversationId. */
+  async thread(id: string, signal?: AbortSignal): Promise<SupportThread> {
+    return (await this.http.request<SupportThread>('GET', `support/tickets/${encodeURIComponent(id)}/thread`, { signal })).data;
   }
   /** The caller's own tickets (box=mine), keyset. */
   async myTickets(params: { status?: string; severity?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<SupportTicket>> {
