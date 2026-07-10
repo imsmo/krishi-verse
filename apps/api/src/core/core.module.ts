@@ -29,6 +29,7 @@ import { OUTBOX_WRITER } from './outbox/outbox.writer';
 import { PgOutboxWriter } from './outbox/outbox.writer.pg';
 import { OutboxHandlerRegistry } from './outbox/outbox.dispatcher';
 import { OUTBOX_HANDLER_REGISTRY } from './outbox/event-envelope';
+import { OutboxRelayRunner } from './outbox/relay.runner';
 import { QUOTA_SERVICE } from './quota/quota.service';
 import { PgQuotaService } from './quota/quota.service.pg';
 import { IDEMPOTENCY_SERVICE } from './idempotency/idempotency.service';
@@ -72,6 +73,10 @@ import { MetricsController } from './observability/metrics.controller';
     LedgerRepository, InProcessWalletClient, { provide: WALLET_SERVICE, useExisting: InProcessWalletClient },
     ReconciliationService,
     OutboxHandlerRegistry, { provide: OUTBOX_HANDLER_REGISTRY, useExisting: OutboxHandlerRegistry },
+    // KV-BL-063: drains OUTBOX_HANDLER_REGISTRY on an in-process timer (OnApplicationBootstrap, once
+    // every module's onModuleInit has registered its handlers — RealtimeFanoutRegistrar just below,
+    // OrdersModule, PaymentsModule, …). Own dedicated kv_relay pool; see relay.runner.ts.
+    OutboxRelayRunner,
     // realtime fan-out: bridge selected outbox events → Redis Pub/Sub for the realtime-gateway pods.
     // Redis-backed when REDIS_URL is set, else a no-op (Law 12: the platform runs fine without live fan-out).
     // Uses a DEDICATED pub connection (pub/sub must not share the cache client). Gated by `realtime_fanout`.

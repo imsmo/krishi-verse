@@ -92,6 +92,19 @@ export class AppConfig {
     if ((env.BANK_VAULT_KIND ?? 'sandbox') === 'sandbox') p.push('BANK_VAULT_KIND must be a real tokeniser (razorpayx) in production — the sandbox returns a fake vault ref');
     if (env.BANK_VAULT_KIND === 'razorpayx' && (!env.RAZORPAYX_KEY_ID || weak16(env.RAZORPAYX_KEY_SECRET))) p.push('RAZORPAYX_KEY_ID + strong RAZORPAYX_KEY_SECRET required when BANK_VAULT_KIND=razorpayx');
 
+    // --- outbox relay (KV-BL-063): must run as kv_relay (BYPASSRLS), never localhost/kv_app/weak ---
+    if (env.RELAY_ENABLED !== 'false') {
+      const relayUrl = env.RELAY_DATABASE_URL && env.RELAY_DATABASE_URL.length > 0 ? env.RELAY_DATABASE_URL : env.DATABASE_URL;
+      const u = AppConfig.tryParsePg(relayUrl);
+      if (!u) p.push('RELAY_DATABASE_URL (or DATABASE_URL fallback) is not a valid postgres URL');
+      else {
+        if (u.user !== 'kv_relay') p.push('RELAY_DATABASE_URL must connect as kv_relay (the BYPASSRLS relay role, migration 0018), not kv_app/superuser');
+        if (/^(localhost|127\.|::1|0\.0\.0\.0)/.test(u.host)) p.push('RELAY_DATABASE_URL must not point at localhost in production');
+        if (!u.password || /^(postgres|password|dev|changeme|admin|secret)$/i.test(u.password) || u.password.length < 12) p.push('RELAY_DATABASE_URL must use a strong, non-default password (from Secrets Manager)'); // parity with primary DATABASE_URL denylist (S1 review advisory)
+        if (u.sslDisabled) p.push('RELAY_DATABASE_URL must require TLS (sslmode=require), not disable it');
+      }
+    }
+
     // --- P0-13 decommission dev affordances: catch these at BOOT, not at the first upload/intent ---
     // Media downloads are gated on a CLEAN AV scan; the scan-result webhook is HMAC-verified with MEDIA_SCAN_SECRET.
     // An empty/weak secret means the webhook rejects every scan (no media ever clears) — fail at boot, not silently.
@@ -174,6 +187,20 @@ export class AppConfig {
     };
   }
   get wallet() { return { grpcUrl: this.env.WALLET_GRPC_URL }; }
+  /** Outbox relay timer (KV-BL-063): in-process runner that drains OutboxDispatcher on an interval.
+   * databaseUrl MUST resolve to the kv_relay BYPASSRLS role in production (assertProductionSecurity
+   * enforces it); falls back to DATABASE_URL for local dev where a single role often has both. */
+  get relay() {
+    const url = this.env.RELAY_DATABASE_URL && this.env.RELAY_DATABASE_URL.length > 0
+      ? this.env.RELAY_DATABASE_URL : this.env.DATABASE_URL;
+    return {
+      enabled: this.env.RELAY_ENABLED !== 'false',
+      databaseUrl: url,
+      poolMax: this.env.RELAY_POOL_MAX,
+      intervalMs: this.env.RELAY_INTERVAL_MS,
+      batchSize: this.env.RELAY_BATCH_SIZE,
+    };
+  }
   get razorpay(){ return { keyId: this.env.RAZORPAY_KEY_ID, webhookSecret: this.env.RAZORPAY_WEBHOOK_SECRET }; }
   /** Full payments wiring. All env reads for payment gateways live HERE (never process.env in modules). */
   get payments() {

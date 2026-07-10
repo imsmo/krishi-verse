@@ -134,7 +134,7 @@ MIGRATION_DATABASE_URL="$PG_URL_OWNER" DATABASE_URL="$PG_URL_APP" pnpm seed
 pass "seed applied (core, rules, catalogue)"
 
 # ------------------------------------------------------------------------------------------------
-# 3b. work around a pre-existing repo gap: apps/api/src/main.ts does `import 'dotenv/config'`
+# 3b. FIXED in S1 (KV-BL-064): dotenv is now declared in apps/api/package.json — this block is a no-op after `pnpm install`. Kept as a safety net for stale node_modules:
 #     but @krishi-verse/api does not declare `dotenv` as a dependency (confirmed: not in
 #     apps/api/package.json, not in the pnpm-lock.yaml importer for apps/api). With
 #     shamefully-hoist=false (.npmrc), that import throws MODULE_NOT_FOUND at boot on a strict

@@ -109,6 +109,20 @@ export const EnvSchema = z.object({
   AI_SERVICES_TIMEOUT_MS: z.coerce.number().int().positive().max(60000).default(12000),
   AI_ASSISTANT_DAILY_CAP: z.coerce.number().int().min(1).max(1000).default(50),     // per-user/day message cap (cost guard)
   AI_ASSISTANT_PER_MINUTE_CAP: z.coerce.number().int().min(1).max(120).default(6),  // per-user/min burst cap (abuse guard)
+
+  // --- outbox relay timer (KV-BL-063) ---
+  // The api runs the transactional-outbox relay (core/outbox/outbox.dispatcher.ts) on an in-process
+  // timer so cross-module event handlers actually fire (payment_succeeded -> order confirmed,
+  // orders.order_completed -> escrow release + notification fan-out, …). See ADR-0001's 2026-07-10
+  // amendment for why this runs here rather than as a standalone satellite service.
+  RELAY_ENABLED: z.enum(['true', 'false']).default('true'),
+  // Dedicated connection for the relay — MUST be the kv_relay BYPASSRLS role (migration 0018), never
+  // kv_app (RLS-scoped; cannot see other tenants' pending events). Empty ⇒ falls back to DATABASE_URL
+  // (local dev convenience only); assertProductionSecurity requires the kv_relay role name in prod.
+  RELAY_DATABASE_URL: z.string().optional(),
+  RELAY_POOL_MAX: z.coerce.number().int().min(1).max(20).default(4),
+  RELAY_INTERVAL_MS: z.coerce.number().int().min(100).max(60000).default(750),      // tick cadence
+  RELAY_BATCH_SIZE: z.coerce.number().int().min(1).max(1000).default(100),          // max events claimed per tick
 });
 
 export type Env = z.infer<typeof EnvSchema>;

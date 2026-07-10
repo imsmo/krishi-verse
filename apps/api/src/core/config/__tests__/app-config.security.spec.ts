@@ -28,6 +28,9 @@ const SECURE_RAW: Record<string, string> = {
   RAZORPAYX_KEY_ID: 'rzp_live_x_abc123',
   RAZORPAYX_KEY_SECRET: 'rzpx_live_strong_secret_abcdef0123456789', // 40 chars, passes weak16
   RAZORPAYX_WEBHOOK_SECRET: 'rzpx_whsec_live_strong_abcdef0123456789', // verifies payout webhooks (strong)
+  // KV-BL-063: the outbox relay timer's dedicated connection — MUST be kv_relay (BYPASSRLS), distinct
+  // from the app's own kv_app DATABASE_URL above.
+  RELAY_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Relay-Passw0rd-7z@db.cluster.ap-south-1.rds.amazonaws.com:5432/krishiverse',
 };
 
 const envWith = (overrides: Record<string, string | undefined>): Env => {
@@ -77,6 +80,10 @@ describe('AppConfig.collectProductionProblems (fail-closed)', () => {
     ['media-scan secret missing (AV webhook unverifiable)', { MEDIA_SCAN_SECRET: undefined }, /MEDIA_SCAN_SECRET/],
     ['media-scan secret weak/dev', { MEDIA_SCAN_SECRET: 'dev-secret' }, /MEDIA_SCAN_SECRET/],
     ['payments default = sandbox (fake money rail)', { PAYMENTS_DEFAULT_PROVIDER: 'sandbox' }, /PAYMENTS_DEFAULT_PROVIDER must not be "sandbox"/],
+    ['relay DB not kv_relay (falls back to kv_app DATABASE_URL)', { RELAY_DATABASE_URL: undefined }, /must connect as kv_relay/],
+    ['relay DB on localhost', { RELAY_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Relay-Passw0rd-7z@localhost:5432/krishiverse' }, /RELAY_DATABASE_URL must not point at localhost/],
+    ['relay DB weak password', { RELAY_DATABASE_URL: 'postgresql://kv_relay:dev@db.rds.amazonaws.com:5432/krishiverse' }, /RELAY_DATABASE_URL must use a strong/],
+    ['relay DB sslmode=disable', { RELAY_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Relay-Passw0rd-7z@db.rds.amazonaws.com:5432/krishiverse?sslmode=disable' }, /RELAY_DATABASE_URL must require TLS/],
   ])('flags %s', (_label, overrides, pattern) => {
     const problems = AppConfig.collectProductionProblems(envWith(overrides));
     expect(problems.length).toBeGreaterThan(0);
