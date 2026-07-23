@@ -7,6 +7,7 @@
 // endpoint and DEGRADES silently if it's missing — until that endpoint lands, the server can't target this
 // device. We never fake success and never log the token.
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { apiClient } from '../api/client';
@@ -24,7 +25,14 @@ export async function registerForPush(): Promise<string | null> {
     });
   }
   try {
-    const token = (await Notifications.getExpoPushTokenAsync()).data;
+    // MF-11: getExpoPushTokenAsync WITHOUT a projectId is deprecated and spams a warning toast on
+    // every boot in dev. The projectId only exists once EAS is configured (launch-phase task) —
+    // until then, skip token registration cleanly instead of warning. Reads app.json/app.config
+    // extra.eas.projectId when present.
+    const projectId: string | undefined =
+      (Constants?.expoConfig?.extra as { eas?: { projectId?: string } } | undefined)?.eas?.projectId;
+    if (!projectId) return null; // no EAS project yet — push registration is a no-op (Law 12 degrade)
+    const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
     return token || null;
   } catch {
     return null; // degrade — push is best-effort, never blocks the app (Law 12)

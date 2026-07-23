@@ -28,34 +28,55 @@ export class InProcessWalletClient implements WalletPort {
   async post(tx: TxContext, input: PostTxnInput): Promise<PostTxnResult> {
     this.validate(input);
 
+    // Resolve the txn-type lookup FIRST, as kv_app — lookup_values is a general reference
+    // table that kv_wallet has no grant on (kv_wallet is scoped to money tables only).
     const txnTypeId = await this.ledger.txnTypeId(tx, input.txnType);
     if (!txnTypeId) throw new InvalidLedgerTxnError(`Unknown ledger_txn_type '${input.txnType}'`);
 
-    const claim = await this.ledger.insertTxnIdempotent(tx, {
-      txnTypeId, tenantId: input.tenantId, idempotencyKey: input.idempotencyKey,
-      referenceType: input.referenceType, referenceId: input.referenceId, initiatedBy: input.initiatedBy, description: input.description,
-    });
-    if (claim.replayed) return { txnId: claim.id, alreadyApplied: true };   // idempotent no-op
+    // Law 2 privilege boundary: the API connection is the login role kv_app, which 0014
+    // deliberately grants only SELECT on the ledger — it can NEVER write money. Only the
+    // wallet may. Since this in-process client shares that connection, we transiently assume
+    // kv_wallet (kv_app is a member of it — migration 0065) for the duration of the money
+    // WRITES only, then drop straight back so any subsequent app SQL in the same tx is
+    // kv_app again. SET LOCAL scopes the role to this tx, so a rollback/commit also unwinds it.
+    await tx.query('SET LOCAL ROLE kv_wallet');
+    try {
+      const claim = await this.ledger.insertTxnIdempotent(tx, {
+        txnTypeId, tenantId: input.tenantId, idempotencyKey: input.idempotencyKey,
+        referenceType: input.referenceType, referenceId: input.referenceId, initiatedBy: input.initiatedBy, description: input.description,
+      });
+      if (claim.replayed) return { txnId: claim.id, alreadyApplied: true };   // idempotent no-op
 
-    // Lock accounts in a deterministic order (by resolved id) to avoid deadlocks between concurrent txns.
-    const resolved = await Promise.all(input.legs.map(async (leg) => ({ leg, accountId: await this.ledger.ensureAccountId(tx, leg.account) })));
-    resolved.sort((a, b) => (a.accountId < b.accountId ? -1 : 1));
+      // Lock accounts in a deterministic order (by resolved id) to avoid deadlocks between concurrent txns.
+      const resolved = await Promise.all(input.legs.map(async (leg) => ({ leg, accountId: await this.ledger.ensureAccountId(tx, leg.account) })));
+      resolved.sort((a, b) => (a.accountId < b.accountId ? -1 : 1));
 
-    const currency = input.legs[0].account.currencyCode ?? 'INR';
-    for (const { leg, accountId } of resolved) {
-      const acct = await this.ledger.lockAccount(tx, accountId);
-      const balanceAfter = acct.balanceMinor + leg.amountMinor;
-      if (leg.amountMinor < 0n && acct.isFrozen) throw new WalletFrozenError(leg.account.accountCode);
-      if (balanceAfter < 0n && acct.kind !== 'platform') throw new InsufficientWalletBalanceError(leg.account.accountCode);
-      const hash = entryHash(acct.lastHash, claim.id, accountId, leg.amountMinor, balanceAfter);
-      await this.ledger.appendEntry(tx, { txnId: claim.id, accountId, tenantId: input.tenantId, amountMinor: leg.amountMinor, currencyCode: currency, balanceAfter, prevHash: acct.lastHash, entryHash: hash });
+      const currency = input.legs[0].account.currencyCode ?? 'INR';
+      for (const { leg, accountId } of resolved) {
+        const acct = await this.ledger.lockAccount(tx, accountId);
+        const balanceAfter = acct.balanceMinor + leg.amountMinor;
+        if (leg.amountMinor < 0n && acct.isFrozen) throw new WalletFrozenError(leg.account.accountCode);
+        if (balanceAfter < 0n && acct.kind !== 'platform') throw new InsufficientWalletBalanceError(leg.account.accountCode);
+        const hash = entryHash(acct.lastHash, claim.id, accountId, leg.amountMinor, balanceAfter);
+        await this.ledger.appendEntry(tx, { txnId: claim.id, accountId, tenantId: input.tenantId, amountMinor: leg.amountMinor, currencyCode: currency, balanceAfter, prevHash: acct.lastHash, entryHash: hash });
+      }
+      return { txnId: claim.id, alreadyApplied: false };
+    } finally {
+      // Drop back to the least-privilege app role for the rest of the tx.
+      await tx.query('RESET ROLE').catch(() => undefined);
     }
-    return { txnId: claim.id, alreadyApplied: false };
   }
 
   async balanceMinor(tx: TxContext, account: AccountRef): Promise<bigint> {
-    const id = await this.ledger.ensureAccountId(tx, account);
-    return this.ledger.balanceOf(tx, id);
+    // ensureAccountId issues INSERT ... ON CONFLICT (needs INSERT privilege even when it
+    // no-ops), so this read path must also assume kv_wallet then drop back. See post().
+    await tx.query('SET LOCAL ROLE kv_wallet');
+    try {
+      const id = await this.ledger.ensureAccountId(tx, account);
+      return await this.ledger.balanceOf(tx, id);
+    } finally {
+      await tx.query('RESET ROLE').catch(() => undefined);
+    }
   }
 
   private validate(input: PostTxnInput): void {

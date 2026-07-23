@@ -98,7 +98,7 @@ run('orders ↔ payments end-to-end via outbox relay (integration, real Postgres
 
     const registry = new GatewayRegistry();
     registry.register(new SandboxGateway(SECRET), true);
-    payments = new PaymentService(uow, outbox, idem, metrics, wallet, audit, new PaymentRepository(replica as any), registry);
+    payments = new PaymentService(uow, outbox, idem, metrics, wallet, audit, new PaymentRepository(replica as any), registry, new OrderRepository(replica as any));
     payouts = new PayoutService(uow, outbox, idem, metrics, wallet, new SandboxPayoutGateway('success'), audit, new PayoutRepository(replica as any));
 
     // the relay + both handlers (orders consumes payment_succeeded; payments consumes order_completed)

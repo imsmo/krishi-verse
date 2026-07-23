@@ -34,7 +34,9 @@ export default function BuyerTrack() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    if (!orderId) return;
+    // KV MF-06 hardening: a missing/undefined orderId (e.g. a caller passing the wrong param key) must still
+    // clear the loading flag — otherwise the screen is stuck on SkeletonCard forever (Law 12 degrade-never-die).
+    if (!orderId) { setLoading(false); return; }
     setLoading(true);
     const [o, s, tr] = await Promise.all([getOrder(orderId), getOrderShipment(orderId), getOrderTracking(orderId)]);
     setOrder(o); setShipment(s); setTracking(tr);

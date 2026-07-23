@@ -10,7 +10,7 @@ import { Public } from '../../../core/auth/public.decorator';
 import { ZodBody, ZodQuery } from '../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../core/tenancy-context/request-context';
-import { BadRequestError } from '../../../shared/errors/app-error';
+import { BadRequestError, UnauthorizedError } from '../../../shared/errors/app-error';
 import { FeatureFlag, FeatureFlagGuard } from '../../../core/feature-flags/flags.guard';
 import { ListingService } from '../services/listing.service';
 import { ListingViewService } from '../services/listing-view.service';
@@ -21,6 +21,7 @@ import { ListingGalleryReadModel } from '../read-models/listing-gallery.read-mod
 import { ListingLinksReadModel } from '../read-models/listing-links.read-model';
 import { ListingBoostService } from '../services/listing-boost.service';
 import { CreateListingDto, CreateListingSchema } from '../dto/create-listing.dto';
+import { AddListingPhotoDto, AddListingPhotoSchema } from '../dto/add-listing-photo.dto';
 import { ChangePriceDto, ChangePriceSchema } from '../dto/change-price.dto';
 import { RepostListingDto, RepostListingSchema } from '../dto/repost-listing.dto';
 import { ExtendListingDto, ExtendListingSchema } from '../dto/extend-listing.dto';
@@ -47,10 +48,15 @@ export class ListingsController {
     private readonly boosts: ListingBoostService,
   ) {}
 
-  /** Public browse/search — replica-backed read-model; tenant scoped + RLS. */
+  /** Public browse/search — replica-backed read-model; tenant scoped + RLS. The route stays @Public for the
+   *  anonymous storefront case; `mine=true` ("my listings") is the one query shape that needs a real caller — the
+   *  AuthGuard doesn't run on a @Public route, so ctx.userId is '' when no token was sent (RequestContext's
+   *  documented anonymous convention) and we 401 explicitly rather than silently scoping to nothing / leaking
+   *  another tenant's rows. */
   @Public() @Get()
   async search(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryListingSchema) q: QueryListingDto) {
-    const res = await this.searchRM.query(ctx.tenantId, q);
+    if (q.mine && !ctx.userId) throw new UnauthorizedError('Sign in to view your own listings');
+    const res = await this.searchRM.query(ctx.tenantId, q, q.mine ? { ownerUserId: ctx.userId } : {});
     return { data: res.items, meta: { total: res.total, nextCursor: res.nextCursor } };
   }
 
@@ -70,11 +76,30 @@ export class ListingsController {
     return { data: { ...l, ...links } };
   }
 
-  /** Signed photo gallery for a PUBLIC listing (short-lived presigned GET urls; clean assets only). Public. */
+  /** Signed photo gallery (short-lived presigned GET urls; clean assets only). Public route (anonymous
+   *  storefront callers get the published+public gallery only) — but when the caller IS authenticated as
+   *  the owner (or a moderator), the read-model also returns their own draft/unpublished clean photos, so
+   *  the farmer's OWN listing-detail screen ("Listing health" photo count) is never wrong just because the
+   *  listing hasn't been published yet (KV-MF-14). */
   @Public() @Get(':id/media')
   async media(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
-    const g = await this.galleryRM.forListing(ctx.tenantId, id);
+    const g = await this.galleryRM.forListing(ctx.tenantId, id, { userId: ctx.userId, canModerate: canModerate(ctx) });
     return { data: g.items, meta: { expiresInSec: g.expiresInSec } };
+  }
+
+  /** ADD PHOTO — attach one more already-uploaded, clean IMAGE to the caller's OWN, ALREADY-CREATED listing
+   *  (screen 112 "Listing health → Add more photos" cta; KV-MF-14). Distinct from `mediaIds` at create time
+   *  (CreateListingSchema) — this is the missing "add to an EXISTING listing" path; without it the health
+   *  row's cta had nowhere real to go. Owner-only (server re-checks ownership, moderator override allowed).
+   *  Capped at 10 total (mirrors CreateListingSchema's mediaIds max). */
+  @Post(':id/photos')
+  @RequirePermissions(ListingPermissions.Update)
+  async addPhoto(
+    @CurrentContext() ctx: RequestContext, @Param('id') id: string,
+    @ZodBody(AddListingPhotoSchema) dto: AddListingPhotoDto,
+  ) {
+    const data = await this.service.addPhoto(ctx.tenantId, { userId: ctx.userId, canModerate: canModerate(ctx) }, id, dto.mediaAssetId);
+    return { data };
   }
 
   @Post()
@@ -173,6 +198,22 @@ export class ListingsController {
     if (!idemKey) throw new BadRequestError('Idempotency-Key header required');
     const data = await this.service.extend(
       ctx.tenantId, { userId: ctx.userId, canModerate: canModerate(ctx) }, idemKey, id, dto.days,
+    );
+    return { data };
+  }
+
+  /** REMOVE — archive the seller's own listing (screen 112 Remove cta; KV-MF-08). Terminal (no transition out of
+   *  'archived' — listing.state.ts); the client confirms before calling. Owner-only (server re-checks ownership);
+   *  Idempotency-keyed (Law 3) — a retried tap returns the same result rather than a second illegal transition. */
+  @Post(':id/archive')
+  @RequirePermissions(ListingPermissions.Update)
+  async archive(
+    @CurrentContext() ctx: RequestContext, @Param('id') id: string,
+    @Headers('idempotency-key') idemKey: string,
+  ) {
+    if (!idemKey) throw new BadRequestError('Idempotency-Key header required');
+    const data = await this.service.archive(
+      ctx.tenantId, { userId: ctx.userId, canModerate: canModerate(ctx) }, idemKey, id,
     );
     return { data };
   }

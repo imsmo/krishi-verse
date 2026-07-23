@@ -35,7 +35,11 @@ export default function MyListings() {
   const { t, lang } = useTranslation();
   const [items, setItems] = useState<ListingCard[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
-  const [earningsMinor, setEarningsMinor] = useState<string | null>(null);
+  // R2-01 (founder screenshot review): walletEarnings() is degrade-never-die (it self-catches to an EMPTY_INSIGHTS
+  // '0' total on failure, never a rejected promise/null) — so this figure is ALWAYS a real number once load()
+  // resolves, honest zero included. Seeding it as '0' (not null) removes a bare "—" that could otherwise render
+  // before the first load — a literal dash placeholder that conflated "not loaded yet" with "failed to load".
+  const [earningsMinor, setEarningsMinor] = useState('0');
   const [filter, setFilter] = useState<ListingFilter>('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -69,8 +73,7 @@ export default function MyListings() {
         <Stat value={String(counts.active)} label={t('listings.stat.active')} tone={color.primary600} />
         <Stat value={String(counts.sold)} label={t('listings.stat.sold')} tone={color.info} />
         <View style={styles.stat}>
-          {earningsMinor == null ? <Text style={[styles.statVal, { color: color.accent700 }]}>—</Text>
-            : <MoneyText minor={earningsMinor} langCode={lang} size="lg" />}
+          <MoneyText minor={earningsMinor} langCode={lang} size="lg" />
           <Text style={styles.statLabel}>{t('listings.stat.earnings')}</Text>
         </View>
       </View>

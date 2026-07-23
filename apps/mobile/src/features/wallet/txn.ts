@@ -113,3 +113,15 @@ export function withdrawable(balanceMinor: string, amountMinor: string | null): 
   if (amt > bal) return { ok: false, reason: 'exceeds' };
   return { ok: true };
 }
+
+export type WithdrawErrorKind = 'kyc' | 'exceeds' | 'failed';
+
+/** Classify a failed POST /v1/payouts request by its HTTP status — pure, no message text (the screen owns i18n).
+ * The SERVER is the sole authority on WHY a payout was refused (Law 11): 403 is the KYC gate (S3 — `kyc_status`
+ * must be 'verified'), 409/422 is a balance/limit conflict re-asserted at request time, anything else is a
+ * generic failure (network, 5xx). Never guesses a status the server didn't send. */
+export function withdrawErrorKind(status: number | undefined | null): WithdrawErrorKind {
+  if (status === 403) return 'kyc';
+  if (status === 409 || status === 422) return 'exceeds';
+  return 'failed';
+}

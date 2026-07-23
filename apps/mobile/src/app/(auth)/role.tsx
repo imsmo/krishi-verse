@@ -57,7 +57,10 @@ export default function RoleScreen() {
         const reason = (e.details as { reason?: string } | undefined)?.reason;
         setError(reason === 'invite_only' ? t('role.error.inviteOnly') : reason === 'not_pilot_ga' ? t('role.error.notPilotGa') : t('role.error.notEligible'));
       } else {
-        setError(t('role.error.generic'));
+        // S6-prep DEV AID: in dev builds append the real code+message so the founder can share the
+        // exact failure (the SDK also console.warns it to the Metro terminal). Production stays generic.
+        const detail = __DEV__ && e instanceof SdkError ? `\n[dev] ${e.status} ${e.code}: ${e.message}` : '';
+        setError(t('role.error.generic') + detail);
       }
     } finally {
       setBusy(false);

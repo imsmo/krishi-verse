@@ -17,6 +17,12 @@ import { PayoutsController } from './controllers/v1/payouts.controller';
 import { PaymentService } from './services/payment.service';
 import { PayoutService } from './services/payout.service';
 import { PaymentRepository } from './repositories/payment.repository';
+// S6 device-test P0: PaymentService.createIntent validates order references (existence, buyer
+// ownership, payable state, exact amount) BEFORE creating a real gateway order — a plain provider,
+// NOT an OrdersModule import: OrdersModule already imports PaymentsModule (for ChargePricingService
+// etc.), so the reverse module import would cycle. OrderRepository's only dependency, READ_REPLICA,
+// is provided by the @Global() CoreModule, so this resolves cleanly without importing OrdersModule.
+import { OrderRepository } from '../orders/repositories/order.repository';
 import { PayoutRepository } from './repositories/payout.repository';
 import { CommissionRuleRepository } from './repositories/commission-rule.repository';
 import { TaxRuleRepository } from './repositories/tax-rule.repository';
@@ -70,6 +76,7 @@ import { AutopayController } from './controllers/v1/autopay.controller';
     CommissionRuleService,
     DocumentPdfService,
     PaymentRepository,
+    OrderRepository,
     PayoutRepository,
     CommissionRuleRepository,
     TaxRuleRepository,

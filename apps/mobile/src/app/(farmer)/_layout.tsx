@@ -34,6 +34,10 @@ export default function FarmerTabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        // react-native-screens paints each tab's native Screen surface with NO default background of its own —
+        // without this, a slow-loading/erroring screen (or a dark system theme) shows raw black through the gap
+        // before JS content paints (Law 12: never a blank/black screen). This one line kills that whole class.
+        sceneContainerStyle: { backgroundColor: color.page },
         tabBarActiveTintColor: color.primary600,
         tabBarInactiveTintColor: color.ink400,
         tabBarStyle: { backgroundColor: color.card, borderTopColor: color.ink100, height: 64, paddingBottom: 8, paddingTop: 6 },
@@ -54,6 +58,10 @@ export default function FarmerTabsLayout() {
       <Tabs.Screen name="listings/analytics" options={{ href: null }} />
       <Tabs.Screen name="listings/repost" options={{ href: null }} />
       <Tabs.Screen name="create-auction" options={{ href: null }} />
+      <Tabs.Screen name="auction/[id]" options={{ href: null }} />
+      <Tabs.Screen name="auction/complete" options={{ href: null }} />
+      <Tabs.Screen name="hire/book/confirm" options={{ href: null }} />
+      <Tabs.Screen name="hire/book/where" options={{ href: null }} />
       <Tabs.Screen name="wallet/add-money" options={{ href: null }} />
       <Tabs.Screen name="wallet/withdraw" options={{ href: null }} />
       <Tabs.Screen name="wallet/transactions" options={{ href: null }} />

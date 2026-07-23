@@ -3,11 +3,11 @@
 // transitions (cancel/complete) are real idempotent calls (server is the authority — a 409/403 is shown, never
 // bypassed); track pushes the shipment timeline. Behind `buyer_app`. Degrade-never-die.
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { OrderDetail } from '@krishi-verse/sdk-js';
 import { SdkError } from '@krishi-verse/sdk-js';
-import { Button, Card, EmptyState, MoneyText, StatusPill, ScreenScaffold, SkeletonCard, color, font, space } from '@krishi-verse/ui-native';
+import { Button, Card, EmptyState, MoneyText, StatusPill, ScreenScaffold, SkeletonCard, Icon, color, font, space } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getOrder, completeOrder, cancelOrder } from '../../../features/orders/orders.api';
@@ -59,7 +59,17 @@ export default function BuyerOrderDetail() {
   return (
     <ScreenScaffold title={order ? t('orders.orderNo', { id: order.orderNo }) : ' '}>
       {loading ? <SkeletonCard lines={6} /> : !order || failed ? (
-        <EmptyState title={t('orders.unavailable')} actionLabel={t('common.retry')} onAction={load} />
+        <>
+          {/* KV MF-06 fix: ScreenScaffold has no back-chrome header (headerShown:false at the tab-navigator
+              level) and EmptyState only supports one action — "unavailable" previously offered ONLY Retry,
+              which never escapes a genuinely missing/fake order (Law 12: never a dead end). */}
+          <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace('/(buyer)/orders'))}
+            accessibilityRole="button" accessibilityLabel={t('common.back')} hitSlop={8} style={styles.backRow}>
+            <Icon name="arrow-left" size={18} color={color.ink700} />
+            <Text style={styles.backLabel}>{t('common.back')}</Text>
+          </Pressable>
+          <EmptyState title={t('orders.unavailable')} actionLabel={t('common.retry')} onAction={load} />
+        </>
       ) : (
         <>
           <Card>
@@ -106,6 +116,8 @@ function Row({ label, minor, cc, lang, strong }: { label: string; minor: string;
 }
 
 const styles = StyleSheet.create({
+  backRow: { flexDirection: 'row', alignItems: 'center', gap: space[2], paddingVertical: space[2] },
+  backLabel: { fontFamily: font.body, fontSize: font.size.md, fontWeight: font.weight.semibold, color: color.ink700 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space[3] },
   item: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[2], paddingVertical: space[2], borderTopWidth: 1, borderTopColor: color.ink100 },
   itemName: { flex: 1, fontFamily: font.body, fontSize: font.size.md, color: color.ink800 },

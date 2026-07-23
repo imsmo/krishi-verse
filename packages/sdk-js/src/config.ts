@@ -23,14 +23,25 @@ export interface SdkConfig {
   getHeaders?: () => Record<string, string> | Promise<Record<string, string>>;
   /** Injectable fetch (tests / non-global-fetch runtimes). Defaults to globalThis.fetch. */
   fetchImpl?: typeof fetch;
+  /**
+   * REACTIVE token refresh hook. Called (at most once per original request) when a NON-anonymous request gets a
+   * 401. Return true if a fresh token is now available (the SDK retries the original request ONCE, rebuilt
+   * headers pick it up via `getToken`); return false (or throw) to give up (the SDK rethrows the original 401).
+   * The host owns the actual refresh call + token storage — the SDK only orchestrates WHEN to call it and
+   * guarantees at most one concurrent refresh in flight per client (refresh tokens typically ROTATE: a second
+   * concurrent call with the now-stale token would fail or invalidate the session). Never invoked for an
+   * `anonymous: true` request (e.g. auth/refresh itself) — that would be a self-referential loop.
+   */
+  onUnauthorized?: () => Promise<boolean>;
 }
 
-export interface ResolvedConfig extends Required<Omit<SdkConfig, 'getToken' | 'tenantSlug' | 'userAgent' | 'getHeaders' | 'fetchImpl'>> {
+export interface ResolvedConfig extends Required<Omit<SdkConfig, 'getToken' | 'tenantSlug' | 'userAgent' | 'getHeaders' | 'fetchImpl' | 'onUnauthorized'>> {
   getToken?: SdkConfig['getToken'];
   tenantSlug?: string;
   userAgent?: string;
   getHeaders?: SdkConfig['getHeaders'];
   fetchImpl: typeof fetch;
+  onUnauthorized?: SdkConfig['onUnauthorized'];
 }
 
 export function resolveConfig(c: SdkConfig): ResolvedConfig {
@@ -47,5 +58,6 @@ export function resolveConfig(c: SdkConfig): ResolvedConfig {
     userAgent: c.userAgent,
     getHeaders: c.getHeaders,
     fetchImpl,
+    onUnauthorized: c.onUnauthorized,
   };
 }

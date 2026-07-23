@@ -43,3 +43,12 @@ export function isDayBoundary(views: readonly MessageView[], i: number): boolean
 export function normalizeBody(text: string): string {
   return (text ?? '').trim().slice(0, 4000);
 }
+
+/** R2-02(a): should the thread render the (newest-first, visually bottom-anchored) `inverted` FlatList of message
+ * rows, or the plain upright empty-state? An inverted FlatList flips EVERYTHING it renders 180° — including
+ * ListEmptyComponent — so a "Say hello 👋" shown via ListEmptyComponent came out upside-down. The robust fix is to
+ * never mount the inverted list at all while there are zero messages; this pure predicate is what the screen
+ * branches on (kept out of the component so the empty/non-empty decision is unit-testable without React). */
+export function hasMessages(views: readonly MessageView[]): boolean {
+  return views.length > 0;
+}

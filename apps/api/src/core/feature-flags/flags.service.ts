@@ -31,6 +31,24 @@ export class FlagsService {
 
   async assertEnabled(key: string, ctx: FlagContext = {}): Promise<boolean> { return this.isEnabled(key, ctx); }
 
+  /** The full flag map for the mobile remote-config endpoint (GET /v1/config/flags — core/feature-flags/
+   *  flags.controller.ts). Deliberately SIMPLE: raw `is_enabled` (the kill-switch) only — no rollout_pct/
+   *  tenant-allowlist evaluation, because that needs a caller identity (isEnabled's rollout hash keys on
+   *  tenantId|userId) and this endpoint is called pre-login/anonymously at app boot, before any such identity
+   *  exists. LIMITATION: a flag mid-percentage-rollout (is_enabled=true, rollout_pct<100) reads as globally "on"
+   *  here even though isEnabled() would say "off" for most callers — acceptable because the client only ever
+   *  treats this as a best-effort hint (hydrateFlags degrades to its built-in defaults on any failure/mismatch),
+   *  and the kill-switch (is_enabled=false) — the actually load-bearing case — is exact. */
+  async allEnabled(): Promise<Record<string, boolean>> {
+    return this.cache.wrap('flags:all', TTL, async () => {
+      const r = await this.pools.replica(0).query<{ key: string; is_enabled: boolean }>(
+        `SELECT key, is_enabled FROM feature_flags`);
+      const out: Record<string, boolean> = {};
+      for (const row of r.rows) out[row.key] = row.is_enabled;
+      return out;
+    });
+  }
+
   private async load(key: string): Promise<FlagRow | null> {
     return this.cache.wrap(`flag:${key}`, TTL, async () => {
       const r = await this.pools.replica(0).query<FlagRow>(

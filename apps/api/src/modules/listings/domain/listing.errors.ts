@@ -43,3 +43,9 @@ export class InvalidExtendDurationError extends DomainError {
 export class TrustDocumentMediaInvalidError extends DomainError {
   constructor() { super('LISTING_TRUST_DOCUMENT_MEDIA_INVALID', 'Media asset is not a clean, owned document', 422, {}); }
 }
+export class PhotoMediaInvalidError extends DomainError {
+  constructor() { super('LISTING_PHOTO_MEDIA_INVALID', 'Media asset is not a clean, owned image', 422, {}); }
+}
+export class TooManyPhotosError extends DomainError {
+  constructor(max: number) { super('LISTING_TOO_MANY_PHOTOS', `A listing may have at most ${max} photos`, 422, { max }); }
+}

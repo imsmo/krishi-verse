@@ -20,7 +20,9 @@ export default function TrackOrder() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    if (!orderId) return;
+    // KV MF-06 hardening: a missing/undefined orderId (e.g. a caller passing the wrong param key) must still
+    // clear the loading flag — otherwise the screen is stuck on SkeletonCard forever (Law 12 degrade-never-die).
+    if (!orderId) { setLoading(false); return; }
     setLoading(true); setShipment(await getOrderShipment(orderId)); setLoading(false);
   }, [orderId]);
   useEffect(() => { if (enabled) load(); }, [enabled, load]);

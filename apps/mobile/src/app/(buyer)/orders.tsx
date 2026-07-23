@@ -93,7 +93,12 @@ export default function BuyerOrders() {
                     <Text style={styles.progressLabel}>{t(`orders.status.${item.status}`)}</Text>
                   </View>
                   {cta === 'track' ? (
-                    <View style={{ minWidth: 96 }}><Button title={t('buyer.orders.track')} variant="outline" size="sm" onPress={() => router.push({ pathname: '/(buyer)/orders/track', params: { id: item.id } })} /></View>
+                    // KV MF-06 fix: track.tsx reads `orderId` (useLocalSearchParams<{ orderId: string }>()), not
+                    // `id` — the mismatched key here left orderId undefined, so load()'s `if (!orderId) return;`
+                    // guard returned before setLoading(false) ever ran, leaving the screen on its initial
+                    // loading=true forever (an infinite skeleton). '/(buyer)/orders/[id]' below correctly uses
+                    // `id` — only this `track` push had the wrong key.
+                    <View style={{ minWidth: 96 }}><Button title={t('buyer.orders.track')} variant="outline" size="sm" onPress={() => router.push({ pathname: '/(buyer)/orders/track', params: { orderId: item.id } })} /></View>
                   ) : (
                     <View style={{ minWidth: 96 }}><Button title={t('buyer.orders.detail')} variant="ghost" size="sm" onPress={() => router.push({ pathname: '/(buyer)/orders/[id]', params: { id: item.id } })} /></View>
                   )}

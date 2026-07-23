@@ -172,6 +172,15 @@ export function buildAssistantDraft(form: { text?: string; lang?: string; sessio
   return { ok: true, input: { message, languageCode: form.lang, sessionId: form.sessionId ?? undefined } };
 }
 
+// R2-03: gates the Farm Assistant's (screen 125) "Tap to speak" mic. The assistant's TEXT Q&A is a fully built,
+// governed backend pipeline (P1-13) that already degrades honestly turn-by-turn without a model key — it is NOT
+// gated here. Only the on-device-STT mic affordance is, behind its own `voice_assistant` flag (default OFF,
+// mirrors `voice_listing` gating listing/new.tsx's mic) so ops can kill just the voice path independently. Pure —
+// mirrors shouldShowVoiceComingSoon's shape (features/listings/create-listing.ts) for the same class of gate.
+export function shouldShowAssistantMic(voiceAssistantEnabled: boolean): boolean {
+  return voiceAssistantEnabled;
+}
+
 export type ChatRole = 'user' | 'assistant';
 /** A transcript turn. `citations` are the SERVER's source links on an assistant turn (rendered verbatim — the app
  * never fabricates a source); absent on user turns. */

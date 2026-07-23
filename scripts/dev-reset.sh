@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# scripts/dev-reset.sh — one command to refresh ALL stale layers after code fixes.
+# WHY: the app runs on 3 independently-cached layers (API dist, shared package dist, Metro
+# bundle). A fix only shows once ITS layer is rebuilt. This rebuilds every shared package the
+# mobile app imports, so no fix is left invisible. Run this whenever "I still see old behavior".
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+echo "==> [1/2] Rebuilding shared packages the mobile app imports (sdk-js, i18n, ui-native, tokens, contracts)…"
+pnpm --filter @krishi-verse/tokens    build
+pnpm --filter @krishi-verse/contracts build
+pnpm --filter @krishi-verse/i18n      build
+pnpm --filter @krishi-verse/sdk-js    build
+pnpm --filter @krishi-verse/ui-native build
+echo "    shared packages rebuilt."
+
+echo "==> [2/2] Rebuilding the API…"
+pnpm --filter @krishi-verse/api build
+echo "    API built."
+
+cat <<'NEXT'
+
+============================================================
+ dev-reset complete. Now, in order:
+
+ TERMINAL 1  — start the API from SOURCE (always fresh, no build step to forget):
+     pnpm --filter @krishi-verse/api start:dev
+   (leave running; wait for "listening" / "started")
+
+ TERMINAL 2  — one-time data + flags (only if not already done today):
+     psql "$MIGRATION_DATABASE_URL" -c "INSERT INTO feature_flags (key,description,is_enabled,rollout_pct,rules) VALUES ('support','pilot',true,100,'{}'::jsonb),('wallet','pilot',true,100,'{}'::jsonb),('payments_addmoney','pilot',true,100,'{}'::jsonb) ON CONFLICT (key) DO UPDATE SET is_enabled=true,rollout_pct=100;"
+     node scripts/demo-seed/run.mjs        # needs Terminal 1 API running
+
+ TERMINAL 3  — start the app with a CLEARED Metro cache (kills the stale JS bundle):
+     cd apps/mobile && npx expo start --tunnel --clear
+
+ Then on the phone: fully close Expo Go and reopen (not just reload), log in as +91 9900000101.
+============================================================
+NEXT

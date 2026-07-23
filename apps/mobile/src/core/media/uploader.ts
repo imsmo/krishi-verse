@@ -19,9 +19,15 @@ interface MediaOpPayload {
   localUri: string; kind: MediaKind; mimeType: string; bytes: number; sha256: string; width: number; height: number;
 }
 
+// NOTE (KV-MF-02 audit): this treats any non-SdkError as transient because putBytes()'s own S3 PUT failures
+// (below) never go through the SDK's http client — they surface as plain Error objects even when the cause is
+// a real dropped connection mid-upload, so "non-SdkError ⇒ transient" is intentional HERE, unlike the
+// equivalent-looking bug found in listings.api.ts (where the thrown value legitimately CAN be a typed SdkError
+// and was being misclassified). Left unchanged; flagged for a follow-up to give putBytes() typed errors so this
+// can be tightened the same way without breaking legitimate S3-upload retry.
 const isNetworkish = (e: unknown): boolean => {
   if (e instanceof SdkError) return e.status === 0 || e.status === 408 || e.status === 429 || e.status >= 500;
-  return true; // non-SdkError (fetch/timeout/abort) = transient
+  return true; // non-SdkError (fetch/timeout/abort/S3 PUT failure) = transient
 };
 
 /** PUT the file bytes to the presigned S3 URL with progress + a bounded retry on transient failure. */

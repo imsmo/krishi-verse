@@ -27,6 +27,7 @@ import { InProcessWalletClient } from '../../../core/wallet/wallet.client.inproc
 import { OutboxDispatcher, OutboxHandlerRegistry } from '../../../core/outbox/outbox.dispatcher';
 import { uuidv7 } from '../../../core/database/uuid.util';
 
+import { OrderRepository } from '../../orders/repositories/order.repository';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { PaymentService } from '../services/payment.service';
 import { GatewayRegistry } from '../gateway/gateway.registry';
@@ -60,7 +61,16 @@ run('dispute refund — escrow reversal + settled clawback via relay (integratio
       `SELECT COALESCE(cached_balance_minor,0) b FROM wallet_accounts WHERE owner_kind=$1 AND account_code=$2 AND ($3::uuid IS NULL OR owner_user_id=$3)`,
       [kind, code, userId ?? null])).rows[0]?.b ?? '0');
 
+  // S6 device-test P0 fix: createIntent now validates the order reference (existence, buyer,
+  // payable state, exact amount) BEFORE calling the gateway — seed a real 'payment_pending' order
+  // row for this orderId first (fixture fix, not a weakened check; see payment.service.ts).
+  const seedOrder = (orderId: string) => admin.query(
+    `INSERT INTO orders (id, tenant_id, order_no, buyer_user_id, seller_user_id, source, currency_code, subtotal_minor, total_minor, status, version, created_at)
+     VALUES ($1,$2,$3,$4,$5,'direct','INR',$6,$6,'payment_pending',1, now())`,
+    [orderId, tenantA, `KV-${orderId.slice(0, 8)}`, buyer, seller, AMOUNT]);
+
   const captureInto = async (orderId: string) => {
+    await seedOrder(orderId);
     const intent = await payments.createIntent(tenantA, buyer, `idem-${randomUUID()}`, { purpose: 'direct_order', amountMinor: AMOUNT, currencyCode: 'INR', referenceType: 'order', referenceId: orderId } as any);
     const body = JSON.stringify({ id: `evt_${randomUUID()}`, event: 'payment.captured', tenant_id: tenantA, order_id: intent.gatewayOrderId, payment_id: `pay_${randomUUID()}`, amount: Number(AMOUNT), method: 'upi' });
     await payments.handleWebhook('sandbox', body, createHmac('sha256', SECRET).update(body).digest('hex'));
@@ -91,7 +101,7 @@ run('dispute refund — escrow reversal + settled clawback via relay (integratio
     const wallet = new InProcessWalletClient(new LedgerRepository());
     const registry = new GatewayRegistry();
     registry.register(new SandboxGateway(SECRET), true);
-    payments = new PaymentService(uow, outbox, idem, metrics, wallet, audit, new PaymentRepository(replica as any), registry);
+    payments = new PaymentService(uow, outbox, idem, metrics, wallet, audit, new PaymentRepository(replica as any), registry, new OrderRepository(replica as any));
 
     const flags = new FlagsService(pools, new InMemoryCacheService());
     const lines = new SettlementLineRepository();

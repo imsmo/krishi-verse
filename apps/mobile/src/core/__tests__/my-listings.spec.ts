@@ -33,6 +33,22 @@ describe('countByStatus + filter', () => {
   it('exposes the design filter set', () => {
     expect([...LISTING_FILTERS]).toEqual(['all', 'active', 'sold', 'draft']);
   });
+
+  // KV-MF-07 regression: Home's "My Listings N Active" stat must use this SAME helper (countByStatus().active)
+  // as the My Listings screen — never a raw items.length. Reproduces the reported mismatch: an owner box of 7
+  // rows (6 live + 1 draft) must count 6 active, not 7 (the draft is not "active").
+  it('KV-MF-07: 6 live + 1 draft ⇒ active=6, never 7 (draft excluded from "active")', () => {
+    const sevenItems = [
+      L({ status: 'active' }), L({ status: 'active' }), L({ status: 'active' }),
+      L({ status: 'published' }), L({ status: 'published' }),
+      L({ status: 'active', auctionId: 'a', auctionStatus: 'live' }),
+      L({ status: 'draft' }),
+    ];
+    const counts = countByStatus(sevenItems);
+    expect(counts.all).toBe(7);
+    expect(counts.active).toBe(6);
+    expect(counts.draft).toBe(1);
+  });
 });
 
 describe('auctionCountdown', () => {

@@ -10,9 +10,16 @@
 // is the unified GET /wallet/ledger feed (signed amounts + running balance); each row's in/out/hold kind is
 // derived from the server's sign + txnType.
 //
-// HONEST GAPS (§13, never faked): "Send" is peer-to-peer wallet transfer — there is no P2P transfer endpoint yet,
-// so the tile is present (design parity) but flagged coming-soon, never a fake transfer. Add Money is gated by
-// `payments_addmoney`, Withdraw + the ledger feed by `wallet` (both flags); a gated action shows a coming-soon note.
+// HONEST GAPS (§13, never faked): "Send" is peer-to-peer wallet transfer — there is no P2P transfer endpoint yet.
+// R2-06 (founder screenshot review): a permanently-disabled "Coming soon" button reads as broken, not honest — so
+// the tile is hidden entirely at pilot (gated on `wallet_p2p`, default OFF) rather than shown dead. Add Money is
+// gated by `payments_addmoney`, Withdraw + the ledger feed by `wallet` (both flags); a gated action shows a
+// coming-soon note.
+//
+// R2-01 (founder screenshot review): the balance hero used to render MoneyText(availableMinor) even when the
+// read had FAILED (bal.failed) — availableMinor degrades to '0' on failure, so a failed fetch and a genuine ₹0
+// balance were visually IDENTICAL (a confident "₹0.00"), with only a small "Retry" link below the 3-stat row as
+// a clue. Now the hero itself shows a distinct retry affordance on failure — never a number that might be wrong.
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,6 +39,7 @@ export default function WalletHome() {
   const router = useRouter();
   const addMoneyOn = useFlag('payments_addmoney');
   const walletOn = useFlag('wallet');
+  const sendOn = useFlag('wallet_p2p'); // R2-06: P2P transfer has no backend yet — hidden until this flips
   const { notice } = useLocalSearchParams<{ notice?: string }>();
 
   const [availableMinor, setAvailableMinor] = useState('0');
@@ -79,18 +87,25 @@ export default function WalletHome() {
           <View style={styles.hero}>
             <Text style={styles.balLabel}>{t('wallet.available')}</Text>
             <View style={styles.balRow}>
-              {hidden ? (
+              {/* R2-01: a FAILED read must never look like a confident ₹0.00 (bal.availableMinor degrades to '0'
+                  on failure, same as a genuine zero balance) — show a distinct retry affordance instead, never a
+                  number that might be wrong and never a bare "—" placeholder either. */}
+              {failed ? (
+                <Pressable onPress={load} hitSlop={8} style={styles.balErrorRow} accessibilityRole="button">
+                  <Text style={styles.balError}>{t('wallet.retryLoad')}</Text>
+                </Pressable>
+              ) : hidden ? (
                 <Text style={styles.balHidden}>₹ ••••••</Text>
               ) : (
                 <MoneyText minor={availableMinor} langCode={lang} size="3xl" style={styles.balValue} />
               )}
-              <Pressable onPress={() => setHidden((h) => !h)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t(hidden ? 'wallet.showBalance' : 'wallet.hideBalance')}>
-                <Text style={styles.eye}>{hidden ? '🙈' : '👁'}</Text>
-              </Pressable>
+              {failed ? null : (
+                <Pressable onPress={() => setHidden((h) => !h)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t(hidden ? 'wallet.showBalance' : 'wallet.hideBalance')}>
+                  <Text style={styles.eye}>{hidden ? '🙈' : '👁'}</Text>
+                </Pressable>
+              )}
             </View>
-            {failed ? (
-              <Pressable onPress={load} hitSlop={8}><Text style={styles.retry}>{t('common.retry')}</Text></Pressable>
-            ) : (
+            {failed ? null : (
               <View style={styles.statRow}>
                 <HeroStat label={t('wallet.inEscrow')} minor={heldMinor} lang={lang} />
                 <HeroStat label={t('wallet.thisMonth')} minor={monthMinor} lang={lang} plus />
@@ -99,10 +114,11 @@ export default function WalletHome() {
             )}
           </View>
 
-          {/* Actions */}
+          {/* Actions — R2-06: Send (P2P transfer) has no backend yet; hidden at pilot (wallet_p2p, default OFF)
+              rather than shown as a permanently-disabled "Coming soon" tile. */}
           <View style={styles.actions}>
             <ActionTile glyph="➕" tint={color.success} label={t('wallet.addMoney')} onPress={onAdd} />
-            <ActionTile glyph="📤" tint={color.accent500} label={t('wallet.send')} onPress={onSend} />
+            {sendOn ? <ActionTile glyph="📤" tint={color.accent500} label={t('wallet.send')} onPress={onSend} /> : null}
             <ActionTile glyph="🏧" tint={color.info} label={t('wallet.withdraw')} onPress={onWithdraw} />
           </View>
 
@@ -195,7 +211,8 @@ const styles = StyleSheet.create({
   balValue: { color: color.white },
   balHidden: { fontFamily: font.display, fontSize: font.size['3xl'], fontWeight: font.weight.bold, color: color.white },
   eye: { fontSize: 20 },
-  retry: { fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.bold, color: color.accent300, marginTop: space[3] },
+  balErrorRow: { paddingVertical: space[1] },
+  balError: { fontFamily: font.body, fontSize: font.size.lg, fontWeight: font.weight.bold, color: color.accent300, textDecorationLine: 'underline' },
   statRow: { flexDirection: 'row', gap: space[3], marginTop: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.15)' },
   stat: { flex: 1 },
   statLabel: { fontFamily: font.body, fontSize: 11, color: color.white, opacity: 0.7, textTransform: 'uppercase', letterSpacing: 0.4 },

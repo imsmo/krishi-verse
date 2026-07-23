@@ -3,15 +3,16 @@
 // green hero with a gold "Speak to Sell" + glass "Photo", My-Listings/Wallet stat cards, horizontal "Today's Mandi
 // Pulse", and "Today's Tip". Thin screen (guide §3): all data via features/farmer/dashboard.api; money via
 // MoneyText (Law 2); sections that fail simply HIDE rather than show fakes (Law 12). Pull-to-refresh.
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { MoneyText, SkeletonCard, EmptyState, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useAuth } from '../../core/auth/auth.store';
 import { useFlag } from '../../core/flags/useFlag';
 import { loadFarmerHome, type MandiRow, type HomeTip, type HomeWeather } from '../../features/farmer/dashboard.api';
+import { speakToSellTargetMode } from '../../features/listings/create-listing';
 
 // Crop → emoji is presentational iconography (UI chrome), not data: a small map with a sensible default so a
 // commodity the design didn't anticipate still renders. The price/name themselves are real (from the API).
@@ -30,6 +31,9 @@ export default function FarmerHome() {
   const { t, lang } = useTranslation();
   const { state, loadProfile } = useAuth();
   const notifOn = useFlag('notifications');
+  // KV-MF-05: "Speak to Sell" stays visible (it's the product's signature) but must not dead-end into the
+  // Voice tab's dead mic while STT isn't wired up (§13) — route to Manual until the `voice_listing` flag flips.
+  const voiceListingOn = useFlag('voice_listing');
   const [listingCount, setListingCount] = useState<number | null>(null);
   const [mandi, setMandi] = useState<MandiRow[] | null>(null);
   const [walletMinor, setWalletMinor] = useState<string | null>(null);
@@ -57,7 +61,14 @@ export default function FarmerHome() {
     }
   }, [loadProfile]);
 
-  useEffect(() => { load(); }, [load]);
+  // KV-MF-10: every OTHER farmer tab (Wallet, My Listings, Mandi, …) refetches via useFocusEffect, so a
+  // transient failure (e.g. the wallet read racing the boot-time token restore, or a flaky network blip)
+  // self-heals the next time the tab regains focus. Home was the one screen still using a plain mount-only
+  // useEffect — a failed wallet read on the very first paint stuck at "—" for the rest of the session,
+  // never retried, while re-visiting the dedicated Wallet screen (which DOES refetch on focus) showed the
+  // real balance moments later. Matching the app-wide convention here fixes that divergence for every tile,
+  // not just wallet.
+  useFocusEffect(useCallback(() => { load(); }, [load]));
   const onRefresh = useCallback(async () => { setRefreshing(true); try { await load(); } finally { setRefreshing(false); } }, [load]);
 
   const name = state.profile?.displayName ?? t('home.defaultName');
@@ -110,10 +121,10 @@ export default function FarmerHome() {
           <Text style={styles.heroTitle}>{t('home.sellIn60')}</Text>
           <Text style={styles.heroVern}>अपनी फसल बेचें</Text>
           <View style={styles.heroActions}>
-            <Pressable style={styles.ctaMic} onPress={() => router.push('/(farmer)/listings/new')} accessibilityRole="button" accessibilityLabel={t('home.speakToSell')}>
+            <Pressable style={styles.ctaMic} onPress={() => router.push({ pathname: '/(farmer)/listings/new', params: { mode: speakToSellTargetMode(voiceListingOn) } })} accessibilityRole="button" accessibilityLabel={t('home.speakToSell')}>
               <Text style={styles.ctaMicTxt}>🎤  {t('home.speakToSell')}</Text>
             </Pressable>
-            <Pressable style={styles.ctaPhoto} onPress={() => router.push('/(farmer)/listings/new')} accessibilityRole="button" accessibilityLabel={t('home.photo')}>
+            <Pressable style={styles.ctaPhoto} onPress={() => router.push({ pathname: '/(farmer)/listings/new', params: { mode: 'photo' } })} accessibilityRole="button" accessibilityLabel={t('home.photo')}>
               <Text style={styles.ctaPhotoTxt}>📷  {t('home.photo')}</Text>
             </Pressable>
           </View>
@@ -132,7 +143,15 @@ export default function FarmerHome() {
             <View style={[styles.statIcon, { backgroundColor: color.accent50 }]}><Text style={{ fontSize: 18 }}>💰</Text></View>
             <View style={{ flex: 1 }}>
               <Text style={styles.statLabel}>{t('home.wallet')}</Text>
-              {walletMinor == null ? <Text style={styles.statVal}>—</Text> : <MoneyText minor={walletMinor} langCode={lang} size="lg" />}
+              {/* R2-01 (founder screenshot review): walletMinor is null ONLY on a genuine read failure
+                  (walletTileMinor degrades a failed fetch to null, never a fabricated ₹0 — a real zero balance
+                  comes through as '0' and renders normally below). It used to print a bare "—" here with no way
+                  to recover; that reads as a dead/broken tile. A small tap-to-retry affordance instead. */}
+              {walletMinor == null ? (
+                <Pressable onPress={load} hitSlop={6}><Text style={styles.statValError}>{t('common.retry')}</Text></Pressable>
+              ) : (
+                <MoneyText minor={walletMinor} langCode={lang} size="lg" />
+              )}
             </View>
           </Pressable>
         </View>
@@ -216,6 +235,7 @@ const styles = StyleSheet.create({
   statIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   statLabel: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink500 },
   statVal: { fontFamily: font.display, fontSize: font.size.lg, fontWeight: font.weight.bold, color: color.ink800, letterSpacing: -0.3 },
+  statValError: { fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.bold, color: color.primary700, textDecorationLine: 'underline' },
   // Section heads
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space[5], paddingVertical: space[2] },
   sectionTitle: { fontFamily: font.display, fontSize: font.size.lg, fontWeight: font.weight.bold, color: color.ink800 },

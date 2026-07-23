@@ -38,14 +38,26 @@ const withTokens = (s: SessionState, tokens: AuthTokens, nowMs: number): Session
   expiresAtMs: nowMs + tokens.expiresInSec * 1000,
 });
 
+/** True when a restored-tokens payload has the two required string fields. Guards against a corrupt/partial
+ * SecureStore write (interrupted save, or a legacy/pre-shape blob) resurrecting a broken session — discard rather
+ * than crash (fail closed, mirrors tokenStore.readTokens's own guard; defence-in-depth since the reducer must be
+ * safe on its own, e.g. under direct unit test). */
+function hasValidTokenShape(t: unknown): t is AuthTokens & { expiresAtMs: number } {
+  if (!t || typeof t !== 'object') return false;
+  const { accessToken, refreshToken } = t as Record<string, unknown>;
+  return typeof accessToken === 'string' && accessToken.length > 0 && typeof refreshToken === 'string' && refreshToken.length > 0;
+}
+
 export function sessionReducer(state: SessionState, action: SessionAction): SessionState {
   switch (action.type) {
     case 'BOOT_RESTORED': {
       const base: SessionState = { ...state, language: action.language, activeRole: action.activeRole };
-      if (!action.tokens) return { ...base, status: 'anonymous' };
+      if (!hasValidTokenShape(action.tokens)) return { ...base, status: 'anonymous' };
+      const expiresAtMs = typeof action.tokens.expiresAtMs === 'number' && Number.isFinite(action.tokens.expiresAtMs)
+        ? action.tokens.expiresAtMs : undefined;
       return {
         ...base, status: 'authenticated',
-        accessToken: action.tokens.accessToken, refreshToken: action.tokens.refreshToken, expiresAtMs: action.tokens.expiresAtMs,
+        accessToken: action.tokens.accessToken, refreshToken: action.tokens.refreshToken, expiresAtMs,
       };
     }
     case 'SIGNED_IN':
@@ -53,8 +65,14 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
     case 'TOKENS_REFRESHED':
       // never resurrect a signed-out session via a late refresh
       return state.status === 'authenticated' ? withTokens(state, action.tokens, action.nowMs) : state;
-    case 'PROFILE_LOADED':
-      return { ...state, profile: action.profile, activeRole: state.activeRole ?? action.profile.roles[0] };
+    case 'PROFILE_LOADED': {
+      // Defence-in-depth: the auth store already normalises the server's profile response before dispatching
+      // (see auth.store.tsx loadProfile), but the reducer must never trust action.profile's shape either —
+      // `roles` missing/non-array (root cause: the API's current /users/me response carries no `roles` field,
+      // a contract gap vs. the SDK's UserProfile type) used to crash here with `undefined[0]`.
+      const roles = Array.isArray(action.profile?.roles) ? action.profile.roles : [];
+      return { ...state, profile: action.profile ?? state.profile, activeRole: state.activeRole ?? roles[0] };
+    }
     case 'ROLE_SELECTED':
       return { ...state, activeRole: action.role };
     case 'LANGUAGE_SET':

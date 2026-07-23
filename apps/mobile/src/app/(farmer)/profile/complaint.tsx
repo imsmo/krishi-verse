@@ -20,6 +20,7 @@ import type { OrderListItem } from '@krishi-verse/sdk-js';
 import { Button, Card, Input, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
+import { sdkErrorMessage } from '../../../core/errors/sdk-error-message';
 import { openTicket } from '../../../features/profile/profile.api';
 import { listOrders } from '../../../features/orders/orders.api';
 import { REPORT_ISSUES, reportIssueSeverity, composeReportSubject, buildTicketDraft, type ReportIssueKey } from '../../../features/profile/profile';
@@ -53,7 +54,12 @@ export default function Complaint() {
     if (!draft.ok || !draft.input) { setError(t('profile.complaint.needDetail')); return; }
     setSaving(true); setError(undefined);
     try { await openTicket(draft.input); router.replace('/(farmer)/profile/help'); }
-    catch { Alert.alert(t('profile.complaint.title'), t('profile.complaint.failed')); }
+    catch (e: unknown) {
+      // KV-MF-02 convention (apps/mobile/src/app/(farmer)/listings/new.tsx): surface the API's own message
+      // (e.g. a 404 "Not found" when a feature flag gating the ticket endpoint is off server-side) instead of
+      // a generic string, so a real, diagnosable failure never looks identical to "just try again".
+      Alert.alert(t('profile.complaint.title'), sdkErrorMessage(e) ?? t('profile.complaint.failed'));
+    }
     finally { setSaving(false); }
   };
 

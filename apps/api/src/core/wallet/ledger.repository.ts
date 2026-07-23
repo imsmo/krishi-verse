@@ -5,6 +5,8 @@ import { Injectable } from '@nestjs/common';
 import { TxContext } from '../database/unit-of-work';
 import { AccountRef } from './account-codes';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export interface LockedAccount { id: string; balanceMinor: bigint; version: string; lastHash: string | null; isFrozen: boolean; kind: string; }
 
 @Injectable()
@@ -61,10 +63,14 @@ export class LedgerRepository {
 
   /** Claim the idempotency key by inserting the txn header. Returns the existing id if replayed. */
   async insertTxnIdempotent(tx: TxContext, input: { txnTypeId: string; tenantId: string | null; idempotencyKey: string; referenceType?: string; referenceId?: string; initiatedBy?: string; description?: string }): Promise<{ id: string; replayed: boolean }> {
+    // initiated_by is a uuid column; system-initiated money events (settlement, payout, dispute
+    // handlers) pass the sentinel 'system' which is NOT a uuid. A system event has no user, so store
+    // NULL — never a non-uuid string (else Postgres 22P02 rolls back the whole settlement silently).
+    const initiatedBy = input.initiatedBy && UUID_RE.test(input.initiatedBy) ? input.initiatedBy : null;
     const ins = await tx.query<{ id: string }>(
       `INSERT INTO ledger_transactions (txn_type_id, tenant_id, reference_type, reference_id, description, idempotency_key, initiated_by)
        VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (idempotency_key) DO NOTHING RETURNING id`,
-      [input.txnTypeId, input.tenantId, input.referenceType ?? null, input.referenceId ?? null, input.description ?? null, input.idempotencyKey, input.initiatedBy ?? null]);
+      [input.txnTypeId, input.tenantId, input.referenceType ?? null, input.referenceId ?? null, input.description ?? null, input.idempotencyKey, initiatedBy]);
     if (ins.rows[0]) return { id: ins.rows[0].id, replayed: false };
     const prior = await tx.query<{ id: string }>(`SELECT id FROM ledger_transactions WHERE idempotency_key=$1`, [input.idempotencyKey]);
     return { id: prior.rows[0].id, replayed: true };

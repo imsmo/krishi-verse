@@ -32,17 +32,56 @@ METRICS_PORT=9090 node apps/worker/dist/main.js
 Deployed via the `worker` Helm chart (no Service; exec liveness; `kv_relay` env from `krishiverse-worker-env`).
 Scale to ≥1 replica; the advisory locks make >1 safe.
 
-## ⛔ Deferred: domain-handler jobs (need the api business logic)
+## Deferred: domain-handler jobs (need the api business logic)
 These jobs run **handler logic that lives in the `apps/api` modules** (Nest providers), which this standalone
 pg process can't import cleanly:
-- **Outbox relay EXECUTION** — `outbox-gauge` measures the backlog; running each event's *handler*
-  (`OutboxHandlerRegistry`) requires the api domain.
+- **Outbox relay EXECUTION** — ✅ **RESOLVED (S1, KV-BL-063)**. `outbox-gauge` still just measures the
+  backlog here; running each event's *handler* (`OutboxHandlerRegistry`) now happens in **apps/api itself**,
+  on an in-process timer: `apps/api/src/core/outbox/relay.runner.ts` (`OutboxRelayRunner`, registered as a
+  provider in `CoreModule`, started `OnApplicationBootstrap`/stopped `OnApplicationShutdown`). This is option
+  (a) from the decision below. See `docs/adr/0001-monorepo-modular-monolith.md`'s 2026-07-10 amendment for the
+  rationale and `RELAY_ENABLED` / `RELAY_DATABASE_URL` / `RELAY_INTERVAL_MS` / `RELAY_BATCH_SIZE` in
+  `apps/api/src/core/config/env.validation.ts` for the knobs. `outbox-gauge`'s backlog gauge remains useful as
+  an independent health signal (alerts if the api-side timer stalls) — it is NOT redundant with the runner.
 - **Notification dispatch / digest / push / SMS-budget**, **settlement statement generation**, **mandi/weather
-  ingest**, **KYC expiry**, **scheme sync** — all need module services.
+  ingest**, **KYC expiry**, **scheme sync** — still need module services; unresolved (see decision below).
 
-**Decision required** (one of): (a) the **api** process runs the outbox dispatcher + these handler-jobs on an
-internal timer (simplest — handlers are already there); or (b) extract a shared `@krishi-verse/domain` lib both
-the api and worker import; or (c) the relay publishes to a bus (bullmq/SQS — already a worker dep) and a consumer
-runs handlers. Until chosen, these remain in the api or unscheduled. Tracked as **P0-9-follow-on** in the backlog.
-The 6 operational jobs above (the ones the P0-7 gap named: retention, partitions, recon, erasure, outbox-backlog)
-**are** built and scheduled here.
+**Decision required** (for the remaining jobs above, one of): (a) the **api** process runs them on an internal
+timer (simplest — handlers are already there, as chosen for the outbox relay above); or (b) extract a shared
+`@krishi-verse/domain` lib both the api and worker import; or (c) publish to a bus (bullmq/SQS — already a
+worker dep) and a consumer runs handlers. Until chosen, these remain in the api or unscheduled. Tracked as
+**P0-9-follow-on** in the backlog. The 6 operational jobs above (the ones the P0-7 gap named: retention,
+partitions, recon, erasure, outbox-backlog) **are** built and scheduled here.
+
+### P0-9-follow-on disposition (Sprint S4) — every job above, resolved
+
+The decision above is now made for the pilot: **option (a)**, same as the outbox relay — but split into two
+apps/api mechanisms depending on whether the job is EVENT-driven or CADENCE-driven:
+- event-driven jobs are already covered by S1's `OutboxRelayRunner` (it drains `OUTBOX_HANDLER_REGISTRY`,
+  which every module's event handlers — not just the outbox relay's own — register into);
+- cadence-driven (time-based) jobs get a NEW, analogous host: `core/jobs/jobs.runner.ts`'s
+  `ScheduledJobsRunner` (`SCHEDULED_JOB_REGISTRY`, one independent timer + Postgres advisory lock per
+  registered job — `apps/worker`'s leader-lock algorithm, copied verbatim into `core/jobs/scheduled-job.ts`).
+
+| Job (from the list above) | Category | Disposition | Notes |
+|---|---|---|---|
+| Notification **dispatch** | (a) event-driven | **RESOLVED-BY-S1** | `communication.module.ts`'s `onModuleInit` registers one `DomainEventFanoutHandler` per `NOTIFICATION_EVENT_MAP` entry (+ `BroadcastRequestedHandler`) into `OUTBOX_HANDLER_REGISTRY` — drained by `OutboxRelayRunner` exactly like every other outbox handler. Verified: registration call sites in `apps/api/src/modules/communication/communication.module.ts`. |
+| Notification **push** | (a) event-driven | **RESOLVED-BY-S1** | Not a separate job: `DomainEventFanoutHandler.handle` → `NotificationService.fanout` dispatches every non-`inapp` channel (push/sms/whatsapp/ivr) via the gateway **inline**, inside the same relay-drained handler call — there was never a distinct "push job" to schedule. |
+| Notification **digest** | (b)-shaped, but no domain logic exists | **GA-DEFERRED** | `apps/api/src/modules/communication/README.md`'s own "Deferred (schema present, not built)" section lists "the smart-digest batching engine (`batchable`/`batched_into`)" — the batching SERVICE itself was never built (only the schema columns exist). Scheduling something that doesn't exist is out of this slice's scope (no new migrations/domain logic here); building the batcher is a separate, larger piece of work. |
+| **SMS-budget** (guard/report) | (b)-shaped, but no domain logic exists | **GA-DEFERRED** | Only `notifications.cost_minor` (recording) exists; there is no budget-cap or daily-cost-report SERVICE anywhere in `apps/api` to schedule — the worker's old `sms-budget-guard.ts` / `sms-budget/daily-cost-report.cron` were 3-line placeholder stubs, removed in the S0 cleanup, never implemented. |
+| **Settlement statement generation** | (b) cadence-driven, domain logic exists | **IMPLEMENTED-S4-api-timer** | `modules/payments/jobs/settlement-statements.job.ts` (`SettlementStatementsJob`) already existed, fully built, but nothing ever called it. Wrapped as a `ScheduledJob` (`modules/payments/jobs/settlement-statements.cadence-job.ts`, `SettlementStatementsCadenceJob`) and registered into `SCHEDULED_JOB_REGISTRY` at `PaymentsModule.onModuleInit`; hosted by `core/jobs/jobs.runner.ts`'s `ScheduledJobsRunner` (nightly, advisory-lock protected). Pilot-relevant: `settlement_statements` backs the seller wallet-statement screen (Screen-Data-Catalog #21/59) and payments/orders are core (always-ON, unlike auctions/dairy/fintech). Knobs: `JOBS_ENABLED` / `JOBS_DATABASE_URL` / `JOBS_POOL_MAX` (runner-wide) + `SETTLEMENT_STATEMENTS_JOB_ENABLED` / `SETTLEMENT_STATEMENTS_JOB_INTERVAL_MS` (per-job) in `apps/api/src/core/config/env.validation.ts`. |
+| **Mandi/weather ingest** | (c) not built, modules OFF by default | **GA-DEFERRED** | `apps/api/src/modules/market-intel/README.md` explicitly defers "Agmarknet/eNAM external ingest jobs (need the external feed API)"; the equivalent IMD/weather-provider job is likewise schema-only. Both `market_intel` and `land_soil_weather` are `is_enabled=false` by default (`db/seeds/core/0009_feature_flags.sql`). No ingest SERVICE exists in either module to schedule regardless of flag state. |
+| **KYC expiry** (reminders) | (b) cadence-driven, domain logic exists, but explicitly out of scope this slice | **GA-DEFERRED (this slice only — not a true GA deferral)** | `apps/api/src/modules/identity/jobs/kyc-expiry-reminders.job.ts` (`KycExpiryRemindersJob`) already exists, is exported by `IdentityModule`, and `kyc` **is** `is_enabled=true` by default — this is a *stronger* pilot candidate than settlement statements on paper. It was NOT wired this slice because this sprint's constraints explicitly forbid touching `modules/identity` (a parallel S4 workstream — bank-KYC-mirror — is active there) and `KycExpiryRemindersJob.runForTenant(tenantId, days)` needs a cross-tenant driver loop that doesn't exist yet anywhere. Tracked as an **immediate follow-on** (not GA-distant): a future slice can register it into the SAME `SCHEDULED_JOB_REGISTRY` this sprint built, from a NEW file outside `modules/identity` (mirroring how `payments.module.ts` registers `SettlementStatementsCadenceJob`), with zero edits to identity's own files. |
+| **Scheme sync** (PFMS sync/rule-refresh/stuck-escalation/window-open-alert) | (c) not built, module OFF by default | **GA-DEFERRED** | `apps/api/src/modules/schemes/README.md`'s own "Scope & deferrals" section defers exactly this ("PFMS sync + rule-refresh + stuck-escalation + window-open-alert jobs") — needs a government PFMS API integration that doesn't exist. `schemes` is `is_enabled=false` by default; apply→submit→verify→approve→DBT-record all work today without any sync job. |
+| **Payout execution** (disbursement) | (b) cadence-driven, domain logic exists | **IMPLEMENTED-S5-api-timer** | S5 review P0 finding: `modules/payments/jobs/payout-execution.job.ts` (`PayoutExecutionJob`) already existed, fully built (cross-tenant `FOR UPDATE SKIP LOCKED` claim + per-payout disburse via `PayoutService.execute`, itself already error-isolated per payout — one failing payout is marked/left for retry, the loop never batch-aborts), but was registered **NOWHERE**: no worker registry entry, no `SCHEDULED_JOB_REGISTRY` entry, no admin trigger — a queued payout (`POST /v1/payouts` → `'queued'`) never disbursed to the bank. Wrapped as a `ScheduledJob` (`modules/payments/jobs/payout-execution.cadence-job.ts`, `PayoutExecutionCadenceJob`) and registered into `SCHEDULED_JOB_REGISTRY` at `PaymentsModule.onModuleInit`; hosted by `core/jobs/jobs.runner.ts`'s `ScheduledJobsRunner`, **every 5 min by default** — deliberately NOT the once/day settlement-statements cadence, since a payout's funds are already reserved out of the user's wallet the moment it's queued. Knobs: `PAYOUT_EXECUTION_JOB_ENABLED` / `PAYOUT_EXECUTION_JOB_INTERVAL_MS` / `PAYOUT_EXECUTION_JOB_BATCH_SIZE` in `apps/api/src/core/config/env.validation.ts`. |
+| **Wage-priority-lane disbursement** | (b) cadence-driven, domain logic exists | **GA-DEFERRED (functionally redundant for the pilot)** | `modules/payments/jobs/wage-priority-lane.job.ts` (`WagePriorityLaneJob`) opens a dedicated `payout_batches` (`batchType: 'wage_lane'`) envelope and claims only `priority <= WAGE_LANE_PRIORITY` payouts via `PayoutBatchService.runBatch`. Deliberately NOT wired into `SCHEDULED_JOB_REGISTRY`: `PayoutRepository.claimQueued` — driven by the payout-execution job above — already claims with `ORDER BY priority ASC, created_at ASC` and no priority filter, so wage-lane payouts (priority=`WAGE_LANE_PRIORITY`=10, promoted by `BookingClockedOutHandler`) are already claimed and disbursed ahead of default-priority (100) payouts by that job alone, every 5-minute tick. This job's only distinct value is a separate auditable `payout_batches` envelope scoped to the wage lane (a reporting nicety), not needed for a wage payout to actually reach the bank. Revisit for GA if a dashboard needs wage-lane disbursement reported as its own batch rather than interleaved with the general execution job's ticks. See the disposition comment in `wage-priority-lane.job.ts` itself. |
+
+New infra this sprint (all in `apps/api`, none in this worker): `core/jobs/scheduled-job.ts` (contract + `lockKey`),
+`core/jobs/scheduled-job.registry.ts` (`SCHEDULED_JOB_REGISTRY`), `core/jobs/jobs.runner.ts`
+(`ScheduledJobsRunner`, wired into `CoreModule` next to `OutboxRelayRunner`), `core/jobs/date-window.ts` (pure
+cadence-window helper), and `modules/payments/jobs/settlement-statements.cadence-job.ts`. See
+`docs/adr/0001-monorepo-modular-monolith.md`'s amendment for the one-line rationale addition.
+
+**S5 addendum**: `modules/payments/jobs/payout-execution.cadence-job.ts` (`PayoutExecutionCadenceJob`) added
+per the two rows above — same `ScheduledJob`/`SCHEDULED_JOB_REGISTRY` infra, no changes to the core/jobs
+host itself.

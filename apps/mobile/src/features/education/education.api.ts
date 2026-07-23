@@ -9,8 +9,16 @@ import { newId } from '../../core/util/ids';
 export interface CoursesPage { items: Course[]; nextCursor: string | null }
 export interface EnrollmentsPage { items: Enrollment[]; nextCursor: string | null }
 
+// S6-prep: education is feature-flag OFF at pilot — the guard 404s. Remember "off" for the app
+// session so focus-driven refetches don't hammer the API / flood the dev log (restart re-checks).
+let educationOffThisSession = false;
 export async function browseCourses(cursor?: string): Promise<CoursesPage> {
-  try { return await apiClient().courses.list({ box: 'browse', cursor }); } catch { return { items: [], nextCursor: null }; }
+  if (educationOffThisSession) return { items: [], nextCursor: null };
+  try { return await apiClient().courses.list({ box: 'browse', cursor }); }
+  catch (e) {
+    if ((e as { status?: number })?.status === 404) educationOffThisSession = true;   // flag-off, not transient
+    return { items: [], nextCursor: null };
+  }
 }
 export async function getCourse(id: string): Promise<(Course & { lessons?: CourseLesson[] }) | null> {
   try { return await apiClient().courses.get(id); } catch { return null; }

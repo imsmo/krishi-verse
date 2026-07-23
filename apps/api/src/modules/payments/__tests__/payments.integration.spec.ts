@@ -25,7 +25,9 @@ import { PromMetrics } from '../../../core/observability/metrics.prom';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 import { LedgerRepository } from '../../../core/wallet/ledger.repository';
 import { InProcessWalletClient } from '../../../core/wallet/wallet.client.inprocess';
+import { uuidv7 } from '../../../core/database/uuid.util';
 
+import { OrderRepository } from '../../orders/repositories/order.repository';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { GatewayRegistry } from '../gateway/gateway.registry';
 import { SandboxGateway } from '../gateway/sandbox.gateway';
@@ -47,6 +49,7 @@ run('payments + wallet (integration, real Postgres + RLS)', () => {
   const tenantA = randomUUID();
   const tenantB = randomUUID();
   const buyer = randomUUID();
+  const seller = randomUUID();
   const AMOUNT = '150000';                 // ₹1500.00
   let paymentId = '';
   let gatewayOrderId = '';
@@ -60,11 +63,18 @@ run('payments + wallet (integration, real Postgres + RLS)', () => {
     const r = await admin.query(`SELECT COALESCE(cached_balance_minor,0)::bigint b FROM wallet_accounts WHERE owner_kind='platform' AND account_code='escrow'`);
     return String(r.rows[0]?.b ?? '0');
   };
+  // S6 device-test P0 fix: createIntent now validates the order reference (existence, buyer,
+  // payable state, exact amount) BEFORE calling the gateway — seed a real 'payment_pending' order
+  // for each intent (fixture fix, not a weakened check; see payment.service.ts).
+  const seedOrder = (orderId: string, amountMinor = AMOUNT) => admin.query(
+    `INSERT INTO orders (id, tenant_id, order_no, buyer_user_id, seller_user_id, source, currency_code, subtotal_minor, total_minor, status, version, created_at)
+     VALUES ($1,$2,$3,$4,$5,'direct','INR',$6,$6,'payment_pending',1, now())`,
+    [orderId, tenantA, `KV-${orderId.slice(0, 8)}`, buyer, seller, amountMinor]);
 
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
-    await makeUser(admin, buyer);
+    await makeUser(admin, buyer); await makeUser(admin, seller);
 
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
     pools = new PgPoolProvider(config);
@@ -78,7 +88,7 @@ run('payments + wallet (integration, real Postgres + RLS)', () => {
     const wallet = new InProcessWalletClient(new LedgerRepository());
     const registry = new GatewayRegistry();
     registry.register(new SandboxGateway(SECRET), true);
-    payments = new PaymentService(uow, outbox, idem, metrics, wallet, audit, new PaymentRepository(replica as any), registry);
+    payments = new PaymentService(uow, outbox, idem, metrics, wallet, audit, new PaymentRepository(replica as any), registry, new OrderRepository(replica as any));
 
     inspect = new Pool({ connectionString: APP_URL });
     isSuperuser = (await inspect.query(`SELECT rolsuper FROM pg_roles WHERE rolname=current_user`)).rows[0]?.rolsuper === true;
@@ -87,7 +97,8 @@ run('payments + wallet (integration, real Postgres + RLS)', () => {
   afterAll(async () => { await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end(); });
 
   it('creates a payment intent → persisted initiated + outbox payment_initiated', async () => {
-    const res = await payments.createIntent(tenantA, buyer, `idem-${randomUUID()}`, { purpose: 'direct_order', amountMinor: AMOUNT, currencyCode: 'INR', referenceType: 'order', referenceId: randomUUID() } as any);
+    const orderId = uuidv7(); await seedOrder(orderId);
+    const res = await payments.createIntent(tenantA, buyer, `idem-${randomUUID()}`, { purpose: 'direct_order', amountMinor: AMOUNT, currencyCode: 'INR', referenceType: 'order', referenceId: orderId } as any);
     paymentId = res.paymentId; gatewayOrderId = res.gatewayOrderId;
     expect(res.status).toBe('initiated');
     const row = await admin.query(`SELECT status, tenant_id FROM payments WHERE id=$1`, [paymentId]);
@@ -133,7 +144,8 @@ run('payments + wallet (integration, real Postgres + RLS)', () => {
   });
 
   it('rejects a captured webhook whose CURRENCY differs from the payment — tamper guard', async () => {
-    const intent = await payments.createIntent(tenantA, buyer, `idem-${randomUUID()}`, { purpose: 'direct_order', amountMinor: AMOUNT, currencyCode: 'INR', referenceType: 'order', referenceId: randomUUID() } as any);
+    const orderId = uuidv7(); await seedOrder(orderId);
+    const intent = await payments.createIntent(tenantA, buyer, `idem-${randomUUID()}`, { purpose: 'direct_order', amountMinor: AMOUNT, currencyCode: 'INR', referenceType: 'order', referenceId: orderId } as any);
     const { body, sig } = webhook('payment.captured', { order_id: intent.gatewayOrderId, payment_id: `pay_${randomUUID()}`, amount: Number(AMOUNT), currency: 'USD', method: 'upi' });
     await expect(payments.handleWebhook('sandbox', body, sig)).rejects.toBeInstanceOf(PaymentCurrencyMismatchError);
     const p = await admin.query(`SELECT status FROM payments WHERE id=$1`, [intent.paymentId]);
@@ -141,7 +153,8 @@ run('payments + wallet (integration, real Postgres + RLS)', () => {
   });
 
   it('dedups on the delivery event-id header — same header, different body, is a no-op', async () => {
-    const intent = await payments.createIntent(tenantA, buyer, `idem-${randomUUID()}`, { purpose: 'direct_order', amountMinor: AMOUNT, currencyCode: 'INR', referenceType: 'order', referenceId: randomUUID() } as any);
+    const orderId = uuidv7(); await seedOrder(orderId);
+    const intent = await payments.createIntent(tenantA, buyer, `idem-${randomUUID()}`, { purpose: 'direct_order', amountMinor: AMOUNT, currencyCode: 'INR', referenceType: 'order', referenceId: orderId } as any);
     const before = await escrowBalance();
     const hdr = `evt_hdr_${randomUUID()}`;
     const a = webhook('payment.captured', { order_id: intent.gatewayOrderId, payment_id: `pay_${randomUUID()}`, amount: Number(AMOUNT), currency: 'INR', method: 'upi' });

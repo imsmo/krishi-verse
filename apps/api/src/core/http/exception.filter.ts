@@ -35,6 +35,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (err instanceof AppError) {
       if (err.httpStatus >= 500) this.log.error(`${err.code}: ${err.message}`, (err as Error).stack);
+      // S6-prep: 4xx were previously silent in the terminal — log them as warn (code + path) so a
+      // founder debugging on a device can see WHY a request was rejected without a proxy/sniffer.
+      else this.log.warn(`${err.httpStatus} ${err.code} on ${req?.method} ${req?.originalUrl ?? req?.url}: ${err.message}`);
       res.status(err.httpStatus).json({
         error: { code: err.code, message: this.msg(err.code, err.message), details: err.details ?? {} },
         meta,
@@ -52,6 +55,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       const status = err.getStatus();
       const resp = err.getResponse();
       const code = err.name.replace(/Exception$/, '').toUpperCase() || 'HTTP_ERROR';
+      if (status >= 400) this.log.warn(`${status} ${code} on ${req?.method} ${req?.originalUrl ?? req?.url}`); // S6-prep: surface guard 403/404s
       res.status(status).json({
         error: { code, message: this.msg(code, typeof resp === 'string' ? resp : (resp as any)?.message ?? err.message), details: {} },
         meta,

@@ -18,7 +18,7 @@ import {
   createBookingAction, assignWorkerAction, startBookingAction, completeBookingAction,
   cancelBookingAction, payWagesAction, confirmAttendanceAction,
 } from './actions';
-import type { LabourBooking, LabourAssignment, WorkerProfile, LabourLookups } from '@krishi-verse/sdk-js';
+import type { LabourBooking, LabourAssignment, WorkerCard, LabourLookups } from '@krishi-verse/sdk-js';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -34,7 +34,8 @@ export default async function LabourPage({ searchParams }: { searchParams: { ok?
   const lang = getLang();
   const selected = searchParams.booking || null;
 
-  let bookings: LabourBooking[] = []; let workers: WorkerProfile[] = []; let lookups: LabourLookups | null = null;
+  let bookings: LabourBooking[] = []; // P0-2: employer browse returns the consented marketplace CARD (WorkerCard), not the full WorkerProfile
+  let workers: WorkerCard[] = []; let lookups: LabourLookups | null = null;
   let assignments: LabourAssignment[] = [];
   let bookingsFailed = false; let workersFailed = false; let lookupsFailed = false;
   const [bRes, wRes, lRes] = await Promise.allSettled([
@@ -135,7 +136,7 @@ export default async function LabourPage({ searchParams }: { searchParams: { ok?
           empty={t.t('labour.worker.empty')}
           columns={[
             { header: t.t('labour.worker.id'), cell: (w) => <code className="kv-code kv-code--inline">{w.id}</code> },
-            { header: t.t('labour.worker.verified'), cell: (w) => w.ageVerified18 ? t.t('labour.worker.yes') : t.t('labour.worker.no') },
+            { header: t.t('labour.worker.verified'), cell: (w) => w.ageVerified ? t.t('labour.worker.yes') : t.t('labour.worker.no') },
             { header: t.t('labour.worker.completed'), cell: (w) => `${w.bookingsCompleted ?? 0}` },
             { header: t.t('labour.worker.rating'), cell: (w) => w.ratingAvg != null ? w.ratingAvg.toFixed(1) : t.t('common.dash') },
           ]}

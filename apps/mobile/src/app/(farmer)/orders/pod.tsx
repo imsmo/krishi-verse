@@ -31,7 +31,9 @@ export default function ProofOfDelivery() {
   const [error, setError] = useState<string | undefined>();
 
   const load = useCallback(async () => {
-    if (!orderId) return;
+    // KV MF-06 hardening: same guard-before-setLoading(false) fix as orders/track.tsx — a missing orderId
+    // must still clear the loading flag so the screen never gets stuck on SkeletonCard forever.
+    if (!orderId) { setLoading(false); return; }
     setLoading(true);
     setShipment(await getOrderShipment(orderId));
     setLoading(false);

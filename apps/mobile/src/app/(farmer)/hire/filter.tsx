@@ -11,7 +11,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { WorkerProfile, LabourLookups } from '@krishi-verse/sdk-js';
-import { Button, Card, Toggle, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import { Button, Card, Toggle, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { browseWorkers, labourLookups } from '../../../features/labour/hire.api';
@@ -41,7 +41,7 @@ export default function FilterWorkers() {
   const count = useMemo(() => filterWorkers(items, { minRating: min4 ? 4 : undefined, verified, skillId }).length, [items, min4, verified, skillId]);
   const reset = () => { setSkillId(null); setMin4(false); setVerified(false); };
 
-  if (!enabled) return <ScreenScaffold title={t('hire.filterScreen.title')} />;
+  if (!enabled) return <ScreenScaffold title={t('hire.filterScreen.title')}><EmptyState title={t('common.unavailable')} /></ScreenScaffold>;
 
   const apply = () => router.replace({ pathname: '/(farmer)/hire/workers', params: { minRating: min4 ? '4' : '', verified: verified ? '1' : '', skillId: skillId ?? '' } });
 

@@ -4,6 +4,8 @@
 // One queue (not one-per-feature) is required for correct ordering + a single reconnect flush (guide §5/§6).
 // An op whose type has no registered handler is treated as transient (waits for the feature to register, then
 // the attempt-cap dead-letters it) so a stale op can never silently corrupt another feature.
+// `onDroppedOp` lets the app surface a dead-lettered op to the farmer (KV-MF-02: a poison op — one that fails
+// for a real, non-network reason — must never just vanish into the dead-letter list unannounced).
 import { OfflineQueue, type QueuedOp, type OpHandler, type ReplayResult } from '../api/offline-queue';
 import { asyncStorageKv } from './kv';
 
@@ -24,8 +26,23 @@ const dispatch: OpHandler = async (op: QueuedOp): Promise<ReplayResult> => {
   return h(op);
 };
 
-/** Drain the queue in order (call on reconnect / app foreground). Safe to call repeatedly. */
-export function flushQueue() { return queue.flush(dispatch); }
+export type DroppedOpReason = 'permanent-fail' | 'attempt-cap';
+export type DroppedOpListener = (op: QueuedOp, reason: DroppedOpReason) => void;
+const droppedListeners = new Set<DroppedOpListener>();
+
+/** Register to hear about an op that left the queue WITHOUT succeeding (dead-lettered). This is the app's hook
+ * for telling the farmer "this saved item could not be sent" (KV-MF-02: a poison op must never just vanish).
+ * Returns an unsubscribe function. Safe to register from more than one place (e.g. a screen + a toast host). */
+export function onDroppedOp(fn: DroppedOpListener): () => void {
+  droppedListeners.add(fn);
+  return () => droppedListeners.delete(fn);
+}
+
+/** Drain the queue in order (call on reconnect / app foreground). Safe to call repeatedly. Notifies every
+ * registered `onDroppedOp` listener for each op dead-lettered during this pass. */
+export function flushQueue() {
+  return queue.flush(dispatch, (op, reason) => { for (const fn of droppedListeners) fn(op, reason); });
+}
 
 export function pendingCount() { return queue.size(); }
 export function deadOps() { return queue.dead(); }

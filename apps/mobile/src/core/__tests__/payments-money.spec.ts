@@ -1,5 +1,5 @@
 // Unit tests for the pure payment money helpers (rupees→paise via BigInt, status → terminal outcome).
-import { rupeesToPaiseMinor, paymentOutcome, isTerminal } from '../payments/money';
+import { rupeesToPaiseMinor, paymentOutcome, isTerminal, isSandboxProvider } from '../payments/money';
 
 describe('rupeesToPaiseMinor', () => {
   it('converts whole rupees to paise (no float)', () => {
@@ -33,5 +33,18 @@ describe('paymentOutcome / isTerminal', () => {
     expect(isTerminal('captured')).toBe(true);
     expect(isTerminal('failed')).toBe(true);
     expect(isTerminal('pending')).toBe(false);
+  });
+});
+
+describe('isSandboxProvider', () => {
+  it('true only for the exact sandbox provider code', () => {
+    expect(isSandboxProvider('sandbox')).toBe(true);
+  });
+  it('false for a real gateway, near-miss casing, or missing provider', () => {
+    expect(isSandboxProvider('razorpay')).toBe(false);
+    expect(isSandboxProvider('Sandbox')).toBe(false);
+    expect(isSandboxProvider(undefined)).toBe(false);
+    expect(isSandboxProvider(null)).toBe(false);
+    expect(isSandboxProvider('')).toBe(false);
   });
 });

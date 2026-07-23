@@ -6,16 +6,34 @@
 
 export type FlagKey =
   | 'farmer_app'        // the farmer role vertical (shipped Wave 0) — GA-intended, killable
-  | 'voice_listing'     // mic→STT listing (infra not built yet) — OFF
+  | 'voice_listing'     // mic→STT listing — OFF until ai-services voice-extraction is exposed via apps/api (GA AI wave)
   | 'listing_boost'     // paid boost via wallet — OFF until payments land
   | 'payments_addmoney' // wallet add-money via Razorpay (P-03) — OFF until staging-verified
   | 'wallet'            // wallet vertical: transactions/withdraw/payout-history/detail (P-06) — OFF until verified
+  | 'wallet_p2p'        // peer-to-peer wallet transfer ("Send") — post-GA, no backend endpoint yet (R2-06); the
+                         // wallet HUB's Send tile only renders when this is on. OFF at pilot (default OFF)
   | 'orders_fulfilment' // order lifecycle actions + PoD + track + review + report (P-07) — OFF until verified
   | 'buyer_checkout'    // buyer cart → checkout → place+pay order (P-09) — OFF until verified
   | 'offers_chat'       // offers negotiation + chat + masked call (P-10) — OFF until verified
+  | 'support'           // helpdesk support tickets + their chat thread (P-22, screen 520, KV-BL-034/052) — mirrors
+                         // the SERVER flag key `support` exactly (core/feature-flags/flags.guard.ts's
+                         // @FeatureFlag('support') on apps/api's TicketsController) so GET /v1/config/flags relays
+                         // the kill-switch verbatim, no name-mapping needed. A support thread is NOT a buyer↔seller
+                         // negotiation — it must not share `offers_chat`'s gate (MF-01's note on ChatThreadScreen:
+                         // the (buyer) tab group's `buyer_app` kill-switch used to collaterally block support/other
+                         // threads; the same over-broad-gate mistake, one level down, was `offers_chat` gating
+                         // support chat too) — OFF until verified
   | 'auctions'          // auction discovery + bidding (EMD) + create (P-11) — OFF
   | 'mandi_weather'     // mandi prices + price alerts + weather advisories (P-19) — OFF until verified
   | 'tips_assistant'    // tips library + crop hub + AI assistant + voice search (P-20) — OFF until verified
+  | 'voice_assistant'   // "Tap to speak" mic on the Farm Assistant (screen 125) — the assistant's TEXT Q&A
+                         // (POST ai/assistant/messages) is fully built + governed (P1-13, apps/api `assistant`
+                         // module) and already degrades honestly turn-by-turn without a model key; on-device STT
+                         // itself works (core/voice, same engine as `voice_listing`), but per R2-03 the mic is
+                         // still gated separately so ops can kill just the voice affordance without touching the
+                         // (working) text assistant — same pattern as `voice_listing` gating listing/new.tsx's mic
+                         // one screen over. OFF until verified on-device for the assistant's (longer, freer-form)
+                         // farming questions
   | 'schemes_govt'      // govt schemes: browse + eligibility + apply + doc upload + status/DBT (P-21) — OFF until verified
   | 'farmer_profile'    // farmer profile/farm/bank/docs + help/complaint (support SLA) (P-22) — OFF until verified
   | 'system_screens'    // global search + settings + DPDP export/delete + change-phone + feedback (P-23) — OFF until verified
@@ -37,12 +55,15 @@ const DEFAULTS: Record<FlagKey, boolean> = {
   listing_boost: false,
   payments_addmoney: false,
   wallet: false,
+  wallet_p2p: false,
   orders_fulfilment: false,
   buyer_checkout: false,
   offers_chat: false,
+  support: false,
   auctions: false,
   mandi_weather: false,
   tips_assistant: false,
+  voice_assistant: false,
   schemes_govt: false,
   farmer_profile: false,
   system_screens: false,

@@ -12,7 +12,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { formatDate } from '@krishi-verse/i18n';
-import { Button, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
+import { Button, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../../../core/i18n/useTranslation';
 import { useFlag } from '../../../../core/flags/useFlag';
 import { monthMatrix, isoOf } from '../../../../features/labour/availability-calendar';
@@ -40,7 +40,7 @@ export default function BookWhen() {
 
   const matrix = useMemo(() => monthMatrix(year, month0), [year, month0]);
 
-  if (!enabled) return <ScreenScaffold title={t('bookWhen.title')} />;
+  if (!enabled) return <ScreenScaffold title={t('bookWhen.title')}><EmptyState title={t('common.unavailable')} /></ScreenScaffold>;
 
   const shiftMonth = (d: number) => { const nd = new Date(Date.UTC(year, month0 + d, 1)); setYear(nd.getUTCFullYear()); setMonth0(nd.getUTCMonth()); };
   const next = () => router.push({

@@ -4,7 +4,7 @@
 import {
   RESOURCE_KINDS, kindLabelKey, kindTone, normalizeQuery, matchesQuery, searchResources,
   groupByKind, tipSnapshot, isSaved, toggleSaved, reconcileSavedTips, buildAssistantDraft, appendTurn, type TipSnapshot, type ChatTurn,
-  readTimeMinutes, languageLabelKey, TIP_CATEGORIES, relatedTips,
+  readTimeMinutes, languageLabelKey, TIP_CATEGORIES, relatedTips, shouldShowAssistantMic,
 } from '../../features/content/content';
 import type { LearningResource } from '@krishi-verse/sdk-js';
 
@@ -148,6 +148,13 @@ describe('buildAssistantDraft', () => {
   });
   it('defaults sessionId to undefined when absent', () => {
     expect(buildAssistantDraft({ text: 'q', lang: 'gu' }).input?.sessionId).toBeUndefined();
+  });
+});
+
+describe('shouldShowAssistantMic (R2-03: mic flag-gated, text composer never is)', () => {
+  it('mirrors the voice_assistant flag exactly', () => {
+    expect(shouldShowAssistantMic(false)).toBe(false);
+    expect(shouldShowAssistantMic(true)).toBe(true);
   });
 });
 

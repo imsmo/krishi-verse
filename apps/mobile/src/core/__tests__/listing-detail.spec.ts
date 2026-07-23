@@ -29,6 +29,15 @@ describe('healthItems', () => {
     expect(ids).not.toContain('lab-report');
     expect(ids).not.toContain('expiry');
   });
+  // KV-MF-14 (founder video review): "Add more photos (0)" must be a REAL, tappable cta up to the cap —
+  // never a dead label — for both the warn row (<3) and the good row (≥3, "N photos added" can still grow).
+  it('the photo row is actionable below the MAX_LISTING_PHOTOS cap, both warn and good tone', () => {
+    expect(healthItems({ photoCount: 0, boostActive: false })[0]).toMatchObject({ tone: 'warn', count: 0, actionable: true });
+    expect(healthItems({ photoCount: 4, boostActive: false })[0]).toMatchObject({ tone: 'good', count: 4, actionable: true });
+  });
+  it('the photo row is NOT actionable once the cap is reached', () => {
+    expect(healthItems({ photoCount: 10, boostActive: false })[0]).toMatchObject({ tone: 'good', count: 10, actionable: false });
+  });
 });
 
 describe('clampExtendDays (screen 112 EXTEND cta, KV-BL-031)', () => {

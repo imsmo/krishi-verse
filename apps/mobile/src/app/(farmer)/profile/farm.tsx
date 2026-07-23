@@ -30,8 +30,19 @@ export default function FarmDetails() {
   const [surveyNo, setSurveyNo] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  // myParcels() degrades a fetch error (e.g. the land module 404ing where it's not yet live at a pilot tenant)
+  // to an empty page (Law 12: never a crash) — so an empty FIRST page can't be told apart from "genuinely no
+  // plots" by item count alone. Same heuristic as the wallet history screens: a failed initial fetch shows a
+  // retry instead of the ordinary "add your first plot" copy.
+  const [failed, setFailed] = useState(false);
 
-  const load = useCallback(async () => { const r = await myParcels(); setItems(r.items); setCursor(r.nextCursor); setLoading(false); }, []);
+  const load = useCallback(async (next?: string) => {
+    const r = await myParcels(next);
+    setItems((prev) => (next ? [...prev, ...r.items] : r.items));
+    setCursor(r.nextCursor);
+    setFailed(!next && r.items.length === 0 && r.nextCursor === null);
+    setLoading(false);
+  }, []);
   useFocusEffect(useCallback(() => { if (enabled) { setLoading(true); load(); } }, [enabled, load]));
 
   const more = useCallback(async () => {
@@ -84,7 +95,12 @@ export default function FarmDetails() {
           ) : null}
 
           {items.length === 0 ? (
-            <EmptyState title={t('profile.farm.empty.title')} message={t('profile.farm.empty.message')} />
+            <EmptyState
+              title={t('profile.farm.empty.title')}
+              message={t('profile.farm.empty.message')}
+              actionLabel={failed ? t('common.retry') : undefined}
+              onAction={failed ? () => { setLoading(true); load(); } : undefined}
+            />
           ) : items.map((item, i) => (
             <Card key={item.id} style={styles.card}>
               <View style={styles.row}>

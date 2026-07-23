@@ -14,13 +14,14 @@ import { View, Text, Pressable, StyleSheet, Alert, ScrollView } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import type { ProductCard } from '@krishi-verse/sdk-js';
-import { Button, Input, SegmentedControl, AddMediaTile, UploadTile, Icon, MoneyText, color, font, space, radius, shadow, type UploadStatus } from '@krishi-verse/ui-native';
+import { Button, Input, SegmentedControl, AddMediaTile, UploadTile, EmptyState, Icon, MoneyText, color, font, space, radius, shadow, type UploadStatus } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
+import { useFlag } from '../../../core/flags/useFlag';
 import { searchProducts } from '../../../features/catalogue/catalogue.api';
 import { createListing, getListing } from '../../../features/listings/listings.api';
 import { captureFromCamera, pickFromGallery, uploadPickedImage, type PickedImage } from '../../../core/media';
 import { useVoiceDictation } from '../../../core/voice';
-import { CREATE_MODES, STT_LANGS, QUALITY_GRADES, buildCreateDraft, rupeesToPaise, type CreateMode, type QualityGrade } from '../../../features/listings/create-listing';
+import { CREATE_MODES, STT_LANGS, QUALITY_GRADES, buildCreateDraft, rupeesToPaise, parseQty, resolveModeParam, shouldShowVoiceComingSoon, shouldShowPriceSummary, type CreateMode, type QualityGrade } from '../../../features/listings/create-listing';
 import { LANGUAGES } from '@krishi-verse/i18n';
 
 interface Photo { key: string; uri: string; status: UploadStatus; progress: number; mediaId?: string }
@@ -30,11 +31,16 @@ const nativeName = (code: string) => LANGUAGES.find((l) => l.code === code)?.nam
 export default function CreateListing() {
   const router = useRouter();
   const { t, lang } = useTranslation();
-  const { repostFrom } = useLocalSearchParams<{ repostFrom?: string }>();
+  const { repostFrom, mode: modeParam } = useLocalSearchParams<{ repostFrom?: string; mode?: string }>();
 
-  const [mode, setMode] = useState<CreateMode>('voice');         // design 10 is the Voice mode
+  // design 10 is the Voice mode by default; Home hero (and any other deep-link) can preselect a mode (KV-MF-05).
+  const [mode, setMode] = useState<CreateMode>(() => resolveModeParam(modeParam));
   const [sttLang, setSttLang] = useState<string>(STT_LANGS.includes(lang) ? lang : 'hi');
   const voice = useVoiceDictation(sttLang);
+  // Voice STT is not yet exposed via apps/api (see file header + create-listing.ts §13) — kill-switched by
+  // the `voice_listing` client flag. Tab stays visible; we swap its content for an honest coming-soon card.
+  const voiceListingEnabled = useFlag('voice_listing');
+  const voiceComingSoon = shouldShowVoiceComingSoon(mode, voiceListingEnabled);
 
   const [q, setQ] = useState('');
   const [results, setResults] = useState<ProductCard[]>([]);
@@ -75,7 +81,15 @@ export default function CreateListing() {
   const priceMinor = useMemo(() => rupeesToPaise(rupees), [rupees]);
   const uploadingAny = photos.some((p) => p.status === 'uploading');
   const mediaIds = photos.filter((p) => p.mediaId).map((p) => p.mediaId!) as string[];
-  const canSubmit = !!product && !!priceMinor && /^\d{1,7}$/.test(qty) && Number(qty) > 0 && !busy && !uploadingAny;
+  const qtyValid = parseQty(qty) != null;
+  const canSubmit = !!product && !!priceMinor && qtyValid && !busy && !uploadingAny;
+  // S6 device-test fix: the button used to disable SILENTLY (founder couldn't tell that the crop
+  // must be TAPPED from the suggestions, not just typed). Surface the first unmet requirement.
+  const disabledReason = !product ? t('createListing.hint.pickCrop')
+    : !priceMinor ? t('createListing.hint.price')
+    : !qtyValid ? t('createListing.hint.qty')
+    : uploadingAny ? t('createListing.hint.uploading')
+    : null;
 
   const addPhoto = async (pick: () => Promise<PickedImage | null>) => {
     if (photos.length >= MAX_PHOTOS) return;
@@ -109,7 +123,12 @@ export default function CreateListing() {
       // Pass the real productId forward (the public listing read-model doesn't expose it) so the Preview screen
       // can fetch the live Fair-Price band for this crop. Never fabricated — it's the catalogue id the farmer picked.
       else router.replace({ pathname: '/(farmer)/listings/preview', params: { id, productId: product!.id } });
-    } catch { setError(t('createListing.error')); }
+    } catch (e: unknown) {
+      // Surface the REAL reason (the API's own localized message, e.g. a 422 field error) instead of a generic
+      // string — KV-MF-02: a swallowed real failure left the farmer thinking a save was just "queued for later".
+      const msg = e instanceof Error && e.message ? e.message : undefined;
+      setError(msg ?? t('createListing.error'));
+    }
     finally { setBusy(false); }
   };
 
@@ -161,7 +180,19 @@ export default function CreateListing() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        {mode === 'voice' ? (
+        {mode === 'voice' && voiceComingSoon ? (
+          // Voice STT is honestly gated (KV-MF-05/MF-13): no dead mic, no never-filling transcript — just a
+          // truthful "coming soon" card + a way out to Manual. Tab itself stays visible/selectable.
+          <View style={styles.voiceSoonWrap} testID="voice-coming-soon">
+            <EmptyState
+              icon={<Icon name="mic" size={32} color={color.ink400} />}
+              title={t('createListing.voiceSoon.title')}
+              message={t('createListing.voiceSoon.message')}
+              actionLabel={t('createListing.voiceSoon.cta')}
+              onAction={() => setMode('manual')}
+            />
+          </View>
+        ) : mode === 'voice' ? (
           <>
             {/* AI Voice Listing panel */}
             <View style={styles.voicePanel}>
@@ -263,7 +294,7 @@ export default function CreateListing() {
           </>
         )}
 
-        {priceMinor ? (
+        {shouldShowPriceSummary(priceMinor, !!product) ? (
           <View style={styles.previewMoney}>
             <Text style={styles.previewMoneyLabel}>{t('createListing.pricePerUnit')}:</Text>
             <MoneyText minor={priceMinor} langCode={lang} size="md" />
@@ -272,22 +303,30 @@ export default function CreateListing() {
         {error ? <Text style={styles.formError}>{error}</Text> : null}
       </ScrollView>
 
-      {/* Footer: Re-record (voice) + Preview → */}
-      <View style={styles.footer}>
-        {mode === 'voice' ? (
-          <View style={{ flex: 1 }}>
-            <Button title={t('createListing.reRecord')} variant="outline" size="lg" onPress={reRecord} />
+      {/* Footer: Re-record (voice) + Preview → — hidden entirely in the voice coming-soon state (KV-MF-05/MF-13):
+          there are no fields on screen to preview, and Re-record has nothing real to re-record. The EmptyState's
+          own action button is the only CTA there (switch to Manual). */}
+      {!voiceComingSoon ? (
+        <View style={styles.footer}>
+          {mode === 'voice' ? (
+            <View style={{ flex: 1 }}>
+              <Button title={t('createListing.reRecord')} variant="outline" size="lg" onPress={reRecord} />
+            </View>
+          ) : null}
+          <View style={mode === 'voice' ? { flex: 1 } : { flex: 1 }}>
+            <Button title={t('createListing.preview')} size="lg" onPress={onSubmit} loading={busy} disabled={!canSubmit} />
+            {!canSubmit && disabledReason ? (
+              <Text style={styles.disabledHint} accessibilityLiveRegion="polite">{disabledReason}</Text>
+            ) : null}
           </View>
-        ) : null}
-        <View style={mode === 'voice' ? { flex: 1 } : { flex: 1 }}>
-          <Button title={t('createListing.preview')} size="lg" onPress={onSubmit} loading={busy} disabled={!canSubmit} />
         </View>
-      </View>
+      ) : null}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  disabledHint: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink500, marginTop: space[1], textAlign: 'center' },
   safe: { flex: 1, backgroundColor: color.page },
   appbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space[5], paddingTop: space[2], paddingBottom: space[2] },
   backBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: color.card, borderWidth: 1, borderColor: color.earth200 },
@@ -296,6 +335,7 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: space[5], paddingBottom: space[6], gap: space[2] },
 
   // Voice panel
+  voiceSoonWrap: { borderRadius: radius.xl, backgroundColor: color.card, borderWidth: 1, borderColor: color.earth200, marginTop: space[2] },
   voicePanel: { borderRadius: radius.xl, padding: space[5], backgroundColor: color.primary700, overflow: 'hidden', alignItems: 'center', ...shadow.card },
   voiceGlow: { position: 'absolute', top: -50, right: -50, width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(243,156,18,0.18)' },
   voiceTag: { color: color.accent200, fontFamily: font.body, fontSize: 11, fontWeight: font.weight.bold, letterSpacing: 0.5, alignSelf: 'center', backgroundColor: 'rgba(243,156,18,0.22)', borderRadius: radius.pill, paddingVertical: 4, paddingHorizontal: 12, overflow: 'hidden' },

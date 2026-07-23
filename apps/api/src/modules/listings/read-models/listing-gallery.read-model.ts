@@ -1,14 +1,24 @@
 // modules/listings/read-models/listing-gallery.read-model.ts
-// The public photo gallery for a listing: media attached via media_links (entity_type='listing'), joined
+// The photo gallery for a listing: media attached via media_links (entity_type='listing'), joined
 // to media_assets, CLEAN scan only, ordered. Each clean asset's s3_key is turned into a short-lived
-// presigned GET url. Replica-backed (Law 12). AUTHORIZATION: the gallery is only returned for a
-// PUBLISHED + publicly-visible listing — a draft/private/cross-tenant-hidden listing yields an empty
-// gallery (never leaks an unpublished seller's photos). Infected/pending assets are never presigned.
+// presigned GET url. Replica-backed (Law 12). AUTHORIZATION: a non-owner only ever sees a PUBLISHED +
+// publicly-visible listing's gallery — a draft/private/cross-tenant-hidden listing yields an empty
+// gallery to strangers (never leaks an unpublished seller's photos). Infected/pending assets are never
+// presigned.
+//
+// KV-MF-14 FIX (founder video review): the OWNER'S OWN listing-detail screen (screen 112) reuses this
+// SAME endpoint (GET /listings/:id/media) for its "Listing health → N photos" count/gallery. Before this
+// fix the gate above applied unconditionally, so a farmer's own DRAFT (not yet published) or
+// tenant-only-visibility listing always showed photoCount=0 on their OWN screen even with clean photos
+// attached — mirroring getPublicById's existing owner/moderator bypass (listing.service.ts) so the
+// owner (or an admin, mirroring every other owner-only read here) always sees their own clean media
+// regardless of publish/visibility state. Strangers still only ever see a published+public gallery.
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { OBJECT_STORE, ObjectStore } from '../../../core/media/s3-presign.service';
 
 export interface GalleryItem { mediaId: string; url: string; sortOrder: number; }
+export interface GalleryViewer { userId: string; canModerate: boolean; }
 const URL_TTL_SEC = 600;   // short-lived signed GET (10 min) — re-fetch the gallery to refresh
 
 @Injectable()
@@ -18,14 +28,19 @@ export class ListingGalleryReadModel {
     @Inject(OBJECT_STORE) private readonly store: ObjectStore,
   ) {}
 
-  /** Signed gallery for a PUBLIC listing. Returns [] if the listing isn't publicly visible or has no clean media. */
-  async forListing(tenantId: string, listingId: string): Promise<{ items: GalleryItem[]; expiresInSec: number }> {
+  /** Signed gallery. `viewer` (from the request context — empty userId for an anonymous caller since
+   *  GET :id/media stays @Public) lets the OWNER (or a moderator) see their own clean media regardless
+   *  of publish/visibility state; everyone else only sees a published+public listing's gallery. Returns
+   *  [] if neither condition holds, or the listing has no clean media. */
+  async forListing(tenantId: string, listingId: string, viewer?: GalleryViewer): Promise<{ items: GalleryItem[]; expiresInSec: number }> {
     const db = this.replica.forTenant(tenantId);
-    const l = await db.query<{ status: string; visibility: string }>(
-      `SELECT status, visibility FROM listings WHERE id=$1`, [listingId]);
+    const l = await db.query<{ status: string; visibility: string; seller_user_id: string }>(
+      `SELECT status, visibility, seller_user_id FROM listings WHERE id=$1`, [listingId]);
     const listing = l.rows[0];
-    const publiclyVisible = !!listing && listing.status === 'published' && (listing.visibility === 'public' || listing.visibility === 'cross_tenant');
-    if (!publiclyVisible) return { items: [], expiresInSec: URL_TTL_SEC };
+    if (!listing) return { items: [], expiresInSec: URL_TTL_SEC };
+    const publiclyVisible = listing.status === 'published' && (listing.visibility === 'public' || listing.visibility === 'cross_tenant');
+    const isOwnerOrAdmin = !!viewer && (viewer.canModerate || (!!viewer.userId && listing.seller_user_id === viewer.userId));
+    if (!publiclyVisible && !isOwnerOrAdmin) return { items: [], expiresInSec: URL_TTL_SEC };
 
     const r = await db.query<{ media_id: string; s3_key: string; sort_order: number }>(
       `SELECT ml.media_id, ma.s3_key, ml.sort_order

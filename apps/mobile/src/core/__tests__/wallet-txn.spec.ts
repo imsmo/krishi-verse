@@ -1,6 +1,6 @@
 // Unit tests for the PURE wallet presenters + the withdrawal guard (features/wallet/txn). No React/native deps
 // (SDK/ui imports are type-only). Money is bigint minor units (Law 2) — the guard must use BigInt, never float.
-import { statusTone, statusLabelKey, txnTitleKey, presentPayment, presentPayout, withdrawable, ledgerMoneyTone, presentLedgerEntry, txnFlow } from '../../features/wallet/txn';
+import { statusTone, statusLabelKey, txnTitleKey, presentPayment, presentPayout, withdrawable, withdrawErrorKind, ledgerMoneyTone, presentLedgerEntry, txnFlow } from '../../features/wallet/txn';
 import type { PaymentSummary, PayoutSummary, WalletLedgerEntry } from '@krishi-verse/sdk-js';
 
 describe('statusTone / statusLabelKey', () => {
@@ -98,5 +98,20 @@ describe('withdrawable (BigInt guard — Law 2)', () => {
     const huge = '9007199254740993000'; // > 2^53
     expect(withdrawable(huge, huge)).toEqual({ ok: true });
     expect(withdrawable(huge, '9007199254740993001')).toEqual({ ok: false, reason: 'exceeds' });
+  });
+});
+
+describe('withdrawErrorKind (classifies a failed POST /v1/payouts by HTTP status — server is the authority)', () => {
+  it('maps 403 to the KYC gate (S3 — kyc_status must be verified)', () => {
+    expect(withdrawErrorKind(403)).toBe('kyc');
+  });
+  it('maps 409/422 to a balance/limit conflict re-asserted server-side', () => {
+    expect(withdrawErrorKind(409)).toBe('exceeds');
+    expect(withdrawErrorKind(422)).toBe('exceeds');
+  });
+  it('maps anything else (network, 5xx, undefined) to a generic failure', () => {
+    expect(withdrawErrorKind(500)).toBe('failed');
+    expect(withdrawErrorKind(undefined)).toBe('failed');
+    expect(withdrawErrorKind(null)).toBe('failed');
   });
 });

@@ -71,4 +71,46 @@ describe('OfflineQueue', () => {
     const res = await q.flush(async () => { throw new Error('network'); });
     expect(res.remaining).toBe(1);
   });
+
+  // KV-MF-02: a poison op (one that will fail identically forever — a real 4xx/5xx, not a connectivity blip)
+  // must (a) drop on the FIRST 'permanent-fail', not linger, and (b) tell the app via `onDropped` so the farmer
+  // can be told, instead of the item just vanishing into the dead-letter list unannounced.
+  describe('onDropped notification (poison-op handling)', () => {
+    it('fires once, with reason "permanent-fail", for an immediate non-network failure', async () => {
+      const q = new OfflineQueue(memKv());
+      await q.enqueue(op(1)); await q.enqueue(op(2));
+      const dropped: Array<{ id: string; reason: string }> = [];
+      const res = await q.flush(
+        async (o) => ((o.payload as { i: number }).i === 1 ? 'permanent-fail' : 'ok'),
+        (o, reason) => dropped.push({ id: o.id, reason }),
+      );
+      expect(res.dead).toBe(1);
+      expect(dropped).toEqual([{ id: 'idem-1', reason: 'permanent-fail' }]);
+    });
+
+    it('fires with reason "attempt-cap" once a transient-looking op exhausts maxAttempts', async () => {
+      const q = new OfflineQueue(memKv(), 2); // maxAttempts = 2
+      await q.enqueue(op(1));
+      const dropped: Array<{ reason: string }> = [];
+      await q.flush(async () => 'retry', (_o, reason) => dropped.push({ reason })); // attempt 1
+      await q.flush(async () => 'retry', (_o, reason) => dropped.push({ reason })); // attempt 2 → cap
+      expect(dropped).toEqual([{ reason: 'attempt-cap' }]);
+    });
+
+    it('never fires for a plain successful flush', async () => {
+      const q = new OfflineQueue(memKv());
+      await q.enqueue(op(1));
+      const dropped: unknown[] = [];
+      await q.flush(async () => 'ok', (o, reason) => dropped.push({ o, reason }));
+      expect(dropped).toEqual([]);
+    });
+
+    it('a throwing onDropped listener never breaks the drain (defensive — Law 12)', async () => {
+      const q = new OfflineQueue(memKv());
+      await q.enqueue(op(1)); await q.enqueue(op(2));
+      const res = await q.flush(async () => 'permanent-fail', () => { throw new Error('listener bug'); });
+      expect(res.dead).toBe(2);
+      expect(await q.size()).toBe(0);
+    });
+  });
 });

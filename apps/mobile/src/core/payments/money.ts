@@ -29,3 +29,13 @@ export function paymentOutcome(status: string | undefined | null): PaymentOutcom
 export function isTerminal(status: string | undefined | null): boolean {
   return paymentOutcome(status) !== 'pending';
 }
+
+/** True when a payment intent was created against the deterministic SANDBOX gateway — i.e. no real PSP
+ * (Razorpay) is configured server-side (apps/api's payments.module.ts registers the sandbox gateway,
+ * and only ever registers it as the DEFAULT when Razorpay isn't configured, which is itself only
+ * possible outside production). The add-money screen uses this to drive the server's dev-only sandbox
+ * completion instead of opening a real gateway checkout sheet with a fake gateway order id it would
+ * never recognise (that call would just throw — see checkout.ts). Pure string check → unit-tested. */
+export function isSandboxProvider(provider: string | undefined | null): boolean {
+  return provider === 'sandbox';
+}

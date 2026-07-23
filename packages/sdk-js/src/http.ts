@@ -3,8 +3,25 @@
 // transient failures (network/timeout/5xx) with exponential backoff + jitter — a mutation (POST/PATCH/…) is
 // NEVER auto-retried (Law 3: a non-idempotent call must fail loudly, never silently double-fire); the API's
 // {data, meta} envelope is unwrapped; a non-2xx becomes a typed SdkError carrying only safe fields (no token).
+//
+// REACTIVE 401 recovery: when `config.onUnauthorized` is set, a 401 on a non-anonymous request triggers ONE
+// refresh + ONE retry of the original request (any method — a mutation gets retried too here, since the first
+// attempt never reached the server as "processed": a 401 means the API rejected it for auth, not business
+// logic, so this is not a double-fire of Law 3). Concurrent 401s across in-flight requests share a SINGLE
+// refresh call (see `refreshInFlight`) — refresh tokens ROTATE, so a second concurrent refresh with the
+// now-stale token would fail or invalidate the whole session.
 import { ResolvedConfig } from './config';
 import { SdkError, SdkNetworkError, SdkTimeoutError } from './errors';
+
+/** True in dev bundles: RN injects __DEV__; web/node builds use NODE_ENV. Resolved via globalThis so
+ * plain tsc (no DOM/node types) compiles and production tree-shaking stays unaffected. */
+function sdkIsDev(): boolean {
+  const g = globalThis as Record<string, unknown>;
+  if (typeof g.__DEV__ === 'boolean') return g.__DEV__ as boolean;
+  const env = (g.process as { env?: { NODE_ENV?: string } } | undefined)?.env;
+  return env ? env.NODE_ENV !== 'production' : false;
+}
+
 
 export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 export interface RequestOptions {
@@ -19,9 +36,20 @@ export interface Envelope<T> { data: T; meta?: Record<string, unknown>; }
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export class HttpClient {
+  /** The single shared in-flight refresh promise (per client instance) — set the instant the first 401 starts a
+   * refresh, cleared once it settles, so every 401 that lands while a refresh is running awaits the SAME promise
+   * instead of firing its own concurrent refresh call. */
+  private refreshInFlight: Promise<boolean> | undefined;
+
   constructor(private readonly config: ResolvedConfig) {}
 
   async request<T>(method: HttpMethod, path: string, opts: RequestOptions = {}): Promise<Envelope<T>> {
+    return this.attempt<T>(method, path, opts, false);
+  }
+
+  /** `isUnauthorizedRetry` is true only on the ONE retry issued after a successful refresh — it disables a
+   * second recovery attempt for this same logical request, which is what bounds the loop to a single retry. */
+  private async attempt<T>(method: HttpMethod, path: string, opts: RequestOptions, isUnauthorizedRetry: boolean): Promise<Envelope<T>> {
     const url = this.buildUrl(path, opts.query);
     const isIdempotent = method === 'GET';
     const maxAttempts = isIdempotent ? this.config.retries + 1 : 1;
@@ -32,12 +60,40 @@ export class HttpClient {
         return await this.once<T>(method, url, opts);
       } catch (err) {
         lastErr = err;
+        if (!isUnauthorizedRetry && this.isRecoverableUnauthorized(err, opts)) {
+          const refreshed = await this.refreshOnce();
+          // Rebuild the request from scratch (fresh header pass → `getToken()` reads the just-refreshed token);
+          // `opts` — and therefore `opts.idempotencyKey` — is the SAME object, so a POST retry reuses the
+          // identical Idempotency-Key rather than minting a new one.
+          if (refreshed) return this.attempt<T>(method, path, opts, true);
+          throw err;   // refresh declined/failed → surface the ORIGINAL 401, not a refresh error
+        }
         const retryable = isIdempotent && this.isRetryable(err) && attempt < maxAttempts;
         if (!retryable) throw err;
         await sleep(Math.min(1000, 100 * 2 ** (attempt - 1)) + Math.floor(Math.random() * 50));   // backoff + jitter
       }
     }
     throw lastErr;   // unreachable, but satisfies the type
+  }
+
+  /** A 401 is recoverable only when: the callback is configured, the request carried a bearer token (never for
+   * `anonymous: true` calls — that would make auth/refresh itself try to refresh on its own 401), and it's the
+   * request's first 401 (guarded by the caller via `isUnauthorizedRetry`). */
+  private isRecoverableUnauthorized(err: unknown, opts: RequestOptions): boolean {
+    return err instanceof SdkError && err.status === 401 && !opts.anonymous && !!this.config.onUnauthorized;
+  }
+
+  /** Single-flight: the first caller starts the refresh and stores the promise; every caller that arrives while
+   * it is still running (there is no `await` between the check and the assignment, so no interleaving is
+   * possible in JS's single-threaded event loop) gets the SAME promise instead of invoking the callback again. */
+  private refreshOnce(): Promise<boolean> {
+    if (!this.refreshInFlight) {
+      this.refreshInFlight = Promise.resolve()
+        .then(() => this.config.onUnauthorized!())
+        .catch(() => false)
+        .finally(() => { this.refreshInFlight = undefined; });
+    }
+    return this.refreshInFlight;
   }
 
   private async once<T>(method: HttpMethod, url: string, opts: RequestOptions): Promise<Envelope<T>> {
@@ -63,6 +119,20 @@ export class HttpClient {
         const raw = (json ?? {}) as { error?: ErrShape; meta?: { request_id?: string } } & ErrShape;
         const e: ErrShape = raw.error ?? raw;
         const requestId = e.requestId ?? raw.meta?.request_id ?? res.headers.get('x-request-id') ?? undefined;
+        // S6-prep DEV LOGGING: surface every API error in the client terminal (Metro / browser
+        // console) so a founder can copy-paste the real reason instead of guessing from a generic
+        // toast. Gated off in production bundles (RN injects __DEV__; web/node use NODE_ENV).
+        // MF-12: use console.log (NOT .warn) — Expo/Metro renders warnings as intrusive on-screen
+        // yellow toasts; expected/handled 4xx (e.g. flag-OFF module 404s) shouldn't nag the founder.
+        // The line still prints in the Metro terminal for copy-paste debugging.
+        if (sdkIsDev()) {
+          // eslint-disable-next-line no-console
+          console.log(
+            `[sdk] ${method} ${url} → ${res.status} ${e.code ?? 'API_ERROR'}: ${e.message ?? ''}` +
+            (requestId ? ` (requestId ${requestId})` : ''),
+            e.details ?? '',
+          );
+        }
         throw new SdkError(e.code ?? 'API_ERROR', res.status, e.message ?? `HTTP ${res.status}`, requestId, e.details ?? e);
       }
       return (json && typeof json === 'object' && 'data' in (json as object)) ? (json as Envelope<T>) : { data: json as T };

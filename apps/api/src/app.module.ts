@@ -7,6 +7,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { CoreModule } from './core/core.module';
 import { RequestIdMiddleware } from './core/http/request-id.middleware';
 import { SecurityHeadersMiddleware } from './core/http/security-headers.middleware';
+import { HttpLogMiddleware } from './core/http/http-log.middleware';
 import { TenantContextMiddleware } from './core/tenancy-context/tenant-context.middleware';
 import { ListingsModule } from './modules/listings/listings.module';
 import { OrdersModule } from './modules/orders/orders.module';
@@ -58,6 +59,6 @@ import { TenantWebhooksModule } from './modules/tenant-webhooks/tenant-webhooks.
 export class AppModule implements NestModule {
   // security-headers (every response, incl. error paths) THEN request-id THEN tenant-context (Law 1) on every route.
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(SecurityHeadersMiddleware, RequestIdMiddleware, TenantContextMiddleware).forRoutes('*');
+    consumer.apply(SecurityHeadersMiddleware, RequestIdMiddleware, HttpLogMiddleware, TenantContextMiddleware).forRoutes('*');
   }
 }

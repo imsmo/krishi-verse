@@ -67,6 +67,11 @@ export class OutboxDispatcher {
         // mark failed in a fresh statement (the event tx rolled back); DLQ/requeue handles it
         await this.relayPool.query(`UPDATE outbox_events SET status='failed' WHERE id=$1`, [row.id]).catch(() => undefined);
         this.metrics.inc('outbox.failed', { type: event.eventType });
+        // Surface WHY: a swallowed handler error here means a money/settlement event was quarantined
+        // silently (e.g. a farmer never got paid). Log to stderr so operators and the pilot relay
+        // tick can see the cause instead of a bare "failed" count.
+        // eslint-disable-next-line no-console
+        console.error(`[outbox] handler FAILED for event ${row.id} type=${event.eventType} aggregate=${event.aggregateId}: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}`);
         return true;   // we did process (and quarantined) one event
       }
     } finally {

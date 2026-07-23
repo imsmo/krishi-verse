@@ -120,6 +120,30 @@ run('listings slice (integration, real Postgres + RLS)', () => {
     expect(page.items.map((i) => i.id)).toContain(id);
   });
 
+  it('owner view (mine): a seller sees their OWN listings across every status (drafts included), never another seller\'s', async () => {
+    const plan = await makePlan(admin);
+    const tenant = await makeTenant(admin);
+    const categoryId = await makeCategory(admin);
+    const productId = await makeProduct(admin, { categoryId, tenantId: tenant });
+    await activateSubscription(admin, tenant, plan);
+    const sellerA = await makeUser(admin);
+    const sellerB = await makeUser(admin);
+
+    const { id: draftA } = await svc.create(tenant, sellerA, `idem-${uuid()}`, dto({ productId, categoryId })); // left in 'draft'
+    const { id: listingB } = await svc.create(tenant, sellerB, `idem-${uuid()}`, dto({ productId, categoryId }));
+    await svc.publish(tenant, { userId: sellerB, canModerate: false }, listingB);
+
+    // Public search never surfaces seller A's draft; it does surface seller B's published listing.
+    const pub = await readModel.query(tenant, { limit: 20, sort: 'newest' } as any);
+    expect(pub.items.map((i) => i.id)).not.toContain(draftA);
+    expect(pub.items.map((i) => i.id)).toContain(listingB);
+
+    // Owner view for seller A: sees their own draft, never seller B's.
+    const mineA = await readModel.query(tenant, { limit: 20, sort: 'newest' } as any, { ownerUserId: sellerA });
+    expect(mineA.items.map((i) => i.id)).toContain(draftA);
+    expect(mineA.items.map((i) => i.id)).not.toContain(listingB);
+  });
+
   it('is idempotent — same Idempotency-Key returns the same id', async () => {
     const { tenant, seller, productId, categoryId } = await provision(await makePlan(admin));
     const key = `idem-${uuid()}`;

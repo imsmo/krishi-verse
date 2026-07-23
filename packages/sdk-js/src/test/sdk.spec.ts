@@ -444,6 +444,24 @@ describe('HttpClient via resources', () => {
     expect(v.status).toBe('verified');
   });
 
+  it('payments.createIntent POSTs with Idempotency-Key; devCompleteSandbox POSTs the dev-complete path (no Idempotency-Key needed)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { paymentId: 'p1', gatewayOrderId: 'sbx_order_p1', provider: 'sandbox', amountMinor: '50000', status: 'initiated' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const intent = await c.payments.createIntent({ purpose: 'wallet_recharge', amountMinor: '50000' }, 'idem-pay-1');
+    expect(calls[0].url).toBe('https://api.test/v1/payments');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-pay-1');
+    expect(intent.provider).toBe('sandbox');
+    expect(typeof intent.amountMinor).toBe('string');
+
+    const { fn: fn2, calls: calls2 } = fakeFetch(() => ({ body: { data: { id: 'p1', status: 'success', amountMinor: '50000', currencyCode: 'INR', provider: 'sandbox' } } }));
+    const c2 = createClient({ ...base, fetchImpl: fn2, getToken: () => 'tok' });
+    const summary = await c2.payments.devCompleteSandbox(intent.paymentId);
+    expect(calls2[0].url).toBe('https://api.test/v1/payments/p1/dev-complete-sandbox');
+    expect(calls2[0].init.method).toBe('POST');
+    expect(summary.status).toBe('success');
+  });
+
   it('labour.clockOut POSTs the clock-out path with break + Idempotency-Key; hours come back as numbers', async () => {
     const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'a1', assignmentId: 'as1', bookingId: 'b1', workDate: '2026-06-01', status: 'clocked_out', clockOutAt: '2026-06-01T16:00:00.000Z', hoursRegular: 8, hoursOvertime: 1.5 } } }));
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
@@ -971,5 +989,98 @@ describe('HttpClient via resources', () => {
     expect(r.draft.crop_name).toBe('Tomato');
     expect(r.confidence).toBe(0.72);
     expect(r.needsReview).toBe(false);
+  });
+});
+
+// REACTIVE token refresh (refresh-on-401 + retry). Access tokens expire in 900s; without this, once a token
+// expires mid-session every request 401s until app restart. These tests pin the SDK-level contract the mobile
+// app's auth store wires up: single-flight refresh, retry-once semantics, Idempotency-Key reuse, and the
+// anonymous/no-callback escape hatches that must never engage the recovery path.
+describe('HttpClient reactive 401 refresh (onUnauthorized)', () => {
+  it('401 → onUnauthorized resolves true → retries the ORIGINAL request ONCE with the fresh token, reusing the same Idempotency-Key', async () => {
+    let token = 'stale-tok';
+    const { fn, calls } = fakeFetch((_c, n) => (n === 1 ? { status: 401, body: { code: 'UNAUTHENTICATED', message: 'expired' } } : { body: { data: { ok: true } } }));
+    let refreshCalls = 0;
+    const onUnauthorized = async () => { refreshCalls += 1; token = 'fresh-tok'; return true; };
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => token, onUnauthorized });
+    const r = await c.request<{ ok: boolean }>('POST', 'schemes/applications/app1/submit', { idempotencyKey: 'idem-refresh-1' });
+    expect(refreshCalls).toBe(1);                                                          // exactly one refresh
+    expect(calls.length).toBe(2);                                                           // original + one retry
+    expect((calls[0].init.headers as Record<string, string>).authorization).toBe('Bearer stale-tok');
+    expect((calls[1].init.headers as Record<string, string>).authorization).toBe('Bearer fresh-tok'); // fresh token on retry
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-refresh-1');
+    expect((calls[1].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-refresh-1'); // SAME key, not re-minted
+    expect(r.data).toEqual({ ok: true });
+  });
+
+  it('401 → onUnauthorized resolves false → the ORIGINAL 401 is rethrown, no retry fired', async () => {
+    const { fn, calls } = fakeFetch(() => ({ status: 401, body: { code: 'UNAUTHENTICATED', message: 'expired' } }));
+    let refreshCalls = 0;
+    const onUnauthorized = async () => { refreshCalls += 1; return false; };
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'stale-tok', onUnauthorized });
+    await expect(c.request('POST', 'schemes/applications/app1/submit', { idempotencyKey: 'idem-1' }))
+      .rejects.toMatchObject({ code: 'UNAUTHENTICATED', status: 401 });
+    expect(refreshCalls).toBe(1);
+    expect(calls.length).toBe(1);                                                          // no retry attempted
+  });
+
+  it('401 → onUnauthorized THROWS → treated as a failed refresh: the ORIGINAL 401 is rethrown (not the refresh error)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ status: 401, body: { code: 'UNAUTHENTICATED', message: 'expired' } }));
+    const onUnauthorized = async () => { throw new Error('refresh network error'); };
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'stale-tok', onUnauthorized });
+    await expect(c.request('GET', 'users/me')).rejects.toMatchObject({ code: 'UNAUTHENTICATED', status: 401 });
+    expect(calls.length).toBe(1);
+  });
+
+  it('a second 401 AFTER the single retry is surfaced as-is (no infinite loop — retry happens at most once per request)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ status: 401, body: { code: 'UNAUTHENTICATED', message: 'still expired' } }));
+    let refreshCalls = 0;
+    const onUnauthorized = async () => { refreshCalls += 1; return true; }; // "succeeds" but the token is still bad
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok', onUnauthorized });
+    await expect(c.request('GET', 'users/me')).rejects.toMatchObject({ code: 'UNAUTHENTICATED', status: 401 });
+    expect(refreshCalls).toBe(1);                                                          // only the first 401 triggers a refresh
+    expect(calls.length).toBe(2);                                                           // original + the one bounded retry
+  });
+
+  it('concurrent 401s (3 parallel requests) share a SINGLE in-flight refresh — refresh tokens rotate, so a second concurrent call would invalidate the session', async () => {
+    let deferredResolve!: (v: boolean) => void;
+    const deferred = new Promise<boolean>((res) => { deferredResolve = res; });
+    let refreshCalls = 0;
+    const onUnauthorized = async () => { refreshCalls += 1; return deferred; };
+    // first 3 calls (one per parallel request) 401; everything after (the post-refresh retries) succeeds.
+    const { fn, calls } = fakeFetch((_c, n) => (n <= 3 ? { status: 401, body: { code: 'UNAUTHENTICATED' } } : { body: { data: { ok: true } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok', onUnauthorized });
+    const results = Promise.all([
+      c.request<{ ok: boolean }>('GET', 'a'),
+      c.request<{ ok: boolean }>('GET', 'b'),
+      c.request<{ ok: boolean }>('GET', 'c'),
+    ]);
+    // let all three requests reach + suspend on the in-flight refresh before it settles (a macrotask tick
+    // flushes every pending microtask, however many header/fetch/parse hops each request is mid-way through).
+    await new Promise((r) => setTimeout(r, 0));
+    expect(refreshCalls).toBe(1);                                                          // single-flight: exactly ONE refresh call
+    deferredResolve(true);
+    const [a, b, cc] = await results;
+    expect([a.data, b.data, cc.data]).toEqual([{ ok: true }, { ok: true }, { ok: true }]);
+    expect(calls.length).toBe(6);                                                           // 3 original 401s + 3 retries
+    expect(refreshCalls).toBe(1);
+  });
+
+  it('an ANONYMOUS request 401 never invokes onUnauthorized (prevents auth/refresh from trying to refresh on its own 401)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ status: 401, body: { code: 'INVALID_REFRESH_TOKEN' } }));
+    let refreshCalls = 0;
+    const onUnauthorized = async () => { refreshCalls += 1; return true; };
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok', onUnauthorized });
+    await expect(c.request('POST', 'auth/refresh', { anonymous: true, body: { refreshToken: 'r1' } }))
+      .rejects.toMatchObject({ code: 'INVALID_REFRESH_TOKEN', status: 401 });
+    expect(refreshCalls).toBe(0);                                                          // never engaged for anonymous calls
+    expect(calls.length).toBe(1);
+  });
+
+  it('no onUnauthorized configured → a 401 behaves exactly as before (rethrown immediately, no retry)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ status: 401, body: { code: 'UNAUTHENTICATED' } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' }); // no onUnauthorized
+    await expect(c.request('GET', 'users/me')).rejects.toMatchObject({ code: 'UNAUTHENTICATED', status: 401 });
+    expect(calls.length).toBe(1);
   });
 });

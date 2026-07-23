@@ -1,11 +1,14 @@
 // apps/mobile/src/features/listings/listings.api.ts · the farmer's listings data layer. Reads "my listings" and
 // creates new ones through the platform API (SDK generic request escape-hatch — there is no dedicated
-// seller-listings SDK method yet; the box=mine query is the API's owner filter). Creates are OFFLINE-FIRST: if
+// seller-listings SDK method yet; `mine: true` is the API's owner filter — GET /v1/listings?mine=true, added
+// alongside QueryListingSchema/ListingSearchReadModel; the API 401s a mine=true call with no authenticated
+// caller). Creates are OFFLINE-FIRST: if
 // the device is offline the op is enqueued (OfflineQueue) with a stable idempotency key and replayed later, so
 // the farmer never loses a listing started in a low-signal field (Law 3 idempotency + Law 12 degrade-never-die).
 import type { ListingCard, CreateListingInput, ListingAnalytics, GalleryItem, BoostTier, BoostWalletPayResult, ListingInquiry } from '@krishi-verse/sdk-js';
 import { apiClient } from '../../core/api/client';
 import type { QueuedOp, ReplayResult } from '../../core/api/offline-queue';
+import { isConnectivityFailure, classifyReplayFailure } from '../../core/api/write-classify';
 import { registerOpHandler, enqueueOp } from '../../core/offline/sync-queue';
 import { cache } from '../../core/offline/sqlite.db';
 import { currentScope } from '../../core/offline/scope';
@@ -26,7 +29,7 @@ export async function myListings(cursor?: string, limit = 30): Promise<ListingsP
     const { value } = await cache.read<ListingsPage>({
       scope: currentScope(), ns: 'listings.mine', parts: [cursor ?? 'first', limit], policy: POLICY.shortList,
       fetcher: async () => {
-        const r = await apiClient().request<ListingCard[]>('GET', 'listings', { query: { box: 'mine', cursor, limit } });
+        const r = await apiClient().request<ListingCard[]>('GET', 'listings', { query: { mine: true, cursor, limit } });
         return { items: r.data ?? [], nextCursor: (r.meta?.nextCursor as string | null) ?? null };
       },
     });
@@ -61,24 +64,35 @@ export async function listingMedia(id: string): Promise<GalleryItem[]> {
   try { return await apiClient().listings.media(id); } catch { return []; }
 }
 
-/** Create a listing (draft). Tries the API immediately; on a NETWORK/timeout failure (offline field) it enqueues
- * the op for later replay and returns { queued: true } (no id yet). A validation/permission error (4xx) is
- * rethrown so the screen can show what to fix. The idempotency key is shared between the live attempt and the
- * queued op, so a replay can never double-create. `mediaIds` are confirmed uploads (core/media). */
+/** Create a listing (draft). Tries the API immediately; on a TRUE connectivity failure (SdkNetworkError /
+ * SdkTimeoutError — the request never reached the API) it enqueues the op for later replay and returns
+ * { queued: true } (no id yet). EVERY OTHER failure (validation 4xx, permission, a real 5xx, anything else) is
+ * RETHROWN with the server's own (localized) message so the screen can show the farmer what actually went
+ * wrong — it must never be silently queued and misreported as "offline" (KV-MF-02: a founder saw "Saved. It
+ * will publish when you're back online" while fully online, because a real POST failure was swallowed here).
+ * The idempotency key is shared between the live attempt and the queued op, so a replay can never double-create.
+ * `mediaIds` are confirmed uploads (core/media). Post-success bookkeeping (cache invalidate / funnel track) is
+ * its OWN best-effort try/catch — it must never be able to turn an already-successful create into a "queued"
+ * result (that was the second half of KV-MF-02: an unrelated post-success throw got caught by this function's
+ * try/catch and re-enqueued a create that had already landed as a draft, which is also why the draft never
+ * reached the publish step). */
 export async function createListing(input: CreateListingInput): Promise<{ id?: string; queued: boolean }> {
   const idempotencyKey = newId();
   const body: CreateListingInput = { ...input, currencyCode: input.currencyCode ?? 'INR' };
+  let id: string;
   try {
-    const { id } = await apiClient().listings.create(body, idempotencyKey);
-    await cache.invalidate(currentScope(), 'listings.mine'); // new listing should appear on next read
-    track(EVENTS.listingCreateSuccess); // funnel (consent-gated, no PII) — §6
-    return { id, queued: false };
+    ({ id } = await apiClient().listings.create(body, idempotencyKey));
   } catch (e: unknown) {
-    const status = (e as { status?: number })?.status ?? 0;
-    if (status >= 400 && status < 500 && status !== 408 && status !== 429) throw e; // real client error — surface it
-    await enqueueOp({ type: LISTING_CREATE_OP, payload: body, idempotencyKey, id: idempotencyKey, now: Date.now() });
-    return { queued: true };
+    if (isConnectivityFailure(e)) { // true connectivity failure only — everything else surfaces
+      await enqueueOp({ type: LISTING_CREATE_OP, payload: body, idempotencyKey, id: idempotencyKey, now: Date.now() });
+      return { queued: true };
+    }
+    throw e; // real client/server error — surface it (screen shows e.message, the API's own localized text)
   }
+  // The create already succeeded server-side — nothing below may turn that into a "queued"/failed result.
+  try { await cache.invalidate(currentScope(), 'listings.mine'); } catch { /* best-effort refresh, never fatal */ }
+  try { track(EVENTS.listingCreateSuccess); } catch { /* best-effort funnel (consent-gated, no PII) — §6 */ }
+  return { id, queued: false };
 }
 
 /** Publish a draft listing, then invalidate the owner list/detail caches so the change shows. */
@@ -145,6 +159,30 @@ export async function extendListing(id: string, days: number): Promise<{ id: str
   return res;
 }
 
+/** ADD PHOTO — attach one more already-uploaded, clean image to the caller's OWN, already-created listing
+ * (screen 112 "Listing health → Add more photos" cta; KV-MF-14). The mobile screen picks/captures + uploads
+ * the file first (core/media uploadPickedImage → confirmed mediaId), then calls this with just that id.
+ * Errors are RETHROWN (an immediate-feedback action, same convention as repost/extend/archive) so the screen
+ * can show the server's real reason (e.g. the 10-photo cap). On success the detail cache is invalidated so
+ * the refreshed gallery/count shows on the next read. */
+export async function addListingPhoto(id: string, mediaAssetId: string): Promise<{ photoCount: number }> {
+  const res = await apiClient().listings.addPhoto(id, mediaAssetId);
+  await cache.invalidate(currentScope(), 'listings.detail', [id]);
+  return res;
+}
+
+/** REMOVE — archive the seller's own listing for good (screen 112 Remove cta; KV-MF-08). Terminal (the domain
+ * state machine has no transition out of 'archived') — the screen must confirm before calling. Idempotency-keyed
+ * per tap (Law 3) so a double-tap/retry never attempts a second (illegal) transition. Errors are RETHROWN (an
+ * immediate-feedback destructive action, same convention as repost/extend/boost) so the screen can show the
+ * server's real reason. On success the owner list/detail caches are invalidated so the removal shows immediately. */
+export async function archiveListing(id: string): Promise<{ id: string; status: string }> {
+  const res = await apiClient().listings.archive(id, newId());
+  await cache.invalidate(currentScope(), 'listings.mine');
+  await cache.invalidate(currentScope(), 'listings.detail', [id]);
+  return res;
+}
+
 /** Paginated buyer inquiries into the caller's OWN listing (screen 112 "Recent inquiries", KV-BL-031). Owner-only
  * on the server (404 for non-owners — anti-IDOR). Degrades to an empty page on failure so the screen shows its
  * empty/coming-soon state rather than an error (a non-critical read, same convention as myListings). */
@@ -152,15 +190,16 @@ export async function listingInquiries(id: string, params: { cursor?: string; li
   try { return await apiClient().listings.inquiries(id, params); } catch { return { items: [], nextCursor: null }; }
 }
 
-/** The replay handler, registered on the shared offline queue (dispatched by op.type). */
+/** The replay handler, registered on the shared offline queue (dispatched by op.type). ONLY a true connectivity
+ * failure (SdkNetworkError/SdkTimeoutError) is 'retry' — a real 4xx/5xx will fail EXACTLY the same way on every
+ * future attempt (it's a poison op), so it must dead-letter on the FIRST retry, not hammer the API for up to
+ * MAX_ATTEMPTS tries while the farmer keeps seeing "[sdk] POST …" failure toasts (KV-MF-02 bug 2). */
 async function replayListingCreate(op: QueuedOp): Promise<ReplayResult> {
   try {
     await apiClient().listings.create(op.payload as CreateListingInput, op.idempotencyKey);
     return 'ok';
   } catch (e: unknown) {
-    const status = (e as { status?: number })?.status ?? 0;
-    if (status >= 400 && status < 500 && status !== 408 && status !== 429) return 'permanent-fail';
-    return 'retry';
+    return classifyReplayFailure(e);
   }
 }
 registerOpHandler(LISTING_CREATE_OP, replayListingCreate);

@@ -10,17 +10,37 @@
 //    never a hardcoded chemical/dosage/store. No farmer-facing AI endpoint is live yet, so answers appear once it lands.
 //  • Quick-action chips are navigation shortcuts into the REAL data screens (mandi / weather / schemes / wallet),
 //    not canned answers.
+//
+// R2-03 (founder screenshot: composer cramped at top, "Tap to speak" half cut-off, huge dead space below):
+//  (a) LAYOUT — the screen used to be a plain `<ScreenScaffold>` (default `scroll=true`, so its Body is a
+//      ScrollView) with the composer as an ordinary trailing child. A ScrollView's contentContainerStyle sizes to
+//      its NATURAL content height (flex:1 on a child inside it does nothing), so with only a short welcome bubble
+//      the whole header+transcript+composer block rendered squeezed at the top, leaving the rest of the physical
+//      screen blank, and the composer never got pinned to the bottom. Fixed by mirroring the chat-thread pattern
+//      (features/messaging/screens/ChatThreadScreen.tsx): `scroll={false}` (Body is a plain flex:1 View) + the
+//      composer passed as ScreenScaffold's `footer` (pinned, safe-area-aware, never clipped) + the transcript
+//      FlatList given `style={styles.fill}` so it's the one flexible element that actually expands to fill the
+//      remaining space.
+//  (b) VOICE AT PILOT — "Tap to speak" here calls the SAME on-device STT as MF-05's listing mic
+//      (core/voice/useVoiceDictation), which is real, but per R2-03 the mic affordance is additionally gated
+//      behind its own `voice_assistant` flag (default OFF, mirrors `voice_listing`) so ops can kill just the mic
+//      without touching the (separately verified) text path — see shouldShowAssistantMic() in features/content/
+//      content.ts. The assistant's TEXT Q&A itself is NOT a dead input at pilot: `askAssistant` calls a fully
+//      built, governed backend pipeline (apps/api `assistant` module, P1-13 — sanitize/injection-guard → cost/rate
+//      caps → resilience-wrapped s2s call to ai-services → logged) that ALREADY degrades honestly turn-by-turn to
+//      `content.assistant.unavailable` when the server-side `ai_assistant` flag or model key isn't configured —
+//      never silently broken, never a fabricated answer. So while the mic is flag-gated, the text input stays live.
 import React, { useCallback, useRef, useState } from 'react';
-import { View, Text, FlatList, Pressable, StyleSheet, KeyboardAvoidingView, Platform, Linking } from 'react-native';
+import { View, Text, FlatList, Pressable, StyleSheet, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { formatDate } from '@krishi-verse/i18n';
-import { Button, Card, Input, ScreenScaffold, VoiceButton, color, font, space, radius } from '@krishi-verse/ui-native';
+import { Button, EmptyState, Input, ScreenScaffold, VoiceButton, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { useAuth } from '../../core/auth/auth.store';
 import { useVoiceDictation } from '../../core/voice';
 import { askAssistant } from '../../features/content/content.api';
-import { buildAssistantDraft, appendTurn, type ChatTurn } from '../../features/content/content';
+import { buildAssistantDraft, appendTurn, shouldShowAssistantMic, type ChatTurn } from '../../features/content/content';
 import { newId } from '../../core/util/ids';
 
 const QUICK_ACTIONS = [
@@ -62,13 +82,40 @@ export default function Assistant() {
     sending.current = false; setBusy(false);
   }, [lang, sessionId, voice, t]);
 
-  if (!enabled) return <ScreenScaffold title={t('content.assistant.title')}><Text style={styles.aiText}>{t('common.unavailable')}</Text></ScreenScaffold>;
+  // R2-03(b): the mic is flag-gated (default OFF); the text composer + Send are NOT — askAssistant already
+  // degrades honestly per-turn (see file header), so there is no dead input to hide behind a flag.
+  const voiceAssistantEnabled = useFlag('voice_assistant');
+  const micEnabled = shouldShowAssistantMic(voiceAssistantEnabled);
+
+  if (!enabled) return <ScreenScaffold title={t('content.assistant.title')}><EmptyState title={t('content.assistant.unavailable')} /></ScreenScaffold>;
 
   const composed = (voice.transcript || text).trim();
 
+  // R2-03(a): the composer is the ScreenScaffold `footer` (pinned + safe-area-aware, same padding/top-border/
+  // card-background treatment as every other screen's footer) — same flat pattern as ChatThreadScreen's own
+  // `footer` (no extra nested Card, so it never gets a doubled-border "box within a box" look).
+  const composer = (
+    <View style={styles.composer}>
+      <Input
+        label={t('content.assistant.inputLabel')}
+        value={voice.listening ? voice.transcript : text}
+        onChangeText={setText}
+        placeholder={t('content.assistant.placeholder')}
+        multiline
+      />
+      <View style={styles.composerRow}>
+        {micEnabled ? (
+          <VoiceButton label={t('content.voiceSearch.mic')} listening={voice.listening} onPress={() => (voice.listening ? voice.stop() : voice.start())} />
+        ) : null}
+        <View style={styles.sendBtn}><Button title={t('content.assistant.send')} loading={busy} disabled={!composed} onPress={() => send(composed)} /></View>
+      </View>
+      {micEnabled && voice.error ? <Text style={styles.err}>{t('content.voiceSearch.error')}</Text> : null}
+    </View>
+  );
+
   return (
-    <ScreenScaffold title={t('content.assistant.title')}>
-      <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <ScreenScaffold title={t('content.assistant.title')} scroll={false} footer={composer}>
+      <View style={styles.fill}>
         {/* Assistant header */}
         <View style={styles.header}>
           <Text style={styles.avatar}>🤖</Text>
@@ -107,7 +154,7 @@ export default function Assistant() {
               </View>
             </View>
           )}
-          contentContainerStyle={{ paddingVertical: space[3] }}
+          contentContainerStyle={{ paddingHorizontal: space[5], paddingVertical: space[3] }}
         />
 
         {/* Quick-action shortcuts into real data screens */}
@@ -115,35 +162,21 @@ export default function Assistant() {
           horizontal showsHorizontalScrollIndicator={false} style={styles.quickRow}
           data={QUICK_ACTIONS}
           keyExtractor={(a) => a.key}
+          contentContainerStyle={styles.quickRowContent}
           renderItem={({ item: a }) => (
             <Pressable onPress={() => router.push(a.route)} accessibilityRole="button" style={styles.quickChip}>
               <Text style={styles.quickTxt}>{a.icon} {t(`content.assistant.quick.${a.key}`)}</Text>
             </Pressable>
           )}
         />
-
-        <Card style={styles.composer}>
-          <Input
-            label={t('content.assistant.inputLabel')}
-            value={voice.listening ? voice.transcript : text}
-            onChangeText={setText}
-            placeholder={t('content.assistant.placeholder')}
-            multiline
-          />
-          <View style={styles.composerRow}>
-            <VoiceButton label={t('content.voiceSearch.mic')} listening={voice.listening} onPress={() => (voice.listening ? voice.stop() : voice.start())} />
-            <View style={styles.sendBtn}><Button title={t('content.assistant.send')} loading={busy} disabled={!composed} onPress={() => send(composed)} /></View>
-          </View>
-          {voice.error ? <Text style={styles.err}>{t('content.voiceSearch.error')}</Text> : null}
-        </Card>
-      </KeyboardAvoidingView>
+      </View>
     </ScreenScaffold>
   );
 }
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingBottom: space[2], borderBottomWidth: 1, borderBottomColor: color.ink100 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingHorizontal: space[5], paddingTop: space[3], paddingBottom: space[2], borderBottomWidth: 1, borderBottomColor: color.ink100 },
   avatar: { fontSize: 32 },
   botName: { fontFamily: font.display, fontSize: font.size.md, fontWeight: font.weight.bold, color: color.ink900 },
   online: { fontFamily: font.body, fontSize: font.size.xs, color: color.success, marginTop: 2 },
@@ -163,6 +196,7 @@ const styles = StyleSheet.create({
   timeAi: { color: color.ink400 },
 
   quickRow: { flexGrow: 0, marginBottom: space[2] },
+  quickRowContent: { paddingHorizontal: space[5] },
   quickChip: { minHeight: 44, justifyContent: 'center', paddingHorizontal: space[3], marginRight: space[2], borderRadius: radius.pill, borderWidth: 1.5, borderColor: color.ink200, backgroundColor: color.card },
   quickTxt: { fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.semibold, color: color.ink700 },
 

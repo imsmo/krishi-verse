@@ -24,7 +24,7 @@ export class UsersController {
   ) {}
 
   @Get('me')
-  me(@CurrentContext() ctx: RequestContext) { return this.users.getById(ctx.tenantId, ctx.userId).then((data) => ({ data })); }
+  me(@CurrentContext() ctx: RequestContext) { return this.users.getMe(ctx.tenantId, ctx.userId).then((data) => ({ data })); } // S6-prep: enriched with active role codes
 
   @Patch('me')
   async updateMe(@CurrentContext() ctx: RequestContext, @ZodBody(UpdateUserSchema) dto: UpdateUserDto) {

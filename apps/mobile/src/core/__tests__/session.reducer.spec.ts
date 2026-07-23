@@ -40,6 +40,35 @@ describe('sessionReducer', () => {
     expect(s.activeRole).toBe('buyer');
   });
 
+  it('PROFILE_LOADED does not crash when the server response has no `roles` field (the real API contract gap)', () => {
+    const s0 = sessionReducer(initialSession, { type: 'SIGNED_IN', tokens, nowMs: 0 });
+    // The API's actual GET /users/me shape today carries no `roles` — this reproduces the previously-crashing
+    // payload (TypeError: Cannot convert undefined value to object from `undefined[0]`).
+    const legacyProfile = { id: 'u1', displayName: 'Ramesh', locale: 'hi' } as unknown as { id: string; displayName: string | null; roles: string[]; locale: string };
+    expect(() => sessionReducer(s0, { type: 'PROFILE_LOADED', profile: legacyProfile })).not.toThrow();
+    const s = sessionReducer(s0, { type: 'PROFILE_LOADED', profile: legacyProfile });
+    expect(s.profile?.displayName).toBe('Ramesh');
+    expect(s.activeRole).toBeUndefined(); // no roles to default from — degrades instead of crashing
+  });
+
+  it('PROFILE_LOADED tolerates a null/undefined profile without throwing', () => {
+    const s0 = sessionReducer(initialSession, { type: 'SIGNED_IN', tokens, nowMs: 0 });
+    expect(() => sessionReducer(s0, { type: 'PROFILE_LOADED', profile: undefined as any })).not.toThrow();
+  });
+
+  it('BOOT_RESTORED discards a legacy/partial persisted-tokens payload (missing refreshToken) instead of crashing', () => {
+    const legacyTokens = { accessToken: 'a' } as unknown as SessionState['accessToken'] extends never ? never : any;
+    const s = sessionReducer(initialSession, { type: 'BOOT_RESTORED', language: 'en', tokens: legacyTokens });
+    expect(s.status).toBe('anonymous');
+    expect(s.accessToken).toBeUndefined();
+  });
+
+  it('BOOT_RESTORED discards a persisted-tokens payload with a non-string accessToken', () => {
+    const corrupt = { accessToken: 12345, refreshToken: 'r', expiresAtMs: 999 } as unknown as any;
+    const s = sessionReducer(initialSession, { type: 'BOOT_RESTORED', language: 'en', tokens: corrupt });
+    expect(s.status).toBe('anonymous');
+  });
+
   it('signs out and keeps only the language', () => {
     const s0 = sessionReducer({ ...initialSession, language: 'gu' }, { type: 'SIGNED_IN', tokens, nowMs: 0 });
     const s = sessionReducer(s0, { type: 'SIGNED_OUT' });

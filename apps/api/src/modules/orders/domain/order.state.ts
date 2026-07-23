@@ -14,7 +14,11 @@ const TRANSITIONS: Readonly<Record<OrderStatus, readonly OrderStatus[]>> = Objec
   payment_pending:    ['confirmed', 'cancelled'],
   confirmed:          ['packed', 'cancelled', 'disputed'],
   packed:             ['ready', 'cancelled', 'disputed'],
-  ready:              ['picked_up', 'out_for_delivery', 'cancelled', 'disputed'],
+  // 'delivered' direct: the pilot exposes only packed→ready→delivered→complete (direct
+  // farm-gate sale, no third-party logistics leg), so 'ready' (ready for handover) may go
+  // straight to 'delivered' (buyer received). The picked_up/in_transit/out_for_delivery
+  // branch remains for the transporter-mediated flow once those endpoints are wired.
+  ready:              ['picked_up', 'out_for_delivery', 'delivered', 'cancelled', 'disputed'],
   picked_up:          ['in_transit', 'delivered', 'disputed'],
   in_transit:         ['out_for_delivery', 'delivered', 'disputed'],
   out_for_delivery:   ['delivered', 'disputed'],

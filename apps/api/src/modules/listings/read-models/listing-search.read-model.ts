@@ -23,6 +23,11 @@ export interface ListingCard {
   id: string; title: string; priceMinor: string; currencyCode: string;
   unitCode: string; quantityAvailable: number; organicClaim: boolean;
   saleType: string; regionId: string | null; sellerUserId: string; boosted: boolean;
+  /** The listing's real lifecycle status (draft/published/paused/sold_out/expired/…). Always populated (the
+   *  column is selected unconditionally) — the mobile owner view (badgeFor/countByStatus in
+   *  features/listings/my-listings.ts) needs the true status to render draft/paused/sold/expired badges
+   *  instead of defaulting every row to "live". */
+  status: string;
 }
 export interface SearchResult { items: ListingCard[]; total: number | null; nextCursor: string | null; }
 
@@ -36,15 +41,22 @@ export class ListingSearchReadModel {
     @Inject(METRICS) private readonly metrics: Metrics,
   ) {}
 
-  async query(tenantId: string, q: QueryListingDto): Promise<SearchResult> {
+  /** `ownerUserId` set ⇒ OWNER VIEW ("my listings"): the caller sees ALL of their own rows regardless of
+   *  status/visibility (drafts, pending_approval, paused, rejected, hidden, sold_out, expired, archived — every
+   *  status a seller needs to manage their own catalogue), scoped by `seller_user_id`. Unset ⇒ the public storefront
+   *  feed, unchanged (published + public/cross_tenant only). Either way tenant_id/deleted_at stay enforced. */
+  async query(tenantId: string, q: QueryListingDto, opts: { ownerUserId?: string } = {}): Promise<SearchResult> {
     requireTenant(tenantId);
     return timed(this.metrics, 'listing.search', { tenant: tenantId }, async () => {
       const params: unknown[] = [tenantId];
-      const where: string[] = [
-        `tenant_id = $1`, `status = 'published'`,
-        `visibility IN ('public','cross_tenant')`, `deleted_at IS NULL`,
-      ];
+      const where: string[] = [`tenant_id = $1`, `deleted_at IS NULL`];
       const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
+
+      if (opts.ownerUserId) {
+        where.push(`seller_user_id = ${p(opts.ownerUserId)}`);
+      } else {
+        where.push(`status = 'published'`, `visibility IN ('public','cross_tenant')`);
+      }
 
       if (q.categoryId) where.push(`category_id = ${p(q.categoryId)}`);
       if (q.regionId) where.push(`region_id = ${p(q.regionId)}`);
@@ -71,7 +83,7 @@ export class ListingSearchReadModel {
 
       const sql = `
         SELECT id, title, price_minor, currency_code, unit_code, quantity_available,
-               organic_claim, sale_type, region_id, seller_user_id, created_at
+               organic_claim, sale_type, region_id, seller_user_id, created_at, status
           FROM listings
          WHERE ${where.join(' AND ')}
          ORDER BY ${order}
@@ -83,13 +95,18 @@ export class ListingSearchReadModel {
       const hasMore = rows.length > limit;
       const page = hasMore ? rows.slice(0, limit) : rows;
 
+      // `status` is selected so the OWNER VIEW ("my listings") can render the true lifecycle badge
+      // (draft/paused/sold_out/expired/etc) instead of defaulting every row to "live" (mobile's
+      // badgeFor() falls back to 'live' when `status` is undefined — that default is correct for the
+      // public feed, which is already status='published'-filtered, but was silently masking every
+      // non-published status on the owner's own list). Additive: the column already exists on `listings`.
       const items: ListingCard[] = page.map((row) => ({
         id: row.id, title: row.title, priceMinor: String(row.price_minor),
         currencyCode: row.currency_code, unitCode: row.unit_code,
         quantityAvailable: Number(row.quantity_available),
         organicClaim: row.organic_claim != null && row.organic_claim !== 'none',
         saleType: row.sale_type, regionId: row.region_id ?? null,
-        sellerUserId: row.seller_user_id, boosted: false,
+        sellerUserId: row.seller_user_id, boosted: false, status: row.status,
       }));
 
       const last = page[page.length - 1];

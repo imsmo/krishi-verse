@@ -25,6 +25,9 @@ export default function OwnerTabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        // See (farmer)/_layout.tsx: react-native-screens has no default scene background — pin it to the app's
+        // cream page color so a slow/erroring screen never shows raw black (Law 12).
+        sceneContainerStyle: { backgroundColor: color.page },
         tabBarActiveTintColor: color.primary600,
         tabBarInactiveTintColor: color.ink400,
         tabBarStyle: { backgroundColor: color.card, borderTopColor: color.ink100, height: 64, paddingBottom: 8, paddingTop: 6 },

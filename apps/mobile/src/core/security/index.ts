@@ -4,6 +4,7 @@
 // attestation, obfuscation) lives in the release build config; this module owns the config + the PURE logic CI
 // verifies, and the runtime hooks the app wires.
 export { useSecureScreen } from './screen-guard';
+export { engageSecureScreen, type ScreenCaptureGuard } from './screen-capture-guard';
 export { isValidPin, isValidHostPins, hostOf, isPinnedHost, pinConfigReady, type HostPins } from './pinning';
 export { setIntegrityProvider, buildIntegrityHeader, integrityHeaders, isSensitivePath, UNKNOWN_INTEGRITY, type IntegrityResult, type IntegrityProvider } from './integrity';
 export { parseDeepLink, isSafeParamValue, APP_SCHEME, DEEPLINK_ALLOWLIST, type ParsedLink } from './deeplink-guard';

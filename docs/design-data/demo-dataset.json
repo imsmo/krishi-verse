@@ -1,0 +1,669 @@
+{
+  "_meta": {
+    "purpose": "Design-faithful demo dataset extracted from the Phase-1 196-screen mockups. Single source of truth for building every screen 'same to same'. Money carries both a display string (as the design renders it) and `*_minor` paise (Law 2). Stable demo UUIDs use the repo's demo prefixes so SQL seeds / mobile fixtures can reference them. Region/role/crop reference data resolves by code against db/seeds.",
+    "region": "Anand & Junagadh, Gujarat",
+    "demo_tenant": {
+      "id": "88888888-0000-7000-8000-000000000001",
+      "slug": "demo-fpo",
+      "name": "Anand FPO",
+      "cluster": "Anand"
+    },
+    "currency": "INR"
+  },
+  "users": [
+    {
+      "id": "d0000001-0000-7000-8000-000000000001",
+      "role": "farmer",
+      "initials": "R",
+      "full_name": "Ramesh Patel",
+      "village": "Anand",
+      "phone": "+919900000101",
+      "kyc": "verified",
+      "rating": 4.8,
+      "holding_acres": 5,
+      "wallet_balance_minor": 1245050
+    },
+    {
+      "id": "d0000001-0000-7000-8000-000000000002",
+      "role": "farmer",
+      "initials": "KP",
+      "full_name": "Krishna FPO Seller",
+      "village": "Sojitra",
+      "phone": "+919900000102",
+      "kyc": "verified"
+    },
+    {
+      "id": "d0000001-0000-7000-8000-000000000003",
+      "role": "buyer",
+      "initials": "SS",
+      "full_name": "Sharma Stores",
+      "village": "Anand",
+      "phone": "+919900000103",
+      "kyc": "verified"
+    },
+    {
+      "id": "d0000001-0000-7000-8000-000000000004",
+      "role": "buyer",
+      "initials": "SM",
+      "full_name": "Sharma Masala Mart",
+      "village": "Anand",
+      "phone": "+919900000104",
+      "kyc": "verified"
+    },
+    {
+      "id": "d0000001-0000-7000-8000-000000000005",
+      "role": "worker",
+      "initials": "SK",
+      "full_name": "Sunita Kumari",
+      "village": "Sojitra",
+      "phone": "+919900000105",
+      "kyc": "verified",
+      "rating": 4.6,
+      "jobs_done": 187,
+      "day_rate_minor": 40000,
+      "skills": [
+        "Harvest",
+        "Sowing",
+        "Weeding"
+      ]
+    },
+    {
+      "id": "d0000001-0000-7000-8000-000000000006",
+      "role": "worker",
+      "initials": "RM",
+      "full_name": "Ramesh Mahato",
+      "village": "Petlad",
+      "phone": "+919900000106",
+      "skills": [
+        "Tractor",
+        "Loading"
+      ],
+      "day_rate_minor": 46000
+    },
+    {
+      "id": "d0000001-0000-7000-8000-000000000007",
+      "role": "worker",
+      "initials": "LD",
+      "full_name": "Lakshmi Devi",
+      "village": "Anand",
+      "phone": "+919900000107",
+      "skills": [
+        "Weeding"
+      ]
+    },
+    {
+      "id": "d0000001-0000-7000-8000-000000000008",
+      "role": "ambassador",
+      "initials": "VJ",
+      "full_name": "Vikas Joshi",
+      "village": "Anand",
+      "phone": "+919900000108",
+      "cluster_rank": 3,
+      "farmers_count": 247,
+      "month_onboarded": 12,
+      "earned_minor": 620000
+    }
+  ],
+  "crops_reference": [
+    {
+      "code": "wheat",
+      "name": "Wheat",
+      "emoji": "🌾",
+      "unit": "quintal"
+    },
+    {
+      "code": "maize",
+      "name": "Maize",
+      "emoji": "🌽",
+      "unit": "quintal"
+    },
+    {
+      "code": "chilli",
+      "name": "Red Chilli",
+      "emoji": "🌶️",
+      "unit": "quintal"
+    },
+    {
+      "code": "cumin",
+      "name": "Cumin (Jeera)",
+      "emoji": "🌶️",
+      "unit": "quintal"
+    },
+    {
+      "code": "groundnut",
+      "name": "Groundnut",
+      "emoji": "🥜",
+      "unit": "quintal"
+    },
+    {
+      "code": "castor",
+      "name": "Castor Seed",
+      "emoji": "🌱",
+      "unit": "quintal"
+    },
+    {
+      "code": "onion",
+      "name": "Onion",
+      "emoji": "🧅",
+      "unit": "quintal"
+    },
+    {
+      "code": "potato",
+      "name": "Potato",
+      "emoji": "🥔",
+      "unit": "kg"
+    },
+    {
+      "code": "cucumber",
+      "name": "Cucumber",
+      "emoji": "🥒",
+      "unit": "kg"
+    }
+  ],
+  "mandi_prices": [
+    {
+      "crop": "wheat",
+      "variety": "Lokwan",
+      "grade": "Premium",
+      "mandi": "Anand APMC",
+      "unit": "quintal",
+      "modal_minor": 288000,
+      "change_pct": 2.4
+    },
+    {
+      "crop": "wheat",
+      "variety": "Sharbati",
+      "grade": "Grade A",
+      "mandi": "Anand APMC",
+      "unit": "quintal",
+      "modal_minor": 315000,
+      "change_pct": 1.1
+    },
+    {
+      "crop": "maize",
+      "variety": "Yellow",
+      "grade": "FAQ",
+      "mandi": "Anand APMC",
+      "unit": "quintal",
+      "modal_minor": 191000,
+      "change_pct": -0.8
+    },
+    {
+      "crop": "chilli",
+      "variety": "Teja",
+      "grade": "Sun-dried",
+      "mandi": "Anand APMC",
+      "unit": "quintal",
+      "modal_minor": 1450000,
+      "change_pct": 5.2
+    },
+    {
+      "crop": "cucumber",
+      "variety": null,
+      "grade": "Local",
+      "mandi": "Anand APMC",
+      "unit": "kg",
+      "modal_minor": 3800,
+      "change_pct": 0.0
+    },
+    {
+      "crop": "potato",
+      "variety": null,
+      "grade": "Grade A",
+      "mandi": "Anand APMC",
+      "unit": "kg",
+      "modal_minor": 2200,
+      "change_pct": -4.3
+    },
+    {
+      "crop": "onion",
+      "variety": "Red",
+      "grade": "Medium",
+      "mandi": "Anand APMC",
+      "unit": "kg",
+      "modal_minor": 2800,
+      "change_pct": 8.7
+    },
+    {
+      "crop": "cumin",
+      "variety": "Jeera",
+      "grade": "Premium",
+      "mandi": "Unjha",
+      "unit": "quintal",
+      "modal_minor": 6240000,
+      "change_pct": 1.8
+    },
+    {
+      "crop": "groundnut",
+      "variety": "Bold",
+      "grade": null,
+      "mandi": "Junagadh",
+      "unit": "quintal",
+      "modal_minor": 625000,
+      "change_pct": 0.9
+    },
+    {
+      "crop": "castor",
+      "variety": null,
+      "grade": "FAQ",
+      "mandi": "Mehsana",
+      "unit": "quintal",
+      "modal_minor": 583000,
+      "change_pct": -1.2
+    }
+  ],
+  "listings": [
+    {
+      "id": "d0000002-0000-7000-8000-000000000001",
+      "seller": "Ramesh Patel",
+      "crop": "wheat",
+      "title": "Premium Wheat — Lokwan",
+      "grade": "Grade A",
+      "qty_qtl": 5,
+      "price_minor": 288000,
+      "unit": "quintal",
+      "status": "published",
+      "tag": "LIVE",
+      "ai_assisted": true,
+      "views": 42,
+      "inquiries": 3,
+      "district": "Anand",
+      "distance_km": 2.4,
+      "rating": 4.8
+    },
+    {
+      "id": "d0000002-0000-7000-8000-000000000002",
+      "seller": "Ramesh Patel",
+      "crop": "chilli",
+      "title": "Red Chilli — Teja Premium",
+      "grade": "Organic",
+      "qty_qtl": 2,
+      "price_minor": 1450000,
+      "unit": "quintal",
+      "status": "auction",
+      "tag": "AUCTION 2h",
+      "bids": 7
+    },
+    {
+      "id": "d0000002-0000-7000-8000-000000000003",
+      "seller": "Ramesh Patel",
+      "crop": "onion",
+      "title": "Onion — Medium grade",
+      "grade": "Grade B",
+      "qty_qtl": 10,
+      "price_minor": 280000,
+      "unit": "quintal",
+      "status": "published",
+      "tag": "LIVE"
+    },
+    {
+      "id": "d0000002-0000-7000-8000-000000000004",
+      "seller": "Anand FPO",
+      "crop": "cucumber",
+      "title": "Organic Cucumber",
+      "grade": "Local",
+      "qty_kg": 200,
+      "price_minor": 3800,
+      "unit": "kg",
+      "status": "sold"
+    }
+  ],
+  "orders": [
+    {
+      "id": "d0000003-0000-7000-8000-000000000001",
+      "number": "KV-2026-0142",
+      "status": "in_transit",
+      "crop": "wheat",
+      "title": "Premium Wheat — Lokwan",
+      "qty": "2 quintal",
+      "counterparty": "Ramesh Patel",
+      "place": "Anand",
+      "total_minor": 576000,
+      "note": "Out for delivery · Arriving by 4 PM today"
+    },
+    {
+      "id": "d0000003-0000-7000-8000-000000000002",
+      "number": "KV-2026-0138",
+      "status": "payment_due",
+      "crop": "chilli",
+      "title": "Red Chilli — Teja Variety",
+      "qty": "1 quintal",
+      "counterparty": "Krishna FPO",
+      "total_minor": 1450000,
+      "note": "Awaiting payment · UPI link sent"
+    },
+    {
+      "id": "d0000003-0000-7000-8000-000000000003",
+      "number": "KV-2026-0121",
+      "status": "delivered",
+      "crop": "cucumber",
+      "title": "Organic Cucumber",
+      "qty": "200 kg",
+      "counterparty": "Anand FPO",
+      "note": "Delivered 12 Aug"
+    }
+  ],
+  "wallet": {
+    "owner": "Ramesh Patel",
+    "available_minor": 1245050,
+    "escrow_minor": 50000,
+    "month_in_minor": 3840000,
+    "month_out_minor": 1950000,
+    "net_minor": 1892000,
+    "pending_minor": 240000
+  },
+  "transactions": [
+    {
+      "ref": "TXN-202608150005",
+      "ts": "2026-08-15T10:42:00+05:30",
+      "label": "Order #ORD-8421 — Sharma Stores",
+      "direction": "in",
+      "amount_minor": 125000,
+      "state": "settled"
+    },
+    {
+      "ref": "TXN-202608150004",
+      "ts": "2026-08-15T10:38:00+05:30",
+      "label": "EMD Auction #AUC-122 — Red Chilli",
+      "direction": "out",
+      "amount_minor": 50000,
+      "state": "held"
+    },
+    {
+      "ref": "TXN-202608150003",
+      "ts": "2026-08-15T08:15:00+05:30",
+      "label": "Wallet recharge — GPay UPI",
+      "direction": "in",
+      "amount_minor": 500000,
+      "state": "settled"
+    },
+    {
+      "ref": "TXN-202608140012",
+      "ts": "2026-08-14T18:30:00+05:30",
+      "label": "Wages — 14 workers · Onion harvest",
+      "direction": "out",
+      "amount_minor": 490000,
+      "state": "settled"
+    },
+    {
+      "ref": "TXN-202608140008",
+      "ts": "2026-08-14T16:12:00+05:30",
+      "label": "Auction won — Maize 3 Qtl",
+      "direction": "in",
+      "amount_minor": 573000,
+      "state": "released_from_escrow"
+    },
+    {
+      "ref": "TXN-202608140003",
+      "ts": "2026-08-14T11:00:00+05:30",
+      "label": "Bank withdrawal — HDFC ●●4521",
+      "direction": "out",
+      "amount_minor": 1000000,
+      "state": "settled"
+    }
+  ],
+  "auctions": [
+    {
+      "id": "d0000004-0000-7000-8000-000000000001",
+      "ref": "AUC-122",
+      "crop": "chilli",
+      "title": "Red Chilli — Teja Variety, Premium",
+      "qty_qtl": 2,
+      "grade": "Organic Certified",
+      "seller": "Anand FPO",
+      "current_bid_minor": 1450000,
+      "unit": "quintal",
+      "time_left": "2h 14m",
+      "bidders": 7,
+      "bids": 23,
+      "emd_minor": 50000,
+      "bid_history": [
+        {
+          "bidder": "Sharma Masala Mart",
+          "initials": "SM",
+          "amount_minor": 1450000,
+          "when": "2 min ago",
+          "leader": true
+        },
+        {
+          "bidder": "You",
+          "initials": "YO",
+          "amount_minor": 1420000,
+          "when": "5 min ago"
+        },
+        {
+          "bidder": "Vyapari T***",
+          "initials": "VT",
+          "amount_minor": 1400000,
+          "when": "8 min ago"
+        }
+      ]
+    }
+  ],
+  "worker_jobs_near": [
+    {
+      "crop": "wheat",
+      "task": "Wheat harvesting",
+      "hours": 8,
+      "employer": "Ramesh Patel",
+      "place": "Anand",
+      "rate_minor": 40000,
+      "rate_unit": "day",
+      "distance_km": 2.4
+    },
+    {
+      "task": "Sowing",
+      "hours": 6,
+      "employer": "Krishna FPO",
+      "place": "Sojitra",
+      "rate_minor": 38000,
+      "rate_unit": "day",
+      "distance_km": 1.2
+    },
+    {
+      "task": "Irrigation setup",
+      "hours": 4,
+      "employer": "Vijay Bhai",
+      "place": "Petlad",
+      "rate_minor": 20000,
+      "rate_unit": "half-day",
+      "distance_km": 8.5
+    }
+  ],
+  "worker_bookings": [
+    {
+      "id": "d0000005-0000-7000-8000-000000000001",
+      "number": "BK-2026-0089",
+      "status": "pending",
+      "worker": "Sunita Kumari",
+      "task": "Wheat harvesting",
+      "hours": 8,
+      "when": "Mon, 18 Aug · 7:00 AM",
+      "amount_minor": 41200,
+      "note": "Waiting for response · 3h 47m left"
+    },
+    {
+      "id": "d0000005-0000-7000-8000-000000000002",
+      "number": "BK-2026-0087",
+      "status": "confirmed",
+      "worker": "Ramesh Mahato",
+      "task": "Tractor + Loading",
+      "hours": 6,
+      "when": "Wed, 20 Aug · 9:00 AM",
+      "amount_minor": 46000,
+      "note": "Confirmed · GPS share 8 AM"
+    },
+    {
+      "id": "d0000005-0000-7000-8000-000000000003",
+      "number": "BK-2026-0085",
+      "status": "in_progress",
+      "worker": "Lakshmi Devi",
+      "task": "Weeding",
+      "hours": 4,
+      "when": "Today · Started 9:15 AM"
+    }
+  ],
+  "worker_dashboard": {
+    "name": "Sunita Kumari",
+    "week_earnings_minor": 280000,
+    "week_jobs": 7,
+    "week_change_pct": 24,
+    "pending_offers": 3,
+    "tomorrow_confirmed": 2
+  },
+  "schemes": [
+    {
+      "code": "pm-kisan",
+      "name": "PM-KISAN Samman Nidhi",
+      "authority": "Ministry of Agriculture",
+      "kind": "Central scheme",
+      "benefit_minor": 600000,
+      "benefit_unit": "per year",
+      "desc": "Direct income support of ₹2,000 every 4 months via DBT.",
+      "status": "applied",
+      "note": "Last installment received Aug 2026"
+    },
+    {
+      "code": "pmfby",
+      "name": "PMFBY · Pradhan Mantri Fasal Bima",
+      "authority": "Govt of India",
+      "kind": "Crop Insurance",
+      "benefit_minor": 6000000,
+      "benefit_unit": "cover per acre",
+      "desc": "Crop loss insurance for wheat · Premium ₹150/acre.",
+      "status": "eligible",
+      "note": "Apply by 31 Oct"
+    },
+    {
+      "code": "kcc",
+      "name": "Kisan Credit Card (KCC)",
+      "authority": "RBI · partner bank",
+      "kind": "Credit",
+      "benefit_minor": 30000000,
+      "benefit_unit": "credit limit",
+      "desc": "Working capital at 7% interest (4% effective with subvention).",
+      "status": "eligible",
+      "note": "4% effective rate"
+    },
+    {
+      "code": "soil-health",
+      "name": "Soil Health Card",
+      "authority": "Dept of Agriculture",
+      "kind": "Free",
+      "benefit_minor": 0,
+      "benefit_unit": "no cost",
+      "desc": "Free soil nutrient testing.",
+      "status": "eligible"
+    }
+  ],
+  "tips": [
+    {
+      "category": "Crops",
+      "topic": "Wheat",
+      "title": "When to harvest wheat for maximum yield and price",
+      "read_min": 5,
+      "lang": "हिंदी",
+      "views": 2400
+    },
+    {
+      "category": "Pest Control",
+      "title": "Identifying aphid infestation in wheat — early signs & organic remedies",
+      "read_min": 7,
+      "lang": "हिंदी",
+      "views": 1800
+    },
+    {
+      "category": "Irrigation",
+      "title": "Drip irrigation setup — 60% water savings in cotton fields",
+      "read_min": 4,
+      "media": "video",
+      "views": 5200
+    },
+    {
+      "category": "Market",
+      "title": "Why are chilli prices rising? Demand forecast for Aug-Oct 2026",
+      "read_min": 3,
+      "views": 3600
+    },
+    {
+      "category": "Soil Health",
+      "title": "How to read your Soil Health Card — N, P, K, micronutrients explained",
+      "read_min": 8,
+      "views": 1100
+    }
+  ],
+  "notifications": [
+    {
+      "when": "12 min ago",
+      "kind": "order",
+      "title": "Your order is on the way! 🚛",
+      "body": "Premium Wheat (2 qtl) is out for delivery. Expected by 4:00 PM.",
+      "ref": "KV-0142",
+      "unread": true
+    },
+    {
+      "when": "28 min ago",
+      "kind": "auction",
+      "title": "You've been outbid on Red Chilli",
+      "body": "Highest bid now ₹15,200. Auction ends in 2h 14m.",
+      "unread": true
+    },
+    {
+      "when": "1 hour ago",
+      "kind": "booking",
+      "title": "Sunita Kumari accepted your booking",
+      "body": "She'll arrive at your farm at 7 AM on Mon, 18 Aug for wheat harvesting.",
+      "unread": true
+    },
+    {
+      "when": "Yesterday, 4:32 PM",
+      "kind": "payment",
+      "title": "Payment received ₹9,550",
+      "body": "From Anand Stores for your Maize listing. Credited to wallet.",
+      "amount_minor": 955000
+    },
+    {
+      "when": "Yesterday, 10:14 AM",
+      "kind": "kyc",
+      "title": "Aadhaar KYC verified",
+      "body": "Your account is now fully verified. You can withdraw up to ₹50,000/day."
+    }
+  ],
+  "ambassador": {
+    "name": "Vikas Joshi",
+    "cluster": "Anand",
+    "rank": 3,
+    "farmers": 247,
+    "month_onboarded": 12,
+    "earned_minor": 620000,
+    "per_onboarding_minor": 5000,
+    "pending_onboardings": [
+      {
+        "name": "Anil Kumar",
+        "initials": "AK",
+        "blocker": "Aadhaar pending",
+        "ago": "2 days ago"
+      },
+      {
+        "name": "Geeta Patel",
+        "initials": "GP",
+        "blocker": "Bank linking pending",
+        "ago": "5 days ago"
+      }
+    ],
+    "today_activity": [
+      {
+        "name": "Ramesh Patel",
+        "initials": "RP",
+        "event": "Listed Lokwan Wheat · ₹2,880/qtl",
+        "ago": "2h"
+      },
+      {
+        "name": "Pushpa Vyas",
+        "initials": "PV",
+        "event": "Sale complete · ₹14,500",
+        "ago": "5h"
+      }
+    ]
+  }
+}

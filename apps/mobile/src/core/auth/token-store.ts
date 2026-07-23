@@ -27,8 +27,12 @@ export const tokenStore = {
     const [accessToken, refreshToken, expires] = await Promise.all([
       SecureStore.getItemAsync(K_ACCESS), SecureStore.getItemAsync(K_REFRESH), SecureStore.getItemAsync(K_EXPIRES),
     ]);
-    if (!accessToken || !refreshToken) return undefined;
-    const expiresAtMs = Number(expires) || 0;
+    // Validate the persisted shape rather than trust it: a partial write (app killed mid-`saveTokens`) or a blob
+    // from a pre-shape-change build must be DISCARDED, never fed into the session state half-formed (fail closed
+    // — the boot effect then falls back to anonymous instead of crashing on a malformed restore).
+    if (!accessToken || !refreshToken || typeof accessToken !== 'string' || typeof refreshToken !== 'string') return undefined;
+    const parsedExpiry = Number(expires);
+    const expiresAtMs = Number.isFinite(parsedExpiry) && parsedExpiry > 0 ? parsedExpiry : 0;
     return { accessToken, refreshToken, expiresInSec: 0, expiresAtMs };
   },
   async clearTokens(): Promise<void> {

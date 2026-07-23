@@ -18,6 +18,26 @@ export class PaymentCurrencyMismatchError extends AppError {
 export class PaymentConcurrencyError extends AppError {
   constructor(id: string) { super('PAYMENT_CONCURRENCY', 'Payment was modified concurrently; retry', 409, { id }); }
 }
+/** S6 device-test P0: intent-time guard when referenceType==='order' — the requested amountMinor
+ *  does not equal the order's outstanding payable total (orders.total_minor). No partial pay at
+ *  pilot — exact match only. Both amounts are already known to the caller (their own request + their
+ *  own order's total, since ownership was verified first), so echoing them is safe. */
+export class OrderPaymentAmountMismatchError extends AppError {
+  constructor(expectedMinor: bigint, gotMinor: bigint) {
+    super('ORDER_PAYMENT_AMOUNT_MISMATCH', 'Amount does not match the order total due for payment', 409, { expectedMinor: expectedMinor.toString(), gotMinor: gotMinor.toString() });
+  }
+}
+/** S6 device-test P0: webhook-time defense-in-depth — immediately before moving money on a
+ *  'payment_captured' event whose payment references an order, re-verify the order is STILL the
+ *  same buyer's, STILL awaiting payment, and STILL owes exactly the captured amount. Closes the
+ *  window between intent-time validation (createIntent, once) and capture (seconds to days later —
+ *  e.g. the order was cancelled meanwhile). Never surfaced to an interactive caller (the webhook has
+ *  none), so the message stays generic; `reason` is for logs/alerting only. */
+export class PaymentOrderReferenceInvalidError extends AppError {
+  constructor(paymentId: string, reason: 'not_found' | 'wrong_buyer' | 'wrong_state' | 'amount_drift') {
+    super('PAYMENT_ORDER_REFERENCE_INVALID', 'Order reference no longer matches this payment; money not moved', 409, { paymentId, reason });
+  }
+}
 export class RefundExceedsPaymentError extends DomainError {
   constructor() { super('REFUND_EXCEEDS_PAYMENT', 'Refund amount exceeds the refundable balance', 409); }
 }

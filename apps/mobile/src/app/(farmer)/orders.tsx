@@ -5,15 +5,21 @@
 // via MoneyText/paise (Law 2); degrade-never-die (Law 12); i18n(hi/en/gu).
 //
 // REAL data: features/orders.listOrders({role}) → OrderListItem (id, orderNo, status, totalMinor, counterparty,
-// createdAt), SWR-cached + keyset. The status badge/tone, the filter chips, the progress bar fill and the row CTA
-// are all derived purely from the REAL status (order-status.ts) — never fabricated. Tab counts are the number of
-// orders loaded for each role (first page), suffixed "+" when more pages exist (no count endpoint — honest).
-// "Pay Now" is a real order payment (payForOrder → gateway → webhook is the source of truth).
+// createdAt, primaryItem, itemCount), SWR-cached + keyset. The status badge/tone, the filter chips, the progress
+// bar fill and the row CTA are all derived purely from the REAL status (order-status.ts) — never fabricated. Tab
+// counts are the number of orders loaded for each role (first page), suffixed "+" when more pages exist (no count
+// endpoint — honest). "Pay Now" is a real order payment (payForOrder → gateway → webhook is the source of truth).
 //
-// HONEST GAPS (§13, never faked): the list read-model carries NO crop title / quantity / delivery-ETA / rating —
-// those live on OrderDetail (fetching per card would be an N+1, forbidden §5). So the card title is the real
-// counterparty, the thumb is a neutral 📦 (no product type on the list), and there is no fabricated ETA or
-// "you rated N". The crop/qty/rating show on the order DETAIL screen (tap the card).
+// KV mobile-hardening fix: the card now leads with the REAL primary crop + qty (order-timeline read-model's
+// primaryItemsFor enrichment, OrderRepository.primaryItemsFor — one bounded batch read for the whole page, no
+// N+1), with a "+N more" hint from itemCount when the order has additional lines; the counterparty/date becomes
+// the secondary meta line. Previously this screen fetched primaryItem/itemCount but never rendered them, so every
+// card fell back to showing the order number as its own title (never a fabricated crop when a row genuinely
+// carries no line item — the old counterparty-or-order-no title remains the degrade path).
+//
+// HONEST GAPS (§13, never faked): delivery-ETA / rating still live on OrderDetail (fetching per card would be an
+// N+1, forbidden §5); the thumb stays a neutral 📦 (no product-image field on the list contract). No fabricated
+// ETA or "you rated N" — those show on the order DETAIL screen (tap the card).
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, FlatList, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,7 +30,7 @@ import { EmptyState, MoneyText, StatusPill, SkeletonCard, Button, color, font, s
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { listOrders } from '../../features/orders/orders.api';
 import { payForOrder } from '../../features/payments/payments.api';
-import { orderStatusTone, matchesOrderFilter, orderProgress, orderListCta, counterpartyLabel, type OrderFilter, type OrderListCta } from '../../features/orders/order-status';
+import { orderStatusTone, matchesOrderFilter, orderProgress, orderListCta, counterpartyLabel, moreItemsCount, type OrderFilter, type OrderListCta } from '../../features/orders/order-status';
 
 const ROLES: OrderRole[] = ['buyer', 'seller'];
 const FILTERS: OrderFilter[] = ['all', 'in_transit', 'delivered', 'completed', 'cancelled'];
@@ -63,9 +69,14 @@ export default function Orders() {
       } catch { router.push({ pathname: '/(farmer)/orders/[id]', params: { id: o.id, role, party: o.counterparty ?? '' } }); }
       finally { setBusyPay(null); }
     } else if (cta === 'track') {
-      router.push({ pathname: '/(farmer)/orders/track', params: { id: o.id } });
+      // KV MF-06 fix: track.tsx reads `orderId` (useLocalSearchParams<{ orderId: string }>()), not `id` —
+      // the mismatched key here meant orderId was always undefined, load()'s `if (!orderId) return;` guard
+      // fired before setLoading(false), so the screen was stuck on its initial loading=true forever (an
+      // infinite skeleton). Same mismatch existed for 'rate' below. See orders/[id].tsx's onAction for the
+      // correct key this was copied from incorrectly.
+      router.push({ pathname: '/(farmer)/orders/track', params: { orderId: o.id } });
     } else if (cta === 'rate') {
-      router.push({ pathname: '/(farmer)/orders/review', params: { id: o.id } });
+      router.push({ pathname: '/(farmer)/orders/review', params: { orderId: o.id } });
     }
   };
 
@@ -94,13 +105,16 @@ export default function Orders() {
         })}
       </View>
 
-      {/* Status filter chips */}
+      {/* Status filter chips — R2-04 (founder screenshot review): restyled to the app's compact pill convention
+          (identical metrics to the My Listings filter chips: paddingVertical 6 / horizontal 12, 1px border,
+          solid-fill selected state) instead of the previous oversized rounded-oval look. Polish only — same
+          filter/state logic. */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
         {FILTERS.map((f) => {
           const active = filter === f;
           return (
             <Pressable key={f} onPress={() => setFilter(f)} style={[styles.chip, active && styles.chipOn]} accessibilityRole="button" accessibilityState={{ selected: active }}>
-              <Text style={[styles.chipTxt, active && styles.chipTxtOn]}>{t(`orders.filter.${f}`)}</Text>
+              <Text style={[styles.chipTxt, active && styles.chipTxtOn]} numberOfLines={1}>{t(`orders.filter.${f}`)}</Text>
             </Pressable>
           );
         })}
@@ -144,8 +158,27 @@ function OrderCard({ item, role, t, lang, busyPay, onOpen, onCta }: {
       <View style={styles.cardBody}>
         <View style={styles.thumb}><Text style={styles.thumbEmoji}>📦</Text></View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={styles.cardTitle} numberOfLines={1}>{counterpartyLabel(item.counterparty) ?? t('orders.orderNo', { id: item.orderNo })}</Text>
-          {date ? <Text style={styles.cardMeta}>{date}</Text> : null}
+          {/* Lead with the REAL primary crop + qty (order-timeline read-model's primaryItemsFor enrichment) —
+              the counterparty/date becomes the secondary meta line. Degrades to the old counterparty-or-order-no
+              title when a row genuinely carries no line item (older orders), never a fabricated crop. */}
+          {item.primaryItem ? (
+            <>
+              <Text style={styles.cardTitle} numberOfLines={1}>
+                {item.primaryItem.title}
+                {moreItemsCount(item.itemCount) > 0 ? <Text style={styles.cardMore}>  {t('ordersRecv.moreItems', { n: moreItemsCount(item.itemCount) })}</Text> : null}
+              </Text>
+              <Text style={styles.cardMeta} numberOfLines={1}>
+                {`${item.primaryItem.quantity} ${item.primaryItem.unitCode}`}
+                {counterpartyLabel(item.counterparty) ? ` · ${counterpartyLabel(item.counterparty)}` : ''}
+                {date ? ` · ${date}` : ''}
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.cardTitle} numberOfLines={1}>{counterpartyLabel(item.counterparty) ?? t('orders.orderNo', { id: item.orderNo })}</Text>
+              {date ? <Text style={styles.cardMeta}>{date}</Text> : null}
+            </>
+          )}
           <MoneyText minor={item.totalMinor} langCode={lang} size="md" tone="default" style={styles.cardPrice} />
         </View>
       </View>
@@ -185,10 +218,12 @@ const styles = StyleSheet.create({
   tabCountTxtOn: { color: color.white },
 
   filters: { gap: space[2], paddingHorizontal: space[5], paddingVertical: space[3] },
-  chip: { paddingVertical: 6, paddingHorizontal: space[3], borderRadius: radius.pill, borderWidth: 1.5, borderColor: color.earth200, backgroundColor: color.card },
-  chipOn: { backgroundColor: color.primary50, borderColor: color.primary600 },
+  // R2-04: same compact pill metrics as listings/index.tsx's filter chips (design-canon kv-chip style) —
+  // paddingVertical 6 / paddingHorizontal 12, 1px border, solid-fill selected state.
+  chip: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: color.earth200, backgroundColor: color.card },
+  chipOn: { backgroundColor: color.primary600, borderColor: color.primary600 },
   chipTxt: { fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.semibold, color: color.ink600 },
-  chipTxtOn: { color: color.primary700 },
+  chipTxtOn: { color: color.white },
 
   body: { flex: 1, padding: space[5] },
   list: { paddingHorizontal: space[5], paddingBottom: space[6] },
@@ -200,6 +235,7 @@ const styles = StyleSheet.create({
   thumb: { width: 60, height: 60, borderRadius: radius.md, backgroundColor: color.earth100, alignItems: 'center', justifyContent: 'center' },
   thumbEmoji: { fontSize: 30 },
   cardTitle: { fontFamily: font.display, fontSize: font.size.md, fontWeight: font.weight.bold, color: color.ink800 },
+  cardMore: { fontFamily: font.body, fontSize: font.size.xs, fontWeight: font.weight.regular, color: color.ink500 },
   cardMeta: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink500, marginTop: 4 },
   cardPrice: { marginTop: 4 },
 

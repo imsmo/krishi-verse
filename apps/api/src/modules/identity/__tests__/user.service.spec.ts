@@ -31,4 +31,5 @@ describe('DataSubjectRequest', () => {
     dsr.transition('in_progress'); dsr.transition('completed');
     expect(() => dsr.transition('open')).toThrow(); // terminal
   });
+
 });

@@ -90,6 +90,12 @@ export class ListingsResource {
     return (await this.http.request<{ id: string; expiresAt: string | null }>('POST', `listings/${encodeURIComponent(id)}/extend`, { idempotencyKey, body: { days } })).data;
   }
 
+  /** Archive (remove) the caller's OWN listing — terminal, no transition back out (screen 112 Remove cta;
+   *  KV-MF-08). Owner-only (server-enforced). Idempotency-keyed (Law 3) — a retried tap returns the same result. */
+  async archive(id: string, idempotencyKey: string): Promise<{ id: string; status: string }> {
+    return (await this.http.request<{ id: string; status: string }>('POST', `listings/${encodeURIComponent(id)}/archive`, { idempotencyKey })).data;
+  }
+
   /** Paginated buyer inquiries into the caller's OWN listing (owner-only, 404 else; keyset cursor). */
   async inquiries(id: string, params: { cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<ListingInquiry>> {
     const r = await this.http.request<ListingInquiry[]>('GET', `listings/${encodeURIComponent(id)}/inquiries`, { query: { cursor: params.cursor, limit: params.limit ?? 20 }, signal });
@@ -100,6 +106,13 @@ export class ListingsResource {
    *  certification / other). verifiedAt stays null until an ops verification flow (out of scope) sets it. */
   async attachTrustDocument(id: string, dto: { mediaAssetId: string; docType: 'lab_report' | 'certification' | 'other' }): Promise<ListingTrustDocument> {
     return (await this.http.request<ListingTrustDocument>('POST', `listings/${encodeURIComponent(id)}/trust-documents`, { body: dto })).data;
+  }
+
+  /** Attach ONE more already-uploaded, clean IMAGE to the caller's OWN, already-created listing (screen 112
+   *  "Listing health → Add more photos" cta; KV-MF-14). Owner-only (server-enforced). Returns the listing's
+   *  live photo count (whether this call just added the photo or it was already attached — idempotent). */
+  async addPhoto(id: string, mediaAssetId: string): Promise<{ photoCount: number }> {
+    return (await this.http.request<{ photoCount: number }>('POST', `listings/${encodeURIComponent(id)}/photos`, { body: { mediaAssetId } })).data;
   }
 }
 

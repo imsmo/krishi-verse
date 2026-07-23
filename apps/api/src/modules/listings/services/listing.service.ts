@@ -17,7 +17,7 @@ import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { ForbiddenError } from '../../../shared/errors/app-error';
 import { Listing, ListingDomainEvent } from '../domain/listing.entity';
-import { ListingConcurrencyError, ListingNotFoundError } from '../domain/listing.errors';
+import { ListingConcurrencyError, ListingNotFoundError, PhotoMediaInvalidError, TooManyPhotosError } from '../domain/listing.errors';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 import { PriceHistory } from '../domain/price-history.entity';
 import { ListingAttribute, AttrValue } from '../domain/listing-attribute.entity';
@@ -28,6 +28,7 @@ import { ListingMediaRepository } from '../repositories/listing-media.repository
 import { CreateListingDto } from '../dto/create-listing.dto';
 
 const QUOTA_METRIC = 'max_listings_month';
+const MAX_LISTING_PHOTOS = 10; // mirrors CreateListingSchema's mediaIds max(10) — same cap, create-time or after
 const cacheKey = (t: string, id: string) => `t:${t}:listing:${id}`;
 
 /** The acting principal for a mutation: the seller, or an admin who may moderate. */
@@ -92,6 +93,35 @@ export class ListingService {
       }));
   }
 
+  /** ADD PHOTO — attach ONE already-uploaded, clean IMAGE to the caller's OWN, already-created listing
+   *  (screen 112 "Listing health → Add more photos" cta; KV-MF-14). Distinct from `mediaIds` at create
+   *  time (only ever consumed once, in create()) — before this method existed there was NO way to add a
+   *  photo to a listing after it was created, so the cta had nowhere real to go. Ownership-enforced (owner
+   *  or moderator, same rule as every other mutation here); the media gate (photoAttachable) mirrors the
+   *  trust-document attach flow but requires kind='image'. Capped at MAX_LISTING_PHOTOS total, counting the
+   *  gallery FRESH inside the same locked transaction as the listing row (getForUpdate), so two concurrent
+   *  taps can't both slip past the cap. Idempotent: re-attaching an already-attached media id is a no-op
+   *  (ListingMediaRepository.attachOne's WHERE NOT EXISTS guard) — the returned count is always the CURRENT
+   *  live count, whether this call just added the photo or it was already there. */
+  async addPhoto(tenantId: string, actor: ListingActor, id: string, mediaAssetId: string): Promise<{ photoCount: number }> {
+    return timed(this.metrics, 'listing.add_photo', { tenant: tenantId }, async () => {
+      let photoCount = 0;
+      await this.uow.run(tenantId, async (tx) => {
+        const listing = await this.repo.getForUpdate(tx, tenantId, id);
+        this.assertCanMutate(listing, actor);
+        const current = await this.media.countForListing(tx, id);
+        if (current >= MAX_LISTING_PHOTOS) throw new TooManyPhotosError(MAX_LISTING_PHOTOS);
+        if (!(await this.media.photoAttachable(tx, tenantId, mediaAssetId, actor.userId))) throw new PhotoMediaInvalidError();
+        await this.media.attachOne(tx, id, mediaAssetId);
+        photoCount = await this.media.countForListing(tx, id);
+        await this.outbox.write(tx, { tenantId, aggregateType: 'listing', aggregateId: id, eventType: 'listing.photo_attached', payload: { v: 1, listingId: id, mediaAssetId } });
+        await this.auditOverride(tx, tenantId, actor, listing, 'listing.photo_attached');
+      }, { userId: actor.userId });
+      await this.cache.del(cacheKey(tenantId, id));
+      return { photoCount };
+    });
+  }
+
   /** PUBLISH — ownership-enforced, guarded transition; emits the searchable event. */
   async publish(tenantId: string, actor: ListingActor, id: string): Promise<void> {
     await timed(this.metrics, 'listing.publish', { tenant: tenantId }, async () => {
@@ -146,6 +176,32 @@ export class ListingService {
         }, { userId: actor.userId });
         await this.cache.del(cacheKey(tenantId, id));
         return { id, expiresAt: expiresAt ? (expiresAt as Date).toISOString() : null };
+      }));
+  }
+
+  /** REMOVE (archive) — take the seller's OWN listing off the marketplace for good (screen 112's Remove cta,
+   *  KV-MF-08). Terminal: the domain state machine has no transition OUT of 'archived' (listing.state.ts), so this
+   *  cannot be undone — the screen must confirm before calling it. Ownership-enforced (moderator bypass);
+   *  idempotency-keyed (Law 3) — a retried tap/double network call returns the same result, never a second
+   *  attempt to transition an already-archived listing (which would throw IllegalListingTransitionError). The
+   *  domain entity already exposed `archive()` (and the state machine already allowed → 'archived' from every
+   *  non-terminal status) — this was the missing service+endpoint wiring (the entity method existed with no
+   *  caller, mirroring the pattern already shipped for cms/education/services-marketplace `archive`). */
+  async archive(tenantId: string, actor: ListingActor, idemKey: string, id: string): Promise<{ id: string; status: string }> {
+    return this.idem.remember(idemKey, actor.userId, 'listings.archive', () =>
+      timed(this.metrics, 'listing.archive', { tenant: tenantId }, async () => {
+        let status = '';
+        await this.uow.run(tenantId, async (tx) => {
+          const listing = await this.repo.getForUpdate(tx, tenantId, id);
+          this.assertCanMutate(listing, actor);
+          listing.archive();
+          await this.repo.update(tx, listing);
+          await this.flushEvents(tx, tenantId, id, listing.pullEvents());
+          await this.auditOverride(tx, tenantId, actor, listing, 'listing.archived');
+          status = listing.status;
+        }, { userId: actor.userId });
+        await this.cache.del(cacheKey(tenantId, id));
+        return { id, status };
       }));
   }
 

@@ -37,7 +37,11 @@ export class OrderRepository {
   async insertGraph(tx: TxContext, order: Order, items: OrderItem[]): Promise<void> {
     const p = order.toProps();
     await tx.query(
-      `INSERT INTO orders (id, tenant_id, order_no, checkout_group_id, buyer_user_id, seller_user_id, source, offer_id, requirement_id, currency_code,
+      // S6 device-test fix: the column list named offer_id/requirement_id TWICE (after `source` AND
+      // at the end) with only 24 placeholders — Postgres threw "column offer_id specified more than
+      // once", so API checkout NEVER succeeded. The params map offer_id/requirement_id to $23/$24,
+      // so the correct 24-column list carries them ONLY at the end (matching the params order).
+      `INSERT INTO orders (id, tenant_id, order_no, checkout_group_id, buyer_user_id, seller_user_id, source, currency_code,
         subtotal_minor, delivery_fee_minor, discount_minor, tax_minor, commission_minor, platform_fee_minor, tds_minor,
         total_minor, status, delivery_method_id, delivery_address_id, acceptance_deadline, version, created_at, offer_id, requirement_id)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)`,
@@ -138,7 +142,7 @@ export class OrderRepository {
            row_number() OVER (PARTITION BY order_id ORDER BY created_at ASC, id ASC) AS rn,
            count(*)     OVER (PARTITION BY order_id) AS cnt
          FROM order_items
-         WHERE tenant_id=$1 AND order_id = ANY($2) AND order_created_at >= $3 - interval '5 seconds'
+         WHERE tenant_id=$1 AND order_id = ANY($2) AND order_created_at >= $3::timestamptz - interval '5 seconds' /* S6 device-test fix: uncast param was inferred as interval → 'timestamptz >= interval' 500 */
        ) s WHERE rn = 1`,
       [tenantId, ids, minCreated]);
     for (const row of r.rows) out.set(row.order_id, { title: row.title_snapshot, quantity: Number(row.quantity), unitCode: row.unit_code, itemCount: Number(row.cnt) });

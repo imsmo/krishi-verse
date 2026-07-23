@@ -5,7 +5,10 @@
 // messages inbox (191) or a support ticket's thread (520), hit "Unavailable" even though messaging itself
 // (`offers_chat`) was on. This component is now mounted from BOTH (buyer)/chat/[id].tsx (unchanged behaviour) and
 // the cross-role (system)/chat/[id].tsx (not gated by any per-role tab flag) so every caller reaches a working
-// thread. Behind `offers_chat`; membership server-enforced (non-participant → 404). Degrade-never-die.
+// thread. Behind `offers_chat` by default — EXCEPT a support-ticket thread (context=support_ticket), which the
+// (system) route gates on `support` instead (a support thread is not a buyer↔seller negotiation and must not
+// share/inherit that flag's kill-switch; see the `flagKey` prop + core/flags/flags.ts's `support` key comment).
+// Membership server-enforced (non-participant → 404). Degrade-never-die.
 // §13 gaps (no contract → rendered honestly, never faked): see the original header notes below.
 //  • Peer NAME + avatar initials: no participant-name on the bare GET conversation/:id contract — callers that
 //    already know a real name (e.g. the inbox's enriched summary) pass `peerDisplayName`; otherwise a generic
@@ -21,10 +24,11 @@ import { Input, Button, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, col
 import { formatDate } from '@krishi-verse/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
+import type { FlagKey } from '../../../core/flags/flags';
 import { useAuth } from '../../../core/auth/auth.store';
 import { listMessages, getConversation, postText, postAttachment, startMaskedCall, markConversationRead } from '../messaging.api';
 import { getPublicListing, sellerSummary } from '../../buyer/browse.api';
-import { presentMessage, canSend, normalizeBody, isDayBoundary } from '../message-view';
+import { presentMessage, canSend, normalizeBody, isDayBoundary, hasMessages } from '../message-view';
 import { MessageBubble } from '../components/MessageBubble';
 import { pickFromGallery, captureFromCamera, uploadPickedImage, type PickedImage } from '../../../core/media';
 
@@ -47,13 +51,20 @@ export interface ChatThreadScreenProps {
   /** Whether to fetch + pin the listing-context card + peer rating (buyer↔seller listing chats only). Default
    *  true so the existing buyer chat screen's behaviour is unchanged; support/other threads pass false. */
   showListingContext?: boolean;
+  /** Which client flag gates this thread. Defaults to `offers_chat` (buyer↔seller negotiation chat — unchanged
+   *  behaviour for the original (buyer)/chat/[id].tsx call site). A support ticket's thread is NOT a buyer↔seller
+   *  negotiation, so it must not share that gate — the (system) route passes `support` for
+   *  `context=support_ticket` instead (see that route's header + core/flags/flags.ts's `support` key comment).
+   *  This is the same class of bug MF-01 fixed one level up (the (buyer) tab group's `buyer_app` kill-switch
+   *  collaterally blocking every non-buyer thread) — `offers_chat` was still collaterally gating support chat. */
+  flagKey?: FlagKey;
 }
 
-export function ChatThreadScreen({ conversationId: id, peerUserId, peerDisplayName, peerFallbackKey, screenTitle, showListingContext = true }: ChatThreadScreenProps) {
+export function ChatThreadScreen({ conversationId: id, peerUserId, peerDisplayName, peerFallbackKey, screenTitle, showListingContext = true, flagKey = 'offers_chat' }: ChatThreadScreenProps) {
   const { t, lang } = useTranslation();
   const { state } = useAuth();
   const myId = state.profile?.id ?? '';
-  const enabled = useFlag('offers_chat');
+  const enabled = useFlag(flagKey);
   const [items, setItems] = useState<Message[]>([]);
   const [listing, setListing] = useState<ListingCard | null>(null);
   const [rating, setRating] = useState<{ averageStars: number; count: number } | null>(null);
@@ -63,10 +74,19 @@ export function ChatThreadScreen({ conversationId: id, peerUserId, peerDisplayNa
   const [calling, setCalling] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // R2-02(b): listMessages() already degrades to an empty page on failure, but refresh() itself used to have no
+  // try/catch of its own — fine while its only caller awaited it inside another try/catch (send()), but the
+  // load-on-mount + poll-interval call sites below invoke it fire-and-forget (never awaited, no .catch), so ANY
+  // future throw here (or a state-setter race on an unmounted screen) surfaced as a raw "Possible unhandled
+  // promise rejection" toast instead of the app's normal degrade-never-die handling. Wrapping here means refresh()
+  // can never reject, so every call site — awaited or not — is safe by construction.
   const refresh = useCallback(async () => {
     if (!id) return;
-    const page = await listMessages(id);
-    setItems(page.items); setLoading(false);
+    try {
+      const page = await listMessages(id);
+      setItems(page.items);
+    } catch { /* listMessages already degrades; belt-and-braces so this never rejects */ }
+    finally { setLoading(false); }
   }, [id]);
 
   // One-time context load: conversation → (listing-chats only) listing (contextId) → peer rating. Peer = explicit
@@ -82,13 +102,14 @@ export function ChatThreadScreen({ conversationId: id, peerUserId, peerDisplayNa
       setListing(l);
       const peer = peerUserId || l?.sellerUserId;
       if (peer) { const s = await sellerSummary(peer); if (live) setRating(s); }
-    })();
+    })().catch(() => { /* R2-02(b): every awaited call above already degrades to null/empty — this is a
+      defensive backstop so the one-time context load can never produce an unhandled-rejection toast on mount */ });
     return () => { live = false; };
   }, [enabled, id, peerUserId, showListingContext]);
 
   useEffect(() => {
     if (!enabled || !id) return;
-    refresh(); markConversationRead(id).catch(() => { /* best-effort */ });
+    void refresh(); markConversationRead(id).catch(() => { /* best-effort */ });
     timer.current = setInterval(refresh, POLL_MS);
     return () => { if (timer.current) clearInterval(timer.current); };
   }, [enabled, id, refresh]);
@@ -106,12 +127,17 @@ export function ChatThreadScreen({ conversationId: id, peerUserId, peerDisplayNa
     catch { setText(body); Alert.alert(t('chat.sendFailed')); }
     finally { setBusy(false); }
   };
+  // R2-02(b): `pick()` (camera/gallery — JIT permission prompt + native picker) used to be awaited BEFORE the
+  // try/catch even opened, so a permission-denial or native picker error rejected `attach()`'s own promise with
+  // nothing downstream to catch it — `pickImage`'s Alert.alert onPress callbacks call `attach(...)` without
+  // awaiting/catching the result, so that reject became an unhandled-rejection toast. Moving `pick()` inside the
+  // try makes every failure path (permission, picker, upload, post) surface the same honest `chat.sendFailed`.
   const attach = async (pick: () => Promise<PickedImage | null>) => {
     if (!id) return;
-    const picked = await pick();
-    if (!picked) return;
-    setBusy(true);
     try {
+      const picked = await pick();
+      if (!picked) return;
+      setBusy(true);
       const res = await uploadPickedImage(picked);
       if (res.mediaId) { await postAttachment(id, res.mediaId); await refresh(); }
       else Alert.alert(t('chat.sendFailed'));
@@ -119,8 +145,8 @@ export function ChatThreadScreen({ conversationId: id, peerUserId, peerDisplayNa
     finally { setBusy(false); }
   };
   const pickImage = () => Alert.alert(t('createListing.photoSource'), undefined, [
-    { text: t('createListing.camera'), onPress: () => attach(captureFromCamera) },
-    { text: t('createListing.gallery'), onPress: () => attach(pickFromGallery) },
+    { text: t('createListing.camera'), onPress: () => { attach(captureFromCamera).catch(() => { /* attach() already handles/alerts every failure; backstop only */ }); } },
+    { text: t('createListing.gallery'), onPress: () => { attach(pickFromGallery).catch(() => { /* same backstop */ }); } },
     { text: t('common.cancel'), style: 'cancel' },
   ]);
   const call = async () => {
@@ -175,13 +201,18 @@ export function ChatThreadScreen({ conversationId: id, peerUserId, peerDisplayNa
         </View>
       ) : null}
 
-      {loading ? <View style={{ gap: space[2] }}><SkeletonCard lines={2} /><SkeletonCard lines={2} /></View> : (
+      {loading ? <View style={{ gap: space[2] }}><SkeletonCard lines={2} /><SkeletonCard lines={2} /></View> : hasMessages(views) ? (
+        // R2-02(a): `inverted` flips the WHOLE FlatList 180° (including anything rendered through it, like
+        // ListEmptyComponent) — that's correct for the message rows themselves (newest-first → visually
+        // bottom-anchored) but means an empty-state rendered via ListEmptyComponent comes out upside-down too.
+        // Robust fix (not a counter-transform hack): only mount the `inverted` FlatList once there IS at least
+        // one message; the empty case below renders a normal, upright, centered EmptyState outside the FlatList
+        // entirely, so it's never subject to the flip.
         <FlatList
           data={views}
           inverted
           keyExtractor={(v) => v.id}
           contentContainerStyle={{ paddingHorizontal: space[4], paddingVertical: space[2] }}
-          ListEmptyComponent={<EmptyState title={t('chat.thread.empty')} />}
           renderItem={({ item, index }) => (
             <View>
               <MessageBubble view={item} imageLabel={t('chat.photo')} voiceLabel={t('chat.voice')} flaggedLabel={t('chat.flagged')} time={safeTime(item.createdAt, lang)} />
@@ -190,6 +221,8 @@ export function ChatThreadScreen({ conversationId: id, peerUserId, peerDisplayNa
             </View>
           )}
         />
+      ) : (
+        <View style={styles.emptyWrap}><EmptyState title={t('chat.thread.empty')} /></View>
       )}
     </ScreenScaffold>
   );
@@ -205,6 +238,7 @@ function safeDay(iso: string | undefined, lang: string): string {
 }
 
 const styles = StyleSheet.create({
+  emptyWrap: { flex: 1, justifyContent: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingBottom: space[3], borderBottomWidth: 1, borderBottomColor: color.ink100 },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: color.primary600, alignItems: 'center', justifyContent: 'center' },
   avatarGlyph: { fontSize: 20 },

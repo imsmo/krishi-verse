@@ -16,9 +16,18 @@ import { Payment } from '../domain/payment.entity';
 import { DomainEvent } from '../domain/payments.events';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { GatewayRegistry } from '../gateway/gateway.registry';
+import { SandboxGateway } from '../gateway/sandbox.gateway';
 import { CreatePaymentIntentDto, RefundPaymentDto } from '../dto/create-payment.dto';
-import { PaymentNotFoundError, WebhookSignatureError, PaymentAmountMismatchError, PaymentCurrencyMismatchError, InsufficientWalletBalanceError } from '../domain/payments.errors';
+import { PaymentNotFoundError, WebhookSignatureError, PaymentAmountMismatchError, PaymentCurrencyMismatchError, InsufficientWalletBalanceError, OrderPaymentAmountMismatchError, PaymentOrderReferenceInvalidError } from '../domain/payments.errors';
 import { BadRequestError, InfraError } from '../../../shared/errors/app-error';
+// S6 device-test P0 (founder's device 201'd an intent against a demo-seed order that GET /v1/orders/:id
+// correctly 404s for him — payments accepted what orders rejects). createIntent must fail CLOSED before
+// ever calling the (real, billable) gateway when referenceType==='order': existence + ownership + payable
+// state + exact amount, mirroring the orders module's own anti-IDOR contract (404, never 403 — no
+// enumeration). OrderRepository is a plain provider in PaymentsModule (READ_REPLICA is @Global), not a
+// module import — OrdersModule already imports PaymentsModule, so the reverse module import would cycle.
+import { OrderRepository } from '../../orders/repositories/order.repository';
+import { OrderNotFoundError, OrderNotAwaitingPaymentError } from '../../orders/domain/orders.errors';
 
 export interface PaymentActor { userId: string; canModerate: boolean; }
 
@@ -33,6 +42,7 @@ export class PaymentService {
     private readonly audit: AuditWriter,
     private readonly repo: PaymentRepository,
     private readonly gateways: GatewayRegistry,
+    private readonly orders: OrderRepository,
   ) {}
 
   /** Create a payment intent: persist 'initiated' + create the gateway order, in one tx. */
@@ -41,6 +51,7 @@ export class PaymentService {
       timed(this.metrics, 'payments.create_intent', { tenant: tenantId }, async () => {
         const purposeId = await this.repo.resolvePurposeId(tenantId, dto.purpose);
         if (!purposeId) throw new BadRequestError(`Unknown payment purpose '${dto.purpose}'`);
+        await this.assertValidReference(tenantId, userId, dto);   // fail-closed BEFORE the external gateway call
         const gateway = this.gateways.default();
         const id = uuidv7();
         const payment = Payment.initiate({
@@ -60,6 +71,34 @@ export class PaymentService {
           return { paymentId: id, gatewayOrderId: order.gatewayOrderId, provider: gateway.providerCode, amountMinor: dto.amountMinor, status: payment.status };
         }, { userId });
       }));
+  }
+
+  /** S6 device-test P0 fix. Validates `dto.referenceType`/`referenceId` BEFORE any gateway call — a
+   *  gateway order is real money-in-motion; it must never be created against a reference the caller
+   *  doesn't own, that doesn't exist, that isn't awaiting payment, or whose price doesn't match.
+   *  Only 'order' has an owning repo wired into this module today (OrderRepository, a plain provider
+   *  in PaymentsModule — see the import comment above). Other referenceTypes this DTO already accepts
+   *  in production ('membership', 'auction', 'saas_invoice' — see each module's own
+   *  payments.payment_succeeded consumer) are NOT validated here: none of those modules' repositories
+   *  are wired into PaymentsModule, and reaching into them would add three more cross-module read
+   *  dependencies beyond this fix's scope. Their consumers no-op on an unrecognised/foreign
+   *  referenceId, which bounds the blast radius to "payment captured, nothing applied" rather than a
+   *  wrong party's record being advanced — but a bogus reference of THOSE types still gets a real
+   *  gateway order today. Tracked as follow-on hardening (see the payments module README). */
+  private async assertValidReference(tenantId: string, userId: string, dto: CreatePaymentIntentDto): Promise<void> {
+    if (dto.referenceType !== 'order') return;
+    if (!dto.referenceId) throw new BadRequestError("referenceId is required when referenceType is 'order'");
+    // Read-only, no lock: the gateway call happens OUTSIDE any tx (Law: never hold a row lock across an
+    // external HTTP call). Buyer-or-seller visible read, then narrowed to BUYER ONLY below — a seller
+    // must not be able to spin up a payment intent against their own sale. Anti-IDOR: nonexistent AND
+    // not-the-buyer's both collapse to the SAME 404 (OrderNotFoundError) — mirrors GET /v1/orders/:id
+    // exactly (never 403; no enumeration of which order ids exist).
+    const order = await this.orders.getVisible(tenantId, dto.referenceId, userId, false);
+    if (!order || order.buyerUserId !== userId) throw new OrderNotFoundError(dto.referenceId);
+    const p = order.toProps();
+    if (p.status !== 'payment_pending') throw new OrderNotAwaitingPaymentError(p.id, p.status);   // already paid / cancelled / etc.
+    if (p.currencyCode.toUpperCase() !== dto.currencyCode.toUpperCase()) throw new BadRequestError('Payment currency does not match the order currency');
+    if (BigInt(dto.amountMinor) !== p.totalMinor) throw new OrderPaymentAmountMismatchError(p.totalMinor, BigInt(dto.amountMinor));  // exact match only — no partial pay at pilot
   }
 
   /** Gateway webhook (unauthenticated). Verify signature → idempotent on the event id → move money.
@@ -86,6 +125,21 @@ export class PaymentService {
             if (event.currencyCode !== undefined && event.currencyCode.toUpperCase() !== payment.currencyCode.toUpperCase()) {
               throw new PaymentCurrencyMismatchError(payment.currencyCode, event.currencyCode); // tamper guard
             }
+            // S6 defense-in-depth: re-verify the referenced order, INSIDE this tx, immediately before
+            // moving money. createIntent validated buyer/state/amount ONCE at intent-creation time; this
+            // closes the window until capture (seconds to days later — e.g. the order got cancelled or
+            // disputed meanwhile). FOR UPDATE is correct here (unlike createIntent): we're already inside
+            // the money-moving tx, about to credit escrow. Only 'order' has an owning repo wired into
+            // this module (see assertValidReference); other referenceTypes are not re-checked here either.
+            const pp = payment.toProps();
+            if (pp.referenceType === 'order' && pp.referenceId) {
+              const order = await this.orders.getForUpdate(tx, payment.tenantId, pp.referenceId);
+              if (!order) throw new PaymentOrderReferenceInvalidError(payment.id, 'not_found');
+              const op = order.toProps();
+              if (op.buyerUserId !== payment.userId) throw new PaymentOrderReferenceInvalidError(payment.id, 'wrong_buyer');
+              if (op.status !== 'payment_pending') throw new PaymentOrderReferenceInvalidError(payment.id, 'wrong_state');
+              if (op.totalMinor !== payment.amountMinor) throw new PaymentOrderReferenceInvalidError(payment.id, 'amount_drift');
+            }
             // money arrives: external funds (platform gateway account) → platform escrow. Zero-sum.
             const txn = await this.wallet.post(tx, {
               tenantId: payment.tenantId, txnType: 'order_payment', idempotencyKey: `pay:${payment.id}`,
@@ -109,6 +163,39 @@ export class PaymentService {
           }
           return { ok: true };
         }, { userId: 'system' })));
+  }
+
+  /** DEV-ONLY: complete a SANDBOX-provider payment by driving it through the EXACT SAME signed-webhook
+   *  path a real gateway delivery takes (`handleWebhook` above) — no shortcut through the money-moving
+   *  code. Lets a local build with no real PSP configured (payments.module.ts then defaults every intent
+   *  to the deterministic sandbox gateway) prove the wallet top-up loop end-to-end: createIntent → this
+   *  → wallet credited, exactly like staging-smoke / the integration suite already do by POSTing a
+   *  hand-signed webhook. The HMAC secret never leaves this process — we ask the SandboxGateway to sign
+   *  its own synthetic event, then hand the body+signature to the real `handleWebhook`.
+   *
+   *  Safe by construction, not just by convention: this only ever succeeds when the payment's
+   *  `providerCode` is literally 'sandbox', which can only be true when the SandboxGateway was
+   *  registered for this tenant's gateway calls — and payments.module.ts registers it ONLY when
+   *  `allowSandbox` (`NODE_ENV !== 'production'`) is true. A production-created payment is always
+   *  'razorpay' (assertProductionSecurity requires a real PSP before boot), so this is inert there
+   *  regardless of who calls it. `getVisible` also scopes the read to the caller's own payment (or a
+   *  moderator) — 404, never 403, mirroring the rest of this module's anti-IDOR contract. */
+  async devCompleteSandboxPayment(tenantId: string, actor: PaymentActor, paymentId: string) {
+    const payment = await this.repo.getVisible(tenantId, paymentId, actor.userId, actor.canModerate);
+    if (!payment) throw new PaymentNotFoundError(paymentId);
+    const p = payment.toProps();
+    if (p.providerCode !== 'sandbox') {
+      throw new BadRequestError('This payment is not on the sandbox gateway; dev-complete is unavailable (a real payment gateway is configured)');
+    }
+    if (p.status !== 'initiated') return this.getById(tenantId, actor, paymentId); // already terminal — idempotent no-op
+    const gateway = this.gateways.get('sandbox') as SandboxGateway;
+    const body = JSON.stringify({
+      id: `evt_dev_${paymentId}`, event: 'payment.captured', tenant_id: tenantId,
+      order_id: p.gatewayOrderId, payment_id: `dev_${paymentId}`,
+      amount: Number(p.amountMinor), currency: p.currencyCode, method: 'dev_sandbox',
+    });
+    await this.handleWebhook('sandbox', body, gateway.sign(body));
+    return this.getById(tenantId, actor, paymentId);
   }
 
   /** Refund (full or partial): reverse the escrow leg + record on the payment. Admin/moderator.

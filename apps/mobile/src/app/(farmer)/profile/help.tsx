@@ -20,6 +20,7 @@ import type { SupportTicket } from '@krishi-verse/sdk-js';
 import { Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
+import { sdkErrorMessage } from '../../../core/errors/sdk-error-message';
 import { myTickets, rateTicket, openTicket, openTicketThread } from '../../../features/profile/profile.api';
 import { ticketStatusTone, canRateCsat } from '../../../features/profile/profile';
 
@@ -56,8 +57,11 @@ export default function Help() {
       const ticketId = existingTicketId ?? (await openTicket({ subject: t('profile.help.chatSubject'), severity: 'P2' })).id;
       const { conversationId } = await openTicketThread(ticketId);
       router.push({ pathname: '/(system)/chat/[id]', params: { id: conversationId, title: t('chat.context.support_ticket'), context: 'support_ticket' } });
-    } catch {
-      Alert.alert(t('profile.help.chat'), t('profile.help.chatFailed'));
+    } catch (e: unknown) {
+      // Surface the REAL reason (e.g. the API's own message on a 404/422) instead of a generic string —
+      // same KV-MF-02 convention as listings/new.tsx: a swallowed real failure (e.g. a flag that's off
+      // server-side) used to look identical to a transient blip, so nobody could tell the two apart.
+      Alert.alert(t('profile.help.chat'), sdkErrorMessage(e) ?? t('profile.help.chatFailed'));
     } finally {
       setChatBusy(null);
     }

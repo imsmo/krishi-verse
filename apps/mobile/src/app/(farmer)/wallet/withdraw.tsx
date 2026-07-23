@@ -5,12 +5,20 @@
 // FLAG_SECURE while shown (§4); behind the `wallet` flag; degrade-never-die (Law 12).
 //
 // REAL flow: requestWithdrawal(paise, bankAccountId) is an idempotent payout (Law 3). The SERVER is the authority
-// on balance / KYC / daily-limits — a 403/409/422 is surfaced as a precise, friendly message; the client-side
-// `withdrawable` check is UX-only. Balance + destinations are live (walletBalance / listBankAccounts).
+// on balance / KYC / daily-limits — a 403/409/422 is surfaced as a precise, friendly message (classified pure via
+// features/wallet/txn.withdrawErrorKind); the client-side `withdrawable` check is UX-only. A 403 (S3's KYC gate —
+// kyc_status must be 'verified') additionally shows an actionable "Complete verification" CTA straight to
+// (farmer)/kyc, not just inline text. Balance + destinations are live (walletBalance / listBankAccounts).
 // HONEST GAPS (§13, never faked): the design's "withdrawal limit · N transactions left" needs a per-user limit
 // read-model the API doesn't expose → shown as a generic "limits apply" note, not a fabricated count. Adding a NEW
 // payout destination (vault tokenisation) is the P-03 gap → the "+ Different account" switches among destinations
-// already on file; with none, a designed empty state explains a destination must be added first.
+// already on file (R2-07: worded as a calm "contact support" note, not a broken-sounding "coming soon").
+//
+// R2-01 (founder screenshot review): AVAILABLE BALANCE used to render MoneyText(balanceMinor) unconditionally —
+// walletBalance() degrades to '0' + a `failed` flag on a genuine read failure, and this screen was silently
+// dropping the flag, so a failed read looked exactly like a real ₹0 balance (no retry, no indication anything was
+// wrong). Now `failed` is tracked and the hero shows a retry affordance instead, and withdrawal is blocked while
+// the real balance is unknown (never let the farmer submit against a balance the server couldn't confirm).
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,7 +29,7 @@ import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { useSecureScreen } from '../../../core/security/screen-guard';
 import { rupeesToPaiseMinor } from '../../../core/payments/money';
-import { withdrawable } from '../../../features/wallet/txn';
+import { withdrawable, withdrawErrorKind } from '../../../features/wallet/txn';
 import { withdrawChipRupees, groupDigits } from '../../../features/wallet/amount-entry';
 import { walletBalance, listBankAccounts, requestWithdrawal } from '../../../features/wallet/wallet.api';
 
@@ -39,11 +47,13 @@ export default function Withdraw() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  const [kycRequired, setKycRequired] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     const [bal, accts] = await Promise.all([walletBalance(), listBankAccounts()]);
-    setBalanceMinor(bal.availableMinor); setCurrency(bal.currencyCode); setAccounts(accts);
+    setBalanceMinor(bal.availableMinor); setCurrency(bal.currencyCode); setAccounts(accts); setFailed(bal.failed);
     setSelected((prev) => prev ?? accts.find((a) => a.isPrimary)?.id ?? accts[0]?.id ?? null);
     setLoading(false);
   }, []);
@@ -54,17 +64,18 @@ export default function Withdraw() {
   const chips = withdrawChipRupees(balanceMinor);
 
   const onSubmit = async () => {
-    if (!minor || !selected) { setError(t('addMoney.invalidAmount')); return; }
-    if (!check.ok) { setError(t(check.reason === 'exceeds' ? 'withdraw.exceeds' : 'addMoney.invalidAmount')); return; }
-    setBusy(true); setError(undefined);
+    if (!minor || !selected) { setError(t('addMoney.invalidAmount')); setKycRequired(false); return; }
+    if (!check.ok) { setError(t(check.reason === 'exceeds' ? 'withdraw.exceeds' : 'addMoney.invalidAmount')); setKycRequired(false); return; }
+    setBusy(true); setError(undefined); setKycRequired(false);
     try {
       await requestWithdrawal(minor, selected);
       router.replace({ pathname: '/(farmer)/wallet', params: { notice: t('withdraw.requested') } });
     } catch (e) {
-      const msg = e instanceof SdkError && e.status === 403 ? t('withdraw.notAllowed')
-        : e instanceof SdkError && (e.status === 409 || e.status === 422) ? t('withdraw.exceeds')
-        : t('withdraw.failed');
-      setError(msg);
+      // The SERVER is the authority on WHY a payout was refused (Law 11) — 403 is the KYC gate (S3), surfaced
+      // here as an actionable prompt (not just inline text) so the farmer can go straight to eKYC.
+      const kind = withdrawErrorKind(e instanceof SdkError ? e.status : undefined);
+      setKycRequired(kind === 'kyc');
+      setError(t(kind === 'kyc' ? 'withdraw.notAllowed' : kind === 'exceeds' ? 'withdraw.exceeds' : 'withdraw.failed'));
     } finally { setBusy(false); }
   };
 
@@ -85,10 +96,17 @@ export default function Withdraw() {
       ) : (
         <>
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-            {/* Balance hero */}
+            {/* Balance hero — R2-01: a FAILED read must never look like a confident (possibly wrong) ₹0.00; show
+                a distinct retry affordance instead, and never a bare "—" either. */}
             <View style={styles.hero}>
               <Text style={styles.heroLabel}>{t('wallet.available')}</Text>
-              <MoneyText minor={balanceMinor} currencyCode={currency} langCode={lang} size="3xl" style={styles.heroValue} />
+              {failed ? (
+                <Pressable onPress={load} hitSlop={8} accessibilityRole="button">
+                  <Text style={styles.heroError}>{t('wallet.retryLoad')}</Text>
+                </Pressable>
+              ) : (
+                <MoneyText minor={balanceMinor} currencyCode={currency} langCode={lang} size="3xl" style={styles.heroValue} />
+              )}
               <Text style={styles.heroMeta}>{t('withdraw.limitsNote')}</Text>
             </View>
 
@@ -110,6 +128,11 @@ export default function Withdraw() {
                 />
               </View>
               {error ? <Text style={styles.error}>{error}</Text> : null}
+              {kycRequired ? (
+                <Pressable onPress={() => router.push('/(farmer)/kyc')} hitSlop={8} style={styles.kycCta} accessibilityRole="button">
+                  <Text style={styles.kycCtaTxt}>{t('withdraw.completeKyc')} →</Text>
+                </Pressable>
+              ) : null}
             </View>
 
             {/* Quick chips (incl. Max) */}
@@ -146,7 +169,8 @@ export default function Withdraw() {
                 </Pressable>
               );
             })}
-            {/* Adding a NEW destination is the P-03 vault gap — switching among existing ones only. */}
+            {/* Adding a NEW destination is the P-03 vault gap — switching among existing ones only (R2-07: a
+                calm "contact support" note, not a broken-sounding "coming soon"). */}
             <Text style={styles.diffNote}>{t('withdraw.switchNote')}</Text>
           </ScrollView>
 
@@ -156,7 +180,7 @@ export default function Withdraw() {
               size="lg"
               onPress={onSubmit}
               loading={busy}
-              disabled={!selected || !check.ok || busy}
+              disabled={!selected || !check.ok || busy || failed}
             />
           </View>
         </>
@@ -192,6 +216,7 @@ const styles = StyleSheet.create({
   hero: { backgroundColor: color.primary700, paddingVertical: space[4], paddingHorizontal: space[5], alignItems: 'center' },
   heroLabel: { fontFamily: font.body, fontSize: font.size.xs, color: color.white, opacity: 0.8, textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: font.weight.semibold },
   heroValue: { color: color.white, marginTop: 6 },
+  heroError: { fontFamily: font.body, fontSize: font.size.xl, fontWeight: font.weight.bold, color: color.accent300, marginTop: 6, textDecorationLine: 'underline' },
   heroMeta: { fontFamily: font.body, fontSize: font.size.xs, color: color.white, opacity: 0.8, marginTop: 6, textAlign: 'center' },
 
   amountWrap: { alignItems: 'center', paddingVertical: space[6], paddingHorizontal: space[5] },
@@ -200,6 +225,8 @@ const styles = StyleSheet.create({
   rupee: { fontFamily: font.display, fontSize: font.size['3xl'], fontWeight: font.weight.bold, color: color.ink400, marginRight: 4 },
   amountInput: { fontFamily: font.display, fontSize: 44, fontWeight: font.weight.bold, color: color.ink800, minWidth: 120, textAlign: 'left', padding: 0 },
   error: { fontFamily: font.body, fontSize: font.size.sm, color: color.dangerDark, marginTop: space[2] },
+  kycCta: { marginTop: space[2] },
+  kycCtaTxt: { fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.bold, color: color.primary700 },
 
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2], justifyContent: 'center', paddingHorizontal: space[5] },
   chip: { paddingVertical: space[2], paddingHorizontal: space[4], backgroundColor: color.card, borderWidth: 1.5, borderColor: color.earth200, borderRadius: radius.pill },

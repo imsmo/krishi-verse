@@ -42,3 +42,9 @@ throughput needs to scale independently of api request traffic, move
 service the same way this ADR's extraction recipe describes for any `modules/<x>` —
 `wallet-service` and `worker` already prove that recipe works end to end, so this is a
 matter of when, not whether, it is possible.
+
+**Sprint S4 addendum (same day):** the CADENCE-driven half of P0-9-follow-on (settlement-statement
+generation, etc. — `apps/worker/WORKER-RUNTIME.md`'s disposition table) is resolved the same way, for the
+same pilot reason: `core/jobs/jobs.runner.ts`'s `ScheduledJobsRunner` runs them on independent in-process
+timers in apps/api (each under its own Postgres advisory lock, since — unlike the outbox relay — a cadence
+job is not safe for N racing pods by construction), rather than as new apps/worker jobs or a fourth satellite.

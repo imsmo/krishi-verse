@@ -7,6 +7,7 @@ import { isValidPin, isValidHostPins, hostOf, isPinnedHost, pinConfigReady } fro
 import { buildIntegrityHeader, isSensitivePath, UNKNOWN_INTEGRITY } from '../../core/security/integrity';
 import { parseDeepLink, isSafeParamValue } from '../../core/security/deeplink-guard';
 import { isCopyAllowed } from '../../core/security/clipboard-policy';
+import { engageSecureScreen, type ScreenCaptureGuard } from '../../core/security/screen-capture-guard';
 
 const PIN_A = 'A'.repeat(43) + '='; // well-formed 44-char base64 SHA-256 SPKI
 const PIN_B = 'B'.repeat(43) + '=';
@@ -86,5 +87,55 @@ describe('clipboard policy', () => {
     expect(isCopyAllowed('bank')).toBe(false);
     expect(isCopyAllowed('aadhaar')).toBe(false);
     expect(isCopyAllowed('whatever')).toBe(false);
+  });
+});
+
+// MF-01: the FLAG_SECURE screen guard used to be wired to React mount/unmount, but Tabs/native-stack screens
+// don't unmount on navigation — only focus/blur fire. That left the OS secure flag stuck on after visiting any
+// money/KYC screen, blacking out every later screen in a recording (the "pure black void" bug). engageSecureScreen
+// is the pure on/blur-cleanup unit the hook now wires to useFocusEffect instead of useEffect — tested here without
+// any React renderer.
+describe('secure-screen focus guard (FLAG_SECURE)', () => {
+  function fakeGuard() {
+    let secure = false;
+    const guard: ScreenCaptureGuard = {
+      preventScreenCaptureAsync: async () => { secure = true; },
+      allowScreenCaptureAsync: async () => { secure = false; },
+    };
+    return { guard, isSecure: () => secure };
+  }
+
+  it('engages capture-prevention immediately on focus', () => {
+    const { guard, isSecure } = fakeGuard();
+    engageSecureScreen(guard);
+    expect(isSecure()).toBe(true);
+  });
+
+  it('releases capture-prevention when the returned blur cleanup runs', async () => {
+    const { guard, isSecure } = fakeGuard();
+    const onBlur = engageSecureScreen(guard);
+    expect(isSecure()).toBe(true);
+    onBlur();
+    await Promise.resolve(); // flush the allow-capture microtask
+    expect(isSecure()).toBe(false);
+  });
+
+  it('degrades silently (never throws) if the native module rejects', () => {
+    const throwingGuard: ScreenCaptureGuard = {
+      preventScreenCaptureAsync: () => Promise.reject(new Error('no native module')),
+      allowScreenCaptureAsync: () => Promise.reject(new Error('no native module')),
+    };
+    let onBlur: () => void;
+    expect(() => { onBlur = engageSecureScreen(throwingGuard); }).not.toThrow();
+    expect(() => onBlur!()).not.toThrow();
+  });
+
+  it('re-engages on a second focus after a blur (simulates leaving and returning to a secure screen)', () => {
+    const { guard, isSecure } = fakeGuard();
+    const onBlur1 = engageSecureScreen(guard);
+    expect(isSecure()).toBe(true);
+    onBlur1();
+    engageSecureScreen(guard); // focused again
+    expect(isSecure()).toBe(true);
   });
 });

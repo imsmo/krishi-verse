@@ -31,13 +31,42 @@
 //      no Nest DI bootstrap needed). This file is only a thin child-process launcher for it.
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..', '..');
 
+// The relay tick needs a DB URL (ideally a BYPASSRLS role so it can see outbox_events across the
+// tenant). When invoked from the demo-seed / pilot-e2e scripts the caller's shell often has NO DB
+// vars exported — but apps/api/.env always has them (the API reads the same file). So we load that
+// file here and fill in only the keys the tick understands, WITHOUT overriding anything already set
+// in the environment. This makes `node scripts/demo-seed/run.mjs` work with zero prefixing.
+function loadApiEnv() {
+  const out = {};
+  try {
+    const raw = readFileSync(path.join(repoRoot, 'apps', 'api', '.env'), 'utf8');
+    for (const line of raw.split('\n')) {
+      const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+      if (!m) continue;                                   // skip comments / blanks
+      let [, k, v] = m;
+      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+      out[k] = v;
+    }
+  } catch { /* no .env — fall back to whatever the shell provides */ }
+  return out;
+}
+
+const apiEnv = loadApiEnv();
+const DB_KEYS = ['DATABASE_ADMIN_URL', 'MIGRATION_DATABASE_URL', 'DATABASE_URL'];
+const injected = {};
+for (const k of DB_KEYS) {
+  if (!process.env[k] && apiEnv[k]) injected[k] = apiEnv[k];   // never override the shell
+}
+
 const env = {
   ...process.env,
+  ...injected,
   // Skip full type-checking (fast; the tick file isn't inside tsconfig.json's narrow "include" list
   // used for root-file seeding — ts-node would otherwise try to typecheck the whole reachable graph).
   TS_NODE_TRANSPILE_ONLY: '1',

@@ -13,5 +13,9 @@ export const QueryListingSchema = z.object({
   priceMaxMinor: z.string().regex(/^\d+$/).optional(),
   sort: z.enum(['relevance', 'newest', 'price_asc', 'price_desc', 'distance']).default('newest'),
   lat: z.coerce.number().optional(), lng: z.coerce.number().optional(),
+  // Owner view ("my listings"): the caller's OWN listings across every status (draft/paused/etc — see
+  // ListingSearchReadModel), not just the public `published` feed. Requires auth — the controller 401s a
+  // `mine=true` call with no authenticated caller (the route itself stays @Public for the anonymous browse case).
+  mine: z.coerce.boolean().optional(),
 }).strict();
 export type QueryListingDto = z.infer<typeof QueryListingSchema>;

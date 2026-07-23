@@ -30,6 +30,17 @@ export class UserService {
     return u.toPublic();
   }
 
+  /** Self-read enriched with the caller's ACTIVE role codes in this tenant (S6-prep contract fix:
+   * the mobile app's UserProfile assumed a `roles` field that GET /v1/users/me never carried —
+   * after a reinstall the client had no way to learn its own roles. Additive; same shape the
+   * onboarding grant response already returns). */
+  async getMe(tenantId: string, userId: string) {
+    const base = await this.getById(tenantId, userId);
+    const rows = await this.utr.list(tenantId, { userId, pendingOnly: false });
+    const roles = rows.filter((r: any) => r.is_active).map((r: any) => r.role_code as string);
+    return { ...base, roles };
+  }
+
   /** Admin read of another user — SCOPED to the caller's tenant. A non-member returns
    *  404 (not 403) so an admin cannot enumerate users from other tenants. Self is always allowed. */
   async getByIdInTenant(tenantId: string, requesterId: string, targetId: string) {

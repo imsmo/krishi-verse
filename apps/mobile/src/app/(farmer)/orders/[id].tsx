@@ -82,7 +82,19 @@ export default function OrderDetailScreen() {
   return (
     <ScreenScaffold title={order ? t('orders.orderNo', { id: order.orderNo }) : ' '}>
       {loading ? <SkeletonCard lines={8} /> : !order || failed ? (
-        <EmptyState title={t('orders.unavailable')} actionLabel={t('common.retry')} onAction={load} />
+        <>
+          {/* KV MF-06 fix: ScreenScaffold renders no header chrome (headerShown:false at the tab-navigator
+              level, guide §3) and EmptyState supports only a single action — so the "unavailable" state (a fake
+              demo-era order id missing its partition-pruned row, or any genuine 404) previously had ONLY "Retry",
+              which just fails again forever with no way out (Law 12: never a dead end). A real back affordance,
+              same pattern as listings/[id].tsx's appbar, escapes even when Retry can never succeed. */}
+          <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace('/(farmer)/orders'))}
+            accessibilityRole="button" accessibilityLabel={t('common.back')} hitSlop={8} style={styles.backRow}>
+            <Icon name="arrow-left" size={18} color={color.ink700} />
+            <Text style={styles.backLabel}>{t('common.back')}</Text>
+          </Pressable>
+          <EmptyState title={t('orders.unavailable')} actionLabel={t('common.retry')} onAction={load} />
+        </>
       ) : (
         <>
           {/* Status banner */}
@@ -248,6 +260,8 @@ function initials(name: string | null): string {
 }
 
 const styles = StyleSheet.create({
+  backRow: { flexDirection: 'row', alignItems: 'center', gap: space[2], paddingVertical: space[2] },
+  backLabel: { fontFamily: font.body, fontSize: font.size.md, fontWeight: font.weight.semibold, color: color.ink700 },
   banner: { borderRadius: radius.lg, padding: space[4], gap: space[2] },
   bannerTitle: { fontFamily: font.display, fontSize: font.size.xl, fontWeight: font.weight.bold },
 

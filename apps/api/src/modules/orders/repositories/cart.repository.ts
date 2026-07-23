@@ -13,8 +13,13 @@ export class CartRepository {
   /** Get-or-create the single active cart for (tenant, user). */
   async getOrCreateActiveId(tx: TxContext, tenantId: string, userId: string): Promise<string> {
     const ins = await tx.query<{ id: string }>(
+      // Conflict target MUST match the partial unique index uq_carts_one_active_per_user
+      // (0064): the index columns (tenant_id, user_id) PLUS its predicate. Without the
+      // WHERE clause Postgres can't match a partial index → "no unique or exclusion
+      // constraint matching the ON CONFLICT specification".
       `INSERT INTO carts (id, tenant_id, user_id, status) VALUES ($1,$2,$3,'active')
-       ON CONFLICT (tenant_id, user_id, status) DO UPDATE SET user_id = EXCLUDED.user_id RETURNING id`,
+       ON CONFLICT (tenant_id, user_id) WHERE status = 'active' AND deleted_at IS NULL
+       DO UPDATE SET user_id = EXCLUDED.user_id RETURNING id`,
       [uuidv7(), tenantId, userId]);
     return ins.rows[0].id;
   }

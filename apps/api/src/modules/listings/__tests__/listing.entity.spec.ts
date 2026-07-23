@@ -154,4 +154,42 @@ describe('Listing aggregate', () => {
       expect(() => expired.extend(5)).toThrow(ListingNotEditableError);
     });
   });
+
+  describe('archive() — KV-MF-08 (screen 112 Remove cta)', () => {
+    it('moves a published listing to archived and emits status_changed', () => {
+      const l = Listing.create({ ...baseCreate }); l.publish(); l.pullEvents();
+      l.archive();
+      expect(l.status).toBe('archived');
+      const events = l.pullEvents();
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({ type: 'listing.status_changed', from: 'published', to: 'archived' });
+    });
+
+    it('is reachable from every non-terminal status (draft, paused, sold_out, expired, hidden, rejected)', () => {
+      const draft = Listing.create({ ...baseCreate });
+      expect(() => draft.archive()).not.toThrow();
+
+      const paused = Listing.create({ ...baseCreate }); paused.publish(); paused.pause();
+      expect(() => paused.archive()).not.toThrow();
+
+      const soldOut = Listing.create({ ...baseCreate, quantityTotal: 1 }); soldOut.publish(); soldOut.reduceStock(1);
+      expect(() => soldOut.archive()).not.toThrow();
+
+      const expired = Listing.create({ ...baseCreate }); expired.publish(); expired.expire();
+      expect(() => expired.archive()).not.toThrow();
+
+      const hidden = Listing.create({ ...baseCreate }); hidden.publish(); hidden.hide();
+      expect(() => hidden.archive()).not.toThrow();
+    });
+
+    it('is TERMINAL — an already-archived listing refuses a second archive() (never a silent no-op)', () => {
+      const l = Listing.create({ ...baseCreate }); l.archive();
+      expect(() => l.archive()).toThrow(IllegalListingTransitionError);
+    });
+
+    it('refuses from pending_approval (not yet a legal source status — surfaces the real 409, not a fake success)', () => {
+      const l = Listing.create({ ...baseCreate }); l.submitForApproval();
+      expect(() => l.archive()).toThrow(IllegalListingTransitionError);
+    });
+  });
 });

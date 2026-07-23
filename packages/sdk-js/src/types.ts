@@ -41,6 +41,10 @@ export interface ListingCard {
 export interface ListingQuery {
   q?: string; categoryId?: string; regionId?: string; saleType?: string; organic?: boolean;
   priceMinMinor?: string; priceMaxMinor?: string; sort?: 'newest' | 'price_asc' | 'price_desc'; cursor?: string; limit?: number;
+  /** Owner view ("my listings"): the caller's own listings across every status (drafts/paused/etc), not just the
+   *  public `published` feed. Requires an authenticated caller — the API 401s a `mine: true` call with no bearer
+   *  token even though GET /listings is otherwise a public/anonymous route. */
+  mine?: boolean;
 }
 export interface ProductCard { id: string; name: string; categoryId: string; defaultUnit: string; brandId: string | null; gstRatePct: number | null; isPerishable: boolean; isPlatform: boolean; }
 
@@ -105,7 +109,7 @@ export interface UserProfile { id: string; displayName: string | null; roles: st
 export type PaymentPurpose = 'wallet_recharge' | 'direct_order' | 'subscription' | 'boost' | 'emd' | 'course';
 /** Returned by createIntent — feed gatewayOrderId into the gateway SDK (Razorpay), then poll status. */
 export interface PaymentIntent { paymentId: string; gatewayOrderId: string; provider: string; amountMinor: string; status: string; }
-export interface PaymentSummary { id: string; status: string; amountMinor: string; currencyCode: string; purpose?: string; createdAt?: string; }
+export interface PaymentSummary { id: string; status: string; amountMinor: string; currencyCode: string; purpose?: string; createdAt?: string; provider?: string; gatewayOrderId?: string | null; }
 /** A GST trade invoice for an order (totals minor-unit strings; tax split in taxBreakup). NON-PII. */
 export interface InvoiceSummary { id: string; invoiceNo: string; orderId: string; sellerGstin: string | null; buyerGstin: string | null; totalMinor: string; taxBreakup: Record<string, unknown>; pdfMediaId: string | null; createdAt: string; }
 /** A short-lived presigned PDF download URL for an invoice. */

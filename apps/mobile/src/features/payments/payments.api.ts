@@ -2,9 +2,18 @@
 // REAL money path: createIntent (idempotent) → open Razorpay checkout → poll our own payment status until
 // terminal (the server's signed webhook is the authority; the client only reads status). Money is bigint
 // minor-unit strings throughout (Law 2). Add-money is NOT offline-queued (a payment requires the live gateway).
+//
+// DEV/local exception: when no real PSP is configured on the API (no Razorpay keys — the exact case for a
+// founder/dev running locally), createIntent's `provider` comes back 'sandbox' instead of 'razorpay'
+// (apps/api payments.module.ts only ever defaults to sandbox outside production). Opening the real Razorpay
+// SDK against a fake `sbx_order_…` id would just throw ("razorpay key id not configured" or an SDK rejection),
+// which is exactly the "Add money is temporarily unavailable" the founder saw. Instead we drive the server's
+// dev-only sandbox completion (same signed-webhook path a real capture takes — the HMAC secret never reaches
+// this client) so the wallet top-up loop is provable locally with no real keys. In production this branch is
+// never taken: `provider` is always 'razorpay' there.
 import { apiClient } from '../../core/api/client';
 import { openCheckout } from '../../core/payments/checkout';
-import { paymentOutcome, isTerminal, type PaymentOutcome } from '../../core/payments/money';
+import { paymentOutcome, isTerminal, isSandboxProvider, type PaymentOutcome } from '../../core/payments/money';
 import { newId } from '../../core/util/ids';
 
 export interface AddMoneyResult { outcome: PaymentOutcome; paymentId?: string }
@@ -14,6 +23,11 @@ export interface AddMoneyResult { outcome: PaymentOutcome; paymentId?: string }
 export async function addMoney(amountMinor: string, prefill?: { name?: string; contact?: string }): Promise<AddMoneyResult> {
   const client = apiClient();
   const intent = await client.payments.createIntent({ purpose: 'wallet_recharge', amountMinor }, newId());
+
+  if (isSandboxProvider(intent.provider)) {
+    const summary = await client.payments.devCompleteSandbox(intent.paymentId);
+    return { outcome: paymentOutcome(summary.status), paymentId: intent.paymentId };
+  }
 
   const checkout = await openCheckout({ gatewayOrderId: intent.gatewayOrderId, amountMinor, description: 'Wallet recharge', prefill });
   if (!checkout.ok) return { outcome: checkout.cancelled ? 'pending' : 'failed', paymentId: intent.paymentId };

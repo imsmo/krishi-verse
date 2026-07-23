@@ -4,6 +4,7 @@
 // and ENFORCED ownership/authorization. All infra is mocked — proves the WIRING.
 import { ListingService } from '../services/listing.service';
 import { ForbiddenError } from '../../../shared/errors/app-error';
+import { PhotoMediaInvalidError, TooManyPhotosError } from '../domain/listing.errors';
 
 function makeTx() {
   return { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }), tenantId: 't1', userId: 'u1' };
@@ -28,7 +29,12 @@ function build() {
     getForUpdate: jest.fn(), findById: jest.fn() };
   const priceHist: any = { append: jest.fn() };
   const attrs: any = { upsertMany: jest.fn().mockResolvedValue(undefined) };
-  const media: any = { attach: jest.fn().mockResolvedValue(undefined) };
+  const media: any = {
+    attach: jest.fn().mockResolvedValue(undefined),
+    photoAttachable: jest.fn().mockResolvedValue(true),
+    countForListing: jest.fn().mockResolvedValue(0),
+    attachOne: jest.fn().mockResolvedValue(undefined),
+  };
   const audit: any = { write: jest.fn().mockResolvedValue(undefined) };
   const svc = new ListingService(uow, outbox, quota, idem, cache, metrics, repo, priceHist, attrs, media, audit);
   return { svc, uow, outbox, quota, idem, cache, metrics, repo, priceHist, attrs, media, audit, tx };
@@ -154,6 +160,126 @@ describe('ListingService.extend — KV-BL-031 (screen 112 EXTEND cta)', () => {
     const { svc, repo, audit } = build();
     repo.getForUpdate.mockResolvedValue(listingStub());
     await svc.extend('t1', { userId: 'admin-Z', canModerate: true }, 'idem-ext-6', 'L1', 5);
+    expect(audit.write).toHaveBeenCalled();
+  });
+});
+
+describe('ListingService.archive — KV-MF-08 (screen 112 Remove cta)', () => {
+  function archivableStub(overrides: Record<string, unknown> = {}) {
+    const props = { sellerUserId: 'owner-A', id: 'L1', version: 1, status: 'published', ...overrides };
+    return {
+      sellerUserId: props.sellerUserId,
+      get status() { return props.status; },
+      archive: jest.fn(function (this: any) { props.status = 'archived'; }),
+      toProps: () => ({ ...props }),
+      pullEvents: () => [{ type: 'listing.status_changed', listingId: 'L1', from: 'published', to: 'archived' }],
+    };
+  }
+
+  it('wraps the call in idempotency.remember keyed by (idemKey, userId, "listings.archive")', async () => {
+    const { svc, repo, idem } = build();
+    repo.getForUpdate.mockResolvedValue(archivableStub());
+    await svc.archive('t1', { userId: 'owner-A', canModerate: false }, 'idem-arc-1', 'L1');
+    expect(idem.remember).toHaveBeenCalledWith('idem-arc-1', 'owner-A', 'listings.archive', expect.any(Function));
+  });
+
+  it('a retry with the SAME Idempotency-Key does not call the entity/repo twice (never a second illegal transition)', async () => {
+    const { svc, repo, idem } = build();
+    let calls = 0;
+    idem.remember.mockImplementation(async (_k: string, _u: string, _o: string, fn: any) => {
+      calls += 1;
+      return calls === 1 ? fn() : { id: 'L1', status: 'archived' }; // 2nd call: cached result, fn never re-invoked
+    });
+    repo.getForUpdate.mockResolvedValue(archivableStub());
+    const first = await svc.archive('t1', { userId: 'owner-A', canModerate: false }, 'idem-arc-2', 'L1');
+    const second = await svc.archive('t1', { userId: 'owner-A', canModerate: false }, 'idem-arc-2', 'L1');
+    expect(repo.update).toHaveBeenCalledTimes(1);
+    expect(second).toEqual({ id: 'L1', status: 'archived' });
+    expect(first).toEqual({ id: 'L1', status: 'archived' });
+  });
+
+  it('persists via repo.update and flushes the status_changed event to the outbox in the same tx', async () => {
+    const { svc, repo, outbox } = build();
+    repo.getForUpdate.mockResolvedValue(archivableStub());
+    await svc.archive('t1', { userId: 'owner-A', canModerate: false }, 'idem-arc-3', 'L1');
+    expect(repo.update).toHaveBeenCalledTimes(1);
+    const eventTypes = outbox.write.mock.calls.map((c: any[]) => c[1].eventType);
+    expect(eventTypes).toContain('listing.status_changed');
+  });
+
+  it('returns { id, status: "archived" } on success', async () => {
+    const { svc, repo } = build();
+    repo.getForUpdate.mockResolvedValue(archivableStub());
+    const res = await svc.archive('t1', { userId: 'owner-A', canModerate: false }, 'idem-arc-4', 'L1');
+    expect(res).toEqual({ id: 'L1', status: 'archived' });
+  });
+
+  it('a non-owner WITHOUT moderate permission is rejected with ForbiddenError (owner-only) and never archives', async () => {
+    const { svc, repo } = build();
+    const stub = archivableStub();
+    repo.getForUpdate.mockResolvedValue(stub);
+    await expect(svc.archive('t1', { userId: 'intruder-B', canModerate: false }, 'idem-arc-5', 'L1'))
+      .rejects.toBeInstanceOf(ForbiddenError);
+    expect(stub.archive).not.toHaveBeenCalled();
+  });
+
+  it('a moderator MAY archive a listing they do not own, and it is audited', async () => {
+    const { svc, repo, audit } = build();
+    repo.getForUpdate.mockResolvedValue(archivableStub());
+    await svc.archive('t1', { userId: 'admin-Z', canModerate: true }, 'idem-arc-6', 'L1');
+    expect(audit.write).toHaveBeenCalled();
+  });
+
+  it('invalidates the listing cache on success', async () => {
+    const { svc, repo, cache } = build();
+    repo.getForUpdate.mockResolvedValue(archivableStub());
+    await svc.archive('t1', { userId: 'owner-A', canModerate: false }, 'idem-arc-7', 'L1');
+    expect(cache.del).toHaveBeenCalledWith('t:t1:listing:L1');
+  });
+});
+
+describe('ListingService.addPhoto — KV-MF-14 (screen 112 "Add more photos" cta)', () => {
+  const listingStub = (overrides: Record<string, unknown> = {}) => ({ sellerUserId: 'owner-A', id: 'L1', ...overrides });
+
+  it('attaches the photo, returns the LIVE post-attach count, and flushes listing.photo_attached to the outbox', async () => {
+    const { svc, repo, media, outbox } = build();
+    repo.getForUpdate.mockResolvedValue(listingStub());
+    media.countForListing.mockResolvedValueOnce(2).mockResolvedValueOnce(3); // cap check (2), then post-attach live count (3)
+    const res = await svc.addPhoto('t1', { userId: 'owner-A', canModerate: false }, 'L1', 'media-1');
+    expect(media.attachOne).toHaveBeenCalledWith(expect.anything(), 'L1', 'media-1');
+    expect(res).toEqual({ photoCount: 3 });
+    const eventTypes = outbox.write.mock.calls.map((c: any[]) => c[1].eventType);
+    expect(eventTypes).toContain('listing.photo_attached');
+  });
+
+  it('rejects a media asset that is not a clean, owned IMAGE (PhotoMediaInvalidError) — never attaches', async () => {
+    const { svc, repo, media } = build();
+    repo.getForUpdate.mockResolvedValue(listingStub());
+    media.photoAttachable.mockResolvedValue(false);
+    await expect(svc.addPhoto('t1', { userId: 'owner-A', canModerate: false }, 'L1', 'media-1')).rejects.toBeInstanceOf(PhotoMediaInvalidError);
+    expect(media.attachOne).not.toHaveBeenCalled();
+  });
+
+  it('rejects once the listing is already at the photo cap (TooManyPhotosError) — never attaches', async () => {
+    const { svc, repo, media } = build();
+    repo.getForUpdate.mockResolvedValue(listingStub());
+    media.countForListing.mockResolvedValue(10);
+    await expect(svc.addPhoto('t1', { userId: 'owner-A', canModerate: false }, 'L1', 'media-1')).rejects.toBeInstanceOf(TooManyPhotosError);
+    expect(media.attachOne).not.toHaveBeenCalled();
+  });
+
+  it('a non-owner WITHOUT moderate permission is rejected with ForbiddenError (owner-only) — never attaches', async () => {
+    const { svc, repo, media } = build();
+    repo.getForUpdate.mockResolvedValue(listingStub());
+    await expect(svc.addPhoto('t1', { userId: 'intruder-B', canModerate: false }, 'L1', 'media-1')).rejects.toBeInstanceOf(ForbiddenError);
+    expect(media.attachOne).not.toHaveBeenCalled();
+  });
+
+  it('a moderator MAY add a photo to a listing they do not own, and it is audited', async () => {
+    const { svc, repo, media, audit } = build();
+    repo.getForUpdate.mockResolvedValue(listingStub());
+    await svc.addPhoto('t1', { userId: 'admin-Z', canModerate: true }, 'L1', 'media-1');
+    expect(media.attachOne).toHaveBeenCalledTimes(1);
     expect(audit.write).toHaveBeenCalled();
   });
 });

@@ -41,6 +41,13 @@ So: SQL, via the bastion, exactly once per staging environment (or once per re-p
 tear the pilot tenant down). This mirrors `scripts/pilot-e2e/flow.mjs`'s "onboard farmer + buyer" step
 almost verbatim, adapted for a single founder user holding three roles instead of two separate users.
 
+> **KV-BL-066 (Sprint S3) update:** the `farmer`/`customer` role-grant rows below no longer strictly
+> require this SQL path — `POST /v1/onboarding/roles` (authenticated, non-admin, behind the
+> `selfserve_onboarding` flag) now lets an already-logged-in user self-grant those two roles without
+> `identity.approve`. It does **not** solve tenant creation or the `tenant_admin` grant below (still
+> genuinely god-mode / admin-only), so this block stays as-is for now — swapping the farmer/customer
+> inserts for real HTTP calls is deferred to S4, tracked alongside `flow.mjs`'s equivalent note.
+
 ### Prerequisite
 
 A bastion host (or SSM/`kubectl exec` session, whatever staging's `infra/DEPLOY-RUNBOOK.md` sets up)

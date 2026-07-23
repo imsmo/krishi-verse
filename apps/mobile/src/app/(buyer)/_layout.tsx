@@ -25,6 +25,9 @@ export default function BuyerTabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        // See (farmer)/_layout.tsx: react-native-screens has no default scene background — pin it to the app's
+        // cream page color so a slow/erroring screen never shows raw black (Law 12).
+        sceneContainerStyle: { backgroundColor: color.page },
         tabBarActiveTintColor: color.primary600,
         tabBarInactiveTintColor: color.ink400,
         tabBarStyle: { backgroundColor: color.card, borderTopColor: color.ink100, height: 64, paddingBottom: 8, paddingTop: 6 },
@@ -58,6 +61,9 @@ export default function BuyerTabsLayout() {
       <Tabs.Screen name="auctions" options={{ href: null }} />
       <Tabs.Screen name="auctions/[id]" options={{ href: null }} />
       <Tabs.Screen name="auctions/bid" options={{ href: null }} />
+      <Tabs.Screen name="auctions/history" options={{ href: null }} />
+      <Tabs.Screen name="auctions/my-bids" options={{ href: null }} />
+      <Tabs.Screen name="auctions/outbid" options={{ href: null }} />
     </Tabs>
   );
 }

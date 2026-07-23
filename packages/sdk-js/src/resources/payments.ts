@@ -33,6 +33,14 @@ export class PaymentsResource {
   async get(id: string, signal?: AbortSignal): Promise<PaymentSummary> {
     return (await this.http.request<PaymentSummary>('GET', `payments/${encodeURIComponent(id)}`, { signal })).data;
   }
+  /** DEV-ONLY: complete a payment that was created against the deterministic SANDBOX gateway (no real
+   *  PSP configured server-side) by driving the server's own signed-webhook capture path — see
+   *  apps/api PaymentService.devCompleteSandboxPayment. The server refuses this for any non-sandbox
+   *  payment and is inert in production regardless of who calls it; the HMAC secret never reaches this
+   *  client. Only ever call this when `PaymentIntent.provider === 'sandbox'` (checked by the caller). */
+  async devCompleteSandbox(id: string, signal?: AbortSignal): Promise<PaymentSummary> {
+    return (await this.http.request<PaymentSummary>('POST', `payments/${encodeURIComponent(id)}/dev-complete-sandbox`, { body: {}, signal })).data;
+  }
   async list(cursor?: string, limit = 20, signal?: AbortSignal): Promise<Page<PaymentSummary>> {
     const r = await this.http.request<PaymentSummary[]>('GET', 'payments', { query: { cursor, limit }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };

@@ -13,6 +13,8 @@ import { IdempotencyService } from './idempotency.service';
 import { PgPoolProvider } from '../database/pg-pool.provider';
 import { ConflictError } from '../../shared/errors/app-error';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 @Injectable()
 export class PgIdempotencyService extends IdempotencyService {
   constructor(private readonly pools: PgPoolProvider) { super(); }
@@ -22,12 +24,17 @@ export class PgIdempotencyService extends IdempotencyService {
     // SECURITY: scope the dedup key by caller + endpoint so one user can NEVER replay
     // another user's idempotency key (which would otherwise return their cached response).
     const scoped = `${userId ?? 'anon'}::${endpoint}::${key}`;
+    // The user_id COLUMN is uuid; unauthenticated system callers (payment/payout
+    // webhooks) pass the sentinel 'system', which is not a uuid. The dedup key above
+    // already carries caller identity for scoping, so the column is informational —
+    // store a real uuid or NULL, never a non-uuid string (else Postgres 22P02).
+    const userIdCol = userId && UUID_RE.test(userId) ? userId : null;
     const claim = await pool.query(
       `INSERT INTO idempotency_keys (key, user_id, endpoint)
        VALUES ($1, $2, $3)
        ON CONFLICT (key) DO NOTHING
        RETURNING key`,
-      [scoped, userId ?? null, endpoint],
+      [scoped, userIdCol, endpoint],
     );
 
     if (claim.rowCount === 0) {

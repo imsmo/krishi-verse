@@ -14,6 +14,7 @@ tooling** — so every step is spelled out, including the small things that usua
 | 4 | `04-run-web.md` | Run the 4 Next.js web apps | ~10 min |
 | 5 | `05-run-mobile.md` | Run the React-Native (Expo) mobile app on your phone | ~15 min |
 | 6 | `06-test-and-smoke.md` | Run the test suites + a real end-to-end login→listing flow | ~15 min |
+| 8 | `08-make-the-demo-work.md` | App empty/broken as farmer +919900000101? Seed data, fund wallet, turn flags on | ~15 min |
 | 7 | `07-troubleshooting.md` | Fixes for every common error (read when stuck) | as needed |
 
 ---

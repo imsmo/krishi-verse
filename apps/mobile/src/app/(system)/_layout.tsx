@@ -4,7 +4,11 @@
 // reachable from anywhere (the data-backed calls enforce auth server-side); static fallbacks render unauthenticated.
 import React from 'react';
 import { Stack } from 'expo-router';
+import { color } from '@krishi-verse/ui-native';
 
 export default function SystemLayout() {
-  return <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }} />;
+  // contentStyle pins the native Screen surface to the app's cream page background — react-native-screens has no
+  // default of its own, so without this a slow-loading/erroring screen (or a dark system theme) can show raw black
+  // through the gap before JS content paints (Law 12: never a blank/black screen).
+  return <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right', contentStyle: { backgroundColor: color.page } }} />;
 }
